@@ -27,8 +27,19 @@ const queryClient = new QueryClient({
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-[#07090f]">
-      <div className="text-[#3d5068] font-mono text-sm animate-pulse">Loading...</div>
+    <div style={{
+      display:'flex', flexDirection:'column', alignItems:'center',
+      justifyContent:'center', height:'100vh',
+      background:'#07090f', color:'#3d5068',
+      fontFamily:'monospace', fontSize:'13px', gap:'12px'
+    }}>
+      <div style={{
+        width:'32px', height:'32px', border:'2px solid #1e2d42',
+        borderTop:'2px solid #3b82f6', borderRadius:'50%',
+        animation:'spin 0.8s linear infinite'
+      }}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div>Loading RetailPOS...</div>
     </div>
   )
   if (!user) return <Navigate to="/login" replace />
