@@ -55,16 +55,7 @@ export const useAuthStore = create(
           await supabase.auth.signOut()
           throw new Error('This account has been deactivated.')
         }
-        const newToken = crypto.randomUUID()
-        currentSessionToken = newToken
-        const { data: conflict } = await supabase.rpc('fn_check_session_conflict', {
-          p_user_id: up.id, p_tenant_id: up.tenant_id,
-          p_new_token: newToken, p_terminal_name: terminalName,
-        })
-        if (conflict?.conflict) {
-          set({ sessionConflict: { ...conflict, newToken, userId: up.id, tenantId: up.tenant_id, terminalName } })
-          return { needsConflictResolution: true }
-        }
+        // Session check disabled - go straight to login
         await get().loadUserProfile(data.user.id)
         return { success: true }
       },
