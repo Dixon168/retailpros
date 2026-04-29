@@ -30,7 +30,7 @@ export const useAuthStore = create(
 
       loadUserProfile: async (userId) => {
         const { data: up } = await supabase
-          .from('users').select('*, tenants(*, plans(*))')
+          .from('users').select('*, tenants(*)')
           .eq('id', userId).single()
         if (!up) return
         if (up.tenants?.is_suspended) {
