@@ -4,73 +4,90 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { ProductForm } from './ProductForm'
+import toast from 'react-hot-toast'
+
+const TYPE_COLOR = {
+  unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#8b5cf6'
+}
 
 export default function ProductsPage() {
   const { tenant } = useAuthStore()
   const qc = useQueryClient()
-  const [search, setSearch] = useState('')
+  const [search, setSearch]         = useState('')
   const [filterType, setFilterType] = useState('all')
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm]     = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [showReceive, setShowReceive] = useState(null)
-  const [showAdjust, setShowAdjust] = useState(null)
+  const [showAdjust, setShowAdjust]   = useState(null)
+  const [showDetail, setShowDetail]   = useState(null)
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', tenant?.id, search, filterType],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, avg_cost)')
+        .select('*, inventory(quantity, avg_cost), subcategories(name, categories(name))')
         .eq('tenant_id', tenant.id).eq('is_active', true)
-      if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%`)
-      if (filterType !== 'all' && filterType !== 'low') q = q.eq('type', filterType)
+      if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%,tags.cs.{${search}}`)
+      if (filterType === 'low') {
+        // handled in filter below
+      } else if (filterType !== 'all') {
+        q = q.eq('type', filterType)
+      }
       const { data } = await q.order('name').limit(200)
       return data || []
     },
     enabled: !!tenant?.id,
   })
 
-  const getQty = p => p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
-  const displayed = filterType === 'low'
+  const getQty    = p  => p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
+  const getAvgCost = p => p.inventory?.[0]?.avg_cost || p.cost || 0
+  const displayed  = filterType === 'low'
     ? products.filter(p => getQty(p) <= 5 && p.type !== 'service')
     : products
-  const lowStock = products.filter(p => getQty(p) <= 5 && p.type !== 'service').length
+  const lowStock   = products.filter(p => getQty(p) <= 5 && p.type !== 'service').length
 
   const handleDisable = async (p) => {
-    const action = p.is_enabled === false ? 'enable' : 'disable'
-    if (!confirm(`${action === 'disable' ? 'Disable' : 'Enable'} "${p.name}"?`)) return
-    await supabase.from('products').update({ is_enabled: action !== 'disable' }).eq('id', p.id)
+    const enabling = p.is_enabled === false
+    await supabase.from('products').update({ is_enabled: enabling }).eq('id', p.id)
     qc.invalidateQueries(['products'])
-    toast.success(`Product ${action}d`)
+    toast.success(`Product ${enabling ? 'enabled' : 'disabled'}`)
   }
 
   const handleDelete = async (p) => {
     if (!confirm(`Permanently delete "${p.name}"?\n\nThis will free up the SKU and UPC codes.\nThis cannot be undone.`)) return
-    // Null out SKU and UPC first to free them, then soft delete
     await supabase.from('products').update({ is_active: false, sku: null, upc: null }).eq('id', p.id)
     qc.invalidateQueries(['products'])
     toast.success('Product deleted — SKU/UPC codes are now free')
   }
-
-  const TYPE_COLOR = { unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#8b5cf6' }
 
   return (
     <div className="flex h-full bg-[#07090f]">
       {/* Sidebar */}
       <div className="w-[180px] bg-[#0d1117] border-r border-[#1e2d42] p-3 flex-shrink-0">
         <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-widest px-2 mb-2">Filter</div>
-        {[['all','All Products',null],['unit','Unit','#3b82f6'],['weight','Weight','#10b981'],['serialized','Serialized','#f59e0b'],['service','Service','#8b5cf6']].map(([id,label,color]) => (
+        {[
+          ['all','All Products',null],
+          ['unit','Unit','#3b82f6'],
+          ['weight','Weight','#10b981'],
+          ['serialized','Serialized','#f59e0b'],
+          ['service','Service','#8b5cf6'],
+        ].map(([id,label,color]) => (
           <div key={id} onClick={() => setFilterType(id)}
-            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${filterType===id?'bg-[#1a2236] text-white':'text-[#8899b0] hover:bg-[#111827] hover:text-white'}`}>
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${
+              filterType===id ? 'bg-[#1a2236] text-white' : 'text-[#8899b0] hover:bg-[#111827] hover:text-white'
+            }`}>
             {color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:color}}/>}
             {label}
           </div>
         ))}
-        <div className="h-px bg-[#1e2d42] my-3"/>
+        <div className="h-px bg-[#1e2d42] my-2"/>
         <div onClick={() => setFilterType('low')}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] transition-all ${filterType==='low'?'bg-red-500/10 text-red-400':'text-[#8899b0] hover:bg-[#111827]'}`}>
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] transition-all ${
+            filterType==='low' ? 'bg-red-500/10 text-red-400' : 'text-[#8899b0] hover:bg-[#111827]'
+          }`}>
           <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"/>
           Low Stock
-          {lowStock > 0 && <span className="ml-auto text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-mono">{lowStock}</span>}
+          {lowStock > 0 && <span className="ml-auto text-[10px] font-mono bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">{lowStock}</span>}
         </div>
       </div>
 
@@ -78,128 +95,173 @@ export default function ProductsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-[#1e2d42] bg-[#0d1117] flex-shrink-0">
-          <div className="flex gap-5 mr-2">
-            {[['Products', products.length, ''],['Low Stock', lowStock, 'text-red-400'],['Value', '$'+products.reduce((s,p)=>{const q=getQty(p);return s+q*(p.inventory?.[0]?.avg_cost||p.cost||0)},0).toFixed(0), 'text-green-400']].map(([l,v,c]) => (
-              <div key={l}><div className="text-[9px] font-mono text-[#3d5068] uppercase">{l}</div><div className={`text-[17px] font-bold ${c}`}>{v}</div></div>
+          <div className="flex gap-4 mr-2">
+            {[
+              ['Products', products.length, ''],
+              ['Low Stock', lowStock, 'text-red-400'],
+              ['Value', '$'+products.reduce((s,p)=>{const q=getQty(p);return s+q*getAvgCost(p)},0).toFixed(0), 'text-green-400'],
+            ].map(([l,v,c]) => (
+              <div key={l}>
+                <div className="text-[9px] font-mono text-[#3d5068] uppercase">{l}</div>
+                <div className={`text-[17px] font-bold ${c}`}>{v}</div>
+              </div>
             ))}
           </div>
           <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 flex-1 focus-within:border-blue-500/40 transition-colors">
             <span className="text-[#3d5068]">🔍</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, SKU, UPC..."
+            <input value={search} onChange={e=>setSearch(e.target.value)}
+              placeholder="Search name, SKU, UPC, tag..."
               className="bg-transparent border-none outline-none text-[#e8edf5] text-[12px] py-2 flex-1 placeholder-[#3d5068]"/>
           </div>
           <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-            className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-blue-600 transition-colors">
+            className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-blue-600 transition-colors flex-shrink-0">
             + Add Product
           </button>
         </div>
 
-        {/* Product Grid */}
-        <div className="flex-1 overflow-auto p-4">
+        {/* Product List — always visible buttons */}
+        <div className="flex-1 overflow-auto">
           {isLoading ? (
-            <div className="grid grid-cols-4 gap-3">
-              {Array(8).fill(0).map((_,i) => (
-                <div key={i} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] h-[200px] animate-pulse"/>
+            <div className="p-4 flex flex-col gap-2">
+              {Array(6).fill(0).map((_,i) => (
+                <div key={i} className="h-[72px] bg-[#0d1117] border border-[#1e2d42] rounded-[11px] animate-pulse"/>
               ))}
             </div>
           ) : displayed.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-[#3d5068]">
-              <div className="text-6xl mb-4 opacity-20">📦</div>
-              <div className="text-[16px] font-semibold mb-2">No products yet</div>
-              <div className="text-[12px] mb-4">Add your first product to get started</div>
+              <div className="text-5xl mb-3 opacity-15">📦</div>
+              <div className="text-[14px] font-semibold mb-2">No products yet</div>
               <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-                className="bg-blue-500 border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer">
-                + Add Product
+                className="bg-blue-500 border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
+                + Add your first product
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-3">
-              {displayed.map(p => {
-                const qty = getQty(p)
-                const avgCost = p.inventory?.[0]?.avg_cost || p.cost || 0
-                const margin = p.price > 0 ? ((p.price - avgCost) / p.price * 100) : 0
-                const profit = p.price - avgCost
-                const isLow = qty <= 5 && p.type !== 'service'
-                const typeColor = TYPE_COLOR[p.type] || '#3b82f6'
-                return (
-                  <div key={p.id} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] overflow-hidden hover:border-[#243347] transition-all group">
-                    {/* Image */}
-                    <div className="h-[120px] bg-[#111827] flex items-center justify-center relative overflow-hidden">
-                      {p.image_url
-                        ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover"/>
-                        : <span className="text-[48px] opacity-60">{p.emoji||'📦'}</span>
-                      }
-                      <div className="absolute top-2 left-2">
+            <table className="w-full border-collapse">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#111827] border-b border-[#1e2d42]">
+                  {['','Product','SKU','Type','Stock','Price','Margin','Actions'].map((h,i) => (
+                    <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayed.map(p => {
+                  const qty      = getQty(p)
+                  const avgCost  = getAvgCost(p)
+                  const margin   = p.price > 0 ? ((p.price - avgCost) / p.price * 100) : 0
+                  const isLow    = qty <= 5 && p.type !== 'service'
+                  const disabled = p.is_enabled === false
+                  const tc       = TYPE_COLOR[p.type] || '#3b82f6'
+                  const cat      = p.subcategories?.categories?.name
+                  const sub      = p.subcategories?.name
+
+                  return (
+                    <tr key={p.id} className={`border-b border-[#1e2d42] transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#0d1117]'}`}>
+                      {/* Image/Emoji */}
+                      <td className="px-3 py-2 w-10">
+                        <div className="w-9 h-9 rounded-[8px] bg-[#111827] border border-[#1e2d42] flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {p.image_url
+                            ? <img src={p.image_url} alt="" className="w-full h-full object-cover"/>
+                            : <span className="text-[17px]">{p.emoji||'📦'}</span>
+                          }
+                        </div>
+                      </td>
+
+                      {/* Name */}
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-[13px] font-semibold">{p.name}</div>
+                          {disabled && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">DISABLED</span>}
+                        </div>
+                        {p.tags?.length > 0 && (
+                          <div className="flex gap-1 mt-0.5 flex-wrap">
+                            {p.tags.map(t => (
+                              <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{t}</span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* SKU */}
+                      <td className="px-3 py-2">
+                        <div className="text-[11px] font-mono text-[#8899b0]">{p.sku || '—'}</div>
+                        {cat && <div className="text-[9px] text-[#3d5068] mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
+                      </td>
+
+                      {/* Type */}
+                      <td className="px-3 py-2">
                         <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
-                          style={{background:`${typeColor}22`,color:typeColor}}>
+                          style={{background:`${tc}18`,color:tc}}>
                           {p.type?.toUpperCase()}
                         </span>
-                      </div>
-                      {isLow && (
-                        <div className="absolute top-2 right-2 bg-red-500/20 border border-red-500/30 rounded px-1.5 py-0.5 text-[9px] text-red-400 font-mono">LOW</div>
-                      )}
-                      {p.is_enabled===false && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <span className="bg-orange-500/20 border border-orange-500/30 rounded-lg px-2 py-1 text-[10px] font-bold text-orange-400">DISABLED</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-3">
-                      <div className="text-[13px] font-bold truncate mb-0.5">{p.name}</div>
-                      <div className="text-[10px] text-[#3d5068] font-mono mb-2">{p.sku || p.upc || '—'}</div>
-
-                      {/* Price row */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-[15px] font-bold text-blue-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</div>
-                        <div className={`text-[11px] font-mono font-bold ${margin>=30?'text-green-400':margin>=10?'text-yellow-400':'text-red-400'}`}>
-                          {margin.toFixed(1)}%
-                        </div>
-                      </div>
+                      </td>
 
                       {/* Stock */}
-                      {p.type !== 'service' && (
-                        <div className="flex items-center justify-between mb-2.5">
-                          <span className="text-[10px] text-[#3d5068]">Stock</span>
-                          <span className={`text-[12px] font-mono font-bold ${isLow?'text-red-400':'text-[#e8edf5]'}`}>
-                            {qty} {p.unit}
-                          </span>
-                        </div>
-                      )}
+                      <td className="px-3 py-2">
+                        {p.type === 'service'
+                          ? <span className="text-[11px] text-[#3d5068]">—</span>
+                          : <span className={`text-[12px] font-mono font-bold ${isLow?'text-red-400':''}`}>
+                              {isLow && '⚠ '}{qty} {p.unit}
+                            </span>
+                        }
+                      </td>
 
-                      {/* Actions */}
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
-                        <button onClick={()=>setShowReceive(p)}
-                          className="flex-1 bg-green-500/10 border border-green-500/20 rounded-md py-1.5 text-[9px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15 transition-colors">
-                          + Receive
-                        </button>
-                        <button onClick={()=>setShowAdjust(p)}
-                          className="flex-1 bg-yellow-500/10 border border-yellow-500/20 rounded-md py-1.5 text-[9px] font-bold text-yellow-400 cursor-pointer hover:bg-yellow-500/15 transition-colors">
-                          Adjust
-                        </button>
-                        <button onClick={()=>{setEditProduct(p);setShowForm(true)}}
-                          className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-md py-1.5 text-[9px] font-bold text-[#8899b0] cursor-pointer hover:text-blue-400 hover:border-blue-500/30 transition-colors">
-                          Edit
-                        </button>
-                        <button onClick={()=>handleDisable(p)}
-                          className={`flex-1 rounded-md py-1.5 text-[9px] font-bold cursor-pointer border transition-colors ${
-                            p.is_enabled===false
-                              ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/15'
-                              : 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/15'
-                          }`}>
-                          {p.is_enabled===false ? '▶ Enable' : '⏸ Disable'}
-                        </button>
-                        <button onClick={()=>handleDelete(p)}
-                          className="flex-1 bg-red-500/10 border border-red-500/20 rounded-md py-1.5 text-[9px] font-bold text-red-400 cursor-pointer hover:bg-red-500/15 transition-colors">
-                          🗑 Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                      {/* Price */}
+                      <td className="px-3 py-2">
+                        <div className="text-[13px] font-bold font-mono text-blue-400">
+                          ${parseFloat(p.price||0).toFixed(2)}
+                        </div>
+                        <div className="text-[10px] font-mono text-[#3d5068]">
+                          cost ${parseFloat(avgCost).toFixed(2)}
+                        </div>
+                      </td>
+
+                      {/* Margin */}
+                      <td className="px-3 py-2">
+                        <span className={`text-[12px] font-mono font-bold ${
+                          margin>=30?'text-green-400':margin>=10?'text-yellow-400':'text-red-400'
+                        }`}>{margin.toFixed(1)}%</span>
+                      </td>
+
+                      {/* Actions — ALWAYS VISIBLE */}
+                      <td className="px-3 py-2">
+                        <div className="flex gap-1 flex-wrap">
+                          <button onClick={() => setShowDetail(p)}
+                            className="bg-[#111827] border border-[#1e2d42] rounded px-2 py-1.5 text-[10px] text-[#8899b0] cursor-pointer hover:text-white hover:border-[#243347] transition-all whitespace-nowrap">
+                            📋 Detail
+                          </button>
+                          <button onClick={() => setShowReceive(p)}
+                            className="bg-green-500/10 border border-green-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15 transition-colors whitespace-nowrap">
+                            + Receive
+                          </button>
+                          <button onClick={() => setShowAdjust(p)}
+                            className="bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-yellow-400 cursor-pointer hover:bg-yellow-500/15 transition-colors whitespace-nowrap">
+                            Adjust
+                          </button>
+                          <button onClick={() => {setEditProduct(p); setShowForm(true)}}
+                            className="bg-[#111827] border border-[#1e2d42] rounded px-2 py-1.5 text-[10px] text-[#8899b0] cursor-pointer hover:text-blue-400 hover:border-blue-500/30 transition-all">
+                            Edit
+                          </button>
+                          <button onClick={() => handleDisable(p)}
+                            className={`rounded px-2 py-1.5 text-[10px] font-bold cursor-pointer border transition-colors ${
+                              disabled
+                                ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/15'
+                                : 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/15'
+                            }`}>
+                            {disabled ? '▶ Enable' : '⏸ Disable'}
+                          </button>
+                          <button onClick={() => handleDelete(p)}
+                            className="bg-red-500/10 border border-red-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-red-400 cursor-pointer hover:bg-red-500/15 transition-colors">
+                            🗑 Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
@@ -207,27 +269,338 @@ export default function ProductsPage() {
       {/* Modals */}
       {showForm && (
         <ProductForm initial={editProduct||{}} tenantId={tenant?.id}
-          onSave={()=>{qc.invalidateQueries(['products']);setShowForm(false);setEditProduct(null)}}
-          onClose={()=>{setShowForm(false);setEditProduct(null)}}/>
+          onSave={() => { qc.invalidateQueries(['products']); setShowForm(false); setEditProduct(null) }}
+          onClose={() => { setShowForm(false); setEditProduct(null) }}/>
       )}
       {showReceive && (
         <ReceiveModal product={showReceive} tenantId={tenant?.id}
-          onSave={()=>{qc.invalidateQueries(['products']);setShowReceive(null)}}
-          onClose={()=>setShowReceive(null)}/>
+          onSave={() => { qc.invalidateQueries(['products']); setShowReceive(null) }}
+          onClose={() => setShowReceive(null)}/>
       )}
       {showAdjust && (
         <AdjustModal product={showAdjust} tenantId={tenant?.id}
-          onSave={()=>{qc.invalidateQueries(['products']);setShowAdjust(null)}}
-          onClose={()=>setShowAdjust(null)}/>
+          onSave={() => { qc.invalidateQueries(['products']); setShowAdjust(null) }}
+          onClose={() => setShowAdjust(null)}/>
+      )}
+      {showDetail && (
+        <ProductDetailModal product={showDetail} tenantId={tenant?.id}
+          onClose={() => setShowDetail(null)}
+          onEdit={() => { setEditProduct(showDetail); setShowDetail(null); setShowForm(true) }}
+          onReceive={() => { setShowReceive(showDetail); setShowDetail(null) }}
+          onAdjust={() => { setShowAdjust(showDetail); setShowDetail(null) }}/>
       )}
     </div>
+  )
+}
+
+// ── Product Detail Modal (with tabs) ──
+function ProductDetailModal({ product: p, tenantId, onClose, onEdit, onReceive, onAdjust }) {
+  const [tab, setTab] = useState('info')
+
+  const { data: receives = [] } = useQuery({
+    queryKey: ['product-receives', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('inventory_receives')
+        .select('*, suppliers(name), users(name)')
+        .eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(50)
+      return data || []
+    },
+    enabled: tab === 'receives',
+  })
+
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['product-adjustments', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('inventory_adjustments')
+        .select('*, users(name)')
+        .eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(50)
+      return data || []
+    },
+    enabled: tab === 'adjustments',
+  })
+
+  const { data: sales = [] } = useQuery({
+    queryKey: ['product-sales', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('order_items')
+        .select('*, orders(order_number, created_at, customers(name))')
+        .eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(50)
+      return data || []
+    },
+    enabled: tab === 'sales',
+  })
+
+  const { data: serials = [] } = useQuery({
+    queryKey: ['product-serials', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('serial_numbers')
+        .select('*').eq('product_id', p.id).order('created_at', { ascending: false })
+      return data || []
+    },
+    enabled: tab === 'serials' && p.has_serial,
+  })
+
+  const qty      = p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
+  const avgCost  = p.inventory?.[0]?.avg_cost || p.cost || 0
+  const margin   = p.price > 0 ? ((p.price - avgCost) / p.price * 100) : 0
+
+  const TABS = [
+    { id:'info',        label:'Info' },
+    { id:'receives',    label:'Receiving History' },
+    { id:'adjustments', label:'Adjustments' },
+    { id:'sales',       label:'Sales History' },
+    ...(p.has_serial ? [{ id:'serials', label:'Serial Numbers' }] : []),
+  ]
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[680px] max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-[#1e2d42] flex items-start gap-3 flex-shrink-0">
+          <div className="w-12 h-12 rounded-[10px] bg-[#111827] border border-[#1e2d42] flex items-center justify-center overflow-hidden flex-shrink-0">
+            {p.image_url
+              ? <img src={p.image_url} alt="" className="w-full h-full object-cover"/>
+              : <span className="text-[22px]">{p.emoji||'📦'}</span>
+            }
+          </div>
+          <div className="flex-1">
+            <div className="text-[16px] font-bold">{p.name}</div>
+            <div className="text-[11px] font-mono text-[#3d5068] mt-0.5">
+              {p.sku && `SKU: ${p.sku}`}{p.sku && p.upc && ' · '}{p.upc && `UPC: ${p.upc}`}
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button onClick={onReceive}
+              className="bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-1.5 text-[11px] font-bold text-green-400 cursor-pointer">
+              + Receive
+            </button>
+            <button onClick={onAdjust}
+              className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5 text-[11px] font-bold text-yellow-400 cursor-pointer">
+              Adjust
+            </button>
+            <button onClick={onEdit}
+              className="bg-blue-500 border-none rounded-lg px-3 py-1.5 text-[11px] font-bold text-white cursor-pointer">
+              Edit
+            </button>
+            <button onClick={onClose} className="text-[#3d5068] hover:text-white text-xl bg-transparent border-none cursor-pointer">✕</button>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-4 border-b border-[#1e2d42] flex-shrink-0">
+          {[
+            ['Price',    `$${parseFloat(p.price||0).toFixed(2)}`,  'text-blue-400'],
+            ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`,     'text-[#8899b0]'],
+            ['Margin',   `${margin.toFixed(1)}%`,                   margin>=30?'text-green-400':margin>=10?'text-yellow-400':'text-red-400'],
+            ['In Stock', p.type==='service' ? '—' : `${qty} ${p.unit}`, qty<=5&&p.type!=='service'?'text-red-400':'text-[#e8edf5]'],
+          ].map(([l,v,c]) => (
+            <div key={l} className="px-4 py-3 border-r border-[#1e2d42] last:border-0 bg-[#0d1117]">
+              <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-wider mb-1">{l}</div>
+              <div className={`text-[16px] font-bold ${c}`}>{v}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-[#1e2d42] flex-shrink-0 px-4">
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`py-2.5 px-3 text-[12px] border-b-2 transition-all cursor-pointer bg-transparent ${
+                tab===t.id ? 'text-blue-400 border-blue-400' : 'text-[#8899b0] border-transparent hover:text-white'
+              }`}>{t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto p-4">
+
+          {tab === 'info' && (
+            <div className="grid grid-cols-2 gap-3">
+              <InfoBox title="Product Details">
+                {[
+                  ['Name',        p.name],
+                  ['Type',        p.type?.toUpperCase()],
+                  ['Unit',        p.unit],
+                  ['Description', p.description || '—'],
+                ].map(([l,v]) => <IRow key={l} label={l} value={v}/>)}
+              </InfoBox>
+              <InfoBox title="Pricing">
+                {[
+                  ['Sell Price',  `$${parseFloat(p.price||0).toFixed(2)}`],
+                  ['Cost',        `$${parseFloat(p.cost||0).toFixed(2)}`],
+                  ['Avg Cost',    `$${parseFloat(avgCost).toFixed(2)}`],
+                  ['VIP Allowed', p.allow_vip ? 'Yes' : 'No'],
+                  ['VIP Price',   p.vip_price ? `$${p.vip_price.toFixed(2)}` : 'Use % discount'],
+                ].map(([l,v]) => <IRow key={l} label={l} value={v}/>)}
+              </InfoBox>
+              <InfoBox title="Settings">
+                {[
+                  ['Prompt Weight', p.prompt_weight ? '✅ Yes' : '—'],
+                  ['Prompt Price',  p.prompt_price  ? '✅ Yes' : '—'],
+                  ['Serial Track',  p.has_serial    ? '✅ Yes' : '—'],
+                  ['Points Mode',   p.points_mode === 'fixed' ? `Fixed: ${p.points_fixed} pts` : `$1 = ${p.points_rate} pts`],
+                ].map(([l,v]) => <IRow key={l} label={l} value={v}/>)}
+              </InfoBox>
+              <InfoBox title="Tags">
+                {p.tags?.length > 0
+                  ? <div className="flex flex-wrap gap-1.5">{p.tags.map(t => (
+                      <span key={t} className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] px-2.5 py-0.5 rounded-full">{t}</span>
+                    ))}</div>
+                  : <span className="text-[12px] text-[#3d5068]">No tags</span>
+                }
+              </InfoBox>
+            </div>
+          )}
+
+          {tab === 'receives' && (
+            <HistoryTable
+              data={receives}
+              empty="No receiving history"
+              columns={['Date','Vendor','Qty','Cost/Unit','Total','Note']}
+              renderRow={r => [
+                new Date(r.created_at).toLocaleDateString(),
+                r.suppliers?.name || '—',
+                `${r.qty} ${p.unit}`,
+                `$${parseFloat(r.cost||0).toFixed(2)}`,
+                `$${(r.qty * r.cost).toFixed(2)}`,
+                r.notes || '—',
+              ]}
+            />
+          )}
+
+          {tab === 'adjustments' && (
+            <HistoryTable
+              data={adjustments}
+              empty="No adjustment history"
+              columns={['Date','Change','Before','After','Reason','By']}
+              renderRow={r => [
+                new Date(r.created_at).toLocaleDateString(),
+                <span className={r.qty_change >= 0 ? 'text-green-400 font-mono font-bold' : 'text-red-400 font-mono font-bold'}>
+                  {r.qty_change >= 0 ? '+' : ''}{r.qty_change}
+                </span>,
+                r.qty_before,
+                r.qty_after,
+                r.reason,
+                r.users?.name || '—',
+              ]}
+            />
+          )}
+
+          {tab === 'sales' && (
+            <HistoryTable
+              data={sales}
+              empty="No sales history"
+              columns={['Date','Order','Customer','Qty','Unit Price','Total']}
+              renderRow={r => [
+                new Date(r.orders?.created_at).toLocaleDateString(),
+                r.orders?.order_number || '—',
+                r.orders?.customers?.name || 'Walk-in',
+                r.quantity,
+                `$${parseFloat(r.unit_price||0).toFixed(2)}`,
+                `$${parseFloat(r.line_total||0).toFixed(2)}`,
+              ]}
+            />
+          )}
+
+          {tab === 'serials' && (
+            <div>
+              <div className="flex gap-2 mb-3">
+                {['all','in_stock','sold','returned','damaged'].map(s => (
+                  <button key={s}
+                    className="px-2.5 py-1 rounded text-[10px] font-mono border border-[#1e2d42] bg-[#111827] text-[#8899b0] hover:text-white cursor-pointer transition-colors">
+                    {s.replace('_',' ').toUpperCase()} ({serials.filter(sn=>s==='all'||sn.status===s).length})
+                  </button>
+                ))}
+              </div>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#111827] border-b border-[#1e2d42]">
+                    {['Serial Number','Status','Added'].map(h => (
+                      <th key={h} className="px-3 py-2 text-left font-mono text-[10px] text-[#3d5068] uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {serials.map(sn => {
+                    const sc = {in_stock:{c:'#10b981',bg:'rgba(16,185,129,.1)'},sold:{c:'#3b82f6',bg:'rgba(59,130,246,.1)'},returned:{c:'#f59e0b',bg:'rgba(245,158,11,.1)'},damaged:{c:'#ef4444',bg:'rgba(239,68,68,.1)'}}[sn.status]||{c:'#8899b0',bg:'rgba(136,153,176,.1)'}
+                    return (
+                      <tr key={sn.id} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
+                        <td className="px-3 py-2.5 font-mono text-[12px] font-bold">{sn.serial}</td>
+                        <td className="px-3 py-2.5">
+                          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded" style={{background:sc.bg,color:sc.c}}>
+                            {sn.status?.replace('_',' ').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-[11px] text-[#3d5068]">
+                          {new Date(sn.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function InfoBox({ title, children }) {
+  return (
+    <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[11px] p-4">
+      <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-3">{title}</div>
+      {children}
+    </div>
+  )
+}
+function IRow({ label, value }) {
+  return (
+    <div className="flex justify-between mb-2 last:mb-0">
+      <span className="text-[11px] text-[#3d5068]">{label}</span>
+      <span className="text-[12px] font-semibold text-right max-w-[55%]">{value}</span>
+    </div>
+  )
+}
+function HistoryTable({ data, empty, columns, renderRow }) {
+  if (!data.length) return (
+    <div className="flex flex-col items-center justify-center py-12 text-[#3d5068]">
+      <div className="text-3xl mb-2 opacity-20">📋</div>
+      <div className="text-[13px]">{empty}</div>
+    </div>
+  )
+  return (
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="bg-[#111827] border-b border-[#1e2d42]">
+          {columns.map(h => (
+            <th key={h} className="px-3 py-2 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider">{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row, i) => (
+          <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
+            {renderRow(row).map((cell, j) => (
+              <td key={j} className="px-3 py-2.5 text-[12px]">{cell}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 
 // ── Receive Inventory Modal ──
 function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
   const [form, setForm] = useState({ vendor_id:'', cost:'', qty:'', notes:'' })
-  const [serials, setSerials] = useState([])
+  const [serials, setSerials]     = useState([])
   const [serialInput, setSerialInput] = useState('')
   const [saving, setSaving] = useState(false)
   const set = (k,v) => setForm(prev=>({...prev,[k]:v}))
@@ -235,53 +608,48 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
   const { data: vendors = [] } = useQuery({
     queryKey: ['vendors', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('suppliers').select('id,name').eq('tenant_id', tenantId).eq('is_active', true).order('name')
+      const { data } = await supabase.from('suppliers').select('id,name')
+        .eq('tenant_id', tenantId).eq('is_active', true).order('name')
       return data || []
     },
     enabled: !!tenantId,
   })
 
-  const needsSerials = p.type === 'serialized'
-  const qty = parseInt(form.qty) || 0
+  const needsSerials   = p.has_serial || p.type === 'serialized'
+  const qty            = parseInt(form.qty) || 0
   const serialsComplete = !needsSerials || serials.length === qty
 
   const addSerial = () => {
-    if (!serialInput.trim()) return
-    if (serials.includes(serialInput.trim())) { alert('Duplicate serial number'); return }
-    if (serials.length >= qty) { alert('Already entered all serial numbers'); return }
-    setSerials(prev => [...prev, serialInput.trim().toUpperCase()])
+    const s = serialInput.trim().toUpperCase()
+    if (!s) return
+    if (serials.includes(s)) { toast.error('Duplicate serial number'); return }
+    if (serials.length >= qty) { toast.error('Already entered all serial numbers'); return }
+    setSerials(prev => [...prev, s])
     setSerialInput('')
   }
 
   const handleSave = async () => {
-    if (!form.qty || qty <= 0) { alert('Enter quantity'); return }
-    if (needsSerials && serials.length < qty) { alert(`Enter all ${qty} serial numbers`); return }
+    if (!form.qty || qty <= 0) { toast.error('Enter quantity'); return }
+    if (needsSerials && serials.length < qty) { toast.error(`Enter all ${qty} serial numbers`); return }
     setSaving(true)
     try {
       const cost = parseFloat(form.cost) || 0
-      // Update inventory quantity
       const { data: inv } = await supabase.from('inventory')
-        .select('id, quantity, avg_cost').eq('product_id', p.id).maybeSingle()
+        .select('id,quantity,avg_cost').eq('product_id', p.id).maybeSingle()
       if (inv) {
-        const newQty = (inv.quantity || 0) + qty
-        const newAvgCost = ((inv.avg_cost||0) * (inv.quantity||0) + cost * qty) / newQty
+        const newQty     = (inv.quantity||0) + qty
+        const newAvgCost = ((inv.avg_cost||0)*(inv.quantity||0) + cost*qty) / newQty
         await supabase.from('inventory').update({ quantity: newQty, avg_cost: newAvgCost, updated_at: new Date().toISOString() }).eq('id', inv.id)
       } else {
         await supabase.from('inventory').insert({ tenant_id: tenantId, product_id: p.id, quantity: qty, avg_cost: cost })
       }
-      // Save serial numbers
       if (needsSerials && serials.length > 0) {
-        await supabase.from('serial_numbers').insert(
-          serials.map(s => ({ tenant_id: tenantId, product_id: p.id, serial: s, status: 'in_stock' }))
-        )
+        await supabase.from('serial_numbers').insert(serials.map(s => ({ tenant_id: tenantId, product_id: p.id, serial: s, status: 'in_stock' })))
       }
-      // Log receiving
-      await supabase.from('audit_logs').insert({
-        tenant_id: tenantId, action: 'inventory.receive',
-        new_data: { product_id: p.id, product_name: p.name, qty, cost, vendor_id: form.vendor_id, notes: form.notes, serials }
-      })
+      await supabase.from('inventory_receives').insert({ tenant_id: tenantId, product_id: p.id, vendor_id: form.vendor_id||null, qty, cost, notes: form.notes||null })
+      toast.success(`✓ Received ${qty} ${p.unit||'units'} of ${p.name}`)
       onSave()
-    } catch(err) { alert('Error: ' + err.message) }
+    } catch(err) { toast.error('Error: ' + err.message) }
     finally { setSaving(false) }
   }
 
@@ -296,7 +664,6 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
           <button onClick={onClose} className="text-[#3d5068] hover:text-white text-xl bg-transparent border-none cursor-pointer">✕</button>
         </div>
         <div className="p-5 flex flex-col gap-4">
-          {/* Vendor */}
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Vendor</div>
             <select value={form.vendor_id} onChange={e=>set('vendor_id',e.target.value)}
@@ -305,7 +672,6 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
               {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
           </div>
-          {/* Cost + Qty */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Cost per Unit</div>
@@ -321,35 +687,23 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
                 className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] font-mono outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
             </div>
           </div>
-          {/* Total cost preview */}
           {form.cost && form.qty && (
             <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-4 py-2.5 flex justify-between">
               <span className="text-[11px] text-[#3d5068]">Total Cost</span>
-              <span className="font-mono text-[12px] font-bold text-green-400">
-                ${(parseFloat(form.cost)*parseInt(form.qty)).toFixed(2)}
-              </span>
+              <span className="font-mono text-[12px] font-bold text-green-400">${(parseFloat(form.cost)*qty).toFixed(2)}</span>
             </div>
           )}
-          {/* Serial numbers */}
           {needsSerials && qty > 0 && (
             <div>
               <div className="flex justify-between mb-1.5">
-                <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider">
-                  Serial Numbers
-                </div>
-                <span className={`text-[10px] font-mono ${serials.length === qty ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {serials.length}/{qty}
-                </span>
+                <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider">Serial Numbers</div>
+                <span className={`text-[10px] font-mono ${serials.length===qty?'text-green-400':'text-yellow-400'}`}>{serials.length}/{qty}</span>
               </div>
               <div className="flex gap-2 mb-2">
                 <input value={serialInput} onChange={e=>setSerialInput(e.target.value)}
-                  onKeyDown={e=>e.key==='Enter'&&addSerial()}
-                  placeholder="Scan or type serial number..."
+                  onKeyDown={e=>e.key==='Enter'&&addSerial()} placeholder="Scan or type serial number..." autoFocus={needsSerials}
                   className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] font-mono outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
-                <button onClick={addSerial}
-                  className="bg-blue-500 border-none rounded-[9px] px-3 py-2 text-[11px] font-bold text-white cursor-pointer">
-                  Add
-                </button>
+                <button onClick={addSerial} className="bg-blue-500 border-none rounded-[9px] px-3 py-2 text-[11px] font-bold text-white cursor-pointer">Add</button>
               </div>
               <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1">
                 {serials.map((s,i) => (
@@ -357,13 +711,12 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
                     <span className="text-[10px] text-[#3d5068] font-mono w-5">{i+1}.</span>
                     <span className="flex-1 font-mono text-[11px] text-green-400">{s}</span>
                     <button onClick={()=>setSerials(prev=>prev.filter((_,j)=>j!==i))}
-                      className="text-[#3d5068] hover:text-red-400 text-[11px] bg-transparent border-none cursor-pointer">✕</button>
+                      className="text-[#3d5068] hover:text-red-400 bg-transparent border-none cursor-pointer text-[11px]">✕</button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          {/* Notes */}
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Notes (optional)</div>
             <input value={form.notes} onChange={e=>set('notes',e.target.value)} placeholder="PO number, notes..."
@@ -372,9 +725,9 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
         </div>
         <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4 sticky bottom-0 bg-[#0d1117]">
           <button onClick={onClose} className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-3 text-[13px] text-[#8899b0] cursor-pointer">Cancel</button>
-          <button onClick={handleSave} disabled={saving || (needsSerials && serials.length < qty)}
+          <button onClick={handleSave} disabled={saving||(needsSerials&&serials.length<qty)}
             className="flex-[2] bg-gradient-to-r from-green-600 to-green-700 border-none rounded-[9px] py-3 text-[13px] font-bold text-white cursor-pointer disabled:opacity-40">
-            {saving ? '⏳ Saving...' : `✓ Receive ${form.qty||0} ${p.unit||'units'}`}
+            {saving ? '⏳ Saving...' : `✓ Receive ${qty||0} ${p.unit||'units'}`}
           </button>
         </div>
       </div>
@@ -384,31 +737,32 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
 
 // ── Adjust Inventory Modal ──
 function AdjustModal({ product: p, tenantId, onSave, onClose }) {
-  const [qty, setQty] = useState('')
+  const [qty, setQty]     = useState('')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const adjustQty = parseInt(qty) || 0
 
   const handleSave = async () => {
-    if (!qty) { alert('Enter adjustment quantity'); return }
-    if (!reason.trim()) { alert('Enter a reason'); return }
+    if (!qty) { toast.error('Enter adjustment quantity'); return }
+    if (!reason.trim()) { toast.error('Enter a reason'); return }
     setSaving(true)
     try {
       const { data: inv } = await supabase.from('inventory')
-        .select('id, quantity').eq('product_id', p.id).maybeSingle()
+        .select('id,quantity').eq('product_id', p.id).maybeSingle()
       const currentQty = inv?.quantity || 0
-      const newQty = Math.max(0, currentQty + adjustQty)
+      const newQty     = Math.max(0, currentQty + adjustQty)
       if (inv) {
         await supabase.from('inventory').update({ quantity: newQty, updated_at: new Date().toISOString() }).eq('id', inv.id)
       } else {
         await supabase.from('inventory').insert({ tenant_id: tenantId, product_id: p.id, quantity: newQty })
       }
-      await supabase.from('audit_logs').insert({
-        tenant_id: tenantId, action: 'inventory.adjust',
-        new_data: { product_id: p.id, product_name: p.name, adjustment: adjustQty, reason, before: currentQty, after: newQty }
+      await supabase.from('inventory_adjustments').insert({
+        tenant_id: tenantId, product_id: p.id,
+        qty_change: adjustQty, qty_before: currentQty, qty_after: newQty, reason
       })
+      toast.success(`Inventory adjusted: ${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`)
       onSave()
-    } catch(err) { alert('Error: ' + err.message) }
+    } catch(err) { toast.error('Error: ' + err.message) }
     finally { setSaving(false) }
   }
 
@@ -426,17 +780,12 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
         </div>
         <div className="p-5 flex flex-col gap-4">
           <div>
-            <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">
-              Adjustment Quantity (use - to decrease)
-            </div>
-            <input type="number" value={qty} onChange={e=>setQty(e.target.value)}
-              placeholder="+5 or -3" autoFocus
+            <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Adjustment Qty (use - to decrease)</div>
+            <input type="number" value={qty} onChange={e=>setQty(e.target.value)} placeholder="+5 or -3" autoFocus
               className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-3 text-[18px] font-mono text-center outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
-            {qty && (
-              <div className={`mt-1.5 text-center text-[11px] font-mono ${adjustQty>=0?'text-green-400':'text-red-400'}`}>
-                {adjustQty >= 0 ? `+${adjustQty}` : adjustQty} units
-              </div>
-            )}
+            {qty && <div className={`mt-1.5 text-center text-[11px] font-mono font-bold ${adjustQty>=0?'text-green-400':'text-red-400'}`}>
+              {adjustQty>=0?'+':''}{adjustQty} {p.unit||'units'}
+            </div>}
           </div>
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-2">Reason *</div>
@@ -445,7 +794,8 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
                 <button key={r} onClick={()=>setReason(r)}
                   className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all cursor-pointer ${
                     reason===r ? 'border-blue-500/40 bg-blue-500/10 text-blue-400' : 'border-[#1e2d42] bg-[#111827] text-[#8899b0] hover:border-[#243347]'
-                  }`}>{r}</button>
+                  }`}>{r}
+                </button>
               ))}
             </div>
             <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Or type a custom reason..."
@@ -454,9 +804,9 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
         </div>
         <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4">
           <button onClick={onClose} className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-3 text-[13px] text-[#8899b0] cursor-pointer">Cancel</button>
-          <button onClick={handleSave} disabled={saving || !qty || !reason}
+          <button onClick={handleSave} disabled={saving||!qty||!reason}
             className={`flex-[2] border-none rounded-[9px] py-3 text-[13px] font-bold text-white cursor-pointer disabled:opacity-40 ${
-              adjustQty < 0 ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'
+              adjustQty<0 ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'
             }`}>
             {saving ? '⏳ Saving...' : `${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`}
           </button>
