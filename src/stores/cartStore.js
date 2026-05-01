@@ -20,9 +20,11 @@ export const useCartStore = create((set, get) => ({
   payments: [],        // 支付方式列表 [{ method, amount, cardId }]
 
   // ── UI 状态 ──
-  pendingProduct: null,   // 等待输入序列号/重量的商品
+  pendingProduct: null,   // 等待输入序列号/重量/价格的商品
   showSnPanel: false,     // 序列号输入面板
   showWtPanel: false,     // 称重输入面板
+  showPricePanel: false,  // 自定义价格输入面板
+  pendingWeight: null,    // 已输入的重量（等待价格输入）
   showCustPanel: false,   // 客户选择面板
   showDiscPanel: false,   // 折扣面板
   showPayPanel: false,    // 支付面板
@@ -42,14 +44,20 @@ export const useCartStore = create((set, get) => ({
     const { items } = get()
 
     // 序列号商品 → 弹出序列号输入框
-    if (product.type === 'serialized') {
+    if (product.type === 'serialized' || product.has_serial) {
       set({ pendingProduct: product, showSnPanel: true })
       return
     }
 
-    // 称重商品 → 弹出称重输入框
-    if (product.type === 'weight') {
-      set({ pendingProduct: product, showWtPanel: true })
+    // Prompt weight → 弹出重量输入框（之后如果也有prompt_price会继续弹）
+    if (product.type === 'weight' || product.prompt_weight) {
+      set({ pendingProduct: product, showWtPanel: true, pendingWeight: null })
+      return
+    }
+
+    // 只有 prompt_price → 直接弹价格输入框
+    if (product.prompt_price) {
+      set({ pendingProduct: product, showPricePanel: true })
       return
     }
 
@@ -101,24 +109,59 @@ export const useCartStore = create((set, get) => ({
     toast.success(`Added: ${pendingProduct.name}`)
   },
 
-  // 确认称重，添加到购物车
+  // 确认称重
+  // 如果产品同时有 prompt_price，先存重量，再弹价格输入框
   confirmWeight: (weightLbs) => {
     const { pendingProduct } = get()
     if (!pendingProduct || weightLbs <= 0) return
+
+    if (pendingProduct.prompt_price) {
+      // Both weight AND price prompts — save weight, now ask for price
+      set({ pendingWeight: weightLbs, showWtPanel: false, showPricePanel: true })
+      return
+    }
+
+    // Weight only
     get()._addItem({
       productId: pendingProduct.id,
       name: pendingProduct.name,
       sku: pendingProduct.sku,
-      type: 'weight',
+      type: pendingProduct.prompt_weight ? 'weight' : pendingProduct.type,
       qty: weightLbs,
-      unit: 'lb',
+      unit: pendingProduct.unit || 'lb',
       unitPrice: pendingProduct.price,
       taxGroupId: pendingProduct.tax_group_id,
       isTaxable: pendingProduct.is_taxable,
-      emoji: pendingProduct.emoji || '🥬',
+      emoji: pendingProduct.emoji || '⚖️',
     })
-    set({ pendingProduct: null, showWtPanel: false })
-    toast.success(`Added: ${pendingProduct.name} (${weightLbs} lb)`)
+    set({ pendingProduct: null, pendingWeight: null, showWtPanel: false })
+    toast.success(`Added: ${pendingProduct.name} (${weightLbs} ${pendingProduct.unit||'lb'})`)
+  },
+
+  // 确认自定义价格
+  confirmPrice: (customPrice) => {
+    const { pendingProduct, pendingWeight } = get()
+    if (!pendingProduct || customPrice <= 0) return
+
+    get()._addItem({
+      productId: pendingProduct.id,
+      name: pendingProduct.name,
+      sku: pendingProduct.sku,
+      type: pendingWeight ? 'weight' : pendingProduct.type,
+      qty: pendingWeight || 1,
+      unit: pendingWeight ? (pendingProduct.unit || 'lb') : 'ea',
+      unitPrice: customPrice,
+      taxGroupId: pendingProduct.tax_group_id,
+      isTaxable: pendingProduct.is_taxable,
+      emoji: pendingProduct.emoji || '📦',
+    })
+
+    const desc = pendingWeight
+      ? `${pendingProduct.name} (${pendingWeight} ${pendingProduct.unit||'lb'} @ $${customPrice.toFixed(2)})`
+      : `${pendingProduct.name} @ $${customPrice.toFixed(2)}`
+
+    set({ pendingProduct: null, pendingWeight: null, showPricePanel: false })
+    toast.success(`Added: ${desc}`)
   },
 
   // 内部添加商品方法

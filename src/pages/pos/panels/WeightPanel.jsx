@@ -28,6 +28,7 @@ export default function WeightPanel() {
   }
 
   const KEYS = ['7','8','9','4','5','6','1','2','3','.','0','⌫']
+  // decimal already included above
 
   return (
     <Overlay onClose={close}>

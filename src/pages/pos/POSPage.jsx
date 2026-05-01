@@ -11,13 +11,14 @@ import CartPanel from './CartPanel'
 import ProductGrid from './ProductGrid'
 import SerialPanel from './panels/SerialPanel'
 import WeightPanel from './panels/WeightPanel'
+import PricePanel from './panels/PricePanel'
 import CustomerPanel from './panels/CustomerPanel'
 import DiscountPanel from './panels/DiscountPanel'
 import PaymentPanel from './panels/PaymentPanel'
 
 export default function POSPage() {
   const { user, tenant, store } = useAuthStore()
-  const { loadTaxGroups, showSnPanel, showWtPanel, showCustPanel, showDiscPanel, showPayPanel } = useCartStore()
+  const { loadTaxGroups, showSnPanel, showWtPanel, showPricePanel, showCustPanel, showDiscPanel, showPayPanel } = useCartStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
 
@@ -49,7 +50,7 @@ export default function POSPage() {
         .from('products')
         .select('*')
         .eq('tenant_id', tenant.id)
-        .eq('is_active', true)
+        .eq('is_active', true).neq('is_enabled', false)
 
       if (searchQuery) {
         q = q.or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,barcode.eq.${searchQuery}`)
@@ -134,6 +135,7 @@ export default function POSPage() {
       {/* ── 弹层面板（不离开页面）── */}
       {showSnPanel && <SerialPanel />}
       {showWtPanel && <WeightPanel />}
+      {showPricePanel && <PricePanel />}
       {showCustPanel && <CustomerPanel />}
       {showDiscPanel && <DiscountPanel />}
       {showPayPanel && <PaymentPanel />}
