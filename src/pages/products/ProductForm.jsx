@@ -484,14 +484,25 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
           </div>
 
           {/* Points earning */}
-          <div>
-            <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-2">Points Earning</div>
+          <div className={`transition-all ${!form.points_redeemable ? 'opacity-40 pointer-events-none' : ''}`}>
+            <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-2">
+              Points Earning
+              {!form.points_redeemable && (
+                <span className="ml-2 text-[9px] normal-case font-normal bg-[#1a2236] text-[#3d5068] px-2 py-0.5 rounded">
+                  Enable "Can Redeem Points" to configure
+                </span>
+              )}
+            </div>
             <div className="flex gap-2 mb-3">
               {[['amount','$ → Points (e.g. $1 = X pts)'],['fixed','Fixed Points per purchase']].map(([mode,label]) => (
-                <label key={mode} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer flex-1 transition-all ${
+                <label key={mode} className={`flex items-center gap-2 px-3 py-2 rounded-lg border flex-1 transition-all ${
+                  form.points_redeemable ? 'cursor-pointer' : 'cursor-not-allowed'
+                } ${
                   form.points_mode===mode ? 'border-yellow-500/40 bg-yellow-500/8' : 'border-[#1e2d42] bg-[#111827]'
                 }`}>
-                  <input type="radio" name="points_mode" value={mode} checked={form.points_mode===mode} onChange={()=>set('points_mode',mode)}
+                  <input type="radio" name="points_mode" value={mode} checked={form.points_mode===mode}
+                    onChange={()=>form.points_redeemable && set('points_mode',mode)}
+                    disabled={!form.points_redeemable}
                     className="accent-yellow-500"/>
                   <span className="text-[11px]">{label}</span>
                 </label>
@@ -499,18 +510,20 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
             </div>
             {form.points_mode === 'amount' ? (
               <div className="flex items-center gap-3">
-                <div className="flex items-center bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 flex-1 focus-within:border-yellow-500/40">
+                <div className="flex items-center bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 flex-1">
                   <span className="text-[#3d5068] text-[11px] mr-2 whitespace-nowrap">$1 =</span>
-                  <input type="number" value={form.points_rate} onChange={e=>set('points_rate',e.target.value)} placeholder="1" step="0.1"
-                    className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono placeholder-[#3d5068]"/>
+                  <input type="number" value={form.points_rate} onChange={e=>set('points_rate',e.target.value)}
+                    placeholder="1" step="0.1" disabled={!form.points_redeemable}
+                    className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono placeholder-[#3d5068] disabled:cursor-not-allowed"/>
                   <span className="text-[#3d5068] text-[11px] ml-2">pts</span>
                 </div>
                 <span className="text-[11px] text-[#3d5068]">(default: $1=1pt)</span>
               </div>
             ) : (
-              <div className="flex items-center bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 focus-within:border-yellow-500/40">
-                <input type="number" value={form.points_fixed} onChange={e=>set('points_fixed',e.target.value)} placeholder="10"
-                  className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono placeholder-[#3d5068]"/>
+              <div className="flex items-center bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3">
+                <input type="number" value={form.points_fixed} onChange={e=>set('points_fixed',e.target.value)}
+                  placeholder="10" disabled={!form.points_redeemable}
+                  className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono placeholder-[#3d5068] disabled:cursor-not-allowed"/>
                 <span className="text-[#3d5068] text-[11px] ml-2">points per purchase</span>
               </div>
             )}
