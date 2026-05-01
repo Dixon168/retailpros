@@ -20,24 +20,37 @@ export default function ProductsPage() {
   const [showReceive, setShowReceive] = useState(null)
   const [showAdjust, setShowAdjust]   = useState(null)
   const [expandedId, setExpandedId]   = useState(null)
+  const [filterCat, setFilterCat]     = useState('')
+  const [filterTag, setFilterTag]     = useState('')
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products', tenant?.id, search, filterType],
+    queryKey: ['products', tenant?.id, search, filterType, filterCat, filterTag],
     queryFn: async () => {
       let q = supabase.from('products')
         .select('*, inventory(quantity, avg_cost), subcategories(id, name, category_id, categories(id, name, emoji, color))')
         .eq('tenant_id', tenant.id).eq('is_active', true)
-      if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%,tags.cs.{${search}}`)
-      if (filterType === 'low') {
-        // handled in filter below
-      } else if (filterType !== 'all') {
-        q = q.eq('type', filterType)
-      }
+      if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%`)
+      if (filterType !== 'all' && filterType !== 'low') q = q.eq('type', filterType)
+      if (filterCat) q = q.eq('subcategories.category_id', filterCat)
+      if (filterTag) q = q.contains('tags', [filterTag])
       const { data } = await q.order('name').limit(200)
       return data || []
     },
     enabled: !!tenant?.id,
   })
+
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ['categories', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('categories')
+        .select('id, name, emoji').eq('tenant_id', tenant.id).order('sort_order')
+      return data || []
+    },
+    enabled: !!tenant?.id,
+  })
+
+  // Collect all tags from loaded products
+  const allTags = [...new Set(products.flatMap(p => p.tags || []))].sort()
 
   const getQty    = p  => p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
   const getAvgCost = p => p.inventory?.[0]?.avg_cost || p.cost || 0
@@ -113,6 +126,28 @@ export default function ProductsPage() {
               placeholder="Search name, SKU, UPC, tag..."
               className="bg-transparent border-none outline-none text-[#e8edf5] text-[12px] py-2 flex-1 placeholder-[#3d5068]"/>
           </div>
+          {/* Category filter */}
+          <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
+            className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] text-[#e8edf5] outline-none focus:border-blue-500/40 flex-shrink-0">
+            <option value="">All Categories</option>
+            {allCategories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+          </select>
+
+          {/* Tag filter */}
+          <select value={filterTag} onChange={e=>setFilterTag(e.target.value)}
+            className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] text-[#e8edf5] outline-none focus:border-blue-500/40 flex-shrink-0">
+            <option value="">All Tags</option>
+            {allTags.map(t => <option key={t} value={t}>🏷️ {t}</option>)}
+          </select>
+
+          {/* Clear filters */}
+          {(filterCat || filterTag || search) && (
+            <button onClick={()=>{setFilterCat('');setFilterTag('');setSearch('')}}
+              className="bg-[#111827] border border-red-500/20 rounded-[9px] px-2.5 py-2 text-[10px] text-red-400 cursor-pointer hover:border-red-500/40 flex-shrink-0 whitespace-nowrap">
+              ✕ Clear
+            </button>
+          )}
+
           <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
             className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-blue-600 transition-colors flex-shrink-0">
             + Add Product
