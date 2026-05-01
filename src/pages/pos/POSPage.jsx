@@ -91,7 +91,7 @@ export default function POSPage() {
   ]
 
   return (
-    <div className="flex flex-col h-full bg-[#07090f] overflow-hidden">
+    <div className="flex flex-col bg-[#07090f] overflow-hidden" style={{height:"100vh"}}>
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#0d1117]
@@ -121,7 +121,7 @@ export default function POSPage() {
       </div>
 
       {/* ── MAIN AREA ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex overflow-hidden" style={{flex:"1 1 0",minHeight:0}}>
 
         {/* Left: Product area */}
         <div className="flex flex-col flex-1 overflow-hidden">
