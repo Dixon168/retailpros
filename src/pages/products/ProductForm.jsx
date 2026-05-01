@@ -51,7 +51,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
     queryFn: async () => {
       const { data } = await supabase.from('categories')
         .select('id, name, emoji, color, sort_order, subcategories(id, name, sort_order)')
-        .eq('tenant_id', tenantId).order('sort_order')
+        .eq('tenant_id', tenantId).eq('is_active', true).order('sort_order')
       return data || []
     },
     enabled: !!tenantId,
