@@ -21,7 +21,7 @@ export default function CategoriesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('categories')
-        .select('*, subcategories(id, name, emoji, sort_order, is_active)')
+        .select('id, name, emoji, color, sort_order, subcategories(id, name, emoji, sort_order)')
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
         .order('sort_order')
