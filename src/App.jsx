@@ -18,6 +18,7 @@ import ReportsPage from '@/pages/reports/ReportsPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import OrderLookupPage from '@/pages/orders/OrderLookupPage'
 import CardCenterPage from '@/pages/cardcenter/CardCenterPage'
+import CategoriesPage from '@/pages/categories/CategoriesPage'
 import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
 
 const queryClient = new QueryClient({
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="loyalty"    element={<LoyaltyPage />} />
             <Route path="vendors"    element={<VendorsPage />} />
             <Route path="cardcenter" element={<CardCenterPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
             <Route path="business"   element={<BusinessCustomersPage />} />
             <Route path="reports"    element={<ReportsPage />} />
             <Route path="settings"   element={<SettingsPage />} />
