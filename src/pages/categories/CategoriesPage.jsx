@@ -21,7 +21,7 @@ export default function CategoriesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('categories')
-        .select('*, subcategories(*, products(count))')
+        .select('*, subcategories(id, name, emoji, sort_order, is_active)')
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
         .order('sort_order')
@@ -109,7 +109,7 @@ export default function CategoriesPage() {
             ? Array(4).fill(0).map((_,i) => <div key={i} className="h-14 bg-[#111827] rounded-[9px] mb-1.5 animate-pulse"/>)
             : categories.map(cat => {
                 const subCount = cat.subcategories?.length || 0
-                const prodCount = cat.subcategories?.reduce((s,sc) => s + (sc.products?.[0]?.count||0), 0) || 0
+                const prodCount = subcatProducts.filter(p => cat.subcategories?.some(s => s.id === p.subcategory_id)).length || 0
                 return (
                   <div key={cat.id}
                     onClick={() => setSelectedCat(cat)}
