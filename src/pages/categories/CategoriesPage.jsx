@@ -23,7 +23,6 @@ export default function CategoriesPage() {
         .from('categories')
         .select('id, name, emoji, color, sort_order, subcategories(id, name, emoji, sort_order)')
         .eq('tenant_id', tenant.id)
-        .eq('is_active', true)
         .order('sort_order')
       return data || []
     },
@@ -39,7 +38,6 @@ export default function CategoriesPage() {
         .from('products')
         .select('id, name, emoji, price, sort_order, subcategory_id')
         .in('subcategory_id', subcatIds)
-        .eq('is_active', true)
         .order('sort_order')
       return data || []
     },
