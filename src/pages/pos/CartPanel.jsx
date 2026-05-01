@@ -101,12 +101,9 @@ export default function CartPanel() {
 
       {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)} />}
 
-      {/* Action buttons row */}
+      {/* Action buttons row — Discount + Clear only */}
       <div className="px-3.5 py-2 border-t border-[#1e2d42] flex gap-1.5">
         <ActionBtn icon="✂️" label="Discount" onClick={() => openPanel('showDiscPanel')} />
-        <ActionBtn icon="📌" label="Hold"
-          onClick={() => items.length > 0 ? setShowHoldForm(true) : toast.error('Cart is empty')} />
-        <ActionBtn icon="↩️" label="Refund" onClick={() => setShowRefund(true)} />
         <ActionBtn icon="🗑" label="Clear"
           onClick={() => useCartStore.getState().clearCart()} danger />
       </div>
@@ -168,6 +165,27 @@ export default function CartPanel() {
 
       {/* Checkout */}
       <div className="px-3.5 pb-3.5 pt-2">
+
+        {/* Hold + Refund — prominent invoice-level actions */}
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={() => items.length > 0 ? setShowHoldForm(true) : toast.error('Cart is empty')}
+            className="flex-1 bg-[#1a2d1a] border border-green-500/30 rounded-[10px]
+              py-2.5 text-[12px] font-bold text-green-400 cursor-pointer
+              hover:bg-green-500/15 hover:border-green-500/50 transition-all
+              flex items-center justify-center gap-2">
+            📌 Hold Order
+          </button>
+          <button
+            onClick={() => setShowRefund(true)}
+            className="flex-1 bg-[#1a1a2d] border border-purple-500/30 rounded-[10px]
+              py-2.5 text-[12px] font-bold text-purple-400 cursor-pointer
+              hover:bg-purple-500/15 hover:border-purple-500/50 transition-all
+              flex items-center justify-center gap-2">
+            ↩️ Refund
+          </button>
+        </div>
+
         <button onClick={() => openPanel('showPayPanel')}
           disabled={items.length === 0}
           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 border-none
