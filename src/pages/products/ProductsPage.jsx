@@ -25,7 +25,7 @@ export default function ProductsPage() {
     queryKey: ['products', tenant?.id, search, filterType],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, avg_cost), subcategories!products_subcategory_id_fkey(name, categories!subcategories_category_id_fkey(name, emoji, color))')
+        .select('*, inventory(quantity, avg_cost), subcategories:products_subcategory_id_fkey(name, categories:subcategories_category_id_fkey(name, emoji, color))')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%,tags.cs.{${search}}`)
       if (filterType === 'low') {
