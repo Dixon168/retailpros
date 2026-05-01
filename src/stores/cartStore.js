@@ -25,6 +25,7 @@ export const useCartStore = create((set, get) => ({
   showWtPanel: false,     // 称重输入面板
   showPricePanel: false,  // 自定义价格输入面板
   pendingWeight: null,    // 已输入的重量（等待价格输入）
+  selectedItemId: null,   // 选中的购物车 item（用于侧边面板）
   showCustPanel: false,   // 客户选择面板
   showDiscPanel: false,   // 折扣面板
   showPayPanel: false,    // 支付面板
@@ -109,7 +110,25 @@ export const useCartStore = create((set, get) => ({
     toast.success(`Added: ${pendingProduct.name}`)
   },
 
-  // 确认称重
+  // ── Item level operations ──
+  setItemNote: (itemId, note) => {
+    set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, note} : i) }))
+  },
+  setItemEmployee: (itemId, employee) => {
+    set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, employee} : i) }))
+  },
+  setItemPrice: (itemId, price) => {
+    set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, unitPrice: price, priceOverridden: true} : i) }))
+  },
+  setItemDiscount: (itemId, discount) => {
+    set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, itemDiscount: discount} : i) }))
+  },
+  setItemQty: (itemId, qty) => {
+    if (qty <= 0) { get().removeItem(itemId); return }
+    set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, qty} : i) }))
+  },
+
+  // ── 确认称重
   // 如果产品同时有 prompt_price，先存重量，再弹价格输入框
   confirmWeight: (weightLbs) => {
     const { pendingProduct } = get()

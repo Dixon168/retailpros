@@ -5,18 +5,16 @@ import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
-import RefundPanel from './panels/RefundPanel'
 import toast from 'react-hot-toast'
 
-export default function CartPanel() {
+export default function CartPanel({ onRefund }) {
   const [photoViewer, setPhotoViewer] = useState(null)
-  const { items, customer, orderDiscount, updateQty, removeItem, totals, submitOrder } = useCartStore()
+  const { items, customer, orderDiscount, updateQty, removeItem, totals, submitOrder, selectedItemId } = useCartStore()
   const { user, tenant, store } = useAuthStore()
   const { terminal } = useTerminalStore()
   const { holdCurrentCart } = useHeldOrdersStore()
   const { subtotal, orderDiscountAmt, taxAmount, grandTotal } = totals()
 
-  const [showRefund,   setShowRefund]   = useState(false)
   const [holdingOrder, setHoldingOrder] = useState(false)
   const [holdLabel,    setHoldLabel]    = useState('')
   const [showHoldForm, setShowHoldForm] = useState(false)
@@ -93,6 +91,8 @@ export default function CartPanel() {
                 onRemove={() => removeItem(item.id)}
                 onDiscount={() => useCartStore.setState({ pendingProduct: item, showDiscPanel: true })}
                 onPhotoClick={(item) => setPhotoViewer(item)}
+                onSelect={(item) => useCartStore.setState({ selectedItemId: selectedItemId===item.id ? null : item.id })}
+                isSelected={selectedItemId===item.id}
               />
             ))}
           </div>
@@ -177,7 +177,7 @@ export default function CartPanel() {
             📌 Hold Order
           </button>
           <button
-            onClick={() => setShowRefund(true)}
+            onClick={onRefund}
             className="flex-1 bg-[#1a1a2d] border border-purple-500/30 rounded-[10px]
               py-2.5 text-[12px] font-bold text-purple-400 cursor-pointer
               hover:bg-purple-500/15 hover:border-purple-500/50 transition-all
@@ -206,16 +206,15 @@ export default function CartPanel() {
       </div>
 
       {/* Refund panel */}
-      {showRefund && <RefundPanel onClose={() => setShowRefund(false)} />}
     </div>
   )
 }
 
-function CartItem({ item, onQtyChange, onRemove, onDiscount, onPhotoClick }) {
+function CartItem({ item, onQtyChange, onRemove, onDiscount, onPhotoClick, onSelect, isSelected }) {
   const lineTotal = item.unitPrice * item.qty
   return (
-    <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px] p-2.5
-      hover:border-[#243347] transition-colors">
+    <div onClick={() => onSelect && onSelect(item)}
+      className={`rounded-[9px] p-2.5 transition-all cursor-pointer ${isSelected ? 'bg-blue-500/8 border border-blue-500/30' : 'bg-[#111827] border border-[#1e2d42] hover:border-[#243347]'}`}>
       <div className="flex items-start gap-2">
         <ProductPhoto imageUrl={item.imageUrl} name={item.name} size="sm" onClick={() => onPhotoClick && onPhotoClick(item)} className="mt-0.5"/>
         <div className="flex-1 min-w-0">

@@ -205,3 +205,35 @@ EXCEPTION WHEN unique_violation THEN NULL;
 END; $$;
 
 SELECT 'Products V2 patch applied ✓' AS status;
+
+-- Commission fields
+ALTER TABLE products ADD COLUMN IF NOT EXISTS prompt_sales     BOOLEAN DEFAULT false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_type  TEXT DEFAULT 'none'; -- 'none' | 'fixed' | 'pct_sell' | 'pct_cost'
+ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_value DECIMAL(10,4) DEFAULT 0;
+
+-- Commission records
+CREATE TABLE IF NOT EXISTS order_item_commissions (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id    UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  order_id     UUID REFERENCES orders(id),
+  order_item_id UUID,
+  product_id   UUID REFERENCES products(id),
+  employee_id  UUID REFERENCES users(id),
+  employee_name TEXT,
+  commission_type  TEXT,
+  commission_value DECIMAL(10,4),
+  sale_amount  DECIMAL(10,2),
+  commission_amount DECIMAL(10,2),
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Staff list (separate from system users - for commission tracking)
+CREATE TABLE IF NOT EXISTS staff (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  user_id     UUID REFERENCES users(id),
+  name        TEXT NOT NULL,
+  code        TEXT,
+  is_active   BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);

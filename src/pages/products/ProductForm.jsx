@@ -42,6 +42,9 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
     prompt_price:    initial.prompt_price    ?? false,
     has_serial:      initial.has_serial      ?? false,
     track_inventory: initial.track_inventory ?? true,
+    prompt_sales:    initial.prompt_sales    ?? false,
+    commission_type:  initial.commission_type  || 'none',
+    commission_value: initial.commission_value || '',
     selectedTaxRates: [],
   })
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
@@ -182,6 +185,9 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
         points_fixed:    parseInt(form.points_fixed)  || 0,
         points_rate:     parseFloat(form.points_rate) || 1,
         prompt_weight:   form.prompt_weight,
+        prompt_sales:    form.prompt_sales,
+        commission_type:  form.commission_type,
+        commission_value: parseFloat(form.commission_value) || 0,
         prompt_price:    form.prompt_price,
         has_serial:      form.has_serial,
         track_inventory: form.track_inventory,
@@ -531,6 +537,30 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
             )}
           </div>
 
+          {/* Commission */}
+          <div>
+            <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-2">Commission</div>
+            <div className="flex gap-2 mb-3">
+              {[['none','No Commission'],['fixed','Fixed $'],['pct_sell','% of Sell Price'],['pct_cost','% of Cost Price']].map(([t,l]) => (
+                <label key={t} className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border cursor-pointer flex-1 transition-all text-center flex-col ${
+                  form.commission_type===t ? 'border-yellow-500/40 bg-yellow-500/8' : 'border-[#1e2d42] bg-[#111827]'
+                }`}>
+                  <input type="radio" name="commission_type" value={t} checked={form.commission_type===t}
+                    onChange={()=>set('commission_type',t)} className="accent-yellow-500 w-3 h-3"/>
+                  <span className="text-[10px]">{l}</span>
+                </label>
+              ))}
+            </div>
+            {form.commission_type !== 'none' && (
+              <div className="flex items-center bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 focus-within:border-yellow-500/40">
+                <span className="text-[#3d5068] mr-1">{form.commission_type==='fixed'?'$':'%'}</span>
+                <input type="number" value={form.commission_value} onChange={e=>set('commission_value',e.target.value)}
+                  placeholder={form.commission_type==='fixed'?'e.g. 5.00':'e.g. 10'} step="0.01"
+                  className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono placeholder-[#3d5068]"/>
+              </div>
+            )}
+          </div>
+
           {/* Behavior checkboxes */}
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-2">Checkout Behavior</div>
@@ -539,6 +569,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
                 ['prompt_weight',   '⚖️', 'Prompt Weight at Checkout',  'Number pad pops up for weight entry'],
                 ['prompt_price',    '💲', 'Prompt Price at Checkout',   'Number pad pops up for price entry'],
                 ['has_serial',      '🔢', 'Track Serial Numbers',       'Scan serials when receiving and selling'],
+                ['prompt_sales',    '👤', 'Prompt Staff at Checkout',   'Auto pop up staff list when adding to cart'],
                 ['track_inventory', '📊', 'Track Inventory',            'Show stock levels and low stock alerts'],
               ].map(([key,icon,label,desc]) => (
                 <label key={key} className={`flex items-center gap-3 px-4 py-3 rounded-[9px] border cursor-pointer transition-all ${
