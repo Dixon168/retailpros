@@ -48,7 +48,7 @@ export default function POSPage() {
     queryFn: async () => {
       let q = supabase
         .from('products')
-        .select('*')
+        .select('*, inventory(quantity)')
         .eq('tenant_id', tenant.id)
         .eq('is_active', true).neq('is_enabled', false)
 

@@ -1,4 +1,5 @@
 // src/pages/pos/CartPanel.jsx
+import { ProductPhoto, PhotoViewer } from '@/components/ui/ProductPhoto'
 import { useState } from 'react'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -8,6 +9,7 @@ import RefundPanel from './panels/RefundPanel'
 import toast from 'react-hot-toast'
 
 export default function CartPanel() {
+  const [photoViewer, setPhotoViewer] = useState(null)
   const { items, customer, orderDiscount, updateQty, removeItem, totals, submitOrder } = useCartStore()
   const { user, tenant, store } = useAuthStore()
   const { terminal } = useTerminalStore()
@@ -77,7 +79,7 @@ export default function CartPanel() {
         scrollbar-thin scrollbar-thumb-[#1e2d42]">
         {items.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-[#3d5068]">
-            <div className="text-4xl opacity-25">🛒</div>
+            <div className="text-4xl opacity-25 select-none">[ ]</div>
             <div className="text-[11px] text-center font-mono">
               Cart is empty<br/>
               <span className="text-[10px]">Tap a product or scan barcode</span>
@@ -90,11 +92,14 @@ export default function CartPanel() {
                 onQtyChange={(qty) => updateQty(item.id, qty)}
                 onRemove={() => removeItem(item.id)}
                 onDiscount={() => useCartStore.setState({ pendingProduct: item, showDiscPanel: true })}
+                onPhotoClick={(item) => setPhotoViewer(item)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)} />}
 
       {/* Action buttons row */}
       <div className="px-3.5 py-2 border-t border-[#1e2d42] flex gap-1.5">
@@ -188,13 +193,13 @@ export default function CartPanel() {
   )
 }
 
-function CartItem({ item, onQtyChange, onRemove, onDiscount }) {
+function CartItem({ item, onQtyChange, onRemove, onDiscount, onPhotoClick }) {
   const lineTotal = item.unitPrice * item.qty
   return (
     <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px] p-2.5
       hover:border-[#243347] transition-colors">
       <div className="flex items-start gap-2">
-        <span className="text-[18px] mt-0.5 flex-shrink-0">{item.emoji}</span>
+        <ProductPhoto imageUrl={item.imageUrl} name={item.name} size="sm" onClick={() => onPhotoClick && onPhotoClick(item)} className="mt-0.5"/>
         <div className="flex-1 min-w-0">
           <div className="text-[12px] font-semibold truncate">{item.name}</div>
           {item.serialNumber && (

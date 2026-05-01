@@ -186,7 +186,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
         has_serial:      form.has_serial,
         track_inventory: form.track_inventory,
         is_active:       true,
-        emoji: form.has_serial ? '🔢' : form.prompt_weight ? '⚖️' : '📦',
+
       }
 
       let productId = form.id
@@ -300,7 +300,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
                 className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
                 <option value="">— No category —</option>
                 <option value="__add_cat__">✚ Add new category...</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
@@ -322,7 +322,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
                 {/* Show all subcategories grouped by category */}
                 {categories.map(c => (
                   c.subcategories?.length > 0 && (
-                    <optgroup key={c.id} label={`${c.emoji} ${c.name}`}>
+                    <optgroup key={c.id} label={c.name}>
                       {c.subcategories.sort((a,b)=>a.sort_order-b.sort_order).map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
@@ -585,7 +585,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
                   onClick={async()=>{
                     const {data} = await supabase.from('categories').insert({
                       tenant_id: tenantId, name: newCatName.trim(),
-                      emoji: '📁', color: '#3b82f6',
+                      color: '#3b82f6',
                       sort_order: categories.length + 1
                     }).select().single()
                     if(data){ setSelectedCatId(data.id); set('subcategory_id',''); qc.invalidateQueries(['categories-full']) }
@@ -615,7 +615,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
                   className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
                   <option value="">— Select category —</option>
                   {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>

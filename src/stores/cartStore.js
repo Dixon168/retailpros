@@ -83,7 +83,7 @@ export const useCartStore = create((set, get) => ({
         unitPrice: product.price,
         taxGroupId: product.tax_group_id,
         isTaxable: product.is_taxable,
-        emoji: product.emoji || '📦',
+        imageUrl: product.image_url || null,
       })
     }
   },
@@ -103,7 +103,7 @@ export const useCartStore = create((set, get) => ({
       taxGroupId: pendingProduct.tax_group_id,
       isTaxable: pendingProduct.is_taxable,
       serialNumber,
-      emoji: pendingProduct.emoji || '📱',
+      imageUrl: pendingProduct.image_url || null,
     })
     set({ pendingProduct: null, showSnPanel: false })
     toast.success(`Added: ${pendingProduct.name}`)
@@ -132,7 +132,7 @@ export const useCartStore = create((set, get) => ({
       unitPrice: pendingProduct.price,
       taxGroupId: pendingProduct.tax_group_id,
       isTaxable: pendingProduct.is_taxable,
-      emoji: pendingProduct.emoji || '⚖️',
+      imageUrl: pendingProduct.image_url || null,
     })
     set({ pendingProduct: null, pendingWeight: null, showWtPanel: false })
     toast.success(`Added: ${pendingProduct.name} (${weightLbs} ${pendingProduct.unit||'lb'})`)
@@ -153,7 +153,7 @@ export const useCartStore = create((set, get) => ({
       unitPrice: customPrice,
       taxGroupId: pendingProduct.tax_group_id,
       isTaxable: pendingProduct.is_taxable,
-      emoji: pendingProduct.emoji || '📦',
+      imageUrl: pendingProduct.image_url || null,
     })
 
     const desc = pendingWeight

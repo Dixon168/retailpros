@@ -1,5 +1,6 @@
 // src/pages/products/ProductsPage.jsx
 import React, { useState } from 'react'
+import { ProductPhoto, PhotoViewer } from '@/components/ui/ProductPhoto'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -20,6 +21,7 @@ export default function ProductsPage() {
   const [showReceive, setShowReceive] = useState(null)
   const [showAdjust, setShowAdjust]   = useState(null)
   const [expandedId, setExpandedId]   = useState(null)
+  const [photoViewer, setPhotoViewer]   = useState(null)
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
 
@@ -43,7 +45,7 @@ export default function ProductsPage() {
     queryKey: ['categories', tenant?.id],
     queryFn: async () => {
       const { data } = await supabase.from('categories')
-        .select('id, name, emoji').eq('tenant_id', tenant.id).order('sort_order')
+        .select('id, name').eq('tenant_id', tenant.id).order('sort_order')
       return data || []
     },
     enabled: !!tenant?.id,
@@ -130,7 +132,7 @@ export default function ProductsPage() {
           <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
             className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] text-[#e8edf5] outline-none focus:border-blue-500/40 flex-shrink-0">
             <option value="">All Categories</option>
-            {allCategories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+            {allCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
           {/* Tag filter */}
@@ -196,14 +198,10 @@ export default function ProductsPage() {
                   return (
                     <React.Fragment key={p.id}>
                     <tr className={`border-b border-[#1e2d42] transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#0d1117]'}`}>
-                      {/* Image/Emoji */}
+                      {/* Photo */}
                       <td className="px-3 py-2 w-10">
-                        <div className="w-9 h-9 rounded-[8px] bg-[#111827] border border-[#1e2d42] flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {p.image_url
-                            ? <img src={p.image_url} alt="" className="w-full h-full object-cover"/>
-                            : <span className="text-[17px]">{p.emoji||'📦'}</span>
-                          }
-                        </div>
+                        <ProductPhoto imageUrl={p.image_url} name={p.name} size="sm"
+                          onClick={() => setPhotoViewer(p)}/>
                       </td>
 
                       {/* Name */}
@@ -318,6 +316,8 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
+      {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)}/>}
 
       {/* Modals */}
       {showForm && (
