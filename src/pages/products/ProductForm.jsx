@@ -13,6 +13,7 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
   const [tagInput, setTagInput] = useState('')
   const [showAddSub, setShowAddSub] = useState(false)
   const [newSubName, setNewSubName] = useState('')
+  const [newSubCatId, setNewSubCatId] = useState('')
   const [showAddCat, setShowAddCat] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const fileRef = useRef()
@@ -599,45 +600,58 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
 
         {/* Add Subcategory mini modal */}
         {showAddSub && (
-          <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" onClick={()=>setShowAddSub(false)}>
-            <div className="bg-[#0d1117] border border-[#243347] rounded-xl w-[320px] p-5" onClick={e=>e.stopPropagation()}>
-              <div className="text-[14px] font-bold mb-3">
-                ✚ Add Subcategory
-                <div className="text-[11px] text-[#3d5068] font-normal mt-0.5">
-                  Under: {categories.find(c=>c.id===selectedCatId)?.emoji} {categories.find(c=>c.id===selectedCatId)?.name}
-                </div>
+          <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" onClick={()=>{setShowAddSub(false);setNewSubName('');setNewSubCatId('')}}>
+            <div className="bg-[#0d1117] border border-[#243347] rounded-xl w-[360px] p-5" onClick={e=>e.stopPropagation()}>
+              <div className="text-[14px] font-bold mb-4">✚ Add Subcategory</div>
+
+              {/* Step 1: Select main category */}
+              <div className="mb-3">
+                <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Main Category *</div>
+                <select
+                  value={newSubCatId}
+                  onChange={e=>setNewSubCatId(e.target.value)}
+                  autoFocus
+                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
+                  <option value="">— Select category —</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
+                  ))}
+                </select>
               </div>
-              <input
-                value={newSubName}
-                onChange={e=>setNewSubName(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&newSubName.trim()&&(async()=>{
-                  const {data} = await supabase.from('subcategories').insert({
-                    tenant_id: tenantId, category_id: selectedCatId,
-                    name: newSubName.trim(),
-                    sort_order: (categories.find(c=>c.id===selectedCatId)?.subcategories?.length||0)+1
-                  }).select().single()
-                  if(data){ set('subcategory_id', data.id); qc.invalidateQueries(['categories-full']) }
-                  setShowAddSub(false); setNewSubName('')
-                })()}
-                autoFocus placeholder="e.g. Phones, Dairy, Repair..."
-                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40 placeholder-[#3d5068] mb-3"
-              />
+
+              {/* Step 2: Enter name */}
+              <div className="mb-4">
+                <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Subcategory Name *</div>
+                <input
+                  value={newSubName}
+                  onChange={e=>setNewSubName(e.target.value)}
+                  disabled={!newSubCatId}
+                  placeholder="e.g. Phones, Dairy, Repair..."
+                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40 placeholder-[#3d5068] disabled:opacity-40"
+                />
+              </div>
+
               <div className="flex gap-2">
-                <button onClick={()=>{setShowAddSub(false);setNewSubName('')}}
+                <button onClick={()=>{setShowAddSub(false);setNewSubName('');setNewSubCatId('')}}
                   className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-2 text-[12px] text-[#8899b0] cursor-pointer">Cancel</button>
                 <button
-                  disabled={!newSubName.trim()}
+                  disabled={!newSubName.trim() || !newSubCatId}
                   onClick={async()=>{
+                    const catId = newSubCatId
                     const {data} = await supabase.from('subcategories').insert({
-                      tenant_id: tenantId, category_id: selectedCatId,
+                      tenant_id: tenantId, category_id: catId,
                       name: newSubName.trim(),
-                      sort_order: (categories.find(c=>c.id===selectedCatId)?.subcategories?.length||0)+1
+                      sort_order: (categories.find(c=>c.id===catId)?.subcategories?.length||0)+1
                     }).select().single()
-                    if(data){ set('subcategory_id', data.id); qc.invalidateQueries(['categories-full']) }
-                    setShowAddSub(false); setNewSubName('')
+                    if(data){
+                      setSelectedCatId(catId)
+                      set('subcategory_id', data.id)
+                      qc.invalidateQueries(['categories-full'])
+                    }
+                    setShowAddSub(false); setNewSubName(''); setNewSubCatId('')
                   }}
                   className="flex-[2] bg-blue-500 border-none rounded-[9px] py-2 text-[12px] font-bold text-white cursor-pointer disabled:opacity-40">
-                  ✓ Add
+                  ✓ Add Subcategory
                 </button>
               </div>
             </div>
