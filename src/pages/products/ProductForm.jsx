@@ -125,6 +125,29 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Product name required'); return }
     if (!form.price)       { toast.error('Selling price required'); return }
+
+    // Check duplicate SKU
+    if (form.sku?.trim()) {
+      const { data: skuCheck } = await supabase.from('products')
+        .select('id, name').eq('tenant_id', tenantId).eq('sku', form.sku.trim()).eq('is_active', true)
+        .neq('id', form.id || '00000000-0000-0000-0000-000000000000').maybeSingle()
+      if (skuCheck) {
+        toast.error(`SKU "${form.sku}" already used by: ${skuCheck.name}`)
+        return
+      }
+    }
+
+    // Check duplicate UPC
+    if (form.upc?.trim()) {
+      const { data: upcCheck } = await supabase.from('products')
+        .select('id, name').eq('tenant_id', tenantId).eq('upc', form.upc.trim()).eq('is_active', true)
+        .neq('id', form.id || '00000000-0000-0000-0000-000000000000').maybeSingle()
+      if (upcCheck) {
+        toast.error(`UPC "${form.upc}" already used by: ${upcCheck.name}`)
+        return
+      }
+    }
+
     setSaving(true)
     try {
       let type = 'unit'
