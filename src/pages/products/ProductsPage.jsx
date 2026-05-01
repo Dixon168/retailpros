@@ -25,7 +25,7 @@ export default function ProductsPage() {
     queryKey: ['products', tenant?.id, search, filterType],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, avg_cost), subcategories(name, categories(name))')
+        .select('*, inventory(quantity, avg_cost), subcategories!products_subcategory_id_fkey(name, categories!subcategories_category_id_fkey(name, emoji, color))')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%,tags.cs.{${search}}`)
       if (filterType === 'low') {
@@ -153,8 +153,9 @@ export default function ProductsPage() {
                   const isLow    = qty <= 5 && p.type !== 'service'
                   const disabled = p.is_enabled === false
                   const tc       = TYPE_COLOR[p.type] || '#3b82f6'
-                  const cat      = p.subcategories?.categories?.name
-                  const sub      = p.subcategories?.name
+                  const subcat   = Array.isArray(p.subcategories) ? p.subcategories[0] : p.subcategories
+                  const cat      = Array.isArray(subcat?.categories) ? subcat?.categories[0]?.name : subcat?.categories?.name
+                  const sub      = subcat?.name
 
                   return (
                     <tr key={p.id} className={`border-b border-[#1e2d42] transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#0d1117]'}`}>
