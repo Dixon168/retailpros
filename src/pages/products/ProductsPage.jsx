@@ -1,5 +1,5 @@
 // src/pages/products/ProductsPage.jsx
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -19,7 +19,7 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct] = useState(null)
   const [showReceive, setShowReceive] = useState(null)
   const [showAdjust, setShowAdjust]   = useState(null)
-  const [showDetail, setShowDetail]   = useState(null)
+  const [expandedId, setExpandedId]   = useState(null)
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', tenant?.id, search, filterType],
@@ -159,7 +159,8 @@ export default function ProductsPage() {
                   const sub      = subcat?.name || null
 
                   return (
-                    <tr key={p.id} className={`border-b border-[#1e2d42] transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#0d1117]'}`}>
+                    <React.Fragment key={p.id}>
+                    <tr className={`border-b border-[#1e2d42] transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#0d1117]'}`}>
                       {/* Image/Emoji */}
                       <td className="px-3 py-2 w-10">
                         <div className="w-9 h-9 rounded-[8px] bg-[#111827] border border-[#1e2d42] flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -229,9 +230,13 @@ export default function ProductsPage() {
                       {/* Actions — ALWAYS VISIBLE */}
                       <td className="px-3 py-2">
                         <div className="flex gap-1 flex-wrap">
-                          <button onClick={() => setShowDetail(p)}
-                            className="bg-[#111827] border border-[#1e2d42] rounded px-2 py-1.5 text-[10px] text-[#8899b0] cursor-pointer hover:text-white hover:border-[#243347] transition-all whitespace-nowrap">
-                            📋 Detail
+                          <button onClick={() => setExpandedId(expandedId===p.id ? null : p.id)}
+                            className={`rounded px-2 py-1.5 text-[10px] cursor-pointer border transition-all whitespace-nowrap ${
+                              expandedId===p.id
+                                ? 'bg-blue-500/15 border-blue-500/40 text-blue-400'
+                                : 'bg-[#111827] border border-[#1e2d42] text-[#8899b0] hover:text-white hover:border-[#243347]'
+                            }`}>
+                            📋 {expandedId===p.id ? 'Hide' : 'Detail'}
                           </button>
                           <button onClick={() => setShowReceive(p)}
                             className="bg-green-500/10 border border-green-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15 transition-colors whitespace-nowrap">
@@ -260,8 +265,19 @@ export default function ProductsPage() {
                         </div>
                       </td>
                     </tr>
-                  )
-                })}
+                    {expandedId === p.id && (
+                      <tr key={p.id+'-detail'}>
+                        <td colSpan={8} className="p-0 border-b border-[#1e2d42]">
+                          <ProductDetailInline product={p} tenantId={tenant?.id}
+                            onReceive={()=>setShowReceive(p)}
+                            onAdjust={()=>setShowAdjust(p)}
+                            onEdit={()=>{setEditProduct(p);setShowForm(true)}}/>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
+              })}
               </tbody>
             </table>
           )}
@@ -284,13 +300,195 @@ export default function ProductsPage() {
           onSave={() => { qc.invalidateQueries(['products']); setShowAdjust(null) }}
           onClose={() => setShowAdjust(null)}/>
       )}
-      {showDetail && (
-        <ProductDetailModal product={showDetail} tenantId={tenant?.id}
-          onClose={() => setShowDetail(null)}
-          onEdit={() => { setEditProduct(showDetail); setShowDetail(null); setShowForm(true) }}
-          onReceive={() => { setShowReceive(showDetail); setShowDetail(null) }}
-          onAdjust={() => { setShowAdjust(showDetail); setShowDetail(null) }}/>
-      )}
+
+    </div>
+  )
+}
+
+// ── Product Detail Inline (expands inside table) ──
+function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit }) {
+  const [tab, setTab] = useState('info')
+
+  const { data: receives = [] } = useQuery({
+    queryKey: ['product-receives', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('inventory_receives')
+        .select('*, suppliers(name)')
+        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(30)
+      return data || []
+    },
+    enabled: tab === 'receives',
+  })
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ['product-adjustments', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('inventory_adjustments')
+        .select('*').eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(30)
+      return data || []
+    },
+    enabled: tab === 'adjustments',
+  })
+  const { data: sales = [] } = useQuery({
+    queryKey: ['product-sales', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('order_items')
+        .select('*, orders(order_number, created_at, customers(name))')
+        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(30)
+      return data || []
+    },
+    enabled: tab === 'sales',
+  })
+  const { data: serials = [] } = useQuery({
+    queryKey: ['product-serials', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('serial_numbers')
+        .select('*').eq('product_id', p.id).order('created_at', { ascending: false })
+      return data || []
+    },
+    enabled: tab === 'serials' && p.has_serial,
+  })
+
+  const TABS = [
+    { id:'info',        label:'📋 Info' },
+    { id:'receives',    label:'📥 Receiving' },
+    { id:'adjustments', label:'⚖️ Adjustments' },
+    { id:'sales',       label:'💰 Sales History' },
+    ...(p.has_serial ? [{ id:'serials', label:'🔢 Serials' }] : []),
+  ]
+
+  return (
+    <div className="bg-[#07090f] border-t border-blue-500/20">
+      {/* Tab bar */}
+      <div className="flex items-center border-b border-[#1e2d42] px-4 bg-[#0d1117]">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`py-2.5 px-3 text-[11px] border-b-2 transition-all cursor-pointer bg-transparent whitespace-nowrap ${
+              tab===t.id ? 'text-blue-400 border-blue-500' : 'text-[#3d5068] border-transparent hover:text-[#8899b0]'
+            }`}>{t.label}
+          </button>
+        ))}
+        <div className="flex-1"/>
+        <div className="flex gap-1.5 py-2">
+          <button onClick={onReceive} className="bg-green-500/10 border border-green-500/20 rounded px-2.5 py-1 text-[10px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15">+ Receive</button>
+          <button onClick={onAdjust} className="bg-yellow-500/10 border border-yellow-500/20 rounded px-2.5 py-1 text-[10px] font-bold text-yellow-400 cursor-pointer hover:bg-yellow-500/15">Adjust</button>
+          <button onClick={onEdit} className="bg-blue-500/10 border border-blue-500/20 rounded px-2.5 py-1 text-[10px] font-bold text-blue-400 cursor-pointer hover:bg-blue-500/15">Edit</button>
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div className="p-4 max-h-[320px] overflow-y-auto">
+
+        {tab === 'info' && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
+              <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-2">Product Info</div>
+              {[['Type',p.type?.toUpperCase()],['Unit',p.unit],['SKU',p.sku||'—'],['UPC',p.upc||'—'],['Description',p.description||'—']].map(([l,v])=>(
+                <div key={l} className="flex justify-between mb-1.5 last:mb-0">
+                  <span className="text-[10px] text-[#3d5068]">{l}</span>
+                  <span className="text-[11px] font-semibold text-right max-w-[55%] truncate">{v}</span>
+                </div>
+              ))}
+            </div>
+            <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
+              <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-2">Pricing</div>
+              {[['Price',`$${parseFloat(p.price||0).toFixed(2)}`],['Cost',`$${parseFloat(p.cost||0).toFixed(2)}`],['Avg Cost',`$${parseFloat(p.inventory?.[0]?.avg_cost||p.cost||0).toFixed(2)}`],['Margin',`${p.price>0?((p.price-(p.inventory?.[0]?.avg_cost||p.cost||0))/p.price*100).toFixed(1):0}%`],['VIP',p.allow_vip?(p.vip_price?`$${p.vip_price}`:'% discount'):'No']].map(([l,v])=>(
+                <div key={l} className="flex justify-between mb-1.5 last:mb-0">
+                  <span className="text-[10px] text-[#3d5068]">{l}</span>
+                  <span className="text-[11px] font-semibold">{v}</span>
+                </div>
+              ))}
+            </div>
+            <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
+              <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-2">Settings</div>
+              {[['Prompt Weight',p.prompt_weight?'✅':'—'],['Prompt Price',p.prompt_price?'✅':'—'],['Serial Track',p.has_serial?'✅':'—'],['Points',p.points_mode==='fixed'?`${p.points_fixed} pts fixed`:`$1=${p.points_rate}pts`]].map(([l,v])=>(
+                <div key={l} className="flex justify-between mb-1.5 last:mb-0">
+                  <span className="text-[10px] text-[#3d5068]">{l}</span>
+                  <span className="text-[11px] font-semibold">{v}</span>
+                </div>
+              ))}
+              {p.tags?.length>0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{t}</span>)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === 'receives' && (
+          receives.length === 0
+            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No receiving history</div>
+            : <table className="w-full border-collapse">
+                <thead><tr className="bg-[#111827]">{['Date','Vendor','Qty','Cost/Unit','Total','Notes'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+                <tbody>{receives.map((r,i)=>(
+                  <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
+                    <td className="px-3 py-2 text-[11px]">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 text-[11px]">{r.suppliers?.name||'—'}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono text-green-400">+{r.qty} {p.unit}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono">${parseFloat(r.cost||0).toFixed(2)}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono text-blue-400">${(r.qty*r.cost).toFixed(2)}</td>
+                    <td className="px-3 py-2 text-[11px] text-[#3d5068]">{r.notes||'—'}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+        )}
+
+        {tab === 'adjustments' && (
+          adjustments.length === 0
+            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No adjustment history</div>
+            : <table className="w-full border-collapse">
+                <thead><tr className="bg-[#111827]">{['Date','Change','Before','After','Reason'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+                <tbody>{adjustments.map((r,i)=>(
+                  <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
+                    <td className="px-3 py-2 text-[11px]">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 font-mono text-[12px] font-bold">
+                      <span className={r.qty_change>=0?'text-green-400':'text-red-400'}>{r.qty_change>=0?'+':''}{r.qty_change}</span>
+                    </td>
+                    <td className="px-3 py-2 text-[11px] font-mono">{r.qty_before}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono">{r.qty_after}</td>
+                    <td className="px-3 py-2 text-[11px] text-[#8899b0]">{r.reason}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+        )}
+
+        {tab === 'sales' && (
+          sales.length === 0
+            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No sales history yet</div>
+            : <table className="w-full border-collapse">
+                <thead><tr className="bg-[#111827]">{['Date','Order #','Customer','Qty','Price','Total'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+                <tbody>{sales.map((r,i)=>(
+                  <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
+                    <td className="px-3 py-2 text-[11px]">{new Date(r.orders?.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono text-blue-400">{r.orders?.order_number||'—'}</td>
+                    <td className="px-3 py-2 text-[11px]">{r.orders?.customers?.name||'Walk-in'}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono">{r.quantity} {p.unit}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono">${parseFloat(r.unit_price||0).toFixed(2)}</td>
+                    <td className="px-3 py-2 text-[11px] font-mono text-green-400">${parseFloat(r.line_total||0).toFixed(2)}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+        )}
+
+        {tab === 'serials' && (
+          serials.length === 0
+            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No serial numbers recorded</div>
+            : <table className="w-full border-collapse">
+                <thead><tr className="bg-[#111827]">{['Serial Number','Status','Date Added'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+                <tbody>{serials.map((sn,i)=>{
+                  const sc={in_stock:{c:'#10b981',bg:'rgba(16,185,129,.1)'},sold:{c:'#3b82f6',bg:'rgba(59,130,246,.1)'},returned:{c:'#f59e0b',bg:'rgba(245,158,11,.1)'},damaged:{c:'#ef4444',bg:'rgba(239,68,68,.1)'}}[sn.status]||{c:'#8899b0',bg:'rgba(136,153,176,.1)'}
+                  return (
+                    <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
+                      <td className="px-3 py-2 font-mono text-[12px] font-bold">{sn.serial}</td>
+                      <td className="px-3 py-2"><span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded" style={{background:sc.bg,color:sc.c}}>{sn.status?.replace('_',' ').toUpperCase()}</span></td>
+                      <td className="px-3 py-2 text-[11px] text-[#3d5068]">{new Date(sn.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  )
+                })}</tbody>
+              </table>
+        )}
+      </div>
     </div>
   )
 }
