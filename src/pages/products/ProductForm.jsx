@@ -13,6 +13,8 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
   const [tagInput, setTagInput] = useState('')
   const [showAddSub, setShowAddSub] = useState(false)
   const [newSubName, setNewSubName] = useState('')
+  const [showAddCat, setShowAddCat] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
   const fileRef = useRef()
 
   const [form, setForm] = useState({
@@ -288,9 +290,14 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
             <div>
               <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Category</div>
               <select value={selectedCatId}
-                onChange={e => { setSelectedCatId(e.target.value); set('subcategory_id', '') }}
+                onChange={e => {
+                  if (e.target.value === '__add_cat__') { setShowAddCat(true); return }
+                  setSelectedCatId(e.target.value)
+                  set('subcategory_id', '')
+                }}
                 className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
                 <option value="">— No category —</option>
+                <option value="__add_cat__">✚ Add new category...</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
               </select>
             </div>
@@ -534,6 +541,48 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
             </div>
           </div>
         </div>
+
+        {/* Add Category mini modal */}
+        {showAddCat && (
+          <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" onClick={()=>setShowAddCat(false)}>
+            <div className="bg-[#0d1117] border border-[#243347] rounded-xl w-[320px] p-5" onClick={e=>e.stopPropagation()}>
+              <div className="text-[14px] font-bold mb-3">✚ Add Category</div>
+              <input
+                value={newCatName}
+                onChange={e=>setNewCatName(e.target.value)}
+                onKeyDown={e=>e.key==='Enter'&&newCatName.trim()&&(async()=>{
+                  const {data} = await supabase.from('categories').insert({
+                    tenant_id: tenantId, name: newCatName.trim(),
+                    emoji: '📁', color: '#3b82f6',
+                    sort_order: categories.length + 1
+                  }).select().single()
+                  if(data){ setSelectedCatId(data.id); set('subcategory_id',''); qc.invalidateQueries(['categories-full']) }
+                  setShowAddCat(false); setNewCatName('')
+                })()}
+                autoFocus placeholder="e.g. Electronics, Grocery..."
+                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40 placeholder-[#3d5068] mb-3"
+              />
+              <div className="flex gap-2">
+                <button onClick={()=>{setShowAddCat(false);setNewCatName('')}}
+                  className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-2 text-[12px] text-[#8899b0] cursor-pointer">Cancel</button>
+                <button
+                  disabled={!newCatName.trim()}
+                  onClick={async()=>{
+                    const {data} = await supabase.from('categories').insert({
+                      tenant_id: tenantId, name: newCatName.trim(),
+                      emoji: '📁', color: '#3b82f6',
+                      sort_order: categories.length + 1
+                    }).select().single()
+                    if(data){ setSelectedCatId(data.id); set('subcategory_id',''); qc.invalidateQueries(['categories-full']) }
+                    setShowAddCat(false); setNewCatName('')
+                  }}
+                  className="flex-[2] bg-blue-500 border-none rounded-[9px] py-2 text-[12px] font-bold text-white cursor-pointer disabled:opacity-40">
+                  ✓ Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Add Subcategory mini modal */}
         {showAddSub && (
