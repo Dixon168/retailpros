@@ -1,15 +1,18 @@
 // src/pages/products/ProductForm.jsx
 import { useState, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 const UNITS = ['ea','lb','kg','oz','g','l','ml','ft','m','hr','pair','box','case','pack','roll','sheet','set','bag','bottle','can']
 
 export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
+  const qc = useQueryClient()
   const [saving, setSaving]     = useState(false)
   const [uploading, setUploading] = useState(false)
   const [tagInput, setTagInput] = useState('')
+  const [showAddSub, setShowAddSub] = useState(false)
+  const [newSubName, setNewSubName] = useState('')
   const fileRef = useRef()
 
   const [form, setForm] = useState({
@@ -287,19 +290,35 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
               <select value={selectedCatId}
                 onChange={e => { setSelectedCatId(e.target.value); set('subcategory_id', '') }}
                 className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
-                <option value="">No category</option>
+                <option value="">— No category —</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
               </select>
             </div>
             <div>
-              <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Subcategory</div>
-              <select value={form.subcategory_id} onChange={e=>set('subcategory_id',e.target.value)}
+              <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">
+                Subcategory
+                {selectedCatId && (
+                  <span className="ml-2 text-blue-400 font-normal normal-case">
+                    ({(categories.find(c=>c.id===selectedCatId)?.subcategories||[]).length} available)
+                  </span>
+                )}
+              </div>
+              <select
+                value={form.subcategory_id}
+                onChange={e => {
+                  if (e.target.value === '__add_new__') { setShowAddSub(true); return }
+                  set('subcategory_id', e.target.value)
+                }}
                 disabled={!selectedCatId}
                 className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40 disabled:opacity-40">
-                <option value="">No subcategory</option>
+                <option value="">— No subcategory —</option>
+                {selectedCatId && (
+                  <option value="__add_new__">✚ Add new subcategory...</option>
+                )}
                 {(categories.find(c=>c.id===selectedCatId)?.subcategories||[])
+                  .filter(s => s.is_active !== false)
                   .sort((a,b)=>a.sort_order-b.sort_order)
-                  .map(s => <option key={s.id} value={s.id}>{s.name}</option>)
+                  .map(s => <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>)
                 }
               </select>
             </div>
@@ -515,6 +534,53 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
             </div>
           </div>
         </div>
+
+        {/* Add Subcategory mini modal */}
+        {showAddSub && (
+          <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" onClick={()=>setShowAddSub(false)}>
+            <div className="bg-[#0d1117] border border-[#243347] rounded-xl w-[320px] p-5" onClick={e=>e.stopPropagation()}>
+              <div className="text-[14px] font-bold mb-3">
+                ✚ Add Subcategory
+                <div className="text-[11px] text-[#3d5068] font-normal mt-0.5">
+                  Under: {categories.find(c=>c.id===selectedCatId)?.emoji} {categories.find(c=>c.id===selectedCatId)?.name}
+                </div>
+              </div>
+              <input
+                value={newSubName}
+                onChange={e=>setNewSubName(e.target.value)}
+                onKeyDown={e=>e.key==='Enter'&&newSubName.trim()&&(async()=>{
+                  const {data} = await supabase.from('subcategories').insert({
+                    tenant_id: tenantId, category_id: selectedCatId,
+                    name: newSubName.trim(),
+                    sort_order: (categories.find(c=>c.id===selectedCatId)?.subcategories?.length||0)+1
+                  }).select().single()
+                  if(data){ set('subcategory_id', data.id); qc.invalidateQueries(['categories-full']) }
+                  setShowAddSub(false); setNewSubName('')
+                })()}
+                autoFocus placeholder="e.g. Phones, Dairy, Repair..."
+                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40 placeholder-[#3d5068] mb-3"
+              />
+              <div className="flex gap-2">
+                <button onClick={()=>{setShowAddSub(false);setNewSubName('')}}
+                  className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-2 text-[12px] text-[#8899b0] cursor-pointer">Cancel</button>
+                <button
+                  disabled={!newSubName.trim()}
+                  onClick={async()=>{
+                    const {data} = await supabase.from('subcategories').insert({
+                      tenant_id: tenantId, category_id: selectedCatId,
+                      name: newSubName.trim(),
+                      sort_order: (categories.find(c=>c.id===selectedCatId)?.subcategories?.length||0)+1
+                    }).select().single()
+                    if(data){ set('subcategory_id', data.id); qc.invalidateQueries(['categories-full']) }
+                    setShowAddSub(false); setNewSubName('')
+                  }}
+                  className="flex-[2] bg-blue-500 border-none rounded-[9px] py-2 text-[12px] font-bold text-white cursor-pointer disabled:opacity-40">
+                  ✓ Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4 sticky bottom-0 bg-[#0d1117]">
