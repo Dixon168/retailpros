@@ -1,11 +1,8 @@
 -- ============================================================
--- RetailPOS — Products V2 Patch
--- 分类管理 + 标签 + VIP价 + 积分 + 多税 + 序列号追踪
+-- RetailPOS — Products V2 Patch (FIXED)
 -- ============================================================
 
--- ── 1. 分类表重建（支持2级）──
-DROP TABLE IF EXISTS subcategories CASCADE;
-
+-- ── 1. 分类表 ──
 CREATE TABLE IF NOT EXISTS categories (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -41,9 +38,9 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS sort_order       INTEGER DEFAULT 0
 ALTER TABLE products ADD COLUMN IF NOT EXISTS tags             TEXT[] DEFAULT '{}';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS allow_vip        BOOLEAN DEFAULT true;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS vip_price        DECIMAL(10,2);
-ALTER TABLE products ADD COLUMN IF NOT EXISTS points_mode      TEXT DEFAULT 'amount'; -- 'fixed' | 'amount'
-ALTER TABLE products ADD COLUMN IF NOT EXISTS points_fixed     INTEGER DEFAULT 0;     -- fixed mode: X points per purchase
-ALTER TABLE products ADD COLUMN IF NOT EXISTS points_rate      DECIMAL(8,4) DEFAULT 1.0; -- amount mode: X points per $1
+ALTER TABLE products ADD COLUMN IF NOT EXISTS points_mode      TEXT DEFAULT 'amount';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS points_fixed     INTEGER DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS points_rate      DECIMAL(8,4) DEFAULT 1.0;
 
 -- ── 3. 产品多税关联表 ──
 CREATE TABLE IF NOT EXISTS product_tax_rates (
@@ -54,7 +51,7 @@ CREATE TABLE IF NOT EXISTS product_tax_rates (
   UNIQUE(product_id, tax_rate_id)
 );
 
--- ── 4. 产品标签表（全局标签库）──
+-- ── 4. 产品标签表 ──
 CREATE TABLE IF NOT EXISTS product_tags (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -64,7 +61,7 @@ CREATE TABLE IF NOT EXISTS product_tags (
   UNIQUE(tenant_id, name)
 );
 
--- ── 5. 库存表加 avg_cost ──
+-- ── 5. 库存 avg_cost ──
 ALTER TABLE inventory ADD COLUMN IF NOT EXISTS avg_cost DECIMAL(10,4) DEFAULT 0;
 
 -- ── 6. 收货记录表 ──
@@ -75,7 +72,6 @@ CREATE TABLE IF NOT EXISTS inventory_receives (
   vendor_id   UUID REFERENCES suppliers(id),
   qty         DECIMAL(10,3) NOT NULL,
   cost        DECIMAL(10,2) NOT NULL DEFAULT 0,
-  total_cost  DECIMAL(10,2) GENERATED ALWAYS AS (qty * cost) STORED,
   notes       TEXT,
   received_by UUID REFERENCES users(id),
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -94,16 +90,14 @@ CREATE TABLE IF NOT EXISTS inventory_adjustments (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ── 8. Storage bucket for product images ──
+-- ── 8. Storage bucket ──
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('product-images', 'product-images', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage policies
 DO $$ BEGIN
   CREATE POLICY "Public read product images"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'product-images');
+    ON storage.objects FOR SELECT USING (bucket_id = 'product-images');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -112,18 +106,12 @@ DO $$ BEGIN
     WITH CHECK (bucket_id = 'product-images' AND auth.role() = 'authenticated');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "Auth update product images"
-    ON storage.objects FOR UPDATE
-    USING (bucket_id = 'product-images' AND auth.role() = 'authenticated');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
 -- ── 9. RLS ──
-ALTER TABLE categories          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subcategories       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_tax_rates   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_tags        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_receives  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subcategories         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_tax_rates     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_tags          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_receives    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_adjustments ENABLE ROW LEVEL SECURITY;
 
 DO $$ DECLARE t TEXT;
@@ -147,54 +135,49 @@ CREATE OR REPLACE FUNCTION fn_calc_product_points(
 ) RETURNS INTEGER LANGUAGE plpgsql AS $$
 DECLARE
   v_prod products%ROWTYPE;
-  v_global_rate DECIMAL DEFAULT 1.0;
 BEGIN
   SELECT * INTO v_prod FROM products WHERE id = p_product_id;
-
   IF v_prod.points_mode = 'fixed' THEN
     RETURN COALESCE(v_prod.points_fixed, 0);
   ELSE
-    -- amount mode: use product rate or global default
-    RETURN FLOOR(p_amount_paid * COALESCE(NULLIF(v_prod.points_rate, 0), v_global_rate));
+    RETURN FLOOR(p_amount_paid * COALESCE(NULLIF(v_prod.points_rate, 0), 1.0));
   END IF;
 END; $$;
 
--- ── 11. 序列号查询视图 ──
+-- ── 11. 序列号状态视图（FIXED）──
 CREATE OR REPLACE VIEW serial_number_status AS
 SELECT
   sn.id,
   sn.serial,
   sn.status,
-  p.name    AS product_name,
-  p.sku     AS product_sku,
-  t.tenant_id,
-  oi.id     AS order_item_id,
+  sn.tenant_id,
+  p.name        AS product_name,
+  p.sku         AS product_sku,
+  oi.id         AS order_item_id,
   o.order_number,
-  o.created_at AS sold_at,
-  c.name    AS customer_name
+  o.created_at  AS sold_at,
+  c.name        AS customer_name
 FROM serial_numbers sn
-JOIN products p ON p.id = sn.product_id
-JOIN tenants t  ON t.id = p.tenant_id
-LEFT JOIN order_items oi ON oi.serial_number = sn.serial AND oi.product_id = sn.product_id
+JOIN products p    ON p.id = sn.product_id
+LEFT JOIN order_items oi
+  ON oi.serial_number = sn.serial
+  AND oi.product_id = sn.product_id
 LEFT JOIN orders o ON o.id = oi.order_id
 LEFT JOIN customers c ON c.id = o.customer_id;
 
 -- ── 12. Indexes ──
-CREATE INDEX IF NOT EXISTS idx_products_category    ON products(subcategory_id);
-CREATE INDEX IF NOT EXISTS idx_products_tags        ON products USING GIN(tags);
-CREATE INDEX IF NOT EXISTS idx_products_tenant_sort ON products(tenant_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_products_subcategory  ON products(subcategory_id);
+CREATE INDEX IF NOT EXISTS idx_products_tags         ON products USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_products_tenant_sort  ON products(tenant_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_serial_numbers_serial ON serial_numbers(tenant_id, serial);
 CREATE INDEX IF NOT EXISTS idx_inv_receives_product  ON inventory_receives(product_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inv_adjust_product    ON inventory_adjustments(product_id, created_at DESC);
 
--- ── 13. Sample categories (can delete later) ──
--- Run fn_init_categories after inserting your tenant
+-- ── 13. Sample categories initializer ──
 CREATE OR REPLACE FUNCTION fn_init_sample_categories(p_tenant_id UUID)
 RETURNS VOID LANGUAGE plpgsql AS $$
-DECLARE
-  v_cat_id UUID;
+DECLARE v_cat_id UUID;
 BEGIN
-  -- Electronics
   INSERT INTO categories (tenant_id, name, emoji, color, sort_order)
   VALUES (p_tenant_id, 'Electronics', '📱', '#3b82f6', 1)
   RETURNING id INTO v_cat_id;
@@ -203,7 +186,6 @@ BEGIN
     (p_tenant_id, v_cat_id, 'Computers', 2),
     (p_tenant_id, v_cat_id, 'Accessories', 3);
 
-  -- Grocery
   INSERT INTO categories (tenant_id, name, emoji, color, sort_order)
   VALUES (p_tenant_id, 'Grocery', '🛒', '#10b981', 2)
   RETURNING id INTO v_cat_id;
@@ -212,7 +194,6 @@ BEGIN
     (p_tenant_id, v_cat_id, 'Dairy', 2),
     (p_tenant_id, v_cat_id, 'Beverages', 3);
 
-  -- Services
   INSERT INTO categories (tenant_id, name, emoji, color, sort_order)
   VALUES (p_tenant_id, 'Services', '🔧', '#8b5cf6', 3)
   RETURNING id INTO v_cat_id;
