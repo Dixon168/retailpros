@@ -19,7 +19,7 @@ export default function ProductsPage() {
     queryKey: ['products', tenant?.id, search, filterType],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, avg_cost), tax_groups(name)')
+        .select('*, inventory(quantity, avg_cost)')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%`)
       if (filterType !== 'all' && filterType !== 'low') q = q.eq('type', filterType)
@@ -35,10 +35,20 @@ export default function ProductsPage() {
     : products
   const lowStock = products.filter(p => getQty(p) <= 5 && p.type !== 'service').length
 
-  const handleDelete = async id => {
-    if (!confirm('Archive this product?')) return
-    await supabase.from('products').update({ is_active: false }).eq('id', id)
+  const handleDisable = async (p) => {
+    const action = p.is_enabled === false ? 'enable' : 'disable'
+    if (!confirm(`${action === 'disable' ? 'Disable' : 'Enable'} "${p.name}"?`)) return
+    await supabase.from('products').update({ is_enabled: action !== 'disable' }).eq('id', p.id)
     qc.invalidateQueries(['products'])
+    toast.success(`Product ${action}d`)
+  }
+
+  const handleDelete = async (p) => {
+    if (!confirm(`Permanently delete "${p.name}"?\n\nThis will free up the SKU and UPC codes.\nThis cannot be undone.`)) return
+    // Null out SKU and UPC first to free them, then soft delete
+    await supabase.from('products').update({ is_active: false, sku: null, upc: null }).eq('id', p.id)
+    qc.invalidateQueries(['products'])
+    toast.success('Product deleted — SKU/UPC codes are now free')
   }
 
   const TYPE_COLOR = { unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#8b5cf6' }
@@ -128,6 +138,11 @@ export default function ProductsPage() {
                       {isLow && (
                         <div className="absolute top-2 right-2 bg-red-500/20 border border-red-500/30 rounded px-1.5 py-0.5 text-[9px] text-red-400 font-mono">LOW</div>
                       )}
+                      {p.is_enabled===false && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <span className="bg-orange-500/20 border border-orange-500/30 rounded-lg px-2 py-1 text-[10px] font-bold text-orange-400">DISABLED</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Info */}
@@ -154,7 +169,7 @@ export default function ProductsPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
                         <button onClick={()=>setShowReceive(p)}
                           className="flex-1 bg-green-500/10 border border-green-500/20 rounded-md py-1.5 text-[9px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15 transition-colors">
                           + Receive
@@ -166,6 +181,18 @@ export default function ProductsPage() {
                         <button onClick={()=>{setEditProduct(p);setShowForm(true)}}
                           className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-md py-1.5 text-[9px] font-bold text-[#8899b0] cursor-pointer hover:text-blue-400 hover:border-blue-500/30 transition-colors">
                           Edit
+                        </button>
+                        <button onClick={()=>handleDisable(p)}
+                          className={`flex-1 rounded-md py-1.5 text-[9px] font-bold cursor-pointer border transition-colors ${
+                            p.is_enabled===false
+                              ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/15'
+                              : 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/15'
+                          }`}>
+                          {p.is_enabled===false ? '▶ Enable' : '⏸ Disable'}
+                        </button>
+                        <button onClick={()=>handleDelete(p)}
+                          className="flex-1 bg-red-500/10 border border-red-500/20 rounded-md py-1.5 text-[9px] font-bold text-red-400 cursor-pointer hover:bg-red-500/15 transition-colors">
+                          🗑 Delete
                         </button>
                       </div>
                     </div>
