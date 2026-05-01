@@ -56,9 +56,12 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} />
+          {/* POS — standalone, no AppLayout */}
+          <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
+
+          {/* Back Office — uses AppLayout */}
           <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/pos" replace />} />
-            <Route path="pos"        element={<POSPage />} />
             <Route path="orders"     element={<OrderLookupPage />} />
             <Route path="products"   element={<ProductsPage />} />
             <Route path="customers"  element={<CustomersPage />} />

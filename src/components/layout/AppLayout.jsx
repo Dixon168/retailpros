@@ -7,7 +7,6 @@ import TerminalSetup from '@/pages/terminal/TerminalSetup'
 import { OpenShiftModal, CloseShiftModal } from '@/components/pos/ShiftModal'
 
 const NAV_ITEMS = [
-  { to: '/pos',        icon: '🛒', label: 'POS' },
   { to: '/orders',     icon: '🔍', label: 'Orders' },
   { to: '/products',   icon: '📦', label: 'Products' },
   { to: '/categories',  icon: '📁', label: 'Categories' },
@@ -54,6 +53,7 @@ export default function AppLayout() {
 
         <span className="font-bold text-[15px] bg-gradient-to-r from-white to-cyan-400
           bg-clip-text text-transparent mr-2">RetailPOS</span>
+          <span className="text-[10px] text-[#3d5068] mr-3">Back Office</span>
 
         <nav className="flex gap-1 flex-1">
           {NAV_ITEMS.map(item => (
