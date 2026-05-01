@@ -143,7 +143,7 @@ export default function CartPanel({ onRefund }) {
       </div>
 
       {/* ── RIGHT: Cart content ── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{background:'#fff'}}>
 
         {/* Invoice header */}
         <div className="px-3 py-2 border-b border-[#e5e7eb] flex items-center justify-between flex-shrink-0">
@@ -346,7 +346,7 @@ export default function CartPanel({ onRefund }) {
         </div>
 
         {/* Totals */}
-        <div className="border-t border-[#e5e7eb] flex-shrink-0">
+        <div className="flex-shrink-0" style={{borderTop:'1.5px solid #e2e8f0'}}>
           <div className="px-3 py-2 space-y-1">
             <div className="flex justify-between text-[12px] text-gray-600">
               <span>Subtotal</span>
@@ -375,19 +375,19 @@ export default function CartPanel({ onRefund }) {
           {/* Action row */}
           <div className="px-3 pb-2 flex gap-1.5">
             <button onClick={() => items.length > 0 ? useCartStore.setState({ showHoldForm: true }) : toast.error('Cart is empty')}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg py-2 text-[11px] font-bold text-gray-600 cursor-pointer hover:bg-gray-200 transition-colors">
+              className="flex-1 rounded-lg py-2 text-[11px] font-bold cursor-pointer transition-colors" style={{background:'#f0f9ff', border:'1px solid #bae6fd', color:'#0369a1'}}>
               📌 Hold
             </button>
             <button onClick={onRefund}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg py-2 text-[11px] font-bold text-gray-600 cursor-pointer hover:bg-gray-200 transition-colors">
+              className="flex-1 rounded-lg py-2 text-[11px] font-bold cursor-pointer transition-colors" style={{background:'#faf5ff', border:'1px solid #e9d5ff', color:'#7c3aed'}}>
               ↩️ Refund
             </button>
             <button onClick={() => useCartStore.setState({ showDiscPanel: true })}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg py-2 text-[11px] font-bold text-gray-600 cursor-pointer hover:bg-gray-200 transition-colors">
+              className="flex-1 rounded-lg py-2 text-[11px] font-bold cursor-pointer transition-colors" style={{background:'#fff7ed', border:'1px solid #fed7aa', color:'#c2410c'}}>
               ✂️ Disc
             </button>
             <button onClick={() => useCartStore.getState().clearCart()}
-              className="flex-1 bg-gray-100 border border-red-200 rounded-lg py-2 text-[11px] font-bold text-red-500 cursor-pointer hover:bg-red-50 transition-colors">
+              className="flex-1 rounded-lg py-2 text-[11px] font-bold cursor-pointer transition-colors" style={{background:'#fff1f2', border:'1px solid #fecdd3', color:'#e11d48'}}>
               🗑 Clear
             </button>
           </div>
@@ -399,7 +399,7 @@ export default function CartPanel({ onRefund }) {
               disabled={items.length === 0}
               className="w-full rounded-xl py-4 text-[16px] font-black text-white cursor-pointer
                 border-none disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              style={{background: items.length > 0 ? 'linear-gradient(135deg,#4f46e5,#6366f1)' : '#9ca3af'}}>
+              style={{background: items.length > 0 ? 'linear-gradient(135deg,#4f46e5,#6366f1)' : '#cbd5e1', letterSpacing:'1px'}}>
               PAY ${grandTotal.toFixed(2)}
             </button>
           </div>
