@@ -287,93 +287,50 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
           </div>
 
           {/* Category */}
-          <div className="flex flex-col gap-2">
-            <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider">Category</div>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Main Category */}
-              <div>
-                <div className="text-[10px] text-[#3d5068] mb-1">Main Category</div>
-                <select value={selectedCatId}
-                  onChange={e => {
-                    if (e.target.value === '__add_cat__') { setShowAddCat(true); return }
-                    setSelectedCatId(e.target.value)
-                    set('subcategory_id', '')
-                    setShowAddSub(false)
-                    setNewSubName('')
-                  }}
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
-                  <option value="">— No category —</option>
-                  <option value="__add_cat__">✚ Add new category...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
-                </select>
-              </div>
-
-              {/* Subcategory */}
-              <div>
-                <div className="text-[10px] text-[#3d5068] mb-1">
-                  Subcategory
-                  {selectedCatId && <span className="ml-1 text-blue-400">({(categories.find(c=>c.id===selectedCatId)?.subcategories||[]).length})</span>}
-                </div>
-                <select
-                  value={form.subcategory_id}
-                  onChange={e => {
-                    if (e.target.value === '__add_new__') {
-                      setShowAddSub(true)
-                      setNewSubName('')
-                      return
-                    }
-                    set('subcategory_id', e.target.value)
-                    setShowAddSub(false)
-                  }}
-                  disabled={!selectedCatId}
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40 disabled:opacity-40">
-                  <option value="">— No subcategory —</option>
-                  {selectedCatId && <option value="__add_new__">✚ Add new subcategory...</option>}
-                  {(categories.find(c=>c.id===selectedCatId)?.subcategories||[])
-                    .sort((a,b)=>a.sort_order-b.sort_order)
-                    .map(s => <option key={s.id} value={s.id}>{s.name}</option>)
-                  }
-                </select>
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Main Category */}
+            <div>
+              <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Main Category</div>
+              <select value={selectedCatId}
+                onChange={e => {
+                  if (e.target.value === '__add_cat__') { setShowAddCat(true); return }
+                  setSelectedCatId(e.target.value)
+                  set('subcategory_id', '')
+                }}
+                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
+                <option value="">— No category —</option>
+                <option value="__add_cat__">✚ Add new category...</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+              </select>
             </div>
 
-            {/* Inline Add Subcategory - shows below when "+ Add new" selected */}
-            {showAddSub && selectedCatId && (
-              <div className="bg-[#111827] border border-blue-500/30 rounded-[9px] p-3 flex gap-2 items-center">
-                <span className="text-[11px] text-[#3d5068] whitespace-nowrap">New subcategory name:</span>
-                <input
-                  value={newSubName}
-                  onChange={e=>setNewSubName(e.target.value)}
-                  onKeyDown={e=>e.key==='Enter'&&newSubName.trim()&&(async()=>{
-                    const {data} = await supabase.from('subcategories').insert({
-                      tenant_id: tenantId, category_id: selectedCatId,
-                      name: newSubName.trim(),
-                      sort_order: (categories.find(c=>c.id===selectedCatId)?.subcategories?.length||0)+1
-                    }).select().single()
-                    if(data){ set('subcategory_id', data.id); qc.invalidateQueries(['categories-full']) }
-                    setShowAddSub(false); setNewSubName('')
-                  })()}
-                  autoFocus placeholder="e.g. Phones, Dairy..."
-                  className="flex-1 bg-[#0d1117] border border-[#1e2d42] rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-blue-500/40 placeholder-[#3d5068]"
-                />
-                <button
-                  disabled={!newSubName.trim()}
-                  onClick={async()=>{
-                    const {data} = await supabase.from('subcategories').insert({
-                      tenant_id: tenantId, category_id: selectedCatId,
-                      name: newSubName.trim(),
-                      sort_order: (categories.find(c=>c.id===selectedCatId)?.subcategories?.length||0)+1
-                    }).select().single()
-                    if(data){ set('subcategory_id', data.id); qc.invalidateQueries(['categories-full']) }
-                    setShowAddSub(false); setNewSubName('')
-                  }}
-                  className="bg-blue-500 border-none rounded-lg px-3 py-1.5 text-[11px] font-bold text-white cursor-pointer disabled:opacity-40">
-                  ✓ Add
-                </button>
-                <button onClick={()=>{setShowAddSub(false);setNewSubName('')}}
-                  className="text-[#3d5068] hover:text-white bg-transparent border-none cursor-pointer text-[14px]">✕</button>
-              </div>
-            )}
+            {/* Subcategory - independent, add new asks which main cat */}
+            <div>
+              <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Subcategory</div>
+              <select
+                value={form.subcategory_id}
+                onChange={e => {
+                  if (e.target.value === '__add_new__') { setShowAddSub(true); setNewSubName(''); setNewSubCatId(selectedCatId||''); return }
+                  set('subcategory_id', e.target.value)
+                  // Auto-select main cat based on chosen subcategory
+                  const parentCat = categories.find(c => c.subcategories?.some(s => s.id === e.target.value))
+                  if (parentCat) setSelectedCatId(parentCat.id)
+                }}
+                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
+                <option value="">— No subcategory —</option>
+                <option value="__add_new__">✚ Add new subcategory...</option>
+                {/* Show all subcategories grouped by category */}
+                {categories.map(c => (
+                  c.subcategories?.length > 0 && (
+                    <optgroup key={c.id} label={`${c.emoji} ${c.name}`}>
+                      {c.subcategories.sort((a,b)=>a.sort_order-b.sort_order).map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </optgroup>
+                  )
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Sort order */}
