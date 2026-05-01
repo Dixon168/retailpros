@@ -58,9 +58,9 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
   }
 
   return (
-    <div className="relative bg-[#0d1117] border border-[#1e2d42] rounded-[10px]
+    <div className="relative bg-[#111827] border border-[#1e2d42] rounded-[10px]
       overflow-hidden transition-all duration-150
-      hover:border-blue-500/30 hover:bg-[#111827]">
+      hover:border-blue-500/40 hover:bg-[#1a2236] cursor-pointer">
 
       {/* Type badge */}
       {badge && (
@@ -81,7 +81,7 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
       {/* Product photo — click to enlarge */}
       <div
         onClick={onPhotoClick}
-        className="w-full h-[80px] bg-[#1a2236] flex items-center justify-center
+        className="w-full h-[80px] bg-[#1e2d42] flex items-center justify-center
           cursor-pointer hover:opacity-90 transition-opacity overflow-hidden">
         {product.image_url
           ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
@@ -100,7 +100,7 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
         onClick={onAdd}
         className="w-full p-2.5 text-left cursor-pointer bg-transparent border-none
           active:scale-[0.98] transition-transform">
-        <div className="text-[11px] font-semibold text-[#e8edf5] leading-tight mb-1 line-clamp-2">
+        <div className="text-[12px] font-semibold text-white leading-tight mb-1 line-clamp-2">
           {product.name}
         </div>
         <div className={`text-[13px] font-bold ${

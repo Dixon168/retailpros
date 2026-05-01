@@ -115,7 +115,7 @@ export default function CartPanel({ onRefund }) {
   const orderNum = `#A${new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}).replace(/\//g,'')}${String(items.length).padStart(4,'0')}`
 
   return (
-    <div className="flex h-full bg-white" style={{minWidth:0}}>
+    <div className="flex h-full bg-white w-full">
 
       {/* ── LEFT: Side action buttons ── */}
       <div className="w-[70px] bg-[#f8f9fa] border-r border-[#e5e7eb] flex flex-col py-1 flex-shrink-0">
@@ -143,7 +143,7 @@ export default function CartPanel({ onRefund }) {
       </div>
 
       {/* ── RIGHT: Cart content ── */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white">
+      <div className="flex-1 flex flex-col overflow-hidden bg-white">
 
         {/* Invoice header */}
         <div className="px-3 py-2 border-b border-[#e5e7eb] flex items-center justify-between flex-shrink-0">

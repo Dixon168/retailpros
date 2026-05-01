@@ -176,27 +176,31 @@ export default function POSPage() {
           <ProductGrid products={products} />
         </div>
 
-        {/* Center: Cart */}
-        <CartPanel onRefund={() => setShowRefund(true)} />
+        {/* Center: Cart - fixed width */}
+        <div className="w-[420px] flex-shrink-0 h-full overflow-hidden">
+          <CartPanel onRefund={() => setShowRefund(true)} />
+        </div>
 
-        {/* Right: Item panel (shows when item selected) */}
+        {/* Right: Item panel - only shows when item selected, overlays cart */}
         {selectedItem && (
-          <ItemPanel
-            item={selectedItem}
-            onClose={() => useCartStore.setState({ selectedItemId: null })}
-          />
+          <div className="w-[200px] flex-shrink-0 h-full overflow-hidden">
+            <ItemPanel
+              item={selectedItem}
+              onClose={() => useCartStore.setState({ selectedItemId: null })}
+            />
+          </div>
         )}
       </div>
 
       {/* ── BOTTOM QUICK BUTTONS ── */}
-      <div className="flex-shrink-0 bg-[#0d1117] border-t border-[#1e2d42] px-3 py-2">
+      <div className="flex-shrink-0 bg-[#0d1117] border-t border-[#1e2d42] px-3 py-1.5">
         <div className="flex gap-2">
           {QUICK_BTNS.map(btn => (
             <button key={btn.id} onClick={btn.action}
-              className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-2
+              className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[8px] py-1.5
                 flex flex-col items-center gap-0.5 cursor-pointer
                 hover:border-blue-500/30 hover:bg-[#1a2236] transition-all group">
-              <span className="text-[16px]">{btn.icon}</span>
+              <span className="text-[14px]">{btn.icon}</span>
               <span className="text-[9px] font-mono text-[#3d5068] group-hover:text-[#8899b0] transition-colors">
                 {btn.label}
               </span>
