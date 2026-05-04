@@ -23,7 +23,7 @@ import CategoriesPage from '@/pages/categories/CategoriesPage'
 import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 1000 * 60 * 5, networkMode: 'offlineFirst' } }
+  defaultOptions: { queries: { staleTime: 1000 * 30, networkMode: 'offlineFirst' } }
 })
 
 function ProtectedRoute({ children }) {
