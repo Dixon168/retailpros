@@ -281,27 +281,35 @@ export default function ProductsPage() {
                             📋 {expandedId===p.id ? 'Hide' : 'Detail'}
                           </button>
                           <button onClick={() => setShowReceive(p)}
-                            className="bg-green-500/10 border border-green-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15 transition-colors whitespace-nowrap">
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border whitespace-nowrap"
+                            style={{background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}}>
                             + Receive
                           </button>
                           <button onClick={() => setShowAdjust(p)}
-                            className="bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-yellow-400 cursor-pointer hover:bg-yellow-500/15 transition-colors whitespace-nowrap">
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border whitespace-nowrap"
+                            style={{background:'#fef9c3', borderColor:'#fde047', color:'#ca8a04'}}>
                             Adjust
                           </button>
                           <button onClick={() => {setEditProduct(p); setShowForm(true)}}
-                            className="bg-[#111827] border border-[#1e2d42] rounded px-2 py-1.5 text-[10px] text-[#8899b0] cursor-pointer hover:text-blue-400 hover:border-blue-500/30 transition-all">
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border"
+                            style={{background:'#1e293b', borderColor:'#1e293b', color:'#fff'}}>
                             Edit
                           </button>
+                          <button onClick={() => setShowPromo(p)}
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border whitespace-nowrap"
+                            style={{background:'#fdf4ff', borderColor:'#e9d5ff', color:'#9333ea'}}>
+                            🏷️ Promo
+                          </button>
                           <button onClick={() => handleDisable(p)}
-                            className={`rounded px-2 py-1.5 text-[10px] font-bold cursor-pointer border transition-colors ${
-                              disabled
-                                ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/15'
-                                : 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/15'
-                            }`}>
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border"
+                            style={disabled
+                              ? {background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}
+                              : {background:'#fff7ed', borderColor:'#fed7aa', color:'#ea580c'}}>
                             {disabled ? '▶ Enable' : '⏸ Disable'}
                           </button>
                           <button onClick={() => handleDelete(p)}
-                            className="bg-red-500/10 border border-red-500/20 rounded px-2 py-1.5 text-[10px] font-bold text-red-400 cursor-pointer hover:bg-red-500/15 transition-colors">
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border"
+                            style={{background:'#fff1f2', borderColor:'#fecdd3', color:'#e11d48'}}>
                             🗑 Delete
                           </button>
                         </div>
