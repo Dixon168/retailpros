@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { ProductForm } from './ProductForm'
 import { ProductDetailInline } from './ProductDetailInline'
+import { ReceiveModal } from './ReceiveModal'
+import { AdjustModal } from './AdjustModal'
 import toast from 'react-hot-toast'
 
 const TYPE_COLOR = {
@@ -20,6 +22,7 @@ export default function ProductsPage() {
   const [showForm, setShowForm]     = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [expandedId, setExpandedId]   = useState(null)
+  const [showStock,   setShowStock]     = useState(null)
   const [photoViewer, setPhotoViewer]   = useState(null)
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
@@ -289,6 +292,13 @@ export default function ProductsPage() {
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📋 {expandedId===p.id ? 'Close' : 'Detail'}
                           </button>
+                          <button onClick={() => setShowStock(showStock?.id===p.id ? null : p)}
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
+                            style={showStock?.id===p.id
+                              ? {background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}
+                              : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
+                            📦 Stock
+                          </button>
                           <button onClick={() => handleDisable(p)}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
                             style={disabled
@@ -323,6 +333,12 @@ export default function ProductsPage() {
 
       {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)}/>}
 
+
+      {showStock && (
+        <StockPanel product={showStock} tenantId={tenant?.id}
+          onClose={() => setShowStock(null)}
+          onRefresh={() => { qc.invalidateQueries(['products']); setShowStock(null) }}/>
+      )}
 
       {/* Modals */}
       {showForm && (
@@ -605,6 +621,85 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Stock Quick Panel ──
+function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
+  const [showReceive, setShowReceive] = useState(false)
+  const [showAdjust, setShowAdjust]   = useState(false)
+
+
+  const qty      = p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
+  const avgCost  = p.inventory?.[0]?.avg_cost || p.cost || 0
+  const stockVal = qty * avgCost
+  const isLow    = qty <= (p.low_stock_qty || 5) && p.type !== 'service'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(4px)'}} onClick={onClose}>
+      <div className="rounded-2xl shadow-2xl overflow-hidden"
+        style={{background:'#fff', width:'360px'}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="px-5 py-4 flex items-center justify-between"
+          style={{background:'#f0fdf4', borderBottom:'1.5px solid #86efac'}}>
+          <div>
+            <div className="text-[15px] font-bold text-slate-800">📦 Stock</div>
+            <div className="text-[12px] text-slate-500 mt-0.5">{p.name}</div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer text-[18px]">✕</button>
+        </div>
+
+        {/* Stock info */}
+        <div className="p-5">
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            {[
+              ['In Stock', p.type==='service'?'—':`${qty} ${p.unit||'ea'}`, isLow?'#dc2626':'#16a34a'],
+              ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`, '#6366f1'],
+              ['Stock Value', p.type==='service'?'—':`$${stockVal.toFixed(2)}`, '#1e293b'],
+            ].map(([l,v,c]) => (
+              <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
+                <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{l}</div>
+                <div className="text-[18px] font-bold" style={{color:c}}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {isLow && (
+            <div className="rounded-xl px-4 py-2.5 mb-4 flex items-center gap-2"
+              style={{background:'#fee2e2', border:'1px solid #fca5a5'}}>
+              <span>⚠️</span>
+              <span className="text-[12px] font-semibold text-red-700">Low Stock Alert</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setShowReceive(true)}
+              className="rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none transition-all"
+              style={{background:'linear-gradient(135deg,#16a34a,#15803d)', color:'#fff'}}>
+              📥 + Receive
+            </button>
+            <button onClick={() => setShowAdjust(true)}
+              className="rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none transition-all"
+              style={{background:'linear-gradient(135deg,#ca8a04,#a16207)', color:'#fff'}}>
+              ⚖️ Adjust
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showReceive && (
+        <ReceiveModal product={p} tenantId={tenantId}
+          onSave={() => { onRefresh(); setShowReceive(false) }}
+          onClose={() => setShowReceive(false)}/>
+      )}
+      {showAdjust && (
+        <AdjustModal product={p} tenantId={tenantId}
+          onSave={() => { onRefresh(); setShowAdjust(false) }}
+          onClose={() => setShowAdjust(false)}/>
+      )}
     </div>
   )
 }

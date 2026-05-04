@@ -145,3 +145,11 @@ END;
 $$;
 
 SELECT 'Promotions patch applied ✓' AS status;
+
+-- Add user tracking to inventory_adjustments
+ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id);
+ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS user_name TEXT;
+
+-- Add cashier to orders if not exists  
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cashier_id UUID REFERENCES users(id);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cashier_name TEXT;

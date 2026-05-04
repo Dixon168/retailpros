@@ -245,8 +245,8 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
     queryKey: ['product-adjustments', p.id],
     queryFn: async () => {
       const { data } = await supabase.from('inventory_adjustments')
-        .select('*').eq('product_id', p.id)
-        .order('created_at', { ascending: false }).limit(50)
+        .select('*, users(name)').eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(100)
       return data || []
     },
     enabled: tab==='adjustments',
@@ -255,8 +255,8 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
     queryKey: ['product-sales', p.id],
     queryFn: async () => {
       const { data } = await supabase.from('order_items')
-        .select('*, orders(order_number, created_at, customers(name))')
-        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(50)
+        .select('*, orders(order_number, created_at, cashier_name, customers(name), order_payments(method))')
+        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(100)
       return data || []
     },
     enabled: tab==='sales',
@@ -723,14 +723,18 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
             {loadingA ? <div className="text-center py-4 text-slate-400 text-[12px]">Loading...</div>
             : adjustments.length===0 ? <Empty msg="No adjustments yet"/>
             : <table className="w-full border-collapse rounded-xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
-                <thead><tr><Th>Date</Th><Th>Change</Th><Th>Before</Th><Th>After</Th><Th>Reason</Th></tr></thead>
+                <thead><tr><Th>Date & Time</Th><Th>Change</Th><Th>Before</Th><Th>After</Th><Th>Reason</Th><Th>By</Th></tr></thead>
                 <tbody>{adjustments.map((r,i)=>(
                   <tr key={i} className="hover:bg-blue-50/30">
-                    <Td>{new Date(r.created_at).toLocaleDateString()}</Td>
-                    <Td mono bold color={r.qty_change>=0?'#16a34a':'#dc2626'}>{r.qty_change>=0?'+':''}{r.qty_change}</Td>
+                    <Td>
+                      <div>{new Date(r.created_at).toLocaleDateString()}</div>
+                      <div className="text-[10px] text-slate-400">{new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                    </Td>
+                    <Td mono bold color={r.qty_change>=0?'#16a34a':'#dc2626'}>{r.qty_change>=0?'+':''}{r.qty_change} {p.unit}</Td>
                     <Td mono color="#94a3b8">{r.qty_before}</Td>
                     <Td mono bold>{r.qty_after}</Td>
                     <Td>{r.reason}</Td>
+                    <Td color="#6366f1">{r.users?.name||r.user_name||'—'}</Td>
                   </tr>
                 ))}</tbody>
               </table>}
@@ -755,15 +759,35 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
             {loadingS ? <div className="text-center py-4 text-slate-400 text-[12px]">Loading...</div>
             : sales.length===0 ? <Empty msg="No sales yet"/>
             : <table className="w-full border-collapse rounded-xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
-                <thead><tr><Th>Date</Th><Th>Order #</Th><Th>Customer</Th><Th>Qty</Th><Th>Unit Price</Th><Th>Total</Th></tr></thead>
+                <thead><tr>
+                  <Th>Date & Time</Th>
+                  <Th>Invoice #</Th>
+                  <Th>Customer</Th>
+                  <Th>Qty</Th>
+                  <Th>Unit Price</Th>
+                  <Th>Discount</Th>
+                  <Th>Total</Th>
+                  <Th>Serial #</Th>
+                  <Th>Payment</Th>
+                  <Th>Cashier</Th>
+                  <Th>Note</Th>
+                </tr></thead>
                 <tbody>{sales.map((r,i)=>(
                   <tr key={i} className="hover:bg-blue-50/30">
-                    <Td>{new Date(r.orders?.created_at).toLocaleDateString()}</Td>
+                    <Td>
+                      <div>{new Date(r.orders?.created_at).toLocaleDateString()}</div>
+                      <div className="text-[10px] text-slate-400">{new Date(r.orders?.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                    </Td>
                     <Td mono color="#6366f1">{r.orders?.order_number||'—'}</Td>
                     <Td>{r.orders?.customers?.name||'Walk-in'}</Td>
                     <Td mono bold>{r.quantity} {p.unit}</Td>
                     <Td mono>${parseFloat(r.unit_price||0).toFixed(2)}</Td>
+                    <Td mono color="#e11d48">{r.discount_amt>0?`-$${parseFloat(r.discount_amt).toFixed(2)}`:r.discount_pct>0?`-${r.discount_pct}%`:'—'}</Td>
                     <Td mono bold color="#16a34a">${parseFloat(r.line_total||0).toFixed(2)}</Td>
+                    <Td mono color="#ca8a04">{r.serial_number||'—'}</Td>
+                    <Td>{r.orders?.order_payments?.[0]?.method||'—'}</Td>
+                    <Td>{r.orders?.cashier_name||'—'}</Td>
+                    <Td color="#94a3b8">{r.note||'—'}</Td>
                   </tr>
                 ))}</tbody>
               </table>}
