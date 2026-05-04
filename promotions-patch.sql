@@ -7,38 +7,29 @@
 -- ── Store timezone (add to stores table) ──
 ALTER TABLE stores ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'America/New_York';
 
--- ── Main promotions table ──
+-- ── Main promotions table (patch existing or create new) ──
 CREATE TABLE IF NOT EXISTS promotions (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id     UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  product_id    UUID REFERENCES products(id) ON DELETE CASCADE,
-  name          TEXT NOT NULL,
-  type          TEXT NOT NULL, -- 'sale' | 'bulk' | 'time'
-  is_active     BOOLEAN DEFAULT true,
-
-  -- Sale Pricing (type = 'sale')
-  sale_start     TIMESTAMPTZ,
-  sale_end       TIMESTAMPTZ,
-  sale_type      TEXT DEFAULT 'fixed', -- 'fixed' | 'pct'
-  sale_value     DECIMAL(10,2),        -- new price or % off
-
-  -- Bulk Pricing (type = 'bulk') stored as JSONB array
-  -- [{ min_qty: 2, type: 'fixed'|'pct', value: 8.00 }, ...]
-  bulk_tiers     JSONB DEFAULT '[]',
-
-  -- Time Based (type = 'time') stored as JSONB array
-  -- [{ days: [1,2,3], start_time: '01:00', end_time: '10:59', type: 'fixed'|'pct', value: 3.00 }]
-  time_rules     JSONB DEFAULT '[]',
-
-  -- Global promotions (no product_id)
-  applies_to     TEXT DEFAULT 'product', -- 'product' | 'category' | 'all'
-  category_id    UUID REFERENCES categories(id) ON DELETE SET NULL,
-  min_order_amt  DECIMAL(10,2),
-
-  priority       INTEGER DEFAULT 0,
-  created_at     TIMESTAMPTZ DEFAULT NOW(),
-  updated_at     TIMESTAMPTZ DEFAULT NOW()
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id  UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  is_active  BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add all new columns safely
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS product_id    UUID REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS type          TEXT DEFAULT 'sale';
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS sale_start    TIMESTAMPTZ;
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS sale_end      TIMESTAMPTZ;
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS sale_type     TEXT DEFAULT 'fixed';
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS sale_value    DECIMAL(10,2);
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS bulk_tiers    JSONB DEFAULT '[]';
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS time_rules    JSONB DEFAULT '[]';
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS applies_to    TEXT DEFAULT 'product';
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS category_id   UUID REFERENCES categories(id) ON DELETE SET NULL;
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS min_order_amt DECIMAL(10,2);
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS priority      INTEGER DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_promotions_product  ON promotions(product_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_promotions_tenant   ON promotions(tenant_id, is_active);
