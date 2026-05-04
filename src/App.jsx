@@ -60,22 +60,22 @@ export default function App() {
           <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
 
           {/* Back Office — uses AppLayout */}
-          <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="/pos" replace />} />
-            <Route path="orders"     element={<OrderLookupPage />} />
-            <Route path="products"   element={<ProductsPage />} />
-            <Route path="customers"  element={<CustomersPage />} />
-            <Route path="invoices"   element={<InvoicesPage />} />
-            <Route path="marketing"  element={<MarketingPage />} />
-            <Route path="loyalty"    element={<LoyaltyPage />} />
-            <Route path="vendors"    element={<VendorsPage />} />
-            <Route path="cardcenter" element={<CardCenterPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="business"   element={<BusinessCustomersPage />} />
-            <Route path="reports"    element={<ReportsPage />} />
-            <Route path="settings"   element={<SettingsPage />} />
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/"          element={<Navigate to="/pos" replace />} />
+            <Route path="/orders"     element={<OrderLookupPage />} />
+            <Route path="/products"   element={<ProductsPage />} />
+            <Route path="/customers"  element={<CustomersPage />} />
+            <Route path="/invoices"   element={<InvoicesPage />} />
+            <Route path="/marketing"  element={<MarketingPage />} />
+            <Route path="/loyalty"    element={<LoyaltyPage />} />
+            <Route path="/vendors"    element={<VendorsPage />} />
+            <Route path="/cardcenter" element={<CardCenterPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/business"   element={<BusinessCustomersPage />} />
+            <Route path="/reports"    element={<ReportsPage />} />
+            <Route path="/settings"   element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/pos" replace />} />
         </Routes>
       </BrowserRouter>
 
