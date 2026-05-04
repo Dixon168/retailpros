@@ -8,55 +8,64 @@ const UNITS = ['ea','lb','kg','oz','g','l','ml','ft','m','hr','pair','box','case
 const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 // ── Reusable field components ──
-const Label = ({ children, required }) => (
-  <div className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{color:'#64748b'}}>
-    {children}{required && <span className="text-red-500 ml-0.5">*</span>}
-  </div>
-)
-const Input = ({ value, onChange, placeholder, type='text', step, min, autoFocus, mono, className='' }) => (
-  <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-    step={step} min={min} autoFocus={autoFocus}
-    className={`w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none transition-all ${mono?'font-mono':''} ${className}`}
-    style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
-    onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.background='#fff'}}
-    onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}
-  />
-)
-const Section = ({ title, icon, children, color='#6366f1' }) => (
-  <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
-    <div className="px-4 py-2.5 flex items-center gap-2"
-      style={{background:`${color}08`, borderBottom:'1px solid #f1f5f9'}}>
-      <span>{icon}</span>
-      <span className="text-[12px] font-bold" style={{color}}>{title}</span>
+function Label({ children, required }) {
+  return (
+    <div className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{color:'#64748b'}}>
+      {children}{required && <span className="text-red-500 ml-0.5">*</span>}
     </div>
-    <div className="px-4 py-4" style={{background:'#fff'}}>
-      {children}
-    </div>
-  </div>
-)
-const Toggle = ({ checked, onChange, label, desc }) => (
-  <label className="flex items-center gap-3 cursor-pointer py-1.5">
-    <div className="relative flex-shrink-0" onClick={onChange}>
-      <div className="w-10 h-5.5 rounded-full transition-all" style={{
-        background: checked ? '#6366f1' : '#e2e8f0',
-        width:'40px', height:'22px', position:'relative', cursor:'pointer'
-      }}>
-        <div style={{
-          position:'absolute', top:'2px',
-          left: checked ? '20px' : '2px',
-          width:'18px', height:'18px',
-          background:'#fff', borderRadius:'50%',
-          transition:'left .2s',
-          boxShadow:'0 1px 3px rgba(0,0,0,0.2)'
-        }}/>
+  )
+}
+function Input({ value, onChange, placeholder, type='text', step, min, autoFocus, mono, className='' }) {
+  return (
+    <input type={type} value={value} onChange={onChange} placeholder={placeholder}
+      step={step} min={min} autoFocus={autoFocus}
+      className={`w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none transition-all ${mono?'font-mono':''} ${className}`}
+      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
+      onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.background='#fff'}}
+      onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}
+    />
+  )
+}
+function Section({ title, icon, children, color='#6366f1' }) {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+      <div className="px-4 py-2.5 flex items-center gap-2"
+        style={{background:`${color}08`, borderBottom:'1px solid #f1f5f9'}}>
+        <span>{icon}</span>
+        <span className="text-[12px] font-bold" style={{color}}>{title}</span>
+      </div>
+      <div className="px-4 py-4" style={{background:'#fff'}}>
+        {children}
       </div>
     </div>
-    <div>
-      <div className="text-[13px] font-semibold text-slate-700">{label}</div>
-      {desc && <div className="text-[11px] text-slate-400 mt-0.5">{desc}</div>}
-    </div>
-  </label>
-)
+  )
+}
+function Toggle({ checked, onChange, label, desc }) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer py-1.5">
+      <div className="relative flex-shrink-0" onClick={onChange}>
+        <div style={{
+          background: checked ? '#6366f1' : '#e2e8f0',
+          width:'40px', height:'22px', position:'relative', cursor:'pointer',
+          borderRadius:'11px', transition:'background .2s'
+        }}>
+          <div style={{
+            position:'absolute', top:'2px',
+            left: checked ? '20px' : '2px',
+            width:'18px', height:'18px',
+            background:'#fff', borderRadius:'50%',
+            transition:'left .2s',
+            boxShadow:'0 1px 3px rgba(0,0,0,0.2)'
+          }}/>
+        </div>
+      </div>
+      <div>
+        <div className="text-[13px] font-semibold text-slate-700">{label}</div>
+        {desc && <div className="text-[11px] text-slate-400 mt-0.5">{desc}</div>}
+      </div>
+    </label>
+  )
+}
 
 export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
   const qc = useQueryClient()
