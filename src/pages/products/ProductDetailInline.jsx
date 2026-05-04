@@ -183,9 +183,12 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
       }
 
       toast.success('Product updated ✓')
-      setSavedData({...form})  // store for immediate display
+      setSavedData({...form, price: parseFloat(form.price), cost: parseFloat(form.cost)})
+
       setEditing(false)
-      onRefresh()
+      // Refetch all product queries immediately
+      await qc.refetchQueries({ queryKey: ['products'] })
+      await qc.refetchQueries({ queryKey: ['pos-products'] })
     } catch(err) { toast.error(err.message) }
     finally { setSaving(false) }
   }
