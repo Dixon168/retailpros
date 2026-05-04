@@ -185,7 +185,7 @@ export default function ProductsPage() {
             <table className="w-full border-collapse">
               <thead className="sticky top-0 z-10">
                 <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
-                  {['','Product / SKU / UPC','Price','Avg Cost','Stock','Stock Value','Margin','Actions'].map((h,i) => (
+                  {['','Product','SKU','UPC','Price','Avg Cost','Stock','Stock Value','Margin','Actions'].map((h,i) => (
                     <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -212,28 +212,30 @@ export default function ProductsPage() {
                           onClick={() => setPhotoViewer(p)}/>
                       </td>
 
-                      {/* Name */}
+
+
+                      {/* Product name */}
                       <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="text-[13px] font-semibold">{p.name}</div>
-                          {disabled && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">DISABLED</span>}
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[13px] font-semibold text-slate-800">{p.name}</div>
+                          {disabled && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{background:'#fff7ed',color:'#ea580c'}}>DISABLED</span>}
                         </div>
+                        {cat && <div className="text-[9px] text-slate-400 mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
                         {p.tags?.length > 0 && (
                           <div className="flex gap-1 mt-0.5 flex-wrap">
-                            {p.tags.map(t => (
-                              <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{t}</span>
-                            ))}
+                            {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:'#e0e7ff',color:'#6366f1'}}>{t}</span>)}
                           </div>
                         )}
                       </td>
 
-                      {/* Product / SKU / UPC */}
+                      {/* SKU */}
                       <td className="px-3 py-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {p.sku && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#f1f5f9',color:'#475569'}}>SKU: {p.sku}</span>}
-                          {p.upc && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#eff6ff',color:'#3b82f6'}}>UPC: {p.upc}</span>}
-                        </div>
-                        {cat && <div className="text-[9px] text-slate-400 mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
+                        <span className="text-[11px] font-mono text-slate-600">{p.sku || '—'}</span>
+                      </td>
+
+                      {/* UPC */}
+                      <td className="px-3 py-2">
+                        <span className="text-[11px] font-mono text-slate-500">{p.upc || '—'}</span>
                       </td>
 
                       {/* Price */}
@@ -328,7 +330,7 @@ export default function ProductsPage() {
                     </tr>
                     {expandedId === p.id && (
                       <tr key={p.id+'-detail'}>
-                        <td colSpan={8} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
+                        <td colSpan={10} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
                           <ProductDetailInline product={p} tenantId={tenant?.id}
                             onRefresh={() => qc.invalidateQueries(['products'])}/>
                         </td>
