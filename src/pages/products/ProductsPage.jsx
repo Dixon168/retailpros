@@ -23,6 +23,7 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct] = useState(null)
   const [expandedId, setExpandedId]   = useState(null)
   const [showStock,   setShowStock]     = useState(null)
+  const [historyId,   setHistoryId]     = useState(null)
   const [photoViewer, setPhotoViewer]   = useState(null)
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
@@ -298,6 +299,13 @@ export default function ProductsPage() {
                               ? {background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📦 Stock
+                          </button>
+                          <button onClick={() => setHistoryId(historyId===p.id ? null : p.id)}
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
+                            style={historyId===p.id
+                              ? {background:'#dbeafe', borderColor:'#93c5fd', color:'#2563eb'}
+                              : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
+                            🧾 History
                           </button>
                           <button onClick={() => handleDisable(p)}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
@@ -700,6 +708,122 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
           onSave={() => { onRefresh(); setShowAdjust(false) }}
           onClose={() => setShowAdjust(false)}/>
       )}
+    </div>
+  )
+}
+
+// ── Sales History Inline ──
+function SalesHistoryInline({ product: p }) {
+  const { data: sales = [], isLoading } = useQuery({
+    queryKey: ['product-sales-inline', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('order_items')
+        .select('*, orders(order_number, created_at, cashier_name, customers(name), order_payments(method))')
+        .eq('product_id', p.id)
+        .order('created_at', { ascending: false })
+        .limit(100)
+      return data || []
+    },
+  })
+
+  const totalQty = sales.reduce((s,r) => s+(r.quantity||0), 0)
+  const totalRev = sales.reduce((s,r) => s+(r.line_total||0), 0)
+
+  return (
+    <div style={{background:'#f0f7ff', borderTop:'2px solid #2563eb'}}>
+      {/* Header */}
+      <div className="flex items-center gap-4 px-4 py-3 border-b" style={{background:'#fff', borderColor:'#e2e8f0'}}>
+        <div className="text-[13px] font-bold text-blue-700">🧾 Sales History — {p.name}</div>
+        <div className="flex gap-3 ml-4">
+          {[
+            ['Total Sold', `${totalQty} ${p.unit||'ea'}`, '#6366f1'],
+            ['Revenue',    `$${totalRev.toFixed(2)}`,      '#16a34a'],
+            ['Transactions', sales.length,                  '#1e293b'],
+          ].map(([l,v,c]) => (
+            <div key={l} className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400">{l}:</span>
+              <span className="text-[12px] font-bold" style={{color:c}}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{maxHeight:'280px', overflowY:'auto'}}>
+        {isLoading ? (
+          <div className="text-center py-6 text-slate-400 text-[12px]">Loading...</div>
+        ) : sales.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-slate-300">
+            <div className="text-3xl mb-2">📭</div>
+            <div className="text-[12px]">No sales history yet</div>
+          </div>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0">
+              <tr>
+                {['Date & Time','Invoice #','Customer','Qty','Unit Price','Discount','Total','Serial #','Payment','Cashier','Note'].map(h => (
+                  <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
+                    style={{color:'#64748b', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sales.map((r,i) => (
+                <tr key={i} className="border-b hover:bg-blue-50/40 transition-colors"
+                  style={{borderColor:'#f1f5f9', background: i%2===0?'#fff':'#fafbff'}}>
+                  <td className="px-3 py-2.5">
+                    <div className="text-[11px] font-medium text-slate-700">{new Date(r.orders?.created_at).toLocaleDateString()}</div>
+                    <div className="text-[10px] text-slate-400">{new Date(r.orders?.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[11px] font-mono font-bold" style={{color:'#6366f1'}}>{r.orders?.order_number||'—'}</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-[12px] text-slate-700">{r.orders?.customers?.name||'Walk-in'}</td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[12px] font-bold font-mono">{r.quantity} {p.unit}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[11px] font-mono text-slate-600">${parseFloat(r.unit_price||0).toFixed(2)}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {r.discount_amt>0
+                      ? <span className="text-[11px] font-mono font-bold" style={{color:'#e11d48'}}>-${parseFloat(r.discount_amt).toFixed(2)}</span>
+                      : r.discount_pct>0
+                      ? <span className="text-[11px] font-mono font-bold" style={{color:'#e11d48'}}>-{r.discount_pct}%</span>
+                      : <span className="text-[11px] text-slate-300">—</span>
+                    }
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[12px] font-bold font-mono" style={{color:'#16a34a'}}>${parseFloat(r.line_total||0).toFixed(2)}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {r.serial_number
+                      ? <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#fef9c3',color:'#ca8a04'}}>{r.serial_number}</span>
+                      : <span className="text-[11px] text-slate-300">—</span>
+                    }
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {r.orders?.order_payments?.[0]?.method
+                      ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize"
+                          style={{background:'#eff6ff',color:'#2563eb'}}>
+                          {r.orders.order_payments[0].method}
+                        </span>
+                      : <span className="text-[11px] text-slate-300">—</span>
+                    }
+                  </td>
+                  <td className="px-3 py-2.5 text-[11px] text-slate-600">{r.orders?.cashier_name||'—'}</td>
+                  <td className="px-3 py-2.5">
+                    {r.note
+                      ? <span className="text-[11px] text-slate-500 italic">"{r.note}"</span>
+                      : <span className="text-[11px] text-slate-300">—</span>
+                    }
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }
