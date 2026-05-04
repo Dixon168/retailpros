@@ -8,5 +8,17 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        // Don't inline variables - prevents TDZ issues
+        inline: false,
+      },
+      mangle: {
+        // Keep component names readable
+        keep_classnames: true,
+        keep_fnames: true,
+      }
+    }
   }
 })
