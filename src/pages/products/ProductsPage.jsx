@@ -186,7 +186,7 @@ export default function ProductsPage() {
             <table className="w-full border-collapse">
               <thead className="sticky top-0 z-10">
                 <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
-                  {['','Product','SKU','Type','Stock','Price','Margin','Actions'].map((h,i) => (
+                  {['','Product / SKU / UPC','Price','Avg Cost','Stock','Stock Value','Margin','Actions'].map((h,i) => (
                     <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -228,45 +228,57 @@ export default function ProductsPage() {
                         )}
                       </td>
 
-                      {/* SKU */}
+                      {/* Product / SKU / UPC */}
                       <td className="px-3 py-2">
-                        <div className="text-[11px] font-mono text-[#8899b0]">{p.sku || '—'}</div>
-                        {cat && <div className="text-[9px] text-[#3d5068] mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {p.sku && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#f1f5f9',color:'#475569'}}>SKU: {p.sku}</span>}
+                          {p.upc && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#eff6ff',color:'#3b82f6'}}>UPC: {p.upc}</span>}
+                        </div>
+                        {cat && <div className="text-[9px] text-slate-400 mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
                       </td>
 
-                      {/* Type */}
+                      {/* Price */}
                       <td className="px-3 py-2">
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
-                          style={{background:`${tc}18`,color:tc}}>
-                          {p.type?.toUpperCase()}
-                        </span>
+                        <div className="text-[13px] font-bold font-mono" style={{color:'#4f46e5'}}>
+                          ${parseFloat(p.price||0).toFixed(2)}
+                        </div>
+                      </td>
+
+                      {/* Avg Cost */}
+                      <td className="px-3 py-2">
+                        <div className="text-[12px] font-mono text-slate-500">
+                          ${parseFloat(avgCost).toFixed(2)}
+                        </div>
                       </td>
 
                       {/* Stock */}
                       <td className="px-3 py-2">
                         {p.type === 'service'
-                          ? <span className="text-[11px] text-[#3d5068]">—</span>
-                          : <span className={`text-[12px] font-mono font-bold ${isLow?'text-red-400':''}`}>
+                          ? <span className="text-[11px] text-slate-400">—</span>
+                          : <span className={`text-[12px] font-mono font-bold ${isLow?'text-red-500':''}`}>
                               {isLow && '⚠ '}{qty} {p.unit}
                             </span>
                         }
                       </td>
 
-                      {/* Price */}
+                      {/* Stock Value */}
                       <td className="px-3 py-2">
-                        <div className="text-[13px] font-bold font-mono text-blue-400">
-                          ${parseFloat(p.price||0).toFixed(2)}
-                        </div>
-                        <div className="text-[10px] font-mono text-[#3d5068]">
-                          cost ${parseFloat(avgCost).toFixed(2)}
-                        </div>
+                        {p.type === 'service'
+                          ? <span className="text-[11px] text-slate-400">—</span>
+                          : <span className="text-[12px] font-mono font-semibold" style={{color:'#16a34a'}}>
+                              ${(qty * avgCost).toFixed(2)}
+                            </span>
+                        }
                       </td>
 
                       {/* Margin */}
                       <td className="px-3 py-2">
-                        <span className={`text-[12px] font-mono font-bold ${
-                          margin>=30?'text-green-400':margin>=10?'text-yellow-400':'text-red-400'
-                        }`}>{margin.toFixed(1)}%</span>
+                        <div className={`text-[12px] font-mono font-bold ${
+                          margin>=30?'text-green-600':margin>=10?'text-yellow-600':'text-red-500'
+                        }`}>{margin.toFixed(1)}%</div>
+                        <div className="text-[10px] font-mono text-slate-400">
+                          ${(parseFloat(p.price||0)-avgCost).toFixed(2)}/ea
+                        </div>
                       </td>
 
                       {/* Actions — ALWAYS VISIBLE */}
