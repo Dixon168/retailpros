@@ -31,7 +31,7 @@ function ProtectedRoute({ children }) {
     <div style={{
       display:'flex', flexDirection:'column', alignItems:'center',
       justifyContent:'center', height:'100vh',
-      background:'#07090f', color:'#3d5068',
+      background:'#f0f2f5', color:'#64748b',
       fontFamily:'monospace', fontSize:'13px', gap:'12px'
     }}>
       <div style={{
@@ -81,12 +81,13 @@ export default function App() {
 
       <Toaster position="bottom-center" toastOptions={{
         style: {
-          background: '#0d1117', color: '#e8edf5',
-          border: '1px solid #1e2d42', borderRadius: '10px',
-          fontFamily: 'DM Mono, monospace', fontSize: '12px',
+          background: '#fff', color: '#1e293b',
+          border: '1px solid #e2e8f0', borderRadius: '12px',
+          fontFamily: 'Inter, sans-serif', fontSize: '13px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
         },
-        success: { iconTheme: { primary: '#10b981', secondary: '#0d1117' } },
-        error:   { iconTheme: { primary: '#ef4444', secondary: '#0d1117' } },
+        success: { iconTheme: { primary: '#16a34a', secondary: '#fff' } },
+        error:   { iconTheme: { primary: '#dc2626', secondary: '#fff' } },
       }} />
     </QueryClientProvider>
   )
