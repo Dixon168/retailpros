@@ -22,6 +22,7 @@ export default function ProductsPage() {
   const [showAdjust, setShowAdjust]   = useState(null)
   const [expandedId, setExpandedId]   = useState(null)
   const [photoViewer, setPhotoViewer]   = useState(null)
+  const [showPromo,    setShowPromo]     = useState(null)  // product for promo panel
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
 
@@ -40,6 +41,11 @@ export default function ProductsPage() {
     },
     enabled: !!tenant?.id,
   })
+
+  const inventoryValue = products.reduce((s,p) => {
+    const q = getQty(p)
+    return s + q * getAvgCost(p)
+  }, 0)
 
   const { data: allCategories = [] } = useQuery({
     queryKey: ['categories', tenant?.id],
@@ -109,7 +115,7 @@ export default function ProductsPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 px-5 py-3 flex-shrink-0" style={{background:'#fff', borderBottom:'1.5px solid #e2e8f0'}}>
+        <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{background:'#fff', borderBottom:'1.5px solid #e2e8f0'}}>
           <div className="flex gap-4 mr-2">
             {[
               ['Products', products.length, ''],
@@ -318,6 +324,10 @@ export default function ProductsPage() {
       </div>
 
       {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)}/>}
+      {showPromo && (
+        <PromoQuickPanel product={showPromo} tenantId={tenant?.id}
+          onClose={() => setShowPromo(null)}/>
+      )}
 
       {/* Modals */}
       {showForm && (
@@ -767,7 +777,7 @@ function ProductDetailModal({ product: p, tenantId, onClose, onEdit, onReceive, 
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
       <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[680px] max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -1065,9 +1075,9 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[480px] max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-[#1e2d42] flex items-center justify-between sticky top-0 bg-[#0d1117]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      <div className="rounded-2xl w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl" style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+        <div className="px-5 py-4 flex items-center justify-between sticky top-0" style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0', borderRadius:'16px 16px 0 0'}}>
           <div>
             <div className="text-[15px] font-bold">📥 Receive Inventory</div>
             <div className="text-[11px] text-[#3d5068] mt-0.5">{p.name}</div>
@@ -1078,7 +1088,7 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Vendor</div>
             <select value={form.vendor_id} onChange={e=>set('vendor_id',e.target.value)}
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
+              className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}>
               <option value="">Select vendor...</option>
               {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
@@ -1089,17 +1099,17 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
               <div className="flex items-center bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 focus-within:border-blue-500/40">
                 <span className="text-[#3d5068] mr-1">$</span>
                 <input type="number" value={form.cost} onChange={e=>set('cost',e.target.value)} placeholder="0.00" step="0.01"
-                  className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono placeholder-[#3d5068]"/>
+                  className="flex-1 bg-transparent border-none outline-none py-2.5 text-[13px] font-mono" style={{color:'#1e293b'}}/>
               </div>
             </div>
             <div>
               <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Quantity</div>
               <input type="number" value={form.qty} onChange={e=>set('qty',e.target.value)} placeholder="0" min="1"
-                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] font-mono outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
+                className="w-full rounded-xl px-3 py-2.5 text-[13px] font-mono outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}/>
             </div>
           </div>
           {form.cost && form.qty && (
-            <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-4 py-2.5 flex justify-between">
+            <div className="rounded-xl px-4 py-2.5 flex justify-between" style={{background:'#f0fdf4', border:'1px solid #86efac'}}>
               <span className="text-[11px] text-[#3d5068]">Total Cost</span>
               <span className="font-mono text-[12px] font-bold text-green-400">${(parseFloat(form.cost)*qty).toFixed(2)}</span>
             </div>
@@ -1113,14 +1123,14 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
               <div className="flex gap-2 mb-2">
                 <input value={serialInput} onChange={e=>setSerialInput(e.target.value)}
                   onKeyDown={e=>e.key==='Enter'&&addSerial()} placeholder="Scan or type serial number..." autoFocus={needsSerials}
-                  className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] font-mono outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
+                  className="flex-1 rounded-xl px-3 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
                 <button onClick={addSerial} className="bg-blue-500 border-none rounded-[9px] px-3 py-2 text-[11px] font-bold text-white cursor-pointer">Add</button>
               </div>
               <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1">
                 {serials.map((s,i) => (
-                  <div key={i} className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5">
+                  <div key={i} className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
                     <span className="text-[10px] text-[#3d5068] font-mono w-5">{i+1}.</span>
-                    <span className="flex-1 font-mono text-[11px] text-green-400">{s}</span>
+                    <span className="flex-1 font-mono text-[11px] font-semibold" style={{color:'#16a34a'}}>{s}</span>
                     <button onClick={()=>setSerials(prev=>prev.filter((_,j)=>j!==i))}
                       className="text-[#3d5068] hover:text-red-400 bg-transparent border-none cursor-pointer text-[11px]">✕</button>
                   </div>
@@ -1131,11 +1141,11 @@ function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Notes (optional)</div>
             <input value={form.notes} onChange={e=>set('notes',e.target.value)} placeholder="PO number, notes..."
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[12px] outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
+              className="w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}/>
           </div>
         </div>
-        <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4 sticky bottom-0 bg-[#0d1117]">
-          <button onClick={onClose} className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-3 text-[13px] text-[#8899b0] cursor-pointer">Cancel</button>
+        <div className="px-5 pb-5 flex gap-2 pt-4 sticky bottom-0" style={{background:'#fff', borderTop:'1px solid #f1f5f9'}}>
+          <button onClick={onClose} className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0', color:'#64748b'}}>Cancel</button>
           <button onClick={handleSave} disabled={saving||(needsSerials&&serials.length<qty)}
             className="flex-[2] bg-gradient-to-r from-green-600 to-green-700 border-none rounded-[9px] py-3 text-[13px] font-bold text-white cursor-pointer disabled:opacity-40">
             {saving ? '⏳ Saving...' : `✓ Receive ${qty||0} ${p.unit||'units'}`}
@@ -1180,9 +1190,9 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
   const REASONS = ['Damaged','Expired','Theft/Shrinkage','Received without PO','Count correction','Transfer out','Transfer in','Other']
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[400px]" onClick={e=>e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-[#1e2d42] flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      <div className="rounded-2xl w-[400px] shadow-2xl" style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0', borderRadius:'16px 16px 0 0'}}>
           <div>
             <div className="text-[15px] font-bold">⚖️ Adjust Inventory</div>
             <div className="text-[11px] text-[#3d5068] mt-0.5">{p.name}</div>
@@ -1193,7 +1203,7 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Adjustment Qty (use - to decrease)</div>
             <input type="number" value={qty} onChange={e=>setQty(e.target.value)} placeholder="+5 or -3" autoFocus
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-3 text-[18px] font-mono text-center outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
+              className="w-full rounded-xl px-3 py-3 text-[18px] font-mono text-center outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
             {qty && <div className={`mt-1.5 text-center text-[11px] font-mono font-bold ${adjustQty>=0?'text-green-400':'text-red-400'}`}>
               {adjustQty>=0?'+':''}{adjustQty} {p.unit||'units'}
             </div>}
@@ -1210,16 +1220,288 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
               ))}
             </div>
             <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Or type a custom reason..."
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] outline-none focus:border-blue-500/40 placeholder-[#3d5068]"/>
+              className="w-full rounded-xl px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
           </div>
         </div>
         <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4">
-          <button onClick={onClose} className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-3 text-[13px] text-[#8899b0] cursor-pointer">Cancel</button>
+          <button onClick={onClose} className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0', color:'#64748b'}}>Cancel</button>
           <button onClick={handleSave} disabled={saving||!qty||!reason}
             className={`flex-[2] border-none rounded-[9px] py-3 text-[13px] font-bold text-white cursor-pointer disabled:opacity-40 ${
               adjustQty<0 ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'
             }`}>
             {saving ? '⏳ Saving...' : `${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Promo Quick Panel ──
+function PromoQuickPanel({ product, tenantId, onClose }) {
+  const qc = useQueryClient()
+  const [type,      setType]      = useState('sale')
+  const [saving,    setSaving]    = useState(false)
+  const [saleStart, setSaleStart] = useState('')
+  const [saleEnd,   setSaleEnd]   = useState('')
+  const [saleType,  setSaleType]  = useState('fixed')
+  const [saleVal,   setSaleVal]   = useState('')
+  const [bulkQty,   setBulkQty]   = useState('')
+  const [bulkType,  setBulkType]  = useState('fixed')
+  const [bulkVal,   setBulkVal]   = useState('')
+  const [timeDays,  setTimeDays]  = useState([])
+  const [timeStart, setTimeStart] = useState('')
+  const [timeEnd,   setTimeEnd]   = useState('')
+  const [timeType,  setTimeType]  = useState('fixed')
+  const [timeVal,   setTimeVal]   = useState('')
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const TYPE_COLOR = { sale:'#6366f1', bulk:'#16a34a', time:'#d97706' }
+
+  const { data: promos=[] } = useQuery({
+    queryKey: ['product-promos', product.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('promotions').select('*')
+        .eq('product_id', product.id).order('created_at', { ascending: false })
+      return data || []
+    },
+    enabled: !!product.id,
+  })
+
+  const togglePromo = async (p) => {
+    await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    qc.invalidateQueries(['product-promos', product.id])
+    qc.invalidateQueries(['promotions'])
+  }
+  const deletePromo = async (id) => {
+    if (!confirm('Delete this promotion?')) return
+    await supabase.from('promotions').delete().eq('id', id)
+    qc.invalidateQueries(['product-promos', product.id])
+  }
+
+  const savePromo = async () => {
+    setSaving(true)
+    try {
+      const base = { tenant_id: tenantId, product_id: product.id, type, is_active: true }
+      let payload
+      if (type==='sale') {
+        if (!saleStart||!saleEnd||!saleVal) { toast.error('Fill all fields'); setSaving(false); return }
+        payload = { ...base, name:`${product.name} Sale`, sale_start:saleStart, sale_end:saleEnd, sale_type:saleType, sale_value:parseFloat(saleVal) }
+      } else if (type==='bulk') {
+        if (!bulkQty||!bulkVal) { toast.error('Fill all fields'); setSaving(false); return }
+        payload = { ...base, name:`${product.name} Bulk`, bulk_tiers:[{min_qty:parseInt(bulkQty),type:bulkType,value:parseFloat(bulkVal)}] }
+      } else {
+        if (!timeDays.length||!timeStart||!timeEnd||!timeVal) { toast.error('Fill all fields'); setSaving(false); return }
+        payload = { ...base, name:`${product.name} Time`, time_rules:[{days:timeDays,start_time:timeStart,end_time:timeEnd,type:timeType,value:parseFloat(timeVal)}] }
+      }
+      await supabase.from('promotions').insert(payload)
+      qc.invalidateQueries(['product-promos', product.id])
+      qc.invalidateQueries(['promotions'])
+      setSaleVal(''); setBulkQty(''); setBulkVal(''); setTimeVal(''); setTimeDays([])
+      toast.success('Promotion added ✓')
+    } catch(err) { toast.error(err.message) }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      <div className="rounded-2xl w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl"
+        style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="px-5 py-4 flex items-center justify-between"
+          style={{background:'#fdf4ff', borderBottom:'1.5px solid #e9d5ff', borderRadius:'16px 16px 0 0'}}>
+          <div>
+            <div className="text-[15px] font-bold text-slate-800">🏷️ Promotions</div>
+            <div className="text-[12px] text-slate-500 mt-0.5">{product.name} · <span className="font-mono">${parseFloat(product.price||0).toFixed(2)}</span></div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer text-[18px]">✕</button>
+        </div>
+
+        <div className="p-5">
+          {/* Existing promos */}
+          {promos.length > 0 && (
+            <div className="mb-4">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Active Promotions</div>
+              <div className="flex flex-col gap-2">
+                {promos.map(p => (
+                  <div key={p.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                    style={{background:'#f8fafc', border:`1.5px solid ${p.is_active ? (TYPE_COLOR[p.type]||'#6366f1')+'40' : '#e2e8f0'}`}}>
+                    <span className="text-[16px]">{{sale:'🏷️',bulk:'📦',time:'⏰'}[p.type]||'🏷️'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-slate-700">{p.name}</div>
+                      <div className="text-[10px] text-slate-400">{p.type?.toUpperCase()}</div>
+                    </div>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${p.is_active?'bg-green-100 text-green-700':'bg-slate-100 text-slate-400'}`}>
+                      {p.is_active?'ACTIVE':'PAUSED'}
+                    </span>
+                    <button onClick={()=>togglePromo(p)}
+                      className="text-[10px] px-2.5 py-1 rounded-lg border cursor-pointer"
+                      style={p.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
+                      {p.is_active?'Pause':'On'}
+                    </button>
+                    <button onClick={()=>deletePromo(p.id)}
+                      className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer">✕</button>
+                  </div>
+                ))}
+              </div>
+              <div className="my-4" style={{borderTop:'1px solid #f1f5f9'}}/>
+            </div>
+          )}
+
+          {/* Add new */}
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Add Promotion</div>
+
+          {/* Type tabs */}
+          <div className="flex gap-2 mb-4">
+            {[['sale','🏷️','Sale Pricing'],['bulk','📦','Bulk Pricing'],['time','⏰','Time Based']].map(([t,icon,l])=>(
+              <button key={t} onClick={()=>setType(t)}
+                className="flex-1 py-2.5 rounded-xl text-[11px] font-bold cursor-pointer border-2 transition-all flex flex-col items-center gap-1"
+                style={type===t?{background:`${TYPE_COLOR[t]}12`,borderColor:TYPE_COLOR[t],color:TYPE_COLOR[t]}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                <span className="text-[18px]">{icon}</span>
+                {l}
+              </button>
+            ))}
+          </div>
+
+          {/* Sale fields */}
+          {type==='sale' && (
+            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">Start Date & Time</div>
+                  <input type="datetime-local" value={saleStart} onChange={e=>setSaleStart(e.target.value)}
+                    className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">End Date & Time</div>
+                  <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
+                    className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">Type</div>
+                  <select value={saleType} onChange={e=>setSaleType(e.target.value)}
+                    className="rounded-xl px-3 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}>
+                    <option value="fixed">$ Fixed Sale Price</option>
+                    <option value="pct">% Percentage Off</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">{saleType==='fixed'?'Sale Price':'Discount %'}</div>
+                  <input type="number" value={saleVal} onChange={e=>setSaleVal(e.target.value)}
+                    placeholder={saleType==='fixed'?'e.g. 8.00':'e.g. 20'} step="0.01"
+                    className="w-full rounded-xl px-3 py-2 text-[13px] font-mono outline-none"
+                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                </div>
+              </div>
+              {saleVal && (
+                <div className="flex items-center gap-2 text-[12px] pt-1">
+                  <span className="line-through text-slate-400">${parseFloat(product.price||0).toFixed(2)}</span>
+                  <span>→</span>
+                  <span className="font-bold text-indigo-600 text-[14px]">
+                    ${saleType==='fixed' ? parseFloat(saleVal).toFixed(2) : (parseFloat(product.price||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                    Save ${saleType==='fixed' ? (parseFloat(product.price||0)-parseFloat(saleVal)).toFixed(2) : (parseFloat(product.price||0)*parseFloat(saleVal)/100).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bulk fields */}
+          {type==='bulk' && (
+            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#f0fdf4', border:'1.5px solid #86efac'}}>
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">Buy Qty or more</div>
+                  <input type="number" value={bulkQty} onChange={e=>setBulkQty(e.target.value)} placeholder="2" min="2"
+                    className="w-20 rounded-xl px-3 py-2 text-[13px] font-mono outline-none"
+                    style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">Discount Type</div>
+                  <select value={bulkType} onChange={e=>setBulkType(e.target.value)}
+                    className="rounded-xl px-3 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #86efac', background:'#fff'}}>
+                    <option value="fixed">$ Each</option>
+                    <option value="pct">% Off</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">{bulkType==='fixed'?'Price per unit ($)':'Discount (%)'}</div>
+                  <input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)}
+                    placeholder={bulkType==='fixed'?'8.00':'10'} step="0.01"
+                    className="w-full rounded-xl px-3 py-2 text-[13px] font-mono outline-none"
+                    style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+                </div>
+              </div>
+              {bulkQty && bulkVal && (
+                <div className="text-[12px] text-green-700 font-medium">
+                  Buy {bulkQty}+ → {bulkType==='fixed'?`$${parseFloat(bulkVal).toFixed(2)}/ea`:`${bulkVal}% off`}
+                  {bulkType==='pct' && ` = $${(parseFloat(product.price||0)*(1-parseFloat(bulkVal)/100)).toFixed(2)}/ea`}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Time fields */}
+          {type==='time' && (
+            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#fffbeb', border:'1.5px solid #fde047'}}>
+              <div>
+                <div className="text-[10px] font-semibold text-slate-500 mb-2">Days of Week</div>
+                <div className="flex gap-2">
+                  {DAYS.map((d,i)=>(
+                    <button key={i} onClick={()=>setTimeDays(ds=>ds.includes(i)?ds.filter(x=>x!==i):[...ds,i].sort())}
+                      className="w-10 h-10 rounded-xl text-[11px] font-bold cursor-pointer border-2 transition-all"
+                      style={timeDays.includes(i)?{background:'#f59e0b',borderColor:'#f59e0b',color:'#fff'}:{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
+                      {d.substring(0,2)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">Start Time</div>
+                  <input type="time" value={timeStart} onChange={e=>setTimeStart(e.target.value)}
+                    className="w-full rounded-xl px-2 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">End Time</div>
+                  <input type="time" value={timeEnd} onChange={e=>setTimeEnd(e.target.value)}
+                    className="w-full rounded-xl px-2 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">Type</div>
+                  <select value={timeType} onChange={e=>setTimeType(e.target.value)}
+                    className="w-full rounded-xl px-2 py-2 text-[12px] outline-none"
+                    style={{border:'1.5px solid #fde047', background:'#fff'}}>
+                    <option value="fixed">$ Price</option>
+                    <option value="pct">% Off</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 mb-1">{timeType==='fixed'?'Price':'% Off'}</div>
+                  <input type="number" value={timeVal} onChange={e=>setTimeVal(e.target.value)}
+                    placeholder={timeType==='fixed'?'3.00':'10'} step="0.01"
+                    className="w-full rounded-xl px-2 py-2 text-[12px] font-mono outline-none"
+                    style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button onClick={savePromo} disabled={saving}
+            className="w-full mt-4 rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
+            style={{background:'linear-gradient(135deg,#9333ea,#6366f1)'}}>
+            {saving ? '⏳ Saving...' : '✓ Add Promotion'}
           </button>
         </div>
       </div>
