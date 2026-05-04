@@ -185,12 +185,14 @@ export const useCartStore = create((set, get) => ({
 
   // 内部添加商品方法
   _addItem: (item) => {
+    const newId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     set(state => ({
       items: [...state.items, {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        discount: null,  // 单品折扣
+        id: newId,
+        discount: null,
         ...item
-      }]
+      }],
+      selectedItemId: newId,  // Auto-select the new item
     }))
   },
 
@@ -200,7 +202,8 @@ export const useCartStore = create((set, get) => ({
     set(state => ({
       items: state.items.map(i =>
         i.id === itemId ? { ...i, qty: newQty } : i
-      )
+      ),
+      selectedItemId: itemId,  // Auto-select updated item
     }))
   },
 
