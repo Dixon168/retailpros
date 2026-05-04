@@ -83,7 +83,6 @@ export default function App() {
 
           {/* Back Office — uses AppLayout */}
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="/"          element={<Navigate to="/pos" replace />} />
             <Route path="/orders"     element={<OrderLookupPage />} />
             <Route path="/products"   element={<ProductsPage />} />
             <Route path="/customers"  element={<CustomersPage />} />
@@ -97,6 +96,7 @@ export default function App() {
             <Route path="/reports"    element={<ReportsPage />} />
             <Route path="/settings"   element={<SettingsPage />} />
           </Route>
+          <Route path="/" element={<Navigate to="/pos" replace />} />
           <Route path="*" element={<Navigate to="/pos" replace />} />
         </Routes>
       </BrowserRouter>
