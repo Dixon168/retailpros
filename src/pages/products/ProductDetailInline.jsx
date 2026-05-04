@@ -403,13 +403,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
             Adjust
           </button>
         )}
-        {tab==='promotions' && (
-          <button onClick={() => setPromoAdding(!promoAdding)}
-            className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border mr-2"
-            style={promoAdding ? {background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'} : {background:'#fdf4ff',borderColor:'#e9d5ff',color:'#9333ea'}}>
-            {promoAdding ? '✕ Cancel' : '+ Add Promotion'}
-          </button>
-        )}
+
       </div>
 
       {/* ── Content ── */}
@@ -796,58 +790,75 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
         {/* ══ PROMOTIONS ══ */}
         {tab==='promotions' && (
-          <div>
-            {/* Add form */}
-            {promoAdding && (
-              <div className="mb-4 rounded-xl overflow-hidden" style={{border:'1.5px solid #e9d5ff'}}>
-                {/* Type selector */}
-                <div className="flex border-b" style={{borderColor:'#e9d5ff'}}>
-                  {[['sale','🏷️','Sale'],['bulk','📦','Bulk'],['time','⏰','Time']].map(([t,icon,l])=>(
-                    <button key={t} onClick={()=>setPromoType(t)}
-                      className="flex-1 py-2.5 text-[12px] font-bold cursor-pointer border-none transition-all"
-                      style={promoType===t
-                        ? {background:TYPE_COLOR[t], color:'#fff'}
-                        : {background:'#fdf4ff', color:'#94a3b8'}}>
-                      {icon} {l}
-                    </button>
-                  ))}
-                </div>
+          <div className="flex flex-col gap-4">
 
-                {/* Form fields */}
-                <div className="p-3" style={{background:'#fff'}}>
-                  {/* Sale */}
+            {/* ── Add New Promotion ── always visible, 3 cards */}
+            <div>
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Add Promotion</div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  ['sale','🏷️','Sale Pricing','Date range discount','#6366f1','#e0e7ff'],
+                  ['bulk','📦','Bulk Pricing','Qty-based discount','#16a34a','#dcfce7'],
+                  ['time','⏰','Time Based','Day/hour discount','#d97706','#fef9c3'],
+                ].map(([t,icon,title,desc,color,bg])=>(
+                  <button key={t} onClick={()=>{setPromoType(t);setPromoAdding(promoAdding&&promoType===t?false:true)}}
+                    className="rounded-xl p-3 text-left cursor-pointer border-2 transition-all"
+                    style={promoAdding&&promoType===t
+                      ? {background:bg, borderColor:color}
+                      : {background:'#fff', borderColor:'#e2e8f0'}}>
+                    <div className="text-[20px] mb-1">{icon}</div>
+                    <div className="text-[12px] font-bold" style={{color: promoAdding&&promoType===t?color:'#1e293b'}}>{title}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Inline form - shows under selected type */}
+              {promoAdding && (
+                <div className="mt-3 rounded-xl p-4" style={{background:'#fff', border:`1.5px solid ${TYPE_COLOR[promoType]}`}}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[14px]">{{sale:'🏷️',bulk:'📦',time:'⏰'}[promoType]}</span>
+                    <span className="text-[13px] font-bold" style={{color:TYPE_COLOR[promoType]}}>{TYPE_NAME[promoType]}</span>
+                    <span className="text-[11px] text-slate-400 ml-1">for {p.name} (${parseFloat(p.price||0).toFixed(2)})</span>
+                  </div>
+
                   {promoType==='sale' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <div className="text-[10px] text-slate-500 mb-1">Start</div>
+                    <div className="grid gap-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">Start Date & Time *</div>
                           <input type="datetime-local" value={saleStart} onChange={e=>setSaleStart(e.target.value)}
-                            className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe'}}/>
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-[10px] text-slate-500 mb-1">End</div>
-                          <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
-                            className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe'}}/>
+                            className="w-full rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #c7d2fe', background:'#f8fafc'}}/>
                         </div>
                         <div>
-                          <div className="text-[10px] text-slate-500 mb-1">Type</div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">End Date & Time *</div>
+                          <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
+                            className="w-full rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #c7d2fe', background:'#f8fafc'}}/>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 items-end">
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">Discount Type</div>
                           <select value={saleType} onChange={e=>setSaleType(e.target.value)}
-                            className="rounded-lg px-2 py-2 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe'}}>
-                            <option value="fixed">$ Fixed</option>
-                            <option value="pct">% Off</option>
+                            className="rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #c7d2fe', background:'#fff'}}>
+                            <option value="fixed">$ Fixed Sale Price</option>
+                            <option value="pct">% Percentage Off</option>
                           </select>
                         </div>
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-1">{saleType==='fixed'?'Sale Price':'Discount %'}</div>
+                        <div className="flex-1">
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">{saleType==='fixed'?'Sale Price ($)':'Discount (%)'} *</div>
                           <input type="number" value={saleVal} onChange={e=>setSaleVal(e.target.value)}
-                            placeholder={saleType==='fixed'?'8.00':'20'} step="0.01"
-                            className="w-24 rounded-lg px-2 py-1.5 text-[12px] font-mono outline-none" style={{border:'1.5px solid #c7d2fe'}}/>
+                            placeholder={saleType==='fixed'?'e.g. 8.00':'e.g. 20'} step="0.01" autoFocus
+                            className="w-full rounded-lg px-3 py-2 text-[13px] font-mono outline-none" style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
                         </div>
                         {saleVal && (
-                          <div className="flex items-end pb-1.5 gap-1 text-[11px]">
-                            <span className="line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
-                            <span className="font-bold" style={{color:'#6366f1'}}>
-                              →${saleType==='fixed'?parseFloat(saleVal).toFixed(2):(parseFloat(p.price||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
+                          <div className="flex flex-col items-center pb-1">
+                            <span className="text-[10px] line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
+                            <span className="text-[14px] font-bold" style={{color:'#6366f1'}}>
+                              ${saleType==='fixed'?parseFloat(saleVal).toFixed(2):(parseFloat(p.price||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
+                            </span>
+                            <span className="text-[9px] text-green-600">
+                              Save ${saleType==='fixed'?(parseFloat(p.price||0)-parseFloat(saleVal)).toFixed(2):(parseFloat(p.price||0)*parseFloat(saleVal)/100).toFixed(2)}
                             </span>
                           </div>
                         )}
@@ -855,103 +866,217 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                     </div>
                   )}
 
-                  {/* Bulk */}
                   {promoType==='bulk' && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-500 whitespace-nowrap">Buy</span>
-                      <input type="number" value={bulkQty} onChange={e=>setBulkQty(e.target.value)} placeholder="2" min="2"
-                        className="w-16 rounded-lg px-2 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #86efac'}}/>
-                      <span className="text-[11px] text-slate-400">or more at</span>
-                      <select value={bulkType} onChange={e=>setBulkType(e.target.value)}
-                        className="rounded-lg px-2 py-2 text-[11px] outline-none" style={{border:'1.5px solid #86efac'}}>
-                        <option value="fixed">$ Each</option>
-                        <option value="pct">% Off</option>
-                      </select>
-                      <input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)}
-                        placeholder={bulkType==='fixed'?'8.00':'10'} step="0.01"
-                        className="w-24 rounded-lg px-2 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #86efac'}}/>
-                      {bulkQty && bulkVal && (
-                        <span className="text-[11px] font-semibold" style={{color:'#16a34a'}}>
-                          Buy {bulkQty}+ → {bulkType==='fixed'?`$${parseFloat(bulkVal).toFixed(2)}/ea`:`${bulkVal}% off`}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Time */}
-                  {promoType==='time' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-slate-500 mr-1">Days:</span>
-                        {DAYS.map((d,i)=>(
-                          <button key={i} onClick={()=>setTimeDays(ds=>ds.includes(i)?ds.filter(x=>x!==i):[...ds,i].sort())}
-                            className="w-8 h-7 rounded text-[10px] font-bold cursor-pointer border-2 transition-all"
-                            style={timeDays.includes(i)?{background:'#f59e0b',borderColor:'#f59e0b',color:'#fff'}:{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
-                            {d.substring(0,2)}
-                          </button>
-                        ))}
-                        <span className="text-[10px] text-slate-500 ml-2">Time:</span>
-                        <input type="time" value={timeStart} onChange={e=>setTimeStart(e.target.value)}
-                          className="rounded-lg px-2 py-1 text-[11px] outline-none" style={{border:'1.5px solid #fde047'}}/>
-                        <span className="text-slate-400 text-[10px]">→</span>
-                        <input type="time" value={timeEnd} onChange={e=>setTimeEnd(e.target.value)}
-                          className="rounded-lg px-2 py-1 text-[11px] outline-none" style={{border:'1.5px solid #fde047'}}/>
-                        <select value={timeType} onChange={e=>setTimeType(e.target.value)}
-                          className="rounded-lg px-2 py-1 text-[11px] outline-none" style={{border:'1.5px solid #fde047'}}>
-                          <option value="fixed">$ Price</option>
-                          <option value="pct">% Off</option>
-                        </select>
-                        <input type="number" value={timeVal} onChange={e=>setTimeVal(e.target.value)}
-                          placeholder={timeType==='fixed'?'3.00':'10'} step="0.01"
-                          className="w-20 rounded-lg px-2 py-1 text-[11px] font-mono outline-none" style={{border:'1.5px solid #fde047'}}/>
+                    <div className="grid gap-2">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">Min Quantity *</div>
+                          <input type="number" value={bulkQty} onChange={e=>setBulkQty(e.target.value)} placeholder="2" min="2" autoFocus
+                            className="w-20 rounded-lg px-3 py-2 text-[13px] font-mono outline-none" style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+                        </div>
+                        <div className="text-[12px] text-slate-400 mt-4">or more →</div>
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">Discount Type</div>
+                          <select value={bulkType} onChange={e=>setBulkType(e.target.value)}
+                            className="rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #86efac', background:'#fff'}}>
+                            <option value="fixed">$ Fixed Price Each</option>
+                            <option value="pct">% Off</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">{bulkType==='fixed'?'Price Each ($)':'Discount (%)'} *</div>
+                          <input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)}
+                            placeholder={bulkType==='fixed'?'8.00':'10'} step="0.01"
+                            className="w-28 rounded-lg px-3 py-2 text-[13px] font-mono outline-none" style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+                        </div>
+                        {bulkQty && bulkVal && (
+                          <div className="flex flex-col mt-4">
+                            <span className="text-[12px] font-bold" style={{color:'#16a34a'}}>
+                              Buy {bulkQty}+ → {bulkType==='fixed'?`$${parseFloat(bulkVal).toFixed(2)}/ea`:`${bulkVal}% off`}
+                            </span>
+                            {bulkType==='pct' && <span className="text-[11px] text-slate-400">${(parseFloat(p.price||0)*(1-parseFloat(bulkVal)/100)).toFixed(2)}/ea</span>}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* Save button */}
-                  <button onClick={savePromo} disabled={promoSaving}
-                    className="w-full mt-2 rounded-lg py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-                    style={{background: TYPE_COLOR[promoType]}}>
-                    {promoSaving ? '⏳ Saving...' : `✓ Add ${TYPE_NAME[promoType]}`}
-                  </button>
+                  {promoType==='time' && (
+                    <div className="grid gap-3">
+                      <div>
+                        <div className="text-[10px] font-semibold text-slate-500 mb-1.5">Days of Week *</div>
+                        <div className="flex gap-2">
+                          {DAYS.map((d,i)=>(
+                            <button key={i} onClick={()=>setTimeDays(ds=>ds.includes(i)?ds.filter(x=>x!==i):[...ds,i].sort())}
+                              className="w-10 h-10 rounded-xl text-[11px] font-bold cursor-pointer border-2 transition-all"
+                              style={timeDays.includes(i)?{background:'#f59e0b',borderColor:'#f59e0b',color:'#fff'}:{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
+                              {d.substring(0,2)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-3 items-end">
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">Start Time *</div>
+                          <input type="time" value={timeStart} onChange={e=>setTimeStart(e.target.value)}
+                            className="rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                        </div>
+                        <div className="text-[12px] text-slate-400 mb-2">to</div>
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">End Time *</div>
+                          <input type="time" value={timeEnd} onChange={e=>setTimeEnd(e.target.value)}
+                            className="rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">Discount Type</div>
+                          <select value={timeType} onChange={e=>setTimeType(e.target.value)}
+                            className="rounded-lg px-3 py-2 text-[12px] outline-none" style={{border:'1.5px solid #fde047', background:'#fff'}}>
+                            <option value="fixed">$ Fixed Price</option>
+                            <option value="pct">% Off</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-semibold text-slate-500 mb-1">{timeType==='fixed'?'Price ($)':'Discount (%)'} *</div>
+                          <input type="number" value={timeVal} onChange={e=>setTimeVal(e.target.value)}
+                            placeholder={timeType==='fixed'?'3.00':'10'} step="0.01"
+                            className="w-24 rounded-lg px-3 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={()=>{setPromoAdding(false);setSaleVal('');setBulkQty('');setBulkVal('');setTimeVal('');setTimeDays([])}}
+                      className="flex-1 rounded-xl py-2 text-[12px] font-semibold cursor-pointer border"
+                      style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
+                      Cancel
+                    </button>
+                    <button onClick={savePromo} disabled={promoSaving}
+                      className="flex-[2] rounded-xl py-2.5 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
+                      style={{background:`linear-gradient(135deg,${TYPE_COLOR[promoType]},${TYPE_COLOR[promoType]}cc)`}}>
+                      {promoSaving ? '⏳ Saving...' : `✓ Add ${TYPE_NAME[promoType]}`}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Current Promotions List ── */}
+            {promos.length > 0 && (
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Current Promotions ({promos.length})
+                </div>
+                <div className="flex flex-col gap-2">
+                  {promos.map(promo => {
+                    const now = new Date()
+                    const isExpired = promo.type==='sale' && promo.sale_end && new Date(promo.sale_end) < now
+                    const isUpcoming = promo.type==='sale' && promo.sale_start && new Date(promo.sale_start) > now
+                    const tc = TYPE_COLOR[promo.type] || '#6366f1'
+
+                    return (
+                      <div key={promo.id} className="rounded-xl overflow-hidden"
+                        style={{border:`1.5px solid ${isExpired?'#e2e8f0':promo.is_active?tc+'40':'#e2e8f0'}`,
+                          opacity: isExpired ? 0.6 : 1}}>
+                        {/* Header */}
+                        <div className="flex items-center gap-3 px-4 py-2.5"
+                          style={{background: isExpired?'#f8fafc':promo.is_active?`${tc}08`:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
+                          <span className="text-[18px]">{{sale:'🏷️',bulk:'📦',time:'⏰'}[promo.type]||'🏷️'}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[13px] font-bold text-slate-800">{promo.name}</span>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                                style={{background:`${tc}15`, color:tc}}>
+                                {TYPE_NAME[promo.type]}
+                              </span>
+                              {isExpired && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500">EXPIRED</span>}
+                              {isUpcoming && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">UPCOMING</span>}
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-1 rounded-full ${
+                            isExpired ? 'bg-slate-100 text-slate-400' :
+                            promo.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'
+                          }`}>
+                            {isExpired ? '● EXPIRED' : promo.is_active ? '● ACTIVE' : '● PAUSED'}
+                          </span>
+                          {!isExpired && (
+                            <button onClick={()=>togglePromo(promo)}
+                              className="text-[10px] px-2.5 py-1 rounded-lg border cursor-pointer"
+                              style={promo.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
+                              {promo.is_active?'Pause':'Activate'}
+                            </button>
+                          )}
+                          <button onClick={()=>deletePromo(promo.id)}
+                            className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-[16px]">✕</button>
+                        </div>
+
+                        {/* Details */}
+                        <div className="px-4 py-3 bg-white grid gap-1.5">
+                          {promo.type==='sale' && (
+                            <div className="flex flex-wrap gap-4 text-[12px]">
+                              <div><span className="text-slate-400 mr-1">Period:</span>
+                                <span className="font-semibold">{new Date(promo.sale_start).toLocaleDateString()} {new Date(promo.sale_start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} → {new Date(promo.sale_end).toLocaleDateString()} {new Date(promo.sale_end).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                              </div>
+                              <div><span className="text-slate-400 mr-1">Discount:</span>
+                                <span className="font-bold" style={{color:tc}}>
+                                  {promo.sale_type==='pct'?`${promo.sale_value}% off`:`$${promo.sale_value} fixed price`}
+                                </span>
+                              </div>
+                              <div><span className="text-slate-400 mr-1">Original:</span>
+                                <span className="font-mono line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
+                              </div>
+                              <div><span className="text-slate-400 mr-1">Sale Price:</span>
+                                <span className="font-bold font-mono" style={{color:'#16a34a'}}>
+                                  ${promo.sale_type==='pct'?(parseFloat(p.price||0)*(1-promo.sale_value/100)).toFixed(2):parseFloat(promo.sale_value).toFixed(2)}
+                                </span>
+                              </div>
+                              <div><span className="text-slate-400 mr-1">Save:</span>
+                                <span className="font-bold text-green-600">
+                                  ${promo.sale_type==='pct'?(parseFloat(p.price||0)*promo.sale_value/100).toFixed(2):(parseFloat(p.price||0)-promo.sale_value).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {promo.type==='bulk' && (promo.bulk_tiers||[]).map((tier,i)=>(
+                            <div key={i} className="flex gap-4 text-[12px]">
+                              <div><span className="text-slate-400 mr-1">Buy:</span>
+                                <span className="font-bold">{tier.min_qty}+ units</span></div>
+                              <div><span className="text-slate-400 mr-1">Price:</span>
+                                <span className="font-bold" style={{color:tc}}>
+                                  {tier.type==='fixed'?`$${tier.value}/each`:`${tier.value}% off`}
+                                </span></div>
+                              <div><span className="text-slate-400 mr-1">You pay:</span>
+                                <span className="font-bold font-mono text-green-600">
+                                  ${tier.type==='fixed'?parseFloat(tier.value).toFixed(2):(parseFloat(p.price||0)*(1-tier.value/100)).toFixed(2)}/ea
+                                </span></div>
+                            </div>
+                          ))}
+                          {promo.type==='time' && (promo.time_rules||[]).map((rule,i)=>(
+                            <div key={i} className="flex gap-4 text-[12px]">
+                              <div><span className="text-slate-400 mr-1">Days:</span>
+                                <span className="font-bold">{(rule.days||[]).map(d=>DAYS[d]).join(', ')}</span></div>
+                              <div><span className="text-slate-400 mr-1">Hours:</span>
+                                <span className="font-bold">{rule.start_time} – {rule.end_time}</span></div>
+                              <div><span className="text-slate-400 mr-1">Price:</span>
+                                <span className="font-bold" style={{color:tc}}>
+                                  {rule.type==='fixed'?`$${rule.value} fixed`:`${rule.value}% off`}
+                                </span></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Promotions list */}
-            {promos.length===0 && !promoAdding ? <Empty msg="No promotions — click +Add Promotion"/>
-            : <div className="flex flex-col gap-2">
-                {promos.map(promo=>(
-                  <div key={promo.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{background:'#fff', border:`1.5px solid ${promo.is_active?(TYPE_COLOR[promo.type]||'#6366f1')+'40':'#e2e8f0'}`}}>
-                    <span className="text-[18px]">{TYPE_ICON[promo.type]||'🏷️'}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] font-bold text-slate-700">{promo.name}</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
-                          style={{background:TYPE_COLOR[promo.type]+'15', color:TYPE_COLOR[promo.type]}}>
-                          {TYPE_NAME[promo.type]}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {promo.type==='sale'&&`${promo.sale_type==='pct'?`${promo.sale_value}% off`:`$${promo.sale_value}`} · ${new Date(promo.sale_start).toLocaleDateString()} → ${new Date(promo.sale_end).toLocaleDateString()}`}
-                        {promo.type==='bulk'&&(promo.bulk_tiers||[]).map(t=>`Buy ${t.min_qty}+: ${t.type==='fixed'?`$${t.value}/ea`:`${t.value}% off`}`).join(' · ')}
-                        {promo.type==='time'&&(promo.time_rules||[]).map(r=>`${(r.days||[]).map(d=>DAYS[d]).join(',')} ${r.start_time}-${r.end_time}`).join(' · ')}
-                      </div>
-                    </div>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${promo.is_active?'bg-green-100 text-green-700':'bg-slate-100 text-slate-400'}`}>
-                      {promo.is_active?'● ACTIVE':'● PAUSED'}
-                    </span>
-                    <button onClick={()=>togglePromo(promo)}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border cursor-pointer"
-                      style={promo.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
-                      {promo.is_active?'Pause':'On'}
-                    </button>
-                    <button onClick={()=>deletePromo(promo.id)}
-                      className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
-                  </div>
-                ))}
-              </div>}
+            {promos.length === 0 && !promoAdding && (
+              <div className="flex flex-col items-center py-8 text-slate-300">
+                <div className="text-4xl mb-2">🏷️</div>
+                <div className="text-[12px]">No promotions yet — select a type above to add one</div>
+              </div>
+            )}
           </div>
         )}
       </div>
