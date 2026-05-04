@@ -50,7 +50,7 @@ export default function POSPage() {
     queryKey: ['pos-products', tenant?.id, searchQuery, activeCategory],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity)')
+        .select('*, inventory(quantity), promotions(type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules)')
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
         .neq('is_enabled', false)

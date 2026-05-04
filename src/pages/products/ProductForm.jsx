@@ -9,6 +9,8 @@ const UNITS = ['ea','lb','kg','oz','g','l','ml','ft','m','hr','pair','box','case
 export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
   const qc = useQueryClient()
   const [saving, setSaving]     = useState(false)
+  const [showPromoForm, setShowPromoForm] = useState(false)
+  const [promoType, setPromoType]         = useState('sale')
   const [uploading, setUploading] = useState(false)
   const [tagInput, setTagInput] = useState('')
   const [showAddSub, setShowAddSub] = useState(false)
@@ -690,6 +692,11 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
           </div>
         )}
 
+        {/* Promotions quick-add (only for existing products) */}
+        {form.id && (
+          <ProductPromotions productId={form.id} productName={form.name} productPrice={form.price} tenantId={tenantId}/>
+        )}
+
         {/* Footer */}
         <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4 sticky bottom-0 bg-[#0d1117]">
           <button onClick={onClose}
@@ -702,6 +709,260 @@ export function ProductForm({ initial = {}, tenantId, onSave, onClose }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Promotions quick view/add inside ProductForm ──
+function ProductPromotions({ productId, productName, productPrice, tenantId }) {
+  const qc = useQueryClient()
+  const [adding, setAdding]     = useState(false)
+  const [type, setType]         = useState('sale')
+  const [saving, setSaving]     = useState(false)
+  // Sale fields
+  const [saleStart, setSaleStart] = useState('')
+  const [saleEnd,   setSaleEnd]   = useState('')
+  const [saleType,  setSaleType]  = useState('fixed')
+  const [saleVal,   setSaleVal]   = useState('')
+  // Bulk tier
+  const [bulkQty,   setBulkQty]   = useState('')
+  const [bulkType,  setBulkType]  = useState('fixed')
+  const [bulkVal,   setBulkVal]   = useState('')
+  // Time rule
+  const [timeDays,  setTimeDays]  = useState([])
+  const [timeStart, setTimeStart] = useState('')
+  const [timeEnd,   setTimeEnd]   = useState('')
+  const [timeType,  setTimeType]  = useState('fixed')
+  const [timeVal,   setTimeVal]   = useState('')
+
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+  const { data: promos = [] } = useQuery({
+    queryKey: ['product-promos', productId],
+    queryFn: async () => {
+      const { data } = await supabase.from('promotions')
+        .select('*').eq('product_id', productId).order('created_at', { ascending: false })
+      return data || []
+    },
+    enabled: !!productId,
+  })
+
+  const togglePromo = async (p) => {
+    await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    qc.invalidateQueries(['product-promos', productId])
+    qc.invalidateQueries(['promotions'])
+  }
+
+  const deletePromo = async (id) => {
+    if (!confirm('Delete this promotion?')) return
+    await supabase.from('promotions').delete().eq('id', id)
+    qc.invalidateQueries(['product-promos', productId])
+    qc.invalidateQueries(['promotions'])
+  }
+
+  const savePromo = async () => {
+    setSaving(true)
+    try {
+      const base = { tenant_id: tenantId, product_id: productId, type, is_active: true }
+      let payload = { ...base }
+
+      if (type === 'sale') {
+        if (!saleStart || !saleEnd || !saleVal) { toast.error('Fill all fields'); setSaving(false); return }
+        payload = { ...payload,
+          name: `${productName} Sale`,
+          sale_start: saleStart, sale_end: saleEnd,
+          sale_type: saleType, sale_value: parseFloat(saleVal) }
+      } else if (type === 'bulk') {
+        if (!bulkQty || !bulkVal) { toast.error('Fill all fields'); setSaving(false); return }
+        payload = { ...payload,
+          name: `${productName} Bulk`,
+          bulk_tiers: [{ min_qty: parseInt(bulkQty), type: bulkType, value: parseFloat(bulkVal) }] }
+      } else {
+        if (!timeDays.length || !timeStart || !timeEnd || !timeVal) { toast.error('Fill all fields'); setSaving(false); return }
+        payload = { ...payload,
+          name: `${productName} Time`,
+          time_rules: [{ days: timeDays, start_time: timeStart, end_time: timeEnd, type: timeType, value: parseFloat(timeVal) }] }
+      }
+
+      await supabase.from('promotions').insert(payload)
+      qc.invalidateQueries(['product-promos', productId])
+      qc.invalidateQueries(['promotions'])
+      setAdding(false)
+      toast.success('Promotion added ✓')
+    } catch(err) { toast.error(err.message) }
+    finally { setSaving(false) }
+  }
+
+  const TYPE_COLOR = { sale:'#6366f1', bulk:'#16a34a', time:'#d97706' }
+  const TYPE_ICON  = { sale:'🏷️', bulk:'📦', time:'⏰' }
+
+  const formatSummary = (p) => {
+    if (p.type==='sale') {
+      const v = p.sale_type==='pct' ? `-${p.sale_value}%` : `$${p.sale_value}`
+      return `${v} · ${new Date(p.sale_start).toLocaleDateString()} → ${new Date(p.sale_end).toLocaleDateString()}`
+    }
+    if (p.type==='bulk') return (p.bulk_tiers||[]).map(t=>`Buy ${t.min_qty}+: ${t.type==='fixed'?`$${t.value}`:`${t.value}%off`}`).join(' · ')
+    if (p.type==='time') return (p.time_rules||[]).map(r=>`${(r.days||[]).map(d=>DAYS[d]).join(',')} ${r.start_time}-${r.end_time}`).join(' · ')
+    return ''
+  }
+
+  return (
+    <div className="border-t border-[#1e2d42] pt-4 mt-2">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider">
+          Promotions ({promos.length})
+        </div>
+        <button onClick={() => setAdding(!adding)}
+          className="text-[10px] font-bold cursor-pointer border-none rounded-lg px-3 py-1.5 transition-all"
+          style={{background: adding ? '#fee2e2' : 'rgba(99,102,241,0.1)', color: adding ? '#dc2626' : '#6366f1'}}>
+          {adding ? '✕ Cancel' : '+ Add Promotion'}
+        </button>
+      </div>
+
+      {/* Existing promotions */}
+      {promos.length > 0 && (
+        <div className="flex flex-col gap-1.5 mb-3">
+          {promos.map(p => (
+            <div key={p.id} className="flex items-center gap-2.5 rounded-lg px-3 py-2"
+              style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+              <span className="text-[14px]">{TYPE_ICON[p.type]}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-semibold text-slate-700">{p.name}</div>
+                <div className="text-[10px] text-slate-400 truncate">{formatSummary(p)}</div>
+              </div>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${p.is_active ? 'text-green-700 bg-green-100' : 'text-slate-400 bg-slate-100'}`}>
+                {p.is_active ? 'ACTIVE' : 'PAUSED'}
+              </span>
+              <button onClick={() => togglePromo(p)}
+                className="text-[9px] px-2 py-1 rounded border cursor-pointer transition-all"
+                style={p.is_active ? {background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'} : {background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
+                {p.is_active ? 'Pause' : 'On'}
+              </button>
+              <button onClick={() => deletePromo(p.id)}
+                className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-[12px]">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new promotion inline */}
+      {adding && (
+        <div className="rounded-xl p-4 mb-3" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+          {/* Type selector */}
+          <div className="flex gap-2 mb-3">
+            {[['sale','🏷️ Sale','#6366f1'],['bulk','📦 Bulk','#16a34a'],['time','⏰ Time','#d97706']].map(([t,l,c]) => (
+              <button key={t} onClick={() => setType(t)}
+                className="flex-1 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-2 transition-all"
+                style={type===t ? {background:`${c}18`, borderColor:c, color:c} : {background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+                {l}
+              </button>
+            ))}
+          </div>
+
+          {/* Sale fields */}
+          {type === 'sale' && (
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-[9px] text-slate-500 mb-1">Start</div>
+                  <input type="datetime-local" value={saleStart} onChange={e=>setSaleStart(e.target.value)}
+                    className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                </div>
+                <div>
+                  <div className="text-[9px] text-slate-500 mb-1">End</div>
+                  <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
+                    className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <select value={saleType} onChange={e=>setSaleType(e.target.value)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                  style={{border:'1.5px solid #c7d2fe', background:'#fff'}}>
+                  <option value="fixed">Fixed Price $</option>
+                  <option value="pct">% Off</option>
+                </select>
+                <input type="number" value={saleVal} onChange={e=>setSaleVal(e.target.value)}
+                  placeholder={saleType==='fixed'?'Sale price':'% off'} step="0.01"
+                  className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-mono outline-none"
+                  style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+              </div>
+              {saleVal && (
+                <div className="text-[11px] flex items-center gap-2">
+                  <span className="line-through text-slate-400">${parseFloat(productPrice||0).toFixed(2)}</span>
+                  <span className="font-bold text-indigo-600">
+                    → ${saleType==='fixed' ? parseFloat(saleVal).toFixed(2) : (parseFloat(productPrice||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bulk fields */}
+          {type === 'bulk' && (
+            <div className="flex gap-2 items-center">
+              <div className="text-[11px] text-slate-600 whitespace-nowrap">Buy</div>
+              <input type="number" value={bulkQty} onChange={e=>setBulkQty(e.target.value)}
+                placeholder="2" min="2" className="w-16 rounded-lg px-2 py-1.5 text-[12px] font-mono outline-none"
+                style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+              <div className="text-[11px] text-slate-600">or more →</div>
+              <select value={bulkType} onChange={e=>setBulkType(e.target.value)}
+                className="rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                style={{border:'1.5px solid #86efac', background:'#fff'}}>
+                <option value="fixed">$ Each</option>
+                <option value="pct">% Off</option>
+              </select>
+              <input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)}
+                placeholder={bulkType==='fixed'?'8.00':'10'} step="0.01"
+                className="flex-1 rounded-lg px-2 py-1.5 text-[12px] font-mono outline-none"
+                style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+            </div>
+          )}
+
+          {/* Time fields */}
+          {type === 'time' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1">
+                {DAYS.map((d,i) => (
+                  <button key={i} onClick={() => setTimeDays(ds => ds.includes(i) ? ds.filter(x=>x!==i) : [...ds,i].sort())}
+                    className="w-8 h-8 rounded-lg text-[10px] font-bold cursor-pointer border-2 transition-all"
+                    style={timeDays.includes(i)
+                      ? {background:'#f59e0b', borderColor:'#f59e0b', color:'#fff'}
+                      : {background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+                    {d.substring(0,2)}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 items-center">
+                <input type="time" value={timeStart} onChange={e=>setTimeStart(e.target.value)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                  style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                <span className="text-[11px] text-slate-400">to</span>
+                <input type="time" value={timeEnd} onChange={e=>setTimeEnd(e.target.value)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                  style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+                <select value={timeType} onChange={e=>setTimeType(e.target.value)}
+                  className="rounded-lg px-2 py-1.5 text-[11px] outline-none"
+                  style={{border:'1.5px solid #fde047', background:'#fff'}}>
+                  <option value="fixed">$ Price</option>
+                  <option value="pct">% Off</option>
+                </select>
+                <input type="number" value={timeVal} onChange={e=>setTimeVal(e.target.value)}
+                  placeholder={timeType==='fixed'?'3.00':'10'} step="0.01"
+                  className="w-20 rounded-lg px-2 py-1.5 text-[12px] font-mono outline-none"
+                  style={{border:'1.5px solid #fde047', background:'#fff'}}/>
+              </div>
+            </div>
+          )}
+
+          <button onClick={savePromo} disabled={saving}
+            className="w-full mt-3 rounded-lg py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
+            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+            {saving ? '⏳ Saving...' : '✓ Add Promotion'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

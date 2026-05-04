@@ -51,10 +51,47 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
   const qty    = product.inventory?.reduce((a,i) => a+(i.quantity||0), 0) ?? null
   const isLow  = qty !== null && qty <= (product.low_stock_qty || 5) && product.type !== 'service'
 
-  const formatPrice = () =>
-    product.type === 'weight'
-      ? `$${product.price.toFixed(2)}/${product.unit||'lb'}`
-      : `$${product.price.toFixed(2)}`
+  // Check active promotion (client-side, using local time)
+  const getActivePrice = () => {
+    const promos = product.promotions || []
+    const now = new Date()
+    let best = product.price
+
+    for (const p of promos) {
+      if (!p.is_active) continue
+      if (p.type === 'sale' && p.sale_start && p.sale_end) {
+        if (now >= new Date(p.sale_start) && now <= new Date(p.sale_end)) {
+          const calc = p.sale_type === 'pct'
+            ? product.price * (1 - p.sale_value/100)
+            : p.sale_value
+          if (calc < best) best = calc
+        }
+      }
+      if (p.type === 'time' && p.time_rules) {
+        for (const r of p.time_rules) {
+          const dow = now.getDay()
+          const t   = now.toTimeString().slice(0,5)
+          if ((r.days||[]).includes(dow) && t >= r.start_time && t <= r.end_time) {
+            const calc = r.type === 'pct'
+              ? product.price * (1 - r.value/100)
+              : r.value
+            if (calc < best) best = calc
+          }
+        }
+      }
+    }
+    return best
+  }
+
+  const activePrice = getActivePrice()
+  const onPromo     = activePrice < product.price
+
+  const formatPrice = () => {
+    const p = onPromo ? activePrice : product.price
+    return product.type === 'weight'
+      ? `$${p.toFixed(2)}/${product.unit||'lb'}`
+      : `$${p.toFixed(2)}`
+  }
 
   return (
     <div className="rounded-xl overflow-hidden transition-all duration-150 cursor-pointer group"
@@ -96,9 +133,17 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
           style={{color:'#1e293b'}}>
           {product.name}
         </div>
-        <div className="text-[13px] font-bold"
-          style={{color: product.type==='weight' ? '#16a34a' : '#4f46e5'}}>
-          {formatPrice()}
+        <div>
+          {onPromo && (
+            <div className="text-[10px] line-through text-slate-400 font-mono">
+              ${product.price.toFixed(2)}
+            </div>
+          )}
+          <div className="text-[13px] font-bold"
+            style={{color: onPromo ? '#dc2626' : product.type==='weight' ? '#16a34a' : '#4f46e5'}}>
+            {formatPrice()}
+            {onPromo && <span className="ml-1 text-[9px] px-1 py-0.5 rounded" style={{background:'#fee2e2',color:'#dc2626'}}>SALE</span>}
+          </div>
         </div>
         {product.type !== 'service' && qty !== null && (
           <div className="text-[10px] mt-0.5 font-medium"
