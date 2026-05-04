@@ -239,7 +239,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
         .order('created_at', { ascending: false }).limit(50)
       return data || []
     },
-    enabled: tab==='receiving',
+    enabled: tab==='receiving' || tab==='info',
   })
   const { data: adjustments=[], isLoading: loadingA } = useQuery({
     queryKey: ['product-adjustments', p.id],
@@ -249,7 +249,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
         .order('created_at', { ascending: false }).limit(100)
       return data || []
     },
-    enabled: tab==='adjustments',
+    enabled: true,
   })
   const { data: sales=[], isLoading: loadingS } = useQuery({
     queryKey: ['product-sales', p.id],
@@ -259,7 +259,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
         .eq('product_id', p.id).order('created_at', { ascending: false }).limit(100)
       return data || []
     },
-    enabled: tab==='sales',
+    enabled: true,
   })
 
   // Promotions
@@ -286,7 +286,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
         .eq('product_id', p.id).order('created_at', { ascending: false })
       return data || []
     },
-    enabled: tab==='promotions',
+    enabled: true,
   })
 
   const togglePromo = async (promo) => {

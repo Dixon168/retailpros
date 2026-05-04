@@ -286,7 +286,7 @@ export default function ProductsPage() {
                       {/* Actions */}
                       <td className="px-3 py-2">
                         <div className="flex gap-1.5 flex-wrap">
-                          <button onClick={() => setExpandedId(expandedId===p.id ? null : p.id)}
+                          <button onClick={() => { setExpandedId(expandedId===p.id?null:p.id); setHistoryId(null) }}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={expandedId===p.id
                               ? {background:'#e0e7ff', borderColor:'#a5b4fc', color:'#6366f1'}
@@ -300,7 +300,7 @@ export default function ProductsPage() {
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📦 Stock
                           </button>
-                          <button onClick={() => setHistoryId(historyId===p.id ? null : p.id)}
+                          <button onClick={() => { setHistoryId(historyId===p.id?null:p.id); setExpandedId(null) }}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={historyId===p.id
                               ? {background:'#dbeafe', borderColor:'#93c5fd', color:'#2563eb'}
@@ -712,114 +712,228 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
   )
 }
 
-// ── Sales History Inline ──
+// ── Combined History Inline (Sales + Receiving + Adjustments) ──
 function SalesHistoryInline({ product: p }) {
-  const { data: sales = [], isLoading } = useQuery({
-    queryKey: ['product-sales-inline', p.id],
+  const [filter, setFilter] = useState('all') // 'all'|'sale'|'receive'|'adjust'
+
+  const { data: sales = [], isLoading: ls } = useQuery({
+    queryKey: ['hist-sales', p.id],
     queryFn: async () => {
       const { data } = await supabase.from('order_items')
         .select('*, orders(order_number, created_at, cashier_name, customers(name), order_payments(method))')
-        .eq('product_id', p.id)
-        .order('created_at', { ascending: false })
-        .limit(100)
-      return data || []
+        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(200)
+      return (data||[]).map(r => ({
+        _type: 'sale',
+        date: r.orders?.created_at,
+        invoice: r.orders?.order_number,
+        customer: r.orders?.customers?.name || 'Walk-in',
+        qty: r.quantity,
+        unit: p.unit,
+        price: r.unit_price,
+        discount: r.discount_amt > 0 ? `-$${parseFloat(r.discount_amt).toFixed(2)}` : r.discount_pct > 0 ? `-${r.discount_pct}%` : null,
+        total: r.line_total,
+        serial: r.serial_number,
+        payment: r.orders?.order_payments?.[0]?.method,
+        cashier: r.orders?.cashier_name,
+        note: r.note,
+        reason: null,
+        by: null,
+      }))
     },
   })
 
-  const totalQty = sales.reduce((s,r) => s+(r.quantity||0), 0)
-  const totalRev = sales.reduce((s,r) => s+(r.line_total||0), 0)
+  const { data: receives = [], isLoading: lr } = useQuery({
+    queryKey: ['hist-receives', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('inventory_receives')
+        .select('*, suppliers(name)').eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(200)
+      return (data||[]).map(r => ({
+        _type: 'receive',
+        date: r.created_at,
+        invoice: null,
+        customer: r.suppliers?.name || '—',
+        qty: `+${r.qty}`,
+        unit: p.unit,
+        price: r.cost,
+        discount: null,
+        total: r.qty * (r.cost||0),
+        serial: null,
+        payment: null,
+        cashier: null,
+        note: r.notes,
+        reason: 'Stock Receive',
+        by: null,
+      }))
+    },
+  })
+
+  const { data: adjustments = [], isLoading: la } = useQuery({
+    queryKey: ['hist-adjustments', p.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('inventory_adjustments')
+        .select('*, users(name)').eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(200)
+      return (data||[]).map(r => ({
+        _type: 'adjust',
+        date: r.created_at,
+        invoice: null,
+        customer: null,
+        qty: `${r.qty_change>=0?'+':''}${r.qty_change}`,
+        unit: p.unit,
+        price: null,
+        discount: null,
+        total: null,
+        serial: null,
+        payment: null,
+        cashier: null,
+        note: null,
+        reason: r.reason,
+        by: r.users?.name || r.user_name,
+      }))
+    },
+  })
+
+  const TYPE_STYLE = {
+    sale:    { bg:'#eff6ff', color:'#2563eb', label:'Sale',    dot:'#2563eb' },
+    receive: { bg:'#f0fdf4', color:'#16a34a', label:'Receive', dot:'#16a34a' },
+    adjust:  { bg:'#fffbeb', color:'#ca8a04', label:'Adjust',  dot:'#f59e0b' },
+  }
+
+  const all = [...sales, ...receives, ...adjustments]
+    .sort((a,b) => new Date(b.date) - new Date(a.date))
+
+  const displayed = filter === 'all' ? all : all.filter(r => r._type === filter)
+  const isLoading = ls || lr || la
+
+  const salesQty = sales.reduce((s,r) => s + (r.qty||0), 0)
+  const salesRev = sales.reduce((s,r) => s + (r.total||0), 0)
+  const recQty   = receives.reduce((s,r) => s + parseInt(r.qty||0), 0)
+  const adjNet   = adjustments.reduce((s,r) => s + parseFloat(r.qty||0), 0)
 
   return (
-    <div style={{background:'#f0f7ff', borderTop:'2px solid #2563eb'}}>
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-3 border-b" style={{background:'#fff', borderColor:'#e2e8f0'}}>
-        <div className="text-[13px] font-bold text-blue-700">🧾 Sales History — {p.name}</div>
-        <div className="flex gap-3 ml-4">
+    <div style={{background:'#f8fafc', borderTop:'2px solid #2563eb'}}>
+
+      {/* Summary bar */}
+      <div className="flex items-center gap-4 px-4 py-3 border-b flex-wrap"
+        style={{background:'#fff', borderColor:'#e2e8f0'}}>
+        <div className="text-[13px] font-bold text-blue-700">🧾 Full History — {p.name}</div>
+        <div className="flex gap-4 ml-2">
           {[
-            ['Total Sold', `${totalQty} ${p.unit||'ea'}`, '#6366f1'],
-            ['Revenue',    `$${totalRev.toFixed(2)}`,      '#16a34a'],
-            ['Transactions', sales.length,                  '#1e293b'],
-          ].map(([l,v,c]) => (
+            ['Sales',    `${salesQty} ${p.unit} / $${salesRev.toFixed(2)}`, '#2563eb'],
+            ['Received', `+${recQty} ${p.unit}`,  '#16a34a'],
+            ['Adjusted', `${adjNet>=0?'+':''}${adjNet} ${p.unit}`, adjNet>=0?'#ca8a04':'#dc2626'],
+          ].map(([l,v,c])=>(
             <div key={l} className="flex items-center gap-1.5">
               <span className="text-[10px] text-slate-400">{l}:</span>
               <span className="text-[12px] font-bold" style={{color:c}}>{v}</span>
             </div>
           ))}
         </div>
+        {/* Filter tabs */}
+        <div className="flex gap-1.5 ml-auto">
+          {[['all','All'],['sale','Sales'],['receive','Receiving'],['adjust','Adjustments']].map(([id,label])=>(
+            <button key={id} onClick={()=>setFilter(id)}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-semibold cursor-pointer border transition-all"
+              style={filter===id
+                ? {background:'#2563eb', borderColor:'#2563eb', color:'#fff'}
+                : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
+              {label}
+              <span className="ml-1 text-[9px] opacity-70">
+                ({id==='all'?all.length:id==='sale'?sales.length:id==='receive'?receives.length:adjustments.length})
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
-      <div style={{maxHeight:'280px', overflowY:'auto'}}>
+      <div style={{maxHeight:'300px', overflowY:'auto'}}>
         {isLoading ? (
           <div className="text-center py-6 text-slate-400 text-[12px]">Loading...</div>
-        ) : sales.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-300">
+        ) : displayed.length === 0 ? (
+          <div className="flex flex-col items-center py-8 text-slate-300">
             <div className="text-3xl mb-2">📭</div>
-            <div className="text-[12px]">No sales history yet</div>
+            <div className="text-[12px]">No history yet</div>
           </div>
         ) : (
           <table className="w-full border-collapse">
-            <thead className="sticky top-0">
-              <tr>
-                {['Date & Time','Invoice #','Customer','Qty','Unit Price','Discount','Total','Serial #','Payment','Cashier','Note'].map(h => (
+            <thead className="sticky top-0 z-10">
+              <tr style={{background:'#f8fafc'}}>
+                {['Type','Date & Time','Invoice / Ref','Party','Qty','Price','Total','Serial','Payment','Cashier / By','Reason / Note'].map(h=>(
                   <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
-                    style={{color:'#64748b', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>{h}</th>
+                    style={{color:'#64748b', borderBottom:'1px solid #e2e8f0'}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {sales.map((r,i) => (
-                <tr key={i} className="border-b hover:bg-blue-50/40 transition-colors"
-                  style={{borderColor:'#f1f5f9', background: i%2===0?'#fff':'#fafbff'}}>
-                  <td className="px-3 py-2.5">
-                    <div className="text-[11px] font-medium text-slate-700">{new Date(r.orders?.created_at).toLocaleDateString()}</div>
-                    <div className="text-[10px] text-slate-400">{new Date(r.orders?.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[11px] font-mono font-bold" style={{color:'#6366f1'}}>{r.orders?.order_number||'—'}</span>
-                  </td>
-                  <td className="px-3 py-2.5 text-[12px] text-slate-700">{r.orders?.customers?.name||'Walk-in'}</td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[12px] font-bold font-mono">{r.quantity} {p.unit}</span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[11px] font-mono text-slate-600">${parseFloat(r.unit_price||0).toFixed(2)}</span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {r.discount_amt>0
-                      ? <span className="text-[11px] font-mono font-bold" style={{color:'#e11d48'}}>-${parseFloat(r.discount_amt).toFixed(2)}</span>
-                      : r.discount_pct>0
-                      ? <span className="text-[11px] font-mono font-bold" style={{color:'#e11d48'}}>-{r.discount_pct}%</span>
-                      : <span className="text-[11px] text-slate-300">—</span>
-                    }
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[12px] font-bold font-mono" style={{color:'#16a34a'}}>${parseFloat(r.line_total||0).toFixed(2)}</span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {r.serial_number
-                      ? <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#fef9c3',color:'#ca8a04'}}>{r.serial_number}</span>
-                      : <span className="text-[11px] text-slate-300">—</span>
-                    }
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {r.orders?.order_payments?.[0]?.method
-                      ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize"
-                          style={{background:'#eff6ff',color:'#2563eb'}}>
-                          {r.orders.order_payments[0].method}
-                        </span>
-                      : <span className="text-[11px] text-slate-300">—</span>
-                    }
-                  </td>
-                  <td className="px-3 py-2.5 text-[11px] text-slate-600">{r.orders?.cashier_name||'—'}</td>
-                  <td className="px-3 py-2.5">
-                    {r.note
-                      ? <span className="text-[11px] text-slate-500 italic">"{r.note}"</span>
-                      : <span className="text-[11px] text-slate-300">—</span>
-                    }
-                  </td>
-                </tr>
-              ))}
+              {displayed.map((r,i) => {
+                const ts = TYPE_STYLE[r._type]
+                return (
+                  <tr key={i} className="border-b hover:bg-blue-50/30 transition-colors"
+                    style={{borderColor:'#f1f5f9'}}>
+                    {/* Type */}
+                    <td className="px-3 py-2.5">
+                      <span className="text-[9px] font-bold px-2 py-1 rounded-full"
+                        style={{background:ts.bg, color:ts.color}}>
+                        ● {ts.label}
+                      </span>
+                    </td>
+                    {/* Date */}
+                    <td className="px-3 py-2.5">
+                      <div className="text-[11px] font-medium text-slate-700">{new Date(r.date).toLocaleDateString()}</div>
+                      <div className="text-[10px] text-slate-400">{new Date(r.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                    </td>
+                    {/* Invoice */}
+                    <td className="px-3 py-2.5">
+                      {r.invoice
+                        ? <span className="text-[11px] font-mono font-bold" style={{color:'#6366f1'}}>{r.invoice}</span>
+                        : <span className="text-[11px] text-slate-300">—</span>}
+                    </td>
+                    {/* Party */}
+                    <td className="px-3 py-2.5 text-[11px] text-slate-700">{r.customer||'—'}</td>
+                    {/* Qty */}
+                    <td className="px-3 py-2.5">
+                      <span className="text-[12px] font-bold font-mono"
+                        style={{color: String(r.qty).startsWith('-')?'#dc2626':String(r.qty).startsWith('+')?'#16a34a':'#1e293b'}}>
+                        {r.qty} {r.unit}
+                      </span>
+                    </td>
+                    {/* Price */}
+                    <td className="px-3 py-2.5">
+                      {r.price!=null
+                        ? <span className="text-[11px] font-mono text-slate-600">${parseFloat(r.price).toFixed(2)}</span>
+                        : <span className="text-[11px] text-slate-300">—</span>}
+                    </td>
+                    {/* Total */}
+                    <td className="px-3 py-2.5">
+                      {r.total!=null
+                        ? <span className="text-[12px] font-bold font-mono" style={{color:r._type==='sale'?'#16a34a':'#6366f1'}}>${parseFloat(r.total).toFixed(2)}</span>
+                        : <span className="text-[11px] text-slate-300">—</span>}
+                    </td>
+                    {/* Serial */}
+                    <td className="px-3 py-2.5">
+                      {r.serial
+                        ? <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{background:'#fef9c3',color:'#ca8a04'}}>{r.serial}</span>
+                        : <span className="text-[11px] text-slate-300">—</span>}
+                    </td>
+                    {/* Payment */}
+                    <td className="px-3 py-2.5">
+                      {r.payment
+                        ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize" style={{background:'#eff6ff',color:'#2563eb'}}>{r.payment}</span>
+                        : <span className="text-[11px] text-slate-300">—</span>}
+                    </td>
+                    {/* Cashier/By */}
+                    <td className="px-3 py-2.5 text-[11px] text-slate-600">{r.cashier||r.by||'—'}</td>
+                    {/* Reason/Note */}
+                    <td className="px-3 py-2.5">
+                      {(r.reason||r.note||r.discount)
+                        ? <span className="text-[11px] text-slate-500">{r.reason||r.note||r.discount}</span>
+                        : <span className="text-[11px] text-slate-300">—</span>}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
