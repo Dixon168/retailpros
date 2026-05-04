@@ -323,14 +323,15 @@ export default function CartPanel({ onRefund }) {
                         <div className="text-[13px] font-semibold leading-tight" style={{color: isSelected ? '#4338ca' : '#1e293b'}}>
                           {item.name}
                         </div>
-                        <div className="text-[13px] font-bold font-mono flex-shrink-0" style={{color: isSelected ? '#4338ca' : '#1e293b'}}>
-                          ${lineTotal.toFixed(2)}
+                        <div className="text-[13px] font-bold font-mono flex-shrink-0"
+                          style={{color: item.qty < 0 ? '#dc2626' : isSelected ? '#4338ca' : '#1e293b'}}>
+                          {item.qty < 0 ? '-' : ''}${Math.abs(lineTotal).toFixed(2)}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          {item.qty} × ${item.unitPrice.toFixed(2)}
+                        <span className={`text-[11px] font-mono ${item.qty < 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                          {item.qty < 0 ? '↩ RETURN ' : ''}{item.qty} × ${item.unitPrice.toFixed(2)}
                         </span>
                         {item.itemDiscount && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
@@ -421,13 +422,13 @@ export default function CartPanel({ onRefund }) {
       {/* NumPad */}
       {showNumPad && activeAction && !['staff','remark','inc','dec','delete'].includes(activeAction) && (
         <NumPad
-          title={{custom:'Set Quantity', disc:'Item Discount', price:'Change Price', single:'Unit Price'}[activeAction] || 'Enter Value'}
-          subtitle={selectedItem?.name}
+          title={{custom:'Set Quantity / Return', disc:'Item Discount', price:'Change Price', single:'Unit Price'}[activeAction] || 'Enter Value'}
+          subtitle={activeAction==='custom' ? `${selectedItem?.name} · Enter negative to return` : selectedItem?.name}
           value={inputVal}
           onChange={setInputVal}
           prefix={['price','single'].includes(activeAction) ? '$' : activeAction==='disc' && discType==='amt' ? '$' : ''}
           suffix={activeAction==='disc' && discType==='pct' ? '%' : activeAction==='custom' ? ` ${selectedItem?.unit||'ea'}` : ''}
-          allowNegative={false}
+          allowNegative={activeAction === 'custom'}
           allowDecimal={activeAction !== 'custom'}
           onConfirm={(val) => applyAction(val)}
           onClose={() => { setShowNumPad(false); setActiveAction(null); setInputVal('') }}
