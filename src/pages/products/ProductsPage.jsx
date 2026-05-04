@@ -78,7 +78,7 @@ export default function ProductsPage() {
   return (
     <div className="flex h-full bg-[#07090f]">
       {/* Sidebar */}
-      <div className="w-[180px] bg-[#0d1117] border-r border-[#1e2d42] p-3 flex-shrink-0">
+      <div className="w-[180px] p-3 flex-shrink-0" style={{background:'#fff', borderRight:'1.5px solid #e2e8f0'}}>
         <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-widest px-2 mb-2">Filter</div>
         {[
           ['all','All Products',null],
@@ -109,7 +109,7 @@ export default function ProductsPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#1e2d42] bg-[#0d1117] flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-3 flex-shrink-0" style={{background:'#fff', borderBottom:'1.5px solid #e2e8f0'}}>
           <div className="flex gap-4 mr-2">
             {[
               ['Products', products.length, ''],
@@ -118,15 +118,15 @@ export default function ProductsPage() {
             ].map(([l,v,c]) => (
               <div key={l}>
                 <div className="text-[9px] font-mono text-[#3d5068] uppercase">{l}</div>
-                <div className={`text-[17px] font-bold ${c}`}>{v}</div>
+                <div className={`text-[17px] font-bold ${c}`} style={{}}>{v}</div>
               </div>
             ))}
           </div>
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 flex-1 focus-within:border-blue-500/40 transition-colors">
+          <div className="flex items-center gap-2 rounded-[9px] px-3 flex-1 transition-colors" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
             <span className="text-[#3d5068]">🔍</span>
             <input value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="Search name, SKU, UPC, tag..."
-              className="bg-transparent border-none outline-none text-[#e8edf5] text-[12px] py-2 flex-1 placeholder-[#3d5068]"/>
+              className="bg-transparent border-none outline-none text-[12px] py-2 flex-1" style={{color:'#1e293b'}} placeholder-slate-400/>
           </div>
           {/* Category filter */}
           <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
@@ -157,7 +157,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Product List — always visible buttons */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" style={{background:'#f8fafc'}}>
           {isLoading ? (
             <div className="p-4 flex flex-col gap-2">
               {Array(6).fill(0).map((_,i) => (
@@ -176,7 +176,7 @@ export default function ProductsPage() {
           ) : (
             <table className="w-full border-collapse">
               <thead className="sticky top-0 z-10">
-                <tr className="bg-[#111827] border-b border-[#1e2d42]">
+                <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
                   {['','Product','SKU','Type','Stock','Price','Margin','Actions'].map((h,i) => (
                     <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
@@ -197,7 +197,7 @@ export default function ProductsPage() {
 
                   return (
                     <React.Fragment key={p.id}>
-                    <tr className={`border-b border-[#1e2d42] transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#0d1117]'}`}>
+                    <tr className={`transition-colors ${disabled ? 'opacity-40' : 'hover:bg-blue-50/30 cursor-pointer'}`} style={{borderBottom:'1px solid #f1f5f9'}}>
                       {/* Photo */}
                       <td className="px-3 py-2 w-10">
                         <ProductPhoto imageUrl={p.image_url} name={p.name} size="sm"
@@ -344,32 +344,32 @@ export default function ProductsPage() {
 function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit }) {
   const [tab, setTab] = useState('info')
 
-  const { data: receives = [] } = useQuery({
+  const { data: receives = [], isLoading: loadingR } = useQuery({
     queryKey: ['product-receives', p.id],
     queryFn: async () => {
       const { data } = await supabase.from('inventory_receives')
-        .select('*, suppliers(name)')
-        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(30)
+        .select('*, suppliers(name)').eq('product_id', p.id)
+        .order('created_at', { ascending: false }).limit(50)
       return data || []
     },
     enabled: tab === 'receives',
   })
-  const { data: adjustments = [] } = useQuery({
+  const { data: adjustments = [], isLoading: loadingA } = useQuery({
     queryKey: ['product-adjustments', p.id],
     queryFn: async () => {
       const { data } = await supabase.from('inventory_adjustments')
         .select('*').eq('product_id', p.id)
-        .order('created_at', { ascending: false }).limit(30)
+        .order('created_at', { ascending: false }).limit(50)
       return data || []
     },
     enabled: tab === 'adjustments',
   })
-  const { data: sales = [] } = useQuery({
+  const { data: sales = [], isLoading: loadingS } = useQuery({
     queryKey: ['product-sales', p.id],
     queryFn: async () => {
       const { data } = await supabase.from('order_items')
         .select('*, orders(order_number, created_at, customers(name))')
-        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(30)
+        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(50)
       return data || []
     },
     enabled: tab === 'sales',
@@ -384,149 +384,325 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
     enabled: tab === 'serials' && p.has_serial,
   })
 
+  const qty     = p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
+  const avgCost = p.inventory?.[0]?.avg_cost || p.cost || 0
+  const margin  = p.price > 0 ? ((p.price - avgCost) / p.price * 100).toFixed(1) : '0.0'
+
+  // Inventory movement summary
+  const totalReceived  = receives.reduce((s,r) => s + (r.qty||0), 0)
+  const totalAdjusted  = adjustments.reduce((s,r) => s + (r.qty_change||0), 0)
+  const totalSold      = sales.reduce((s,r) => s + (r.quantity||0), 0)
+
   const TABS = [
-    { id:'info',        label:'📋 Info' },
-    { id:'receives',    label:'📥 Receiving' },
-    { id:'adjustments', label:'⚖️ Adjustments' },
-    { id:'sales',       label:'💰 Sales History' },
-    ...(p.has_serial ? [{ id:'serials', label:'🔢 Serials' }] : []),
+    { id:'info',        label:'Info',         icon:'📋' },
+    { id:'receives',    label:'Receiving',    icon:'📥', count: receives.length },
+    { id:'adjustments', label:'Adjustments',  icon:'⚖️', count: adjustments.length },
+    { id:'sales',       label:'Sales',        icon:'💰', count: sales.length },
+    ...(p.has_serial ? [{ id:'serials', label:'Serials', icon:'🔢', count: serials.length }] : []),
   ]
 
+  const T = ({ h, children }) => (
+    <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider"
+      style={{color:'#64748b', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>{h || children}</th>
+  )
+  const TD = ({ children, mono, bold, color }) => (
+    <td className={`px-3 py-2.5 text-[12px] border-b ${mono?'font-mono':''} ${bold?'font-bold':''}`}
+      style={{color: color||'#374151', borderColor:'#f1f5f9'}}>{children}</td>
+  )
+  const Empty = ({ msg }) => (
+    <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+      <div className="text-3xl mb-2 opacity-30">📭</div>
+      <div className="text-[12px]">{msg}</div>
+    </div>
+  )
+
   return (
-    <div className="bg-[#07090f] border-t border-blue-500/20">
+    <div className="animate-fadeIn" style={{background:'#f8fafc', borderTop:'2px solid #6366f1'}}>
+
       {/* Tab bar */}
-      <div className="flex items-center border-b border-[#1e2d42] px-4 bg-[#0d1117]">
+      <div className="flex items-center px-4" style={{background:'#fff', borderBottom:'1px solid #e2e8f0'}}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`py-2.5 px-3 text-[11px] border-b-2 transition-all cursor-pointer bg-transparent whitespace-nowrap ${
-              tab===t.id ? 'text-blue-400 border-blue-500' : 'text-[#3d5068] border-transparent hover:text-[#8899b0]'
-            }`}>{t.label}
+            className="flex items-center gap-1.5 py-2.5 px-3 text-[12px] border-b-2 transition-all cursor-pointer bg-transparent whitespace-nowrap"
+            style={{
+              borderBottomColor: tab===t.id ? '#6366f1' : 'transparent',
+              color: tab===t.id ? '#6366f1' : '#64748b',
+              fontWeight: tab===t.id ? 600 : 400,
+            }}>
+            {t.icon} {t.label}
+            {t.count > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px]"
+                style={{background: tab===t.id ? '#e0e7ff' : '#f1f5f9', color: tab===t.id ? '#6366f1' : '#94a3b8'}}>
+                {t.count}
+              </span>
+            )}
           </button>
         ))}
         <div className="flex-1"/>
-        <div className="flex gap-1.5 py-2">
-          <button onClick={onReceive} className="bg-green-500/10 border border-green-500/20 rounded px-2.5 py-1 text-[10px] font-bold text-green-400 cursor-pointer hover:bg-green-500/15">+ Receive</button>
-          <button onClick={onAdjust} className="bg-yellow-500/10 border border-yellow-500/20 rounded px-2.5 py-1 text-[10px] font-bold text-yellow-400 cursor-pointer hover:bg-yellow-500/15">Adjust</button>
-          <button onClick={onEdit} className="bg-blue-500/10 border border-blue-500/20 rounded px-2.5 py-1 text-[10px] font-bold text-blue-400 cursor-pointer hover:bg-blue-500/15">Edit</button>
+        {/* Inventory summary pills */}
+        {tab !== 'info' && (
+          <div className="flex gap-2 mr-2">
+            <span className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+              style={{background:'#dcfce7', color:'#16a34a'}}>
+              In Stock: {qty} {p.unit}
+            </span>
+          </div>
+        )}
+        <div className="flex gap-1.5 py-1.5">
+          <button onClick={onReceive}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
+            style={{background:'#dcfce7', border:'1px solid #86efac', color:'#16a34a'}}>
+            + Receive
+          </button>
+          <button onClick={onAdjust}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
+            style={{background:'#fef9c3', border:'1px solid #fde047', color:'#ca8a04'}}>
+            Adjust
+          </button>
+          <button onClick={onEdit}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
+            style={{background:'#e0e7ff', border:'1px solid #a5b4fc', color:'#6366f1'}}>
+            Edit
+          </button>
         </div>
       </div>
 
       {/* Tab content */}
-      <div className="p-4 max-h-[320px] overflow-y-auto">
+      <div className="p-4 overflow-y-auto" style={{maxHeight:'340px'}}>
 
+        {/* ── INFO ── */}
         {tab === 'info' && (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
-              <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-2">Product Info</div>
-              {[['Type',p.type?.toUpperCase()],['Unit',p.unit],['SKU',p.sku||'—'],['UPC',p.upc||'—'],['Description',p.description||'—']].map(([l,v])=>(
-                <div key={l} className="flex justify-between mb-1.5 last:mb-0">
-                  <span className="text-[10px] text-[#3d5068]">{l}</span>
-                  <span className="text-[11px] font-semibold text-right max-w-[55%] truncate">{v}</span>
-                </div>
-              ))}
-            </div>
-            <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
-              <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-2">Pricing</div>
-              {[['Price',`$${parseFloat(p.price||0).toFixed(2)}`],['Cost',`$${parseFloat(p.cost||0).toFixed(2)}`],['Avg Cost',`$${parseFloat(p.inventory?.[0]?.avg_cost||p.cost||0).toFixed(2)}`],['Margin',`${p.price>0?((p.price-(p.inventory?.[0]?.avg_cost||p.cost||0))/p.price*100).toFixed(1):0}%`],['VIP',p.allow_vip?(p.vip_price?`$${p.vip_price}`:'% discount'):'No']].map(([l,v])=>(
-                <div key={l} className="flex justify-between mb-1.5 last:mb-0">
-                  <span className="text-[10px] text-[#3d5068]">{l}</span>
-                  <span className="text-[11px] font-semibold">{v}</span>
-                </div>
-              ))}
-            </div>
-            <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
-              <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-2">Settings</div>
-              {[['Prompt Weight',p.prompt_weight?'✅':'—'],['Prompt Price',p.prompt_price?'✅':'—'],['Serial Track',p.has_serial?'✅':'—'],['Points',p.points_mode==='fixed'?`${p.points_fixed} pts fixed`:`$1=${p.points_rate}pts`]].map(([l,v])=>(
-                <div key={l} className="flex justify-between mb-1.5 last:mb-0">
-                  <span className="text-[10px] text-[#3d5068]">{l}</span>
-                  <span className="text-[11px] font-semibold">{v}</span>
-                </div>
-              ))}
-              {p.tags?.length>0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{t}</span>)}
-                </div>
-              )}
-            </div>
+          <div className="grid gap-3" style={{gridTemplateColumns:'repeat(4,1fr)'}}>
+
+            {/* Product Info */}
+            <InfoCard title="Product Info">
+              {[
+                ['Name',        p.name],
+                ['Type',        p.type?.toUpperCase()],
+                ['Unit',        p.unit || 'ea'],
+                ['SKU',         p.sku  || '—'],
+                ['UPC',         p.upc  || '—'],
+                ['Category',    p.subcategories?.categories?.name || '—'],
+                ['Subcategory', p.subcategories?.name || '—'],
+                ['Description', p.description || '—'],
+                ['Tags',        p.tags?.length ? p.tags.join(', ') : '—'],
+              ].map(([l,v]) => <InfoRow key={l} label={l} value={v}/>)}
+            </InfoCard>
+
+            {/* Pricing */}
+            <InfoCard title="Pricing & Inventory">
+              {[
+                ['Sell Price',  `$${parseFloat(p.price||0).toFixed(2)}`],
+                ['Cost Price',  `$${parseFloat(p.cost||0).toFixed(2)}`],
+                ['Avg Cost',    `$${parseFloat(avgCost).toFixed(2)}`],
+                ['Margin',      `${margin}%`],
+                ['In Stock',    p.type==='service' ? '—' : `${qty} ${p.unit||'ea'}`],
+              ].map(([l,v]) => <InfoRow key={l} label={l} value={v}/>)}
+              <div className="mt-2 pt-2" style={{borderTop:'1px solid #f1f5f9'}}>
+                {[
+                  ['VIP Discount',  p.allow_vip ? 'Yes' : 'No'],
+                  ['VIP Price',     p.vip_price ? `$${parseFloat(p.vip_price).toFixed(2)}` : 'Use % discount'],
+                  ['Redeem Points', p.points_redeemable ? 'Yes' : 'No'],
+                ].map(([l,v]) => <InfoRow key={l} label={l} value={v}/>)}
+              </div>
+            </InfoCard>
+
+            {/* Points & Commission */}
+            <InfoCard title="Points & Commission">
+              {[
+                ['Points Mode',   p.points_mode === 'fixed' ? 'Fixed' : '$ → Points'],
+                ['Points Value',  p.points_mode === 'fixed'
+                  ? `${p.points_fixed || 0} pts/purchase`
+                  : `$1 = ${p.points_rate || 1} pts`],
+                ['Commission',    p.commission_type === 'none' ? 'None' : p.commission_type],
+                ['Comm. Value',   p.commission_type !== 'none'
+                  ? `${p.commission_type === 'fixed' ? '$' : ''}${p.commission_value || 0}${p.commission_type !== 'fixed' ? '%' : ''}`
+                  : '—'],
+              ].map(([l,v]) => <InfoRow key={l} label={l} value={v}/>)}
+            </InfoCard>
+
+            {/* Settings */}
+            <InfoCard title="Checkout Settings">
+              {[
+                ['Prompt Weight',  p.prompt_weight  ? '✅ Yes' : '✗ No'],
+                ['Prompt Price',   p.prompt_price   ? '✅ Yes' : '✗ No'],
+                ['Prompt Staff',   p.prompt_sales   ? '✅ Yes' : '✗ No'],
+                ['Serial Numbers', p.has_serial     ? '✅ Yes' : '✗ No'],
+                ['Track Inventory',p.track_inventory ? '✅ Yes' : '✗ No'],
+              ].map(([l,v]) => <InfoRow key={l} label={l} value={v}/>)}
+            </InfoCard>
           </div>
         )}
 
+        {/* ── RECEIVING ── */}
         {tab === 'receives' && (
-          receives.length === 0
-            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No receiving history</div>
-            : <table className="w-full border-collapse">
-                <thead><tr className="bg-[#111827]">{['Date','Vendor','Qty','Cost/Unit','Total','Notes'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+          <>
+            {/* Summary bar */}
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {[
+                ['Total Received', `${totalReceived} ${p.unit}`, '#16a34a'],
+                ['Current Stock',  `${qty} ${p.unit}`,           qty<=5?'#dc2626':'#1e293b'],
+                ['Avg Cost',       `$${parseFloat(avgCost).toFixed(2)}`, '#6366f1'],
+              ].map(([l,v,c]) => (
+                <div key={l} className="rounded-xl p-3 text-center"
+                  style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{l}</div>
+                  <div className="text-[16px] font-bold" style={{color:c}}>{v}</div>
+                </div>
+              ))}
+            </div>
+            {loadingR ? <Loading/> : receives.length === 0 ? <Empty msg="No receiving history yet"/> : (
+              <table className="w-full border-collapse rounded-xl overflow-hidden"
+                style={{border:'1px solid #e2e8f0'}}>
+                <thead><tr>{['Date','Vendor','Qty','Cost/Unit','Total Cost','Notes'].map(h=><T key={h} h={h}/>)}</tr></thead>
                 <tbody>{receives.map((r,i)=>(
-                  <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
-                    <td className="px-3 py-2 text-[11px]">{new Date(r.created_at).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 text-[11px]">{r.suppliers?.name||'—'}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono text-green-400">+{r.qty} {p.unit}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono">${parseFloat(r.cost||0).toFixed(2)}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono text-blue-400">${(r.qty*r.cost).toFixed(2)}</td>
-                    <td className="px-3 py-2 text-[11px] text-[#3d5068]">{r.notes||'—'}</td>
+                  <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                    <TD>{new Date(r.created_at).toLocaleDateString()}</TD>
+                    <TD>{r.suppliers?.name||<span className="text-slate-400">—</span>}</TD>
+                    <TD mono bold color="#16a34a">+{r.qty} {p.unit}</TD>
+                    <TD mono>${parseFloat(r.cost||0).toFixed(2)}</TD>
+                    <TD mono bold color="#6366f1">${(r.qty*(r.cost||0)).toFixed(2)}</TD>
+                    <TD color="#94a3b8">{r.notes||'—'}</TD>
                   </tr>
                 ))}</tbody>
               </table>
+            )}
+          </>
         )}
 
+        {/* ── ADJUSTMENTS ── */}
         {tab === 'adjustments' && (
-          adjustments.length === 0
-            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No adjustment history</div>
-            : <table className="w-full border-collapse">
-                <thead><tr className="bg-[#111827]">{['Date','Change','Before','After','Reason'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+          <>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {[
+                ['Total Adjustments', totalAdjusted >= 0 ? `+${totalAdjusted}` : totalAdjusted, totalAdjusted>=0?'#16a34a':'#dc2626'],
+                ['Current Stock',     `${qty} ${p.unit}`, qty<=5?'#dc2626':'#1e293b'],
+                ['Adj. Count',        adjustments.length, '#6366f1'],
+              ].map(([l,v,c]) => (
+                <div key={l} className="rounded-xl p-3 text-center"
+                  style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{l}</div>
+                  <div className="text-[16px] font-bold" style={{color:c}}>{v}</div>
+                </div>
+              ))}
+            </div>
+            {loadingA ? <Loading/> : adjustments.length === 0 ? <Empty msg="No adjustments yet"/> : (
+              <table className="w-full border-collapse rounded-xl overflow-hidden"
+                style={{border:'1px solid #e2e8f0'}}>
+                <thead><tr>{['Date','Change','Before','After','Reason'].map(h=><T key={h} h={h}/>)}</tr></thead>
                 <tbody>{adjustments.map((r,i)=>(
-                  <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
-                    <td className="px-3 py-2 text-[11px]">{new Date(r.created_at).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 font-mono text-[12px] font-bold">
-                      <span className={r.qty_change>=0?'text-green-400':'text-red-400'}>{r.qty_change>=0?'+':''}{r.qty_change}</span>
-                    </td>
-                    <td className="px-3 py-2 text-[11px] font-mono">{r.qty_before}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono">{r.qty_after}</td>
-                    <td className="px-3 py-2 text-[11px] text-[#8899b0]">{r.reason}</td>
+                  <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                    <TD>{new Date(r.created_at).toLocaleDateString()}</TD>
+                    <TD mono bold color={r.qty_change>=0?'#16a34a':'#dc2626'}>
+                      {r.qty_change>=0?'+':''}{r.qty_change} {p.unit}
+                    </TD>
+                    <TD mono color="#94a3b8">{r.qty_before}</TD>
+                    <TD mono bold>{r.qty_after}</TD>
+                    <TD>{r.reason}</TD>
                   </tr>
                 ))}</tbody>
               </table>
+            )}
+          </>
         )}
 
+        {/* ── SALES ── */}
         {tab === 'sales' && (
-          sales.length === 0
-            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No sales history yet</div>
-            : <table className="w-full border-collapse">
-                <thead><tr className="bg-[#111827]">{['Date','Order #','Customer','Qty','Price','Total'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
+          <>
+            <div className="grid grid-cols-4 gap-3 mb-3">
+              {[
+                ['Total Sold',   `${totalSold} ${p.unit}`,       '#6366f1'],
+                ['Revenue',      `$${sales.reduce((s,r)=>s+(r.line_total||0),0).toFixed(2)}`, '#16a34a'],
+                ['Transactions', sales.length,                    '#1e293b'],
+                ['In Stock',     `${qty} ${p.unit}`,              qty<=5?'#dc2626':'#1e293b'],
+              ].map(([l,v,c]) => (
+                <div key={l} className="rounded-xl p-3 text-center"
+                  style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{l}</div>
+                  <div className="text-[16px] font-bold" style={{color:c}}>{v}</div>
+                </div>
+              ))}
+            </div>
+            {loadingS ? <Loading/> : sales.length === 0 ? <Empty msg="No sales yet"/> : (
+              <table className="w-full border-collapse rounded-xl overflow-hidden"
+                style={{border:'1px solid #e2e8f0'}}>
+                <thead><tr>{['Date','Order #','Customer','Qty','Unit Price','Line Total'].map(h=><T key={h} h={h}/>)}</tr></thead>
                 <tbody>{sales.map((r,i)=>(
-                  <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
-                    <td className="px-3 py-2 text-[11px]">{new Date(r.orders?.created_at).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono text-blue-400">{r.orders?.order_number||'—'}</td>
-                    <td className="px-3 py-2 text-[11px]">{r.orders?.customers?.name||'Walk-in'}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono">{r.quantity} {p.unit}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono">${parseFloat(r.unit_price||0).toFixed(2)}</td>
-                    <td className="px-3 py-2 text-[11px] font-mono text-green-400">${parseFloat(r.line_total||0).toFixed(2)}</td>
+                  <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                    <TD>{new Date(r.orders?.created_at).toLocaleDateString()}</TD>
+                    <TD mono color="#6366f1">{r.orders?.order_number||'—'}</TD>
+                    <TD>{r.orders?.customers?.name||'Walk-in'}</TD>
+                    <TD mono bold>{r.quantity} {p.unit}</TD>
+                    <TD mono>${parseFloat(r.unit_price||0).toFixed(2)}</TD>
+                    <TD mono bold color="#16a34a">${parseFloat(r.line_total||0).toFixed(2)}</TD>
                   </tr>
                 ))}</tbody>
               </table>
+            )}
+          </>
         )}
 
+        {/* ── SERIALS ── */}
         {tab === 'serials' && (
-          serials.length === 0
-            ? <div className="text-center py-8 text-[#3d5068] text-[12px]">No serial numbers recorded</div>
-            : <table className="w-full border-collapse">
-                <thead><tr className="bg-[#111827]">{['Serial Number','Status','Date Added'].map(h=><th key={h} className="px-3 py-2 text-left font-mono text-[9px] text-[#3d5068] uppercase">{h}</th>)}</tr></thead>
-                <tbody>{serials.map((sn,i)=>{
-                  const sc={in_stock:{c:'#10b981',bg:'rgba(16,185,129,.1)'},sold:{c:'#3b82f6',bg:'rgba(59,130,246,.1)'},returned:{c:'#f59e0b',bg:'rgba(245,158,11,.1)'},damaged:{c:'#ef4444',bg:'rgba(239,68,68,.1)'}}[sn.status]||{c:'#8899b0',bg:'rgba(136,153,176,.1)'}
-                  return (
-                    <tr key={i} className="border-b border-[#1e2d42] hover:bg-[#0d1117]">
-                      <td className="px-3 py-2 font-mono text-[12px] font-bold">{sn.serial}</td>
-                      <td className="px-3 py-2"><span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded" style={{background:sc.bg,color:sc.c}}>{sn.status?.replace('_',' ').toUpperCase()}</span></td>
-                      <td className="px-3 py-2 text-[11px] text-[#3d5068]">{new Date(sn.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  )
-                })}</tbody>
-              </table>
+          serials.length === 0 ? <Empty msg="No serial numbers recorded"/> : (
+            <table className="w-full border-collapse rounded-xl overflow-hidden"
+              style={{border:'1px solid #e2e8f0'}}>
+              <thead><tr>{['Serial Number','Status','Date Added'].map(h=><T key={h} h={h}/>)}</tr></thead>
+              <tbody>{serials.map((sn,i) => {
+                const sc = {
+                  in_stock: {bg:'#dcfce7',color:'#16a34a'},
+                  sold:     {bg:'#dbeafe',color:'#2563eb'},
+                  returned: {bg:'#fef9c3',color:'#ca8a04'},
+                  damaged:  {bg:'#fee2e2',color:'#dc2626'},
+                }[sn.status]||{bg:'#f1f5f9',color:'#64748b'}
+                return (
+                  <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                    <TD mono bold>{sn.serial}</TD>
+                    <TD>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        style={{background:sc.bg,color:sc.color}}>
+                        {sn.status?.replace('_',' ').toUpperCase()}
+                      </span>
+                    </TD>
+                    <TD color="#94a3b8">{new Date(sn.created_at).toLocaleDateString()}</TD>
+                  </tr>
+                )
+              })}</tbody>
+            </table>
+          )
         )}
       </div>
     </div>
   )
 }
+
+function InfoCard({ title, children }) {
+  return (
+    <div className="rounded-xl overflow-hidden" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider"
+        style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9', color:'#64748b'}}>
+        {title}
+      </div>
+      <div className="px-3 py-2">{children}</div>
+    </div>
+  )
+}
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex justify-between items-start py-1" style={{borderBottom:'1px solid #f8fafc'}}>
+      <span className="text-[11px] text-slate-400 flex-shrink-0">{label}</span>
+      <span className="text-[11px] font-semibold text-right ml-2 text-slate-700">{value}</span>
+    </div>
+  )
+}
+function Loading() {
+  return (
+    <div className="flex items-center justify-center py-8 text-slate-400">
+      <div className="text-[12px]">Loading...</div>
+    </div>
+  )
+}
+
 
 // ── Product Detail Modal (with tabs) ──
 function ProductDetailModal({ product: p, tenantId, onClose, onEdit, onReceive, onAdjust }) {
@@ -754,7 +930,7 @@ function ProductDetailModal({ product: p, tenantId, onClose, onEdit, onReceive, 
               </div>
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-[#111827] border-b border-[#1e2d42]">
+                  <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
                     {['Serial Number','Status','Added'].map(h => (
                       <th key={h} className="px-3 py-2 text-left font-mono text-[10px] text-[#3d5068] uppercase">{h}</th>
                     ))}
@@ -813,7 +989,7 @@ function HistoryTable({ data, empty, columns, renderRow }) {
   return (
     <table className="w-full border-collapse">
       <thead>
-        <tr className="bg-[#111827] border-b border-[#1e2d42]">
+        <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
           {columns.map(h => (
             <th key={h} className="px-3 py-2 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider">{h}</th>
           ))}

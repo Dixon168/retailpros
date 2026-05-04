@@ -1,153 +1,120 @@
 // src/components/layout/AppLayout.jsx
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
-import { useTerminalStore } from '@/stores/terminalStore'
-import { useState, useEffect } from 'react'
-import TerminalSetup from '@/pages/terminal/TerminalSetup'
 import { OpenShiftModal, CloseShiftModal } from '@/components/pos/ShiftModal'
 
-const NAV_ITEMS = [
-  { to: '/orders',     icon: '🔍', label: 'Orders' },
-  { to: '/products',   icon: '📦', label: 'Products' },
-  { to: '/categories',  icon: '📁', label: 'Categories' },
-  { to: '/customers',  icon: '👥', label: 'Customers' },
-  { to: '/invoices',   icon: '📄', label: 'Invoices' },
-  { to: '/business',   icon: '🏢', label: 'B2B' },
-  { to: '/marketing',  icon: '🎯', label: 'Marketing' },
-  { to: '/loyalty',    icon: '🏷️', label: 'Loyalty' },
-  { to: '/cardcenter', icon: '💳', label: 'Card Center' },
-  { to: '/reports',    icon: '📊', label: 'Reports' },
-  { to: '/settings',   icon: '⚙️', label: 'Settings' },
+const NAV = [
+  { to:'/orders',     icon:'🔍', label:'Orders' },
+  { to:'/products',   icon:'📦', label:'Products' },
+  { to:'/categories', icon:'📁', label:'Categories' },
+  { to:'/customers',  icon:'👥', label:'Customers' },
+  { to:'/invoices',   icon:'📄', label:'Invoices' },
+  { to:'/business',   icon:'🏢', label:'B2B' },
+  { to:'/marketing',  icon:'🎯', label:'Marketing' },
+  { to:'/loyalty',    icon:'🏷️', label:'Loyalty' },
+  { to:'/cardcenter', icon:'💳', label:'Card Center' },
+  { to:'/reports',    icon:'📊', label:'Reports' },
+  { to:'/settings',   icon:'⚙️', label:'Settings' },
 ]
 
 export default function AppLayout() {
-  const { user, tenant, store, stores, switchStore, signOut } = useAuthStore()
-  const { terminal, isRegistered, shiftOpen, paxOnline, initialize } = useTerminalStore()
-
-  const [showStoreMenu,  setShowStoreMenu]  = useState(false)
-  const [showSetup,      setShowSetup]      = useState(false)
-  const [showOpenShift,  setShowOpenShift]  = useState(false)
-  const [showCloseShift, setShowCloseShift] = useState(false)
   const navigate = useNavigate()
-
-  // Initialize terminal on mount
-  useEffect(() => {
-    if (!tenant?.id) return
-    initialize(tenant.id).then(({ found }) => {
-      if (!found) setShowSetup(true)
-    })
-  }, [tenant?.id])
-
-  const handleSignOut = async () => { await signOut(); navigate('/login') }
-
-  // If terminal not registered, show setup wizard
-  if (showSetup) {
-    return <TerminalSetup onComplete={() => setShowSetup(false)} />
-  }
+  const { user, tenant, store, signOut } = useAuthStore()
+  const [showShiftOpen,  setShowShiftOpen]  = useState(false)
+  const [showShiftClose, setShowShiftClose] = useState(false)
+  const [showUserMenu,   setShowUserMenu]   = useState(false)
 
   return (
-    <div className="flex flex-col h-screen bg-[#07090f]">
-      {/* ── Topbar ── */}
-      <header className="h-14 bg-[#0d1117] border-b border-[#1e2d42] flex items-center
-        px-5 gap-4 flex-shrink-0 z-40">
+    <div className="flex flex-col h-screen" style={{background:'#f0f2f5'}}>
 
-        <span className="font-bold text-[15px] bg-gradient-to-r from-white to-cyan-400
-          bg-clip-text text-transparent mr-2">RetailPOS</span>
-          <span className="text-[10px] text-[#3d5068] mr-3">Back Office</span>
+      {/* ── Top nav bar ── */}
+      <header className="flex items-center px-4 gap-1 flex-shrink-0"
+        style={{height:'52px', background:'#1e293b', borderBottom:'1px solid #334155'}}>
 
-        <nav className="flex gap-1 flex-1">
-          {NAV_ITEMS.map(item => (
-            <NavLink key={item.to} to={item.to}
+        {/* Logo */}
+        <div className="text-[15px] font-black text-white mr-3 flex-shrink-0">
+          RetailPOS
+          <span className="ml-1.5 text-[9px] font-medium px-1.5 py-0.5 rounded"
+            style={{background:'rgba(99,102,241,0.3)', color:'#a5b4fc'}}>
+            BACK OFFICE
+          </span>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex items-center gap-0.5 flex-1 overflow-x-auto">
+          {NAV.map(n => (
+            <NavLink key={n.to} to={n.to}
               className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-xs transition-all duration-150 flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-blue-500/10 text-blue-400'
-                    : 'text-[#8899b0] hover:text-white hover:bg-[#111827]'
-                }`}>
-              <span>{item.icon}</span><span>{item.label}</span>
+                `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium
+                 whitespace-nowrap transition-all cursor-pointer no-underline flex-shrink-0 ${
+                   isActive
+                     ? 'text-white'
+                     : 'text-slate-400 hover:text-white hover:bg-white/10'
+                 }`
+              }
+              style={({ isActive }) => isActive ? {background:'rgba(99,102,241,0.25)', color:'#fff'} : {}}>
+              <span>{n.icon}</span>
+              <span>{n.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2.5">
-          {/* PAX status dot */}
-          {terminal?.pax_enabled && (
-            <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                paxOnline ? 'bg-green-400 shadow-[0_0_5px_#10b981]' : 'bg-red-400'
-              }`}/>
-              <span className="text-[9px] font-mono text-[#3d5068]">
-                PAX {terminal.pax_ip}
-              </span>
-            </div>
-          )}
+        {/* Right side */}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
 
-          {/* Shift open/close */}
-          <button
-            onClick={() => shiftOpen ? setShowCloseShift(true) : setShowOpenShift(true)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border
-              text-[10px] font-mono transition-all ${
-              shiftOpen
-                ? 'border-green-500/30 bg-green-500/6 text-green-400 hover:bg-green-500/10'
-                : 'border-[#1e2d42] bg-[#111827] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400'
-            }`}
-          >
-            {shiftOpen ? '🟢 SHIFT OPEN' : '⭕ OPEN SHIFT'}
+          {/* Back to POS */}
+          <button onClick={() => navigate('/pos')}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all flex-shrink-0"
+            style={{background:'rgba(99,102,241,0.15)', borderColor:'rgba(99,102,241,0.4)', color:'#818cf8'}}>
+            ← POS
           </button>
 
-          {/* Terminal name */}
-          <div className="text-[10px] font-mono text-[#3d5068] px-2 py-1
-            bg-[#111827] border border-[#1e2d42] rounded-lg">
-            🖥️ {terminal?.name || 'Terminal'}
-          </div>
-
-          {/* Store switcher */}
-          {stores.length > 1 && (
-            <div className="relative">
-              <button onClick={() => setShowStoreMenu(!showStoreMenu)}
-                className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-                  text-xs text-[#8899b0] hover:border-blue-500/40 transition-all flex items-center gap-2">
-                🏪 {store?.name}<span className="text-[10px]">▾</span>
-              </button>
-              {showStoreMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-[#0d1117] border
-                  border-[#1e2d42] rounded-xl shadow-2xl py-1 min-w-[160px] z-50">
-                  {stores.map(s => (
-                    <button key={s.id}
-                      onClick={() => { switchStore(s.id); setShowStoreMenu(false) }}
-                      className={`w-full text-left px-4 py-2 text-xs transition-colors ${
-                        s.id === store?.id
-                          ? 'text-blue-400 bg-blue-500/5'
-                          : 'text-[#8899b0] hover:bg-[#111827] hover:text-white'
-                      }`}>
-                      {s.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* User */}
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42]
-            rounded-lg px-3 py-1.5 cursor-pointer hover:border-[#243347] transition-all"
-            onClick={handleSignOut} title="Click to sign out">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-purple-600
-              flex items-center justify-center text-[10px] font-bold text-white">
-              {user?.name?.charAt(0) || 'U'}
-            </div>
-            <span className="text-xs text-[#8899b0]">{user?.name}</span>
+          <div className="relative">
+            <button onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 cursor-pointer border transition-all"
+              style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)'}}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
+                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                {user?.name?.charAt(0)||'U'}
+              </div>
+              <span className="text-[12px] text-slate-300">{user?.name}</span>
+              <span className="text-slate-500 text-[10px]">▾</span>
+            </button>
+            {showUserMenu && (
+              <div className="absolute right-0 top-full mt-1 rounded-xl shadow-xl z-50 overflow-hidden"
+                style={{background:'#1e293b', border:'1px solid #334155', minWidth:'160px'}}>
+                <div className="px-3 py-2 border-b" style={{borderColor:'#334155'}}>
+                  <div className="text-[12px] font-semibold text-white">{user?.name}</div>
+                  <div className="text-[10px] text-slate-400">{user?.role} · {store?.name}</div>
+                </div>
+                <button onClick={() => { setShowShiftOpen(true); setShowUserMenu(false) }}
+                  className="w-full text-left px-3 py-2 text-[12px] text-slate-300 hover:bg-white/10 cursor-pointer border-none bg-transparent transition-colors">
+                  🟢 Open Shift
+                </button>
+                <button onClick={() => { setShowShiftClose(true); setShowUserMenu(false) }}
+                  className="w-full text-left px-3 py-2 text-[12px] text-slate-300 hover:bg-white/10 cursor-pointer border-none bg-transparent transition-colors">
+                  🔴 Close Shift
+                </button>
+                <div className="border-t" style={{borderColor:'#334155'}}/>
+                <button onClick={() => signOut()}
+                  className="w-full text-left px-3 py-2 text-[12px] text-red-400 hover:bg-red-500/10 cursor-pointer border-none bg-transparent transition-colors">
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
+      {/* ── Page content ── */}
       <main className="flex-1 overflow-hidden">
         <Outlet />
       </main>
 
-      {/* Shift modals */}
-      {showOpenShift  && <OpenShiftModal  onClose={() => setShowOpenShift(false)} />}
-      {showCloseShift && <CloseShiftModal onClose={() => setShowCloseShift(false)} />}
+      {showShiftOpen  && <OpenShiftModal  onClose={() => setShowShiftOpen(false)} />}
+      {showShiftClose && <CloseShiftModal onClose={() => setShowShiftClose(false)} />}
     </div>
   )
 }
