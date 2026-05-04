@@ -16,6 +16,11 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
     if (key === '.' && value.includes('.')) return
     if (key === '-') {
       if (!allowNegative) return
+      // Toggle negative
+      if (value === '' || value === '0') {
+        onChange('-')
+        return
+      }
       if (value.startsWith('-')) onChange(value.slice(1))
       else onChange('-' + value)
       return
@@ -80,9 +85,10 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
               <button key={`${ri}-${ci}`} onClick={() => handleKey(key)}
                 className="rounded-2xl py-4 text-[22px] font-bold cursor-pointer border-none transition-all active:scale-95"
                 style={{
-                  background: key === '-' ? '#fef2f2' : '#f8fafc',
-                  color: key === '-' ? '#ef4444' : '#1e293b',
-                  boxShadow: '0 2px 0 #e2e8f0',
+                  background: key === '-' ? '#fef2f2' : key === '.' ? '#f0f4ff' : '#f8fafc',
+                  color: key === '-' ? '#ef4444' : key === '.' ? '#6366f1' : '#1e293b',
+                  boxShadow: key === '-' ? '0 2px 0 #fecdd3' : key === '.' ? '0 2px 0 #c7d2fe' : '0 2px 0 #e2e8f0',
+                  fontSize: '18px',
                 }}>
                 {key}
               </button>
@@ -101,7 +107,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
             ⌫
           </button>
           <button onClick={() => isValid && onConfirm(numVal)}
-            disabled={!isValid}
+            disabled={!isValid || value === '-'}
             className="rounded-2xl py-4 text-[22px] cursor-pointer border-none transition-all active:scale-95 disabled:opacity-30"
             style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', boxShadow:'0 2px 0 #a5b4fc'}}>
             ✓

@@ -427,7 +427,7 @@ export default function CartPanel({ onRefund }) {
           onChange={setInputVal}
           prefix={['price','single'].includes(activeAction) ? '$' : activeAction==='disc' && discType==='amt' ? '$' : ''}
           suffix={activeAction==='disc' && discType==='pct' ? '%' : activeAction==='custom' ? ` ${selectedItem?.unit||'ea'}` : ''}
-          allowNegative={activeAction === 'custom'}
+          allowNegative={false}
           allowDecimal={activeAction !== 'custom'}
           onConfirm={(val) => applyAction(val)}
           onClose={() => { setShowNumPad(false); setActiveAction(null); setInputVal('') }}

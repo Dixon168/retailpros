@@ -1,5 +1,6 @@
 // src/pages/products/ProductsPage.jsx
 import React, { useState } from 'react'
+import NumPad from '@/components/ui/NumPad'
 import { ProductPhoto, PhotoViewer } from '@/components/ui/ProductPhoto'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -1202,11 +1203,28 @@ function AdjustModal({ product: p, tenantId, onSave, onClose }) {
         <div className="p-5 flex flex-col gap-4">
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">Adjustment Qty (use - to decrease)</div>
-            <input type="number" value={qty} onChange={e=>setQty(e.target.value)} placeholder="+5 or -3" autoFocus
-              className="w-full rounded-xl px-3 py-3 text-[18px] font-mono text-center outline-none" style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
-            {qty && <div className={`mt-1.5 text-center text-[11px] font-mono font-bold ${adjustQty>=0?'text-green-400':'text-red-400'}`}>
-              {adjustQty>=0?'+':''}{adjustQty} {p.unit||'units'}
-            </div>}
+            <button onClick={() => setShowNumPad(true)}
+              className="w-full rounded-xl px-3 py-3 text-[22px] font-mono font-bold text-center cursor-pointer border-2 transition-all"
+              style={{
+                borderColor: adjustQty > 0 ? '#86efac' : adjustQty < 0 ? '#fca5a5' : '#e2e8f0',
+                background: adjustQty > 0 ? '#f0fdf4' : adjustQty < 0 ? '#fff1f2' : '#f8fafc',
+                color: adjustQty > 0 ? '#16a34a' : adjustQty < 0 ? '#dc2626' : '#94a3b8',
+              }}>
+              {qty ? `${adjustQty > 0 ? '+' : ''}${qty} ${p.unit||'units'}` : 'Tap to enter qty'}
+            </button>
+            {showNumPad && (
+              <NumPad
+                title="Inventory Adjustment"
+                subtitle={`${p.name} · Current: ${p.inventory?.reduce((a,i)=>a+(i.quantity||0),0)||0} ${p.unit}`}
+                value={qty}
+                onChange={setQty}
+                suffix={` ${p.unit||'units'}`}
+                allowNegative={true}
+                allowDecimal={p.unit !== 'ea'}
+                onConfirm={(val) => { setQty(String(val)); setShowNumPad(false) }}
+                onClose={() => setShowNumPad(false)}
+              />
+            )}
           </div>
           <div>
             <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-2">Reason *</div>
