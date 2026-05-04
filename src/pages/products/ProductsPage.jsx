@@ -332,7 +332,7 @@ export default function ProductsPage() {
                       <tr key={p.id+'-detail'}>
                         <td colSpan={10} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
                           <ProductDetailInline product={p} tenantId={tenant?.id}
-                            onRefresh={() => qc.invalidateQueries(['products'])}/>
+                            onRefresh={() => { qc.invalidateQueries(['products']); qc.invalidateQueries(['pos-products']) }}/>
                         </td>
                       </tr>
                     )}

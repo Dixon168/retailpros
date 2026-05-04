@@ -80,6 +80,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
   const [showAdjust,  setShowAdjust]  = useState(false)
   const [editing,     setEditing]     = useState(false)
   const [saving,      setSaving]      = useState(false)
+  const [savedData,   setSavedData]   = useState(null) // holds last saved values for immediate display
   const [numpadField, setNumpadField] = useState(null) // 'price'|'cost'|'vip_price'|'commission_value'
 
   // Tag input
@@ -182,16 +183,20 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
       }
 
       toast.success('Product updated ✓')
+      setSavedData({...form})  // store for immediate display
       setEditing(false)
       onRefresh()
     } catch(err) { toast.error(err.message) }
     finally { setSaving(false) }
   }
 
+  // Use savedData for immediate display after save (before parent re-renders)
+  const d = savedData ? { ...p, ...savedData, price: parseFloat(savedData.price||p.price), cost: parseFloat(savedData.cost||p.cost) } : p
+
   // Data queries
   const qty     = p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
-  const avgCost = p.inventory?.[0]?.avg_cost || p.cost || 0
-  const margin  = p.price > 0 ? ((p.price-avgCost)/p.price*100).toFixed(1) : '0.0'
+  const avgCost = p.inventory?.[0]?.avg_cost || d.cost || 0
+  const margin  = d.price > 0 ? ((d.price-avgCost)/d.price*100).toFixed(1) : '0.0'
 
   const { data: categories=[] } = useQuery({
     queryKey: ['categories-full', tenantId],
@@ -411,7 +416,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
         {tab==='info' && !editing && (
           <div className="grid gap-3" style={{gridTemplateColumns:'repeat(4,1fr)'}}>
             <SectionBox title="Product Info" icon="📦" color="#6366f1">
-              {[['Name',p.name],['Type',p.type?.toUpperCase()],['Unit',p.unit||'ea'],['SKU',p.sku||'—'],['UPC',p.upc||'—'],['Category',p.subcategories?.categories?.name||'—'],['Subcategory',p.subcategories?.name||'—'],['Tags',p.tags?.join(', ')||'—'],['Description',p.description||'—']].map(([l,v])=>(
+              {[['Name',d.name],['Type',d.type?.toUpperCase()],['Unit',d.unit||'ea'],['SKU',d.sku||'—'],['UPC',d.upc||'—'],['Category',d.subcategories?.categories?.name||'—'],['Subcategory',d.subcategories?.name||'—'],['Tags',d.tags?.join(', ')||'—'],['Description',d.description||'—']].map(([l,v])=>(
                 <div key={l} className="flex justify-between py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
                   <span className="text-[11px] font-semibold text-right ml-2 text-slate-700 max-w-[55%] truncate">{v}</span>
@@ -419,7 +424,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
               ))}
             </SectionBox>
             <SectionBox title="Pricing & Stock" icon="💰" color="#16a34a">
-              {[['Sell Price',`$${parseFloat(p.price||0).toFixed(2)}`],['Cost',`$${parseFloat(p.cost||0).toFixed(2)}`],['Avg Cost',`$${parseFloat(avgCost).toFixed(2)}`],['Margin',`${margin}%`],['Profit/ea',`$${(parseFloat(p.price||0)-avgCost).toFixed(2)}`],['In Stock',`${qty} ${p.unit||'ea'}`],['Stock Value',`$${(qty*avgCost).toFixed(2)}`],['VIP',p.allow_vip?'Yes':'No'],['VIP Price',p.vip_price?`$${p.vip_price}`:'% tier discount']].map(([l,v])=>(
+              {[['Sell Price',`$${parseFloat(d.price||0).toFixed(2)}`],['Cost',`$${parseFloat(d.cost||0).toFixed(2)}`],['Avg Cost',`$${parseFloat(avgCost).toFixed(2)}`],['Margin',`${margin}%`],['Profit/ea',`$${(parseFloat(d.price||0)-avgCost).toFixed(2)}`],['In Stock',`${qty} ${d.unit||'ea'}`],['Stock Value',`$${(qty*avgCost).toFixed(2)}`],['VIP',d.allow_vip?'Yes':'No'],['VIP Price',d.vip_price?`$${d.vip_price}`:'% tier discount']].map(([l,v])=>(
                 <div key={l} className="flex justify-between py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
                   <span className="text-[11px] font-semibold text-right ml-2 text-slate-700">{v}</span>
@@ -427,7 +432,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
               ))}
             </SectionBox>
             <SectionBox title="Points & Commission" icon="⭐" color="#8b5cf6">
-              {[['Points Mode',p.points_mode==='fixed'?'Fixed':'$ → Points'],['Points Value',p.points_mode==='fixed'?`${p.points_fixed||0} pts`:`$1=${p.points_rate||1} pts`],['Redeemable',p.points_redeemable?'Yes':'No'],['Commission',p.commission_type==='none'?'None':p.commission_type],['Comm. Value',p.commission_type!=='none'?`${p.commission_type==='fixed'?'$':''}${p.commission_value||0}${p.commission_type!=='fixed'?'%':''}`:'—']].map(([l,v])=>(
+              {[['Points Mode',d.points_mode==='fixed'?'Fixed':'$ → Points'],['Points Value',d.points_mode==='fixed'?`${d.points_fixed||0} pts`:`$1=${d.points_rate||1} pts`],['Redeemable',d.points_redeemable?'Yes':'No'],['Commission',d.commission_type==='none'?'None':d.commission_type],['Comm. Value',d.commission_type!=='none'?`${d.commission_type==='fixed'?'$':''}${d.commission_value||0}${d.commission_type!=='fixed'?'%':''}`:'—']].map(([l,v])=>(
                 <div key={l} className="flex justify-between py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
                   <span className="text-[11px] font-semibold text-slate-700">{v}</span>
@@ -435,7 +440,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
               ))}
             </SectionBox>
             <SectionBox title="Checkout Settings" icon="🛒" color="#0891b2">
-              {[['Prompt Weight',p.prompt_weight],['Prompt Price',p.prompt_price],['Prompt Staff',p.prompt_sales],['Serial Numbers',p.has_serial],['Track Inventory',p.track_inventory]].map(([l,v])=>(
+              {[['Prompt Weight',d.prompt_weight],['Prompt Price',d.prompt_price],['Prompt Staff',d.prompt_sales],['Serial Numbers',d.has_serial],['Track Inventory',d.track_inventory]].map(([l,v])=>(
                 <div key={l} className="flex justify-between items-center py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
                   <span className={`text-[11px] font-bold ${v?'text-green-600':'text-slate-300'}`}>{v?'✅ Yes':'✗ No'}</span>
