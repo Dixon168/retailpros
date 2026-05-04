@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
+import NumPad from '@/components/ui/NumPad'
 import toast from 'react-hot-toast'
 
 const SIDE_BTNS = [
@@ -32,6 +33,7 @@ export default function CartPanel({ onRefund }) {
   const [inputVal,     setInputVal]     = useState('')
   const [discType,     setDiscType]     = useState('pct')
   const [photoViewer,  setPhotoViewer]  = useState(null)
+  const [showNumPad,   setShowNumPad]   = useState(false)
 
   const { subtotal, orderDiscountAmt, taxAmount, grandTotal } = totals()
   const selectedItem = items.find(i => i.id === selectedItemId)
@@ -52,6 +54,7 @@ export default function CartPanel({ onRefund }) {
     useCartStore.setState({ selectedItemId: newId })
     setActiveAction(null)
     setInputVal('')
+    setShowNumPad(false)
   }
 
   const handleSideBtn = (id) => {
@@ -76,13 +79,19 @@ export default function CartPanel({ onRefund }) {
       setActiveAction(null)
       return
     }
-    setActiveAction(activeAction === id ? null : id)
+    const newAction = activeAction === id ? null : id
+    setActiveAction(newAction)
     setInputVal('')
+    if (newAction && !['staff','remark'].includes(newAction)) {
+      setShowNumPad(true)
+    } else {
+      setShowNumPad(false)
+    }
   }
 
-  const applyAction = () => {
-    if (!selectedItem) return
-    const v = parseFloat(inputVal)
+  const applyAction = (val) => {
+    const v = val !== undefined ? val : parseFloat(inputVal)
+    if (!selectedItem && activeAction !== 'disc') return
     if (activeAction === 'custom' && v > 0) {
       setItemQty(selectedItem.id, v)
       toast.success(`Qty → ${v}`)
@@ -196,52 +205,41 @@ export default function CartPanel({ onRefund }) {
           <span className="text-slate-300 text-[12px]">›</span>
         </div>
 
-        {/* Active action input */}
-        {activeAction && !['inc','dec','delete','staff'].includes(activeAction) && (
+        {/* Discount type selector — shows when disc action active */}
+        {activeAction === 'disc' && (
+          <div className="px-3 py-2 flex-shrink-0 flex items-center gap-2 animate-fadeIn"
+            style={{background:'#eef2ff', borderBottom:'1px solid #c7d2fe'}}>
+            <span className="text-[10px] font-semibold text-indigo-600">Type:</span>
+            {[['pct','% Off'],['amt','$ Off']].map(([t,l]) => (
+              <button key={t} onClick={() => { setDiscType(t); setShowNumPad(true) }}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-2 transition-all"
+                style={discType===t ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'} : {background:'#fff',borderColor:'#c7d2fe',color:'#6366f1'}}>
+                {l}
+              </button>
+            ))}
+            <button onClick={() => { setActiveAction(null); setShowNumPad(false) }}
+              className="ml-auto text-slate-400 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
+          </div>
+        )}
+
+        {/* Remark input — text area, no numpad */}
+        {activeAction === 'remark' && (
           <div className="px-3 py-2.5 flex-shrink-0 animate-fadeIn"
             style={{background:'#eef2ff', borderBottom:'1.5px solid #6366f1'}}>
             <div className="text-[10px] font-bold text-indigo-700 mb-2">
-              {{ custom:'📦 Qty', disc:'✂️ Discount', price:'$ Price', single:'$≡ Unit Price', remark:'📝 Note' }[activeAction]}
-              {selectedItem && <span className="ml-1 font-normal text-indigo-400">— {selectedItem.name}</span>}
+              📝 Note — {selectedItem?.name}
             </div>
-
-            {activeAction === 'disc' && (
-              <div className="flex gap-1.5 mb-2">
-                {[['pct','%'],['amt','$']].map(([t,l]) => (
-                  <button key={t} onClick={() => setDiscType(t)}
-                    className="px-3 py-1 rounded-lg text-[11px] font-bold cursor-pointer border-2 transition-all"
-                    style={discType===t ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'} : {background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
-                    {l} {t==='pct'?'Percent':'Fixed'}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {activeAction === 'remark' ? (
-              <textarea value={inputVal} onChange={e=>setInputVal(e.target.value)}
-                rows={2} placeholder="Add note..." autoFocus
-                className="w-full rounded-lg px-3 py-2 text-[12px] outline-none resize-none"
-                style={{border:'1.5px solid #a5b4fc', background:'#fff'}}/>
-            ) : (
-              <input type="number" value={inputVal} onChange={e=>setInputVal(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&applyAction()}
-                placeholder={activeAction==='custom'?'Qty...':activeAction==='disc'?`${discType==='pct'?'%':'$'} value...`:'Amount...'}
-                autoFocus
-                className="w-full rounded-lg px-3 py-2 text-[14px] font-mono outline-none"
-                style={{border:'1.5px solid #a5b4fc', background:'#fff'}}/>
-            )}
-
+            <textarea value={inputVal} onChange={e=>setInputVal(e.target.value)}
+              rows={2} placeholder="Add note..." autoFocus
+              className="w-full rounded-lg px-3 py-2 text-[12px] outline-none resize-none"
+              style={{border:'1.5px solid #a5b4fc', background:'#fff'}}/>
             <div className="flex gap-1.5 mt-2">
-              <button onClick={applyAction}
+              <button onClick={() => applyAction()}
                 className="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white cursor-pointer border-none"
-                style={{background:'#6366f1'}}>
-                ✓ Apply
-              </button>
+                style={{background:'#6366f1'}}>✓ Save</button>
               <button onClick={() => { setActiveAction(null); setInputVal('') }}
                 className="rounded-lg px-3 py-1.5 text-[11px] text-slate-500 cursor-pointer border"
-                style={{background:'#fff', borderColor:'#e2e8f0'}}>
-                ✕
-              </button>
+                style={{background:'#fff', borderColor:'#e2e8f0'}}>✕</button>
             </div>
           </div>
         )}
@@ -421,6 +419,22 @@ export default function CartPanel({ onRefund }) {
           </div>
         </div>
       </div>
+
+      {/* NumPad */}
+      {showNumPad && activeAction && !['staff','remark','inc','dec','delete'].includes(activeAction) && (
+        <NumPad
+          title={{custom:'Set Quantity', disc:'Item Discount', price:'Change Price', single:'Unit Price'}[activeAction] || 'Enter Value'}
+          subtitle={selectedItem?.name}
+          value={inputVal}
+          onChange={setInputVal}
+          prefix={['price','single'].includes(activeAction) ? '$' : activeAction==='disc' && discType==='amt' ? '$' : ''}
+          suffix={activeAction==='disc' && discType==='pct' ? '%' : activeAction==='custom' ? ` ${selectedItem?.unit||'ea'}` : ''}
+          allowNegative={activeAction === 'custom'}
+          allowDecimal={activeAction !== 'custom'}
+          onConfirm={(val) => applyAction(val)}
+          onClose={() => { setShowNumPad(false); setActiveAction(null); setInputVal('') }}
+        />
+      )}
 
       {photoViewer && (
         <PhotoViewer
