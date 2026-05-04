@@ -110,7 +110,11 @@ export default function AppLayout() {
 
       {/* ── Page content ── */}
       <main className="flex-1 overflow-hidden">
-        <Outlet />
+        <div className="h-full overflow-auto">
+          <div style={{maxWidth:'1400px', margin:'0 auto', height:'100%'}}>
+            <Outlet />
+          </div>
+        </div>
       </main>
 
       {showShiftOpen  && <OpenShiftModal  onClose={() => setShowShiftOpen(false)} />}
