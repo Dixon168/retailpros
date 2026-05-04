@@ -353,6 +353,23 @@ export default function ProductsPage() {
 }
 
 // ── Product Detail Inline (expands inside table) ──
+function ThCell({ h, children }) {
+  return <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider"
+    style={{color:'#64748b', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>{h || children}</th>
+}
+function TdCell({ children, mono, bold, color }) {
+  return <td className={`px-3 py-2.5 text-[12px] border-b ${mono?'font-mono':''} ${bold?'font-bold':''}`}
+    style={{color: color||'#374151', borderColor:'#f1f5f9'}}>{children}</td>
+}
+function EmptyState({ msg }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+      <div className="text-3xl mb-2 opacity-30">📭</div>
+      <div className="text-[12px]">{msg}</div>
+    </div>
+  )
+}
+
 function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit }) {
   const [tab, setTab] = useState('info')
 
@@ -413,20 +430,7 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
     ...(p.has_serial ? [{ id:'serials', label:'Serials', icon:'🔢', count: serials.length }] : []),
   ]
 
-  const T = ({ h, children }) => (
-    <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider"
-      style={{color:'#64748b', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>{h || children}</th>
-  )
-  const TD = ({ children, mono, bold, color }) => (
-    <td className={`px-3 py-2.5 text-[12px] border-b ${mono?'font-mono':''} ${bold?'font-bold':''}`}
-      style={{color: color||'#374151', borderColor:'#f1f5f9'}}>{children}</td>
-  )
-  const Empty = ({ msg }) => (
-    <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-      <div className="text-3xl mb-2 opacity-30">📭</div>
-      <div className="text-[12px]">{msg}</div>
-    </div>
-  )
+
 
   return (
     <div className="animate-fadeIn" style={{background:'#f8fafc', borderTop:'2px solid #6366f1'}}>
@@ -563,18 +567,18 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
                 </div>
               ))}
             </div>
-            {loadingR ? <Loading/> : receives.length === 0 ? <Empty msg="No receiving history yet"/> : (
+            {loadingR ? <Loading/> : receives.length === 0 ? <EmptyState msg="No receiving history yet"/> : (
               <table className="w-full border-collapse rounded-xl overflow-hidden"
                 style={{border:'1px solid #e2e8f0'}}>
-                <thead><tr>{['Date','Vendor','Qty','Cost/Unit','Total Cost','Notes'].map(h=><T key={h} h={h}/>)}</tr></thead>
+                <thead><tr>{['Date','Vendor','Qty','Cost/Unit','Total Cost','Notes'].map(h=><ThCell key={h} h={h}/>)}</tr></thead>
                 <tbody>{receives.map((r,i)=>(
                   <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                    <TD>{new Date(r.created_at).toLocaleDateString()}</TD>
-                    <TD>{r.suppliers?.name||<span className="text-slate-400">—</span>}</TD>
-                    <TD mono bold color="#16a34a">+{r.qty} {p.unit}</TD>
-                    <TD mono>${parseFloat(r.cost||0).toFixed(2)}</TD>
-                    <TD mono bold color="#6366f1">${(r.qty*(r.cost||0)).toFixed(2)}</TD>
-                    <TD color="#94a3b8">{r.notes||'—'}</TD>
+                    <TdCell>{new Date(r.created_at).toLocaleDateString()}</TdCell>
+                    <TdCell>{r.suppliers?.name||<span className="text-slate-400">—</span>}</TdCell>
+                    <TdCell mono bold color="#16a34a">+{r.qty} {p.unit}</TdCell>
+                    <TdCell mono>${parseFloat(r.cost||0).toFixed(2)}</TdCell>
+                    <TdCell mono bold color="#6366f1">${(r.qty*(r.cost||0)).toFixed(2)}</TdCell>
+                    <TdCell color="#94a3b8">{r.notes||'—'}</TdCell>
                   </tr>
                 ))}</tbody>
               </table>
@@ -598,19 +602,19 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
                 </div>
               ))}
             </div>
-            {loadingA ? <Loading/> : adjustments.length === 0 ? <Empty msg="No adjustments yet"/> : (
+            {loadingA ? <Loading/> : adjustments.length === 0 ? <EmptyState msg="No adjustments yet"/> : (
               <table className="w-full border-collapse rounded-xl overflow-hidden"
                 style={{border:'1px solid #e2e8f0'}}>
-                <thead><tr>{['Date','Change','Before','After','Reason'].map(h=><T key={h} h={h}/>)}</tr></thead>
+                <thead><tr>{['Date','Change','Before','After','Reason'].map(h=><ThCell key={h} h={h}/>)}</tr></thead>
                 <tbody>{adjustments.map((r,i)=>(
                   <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                    <TD>{new Date(r.created_at).toLocaleDateString()}</TD>
-                    <TD mono bold color={r.qty_change>=0?'#16a34a':'#dc2626'}>
+                    <TdCell>{new Date(r.created_at).toLocaleDateString()}</TdCell>
+                    <TdCell mono bold color={r.qty_change>=0?'#16a34a':'#dc2626'}>
                       {r.qty_change>=0?'+':''}{r.qty_change} {p.unit}
-                    </TD>
-                    <TD mono color="#94a3b8">{r.qty_before}</TD>
-                    <TD mono bold>{r.qty_after}</TD>
-                    <TD>{r.reason}</TD>
+                    </TdCell>
+                    <TdCell mono color="#94a3b8">{r.qty_before}</TdCell>
+                    <TdCell mono bold>{r.qty_after}</TdCell>
+                    <TdCell>{r.reason}</TdCell>
                   </tr>
                 ))}</tbody>
               </table>
@@ -635,18 +639,18 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
                 </div>
               ))}
             </div>
-            {loadingS ? <Loading/> : sales.length === 0 ? <Empty msg="No sales yet"/> : (
+            {loadingS ? <Loading/> : sales.length === 0 ? <EmptyState msg="No sales yet"/> : (
               <table className="w-full border-collapse rounded-xl overflow-hidden"
                 style={{border:'1px solid #e2e8f0'}}>
-                <thead><tr>{['Date','Order #','Customer','Qty','Unit Price','Line Total'].map(h=><T key={h} h={h}/>)}</tr></thead>
+                <thead><tr>{['Date','Order #','Customer','Qty','Unit Price','Line Total'].map(h=><ThCell key={h} h={h}/>)}</tr></thead>
                 <tbody>{sales.map((r,i)=>(
                   <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                    <TD>{new Date(r.orders?.created_at).toLocaleDateString()}</TD>
-                    <TD mono color="#6366f1">{r.orders?.order_number||'—'}</TD>
-                    <TD>{r.orders?.customers?.name||'Walk-in'}</TD>
-                    <TD mono bold>{r.quantity} {p.unit}</TD>
-                    <TD mono>${parseFloat(r.unit_price||0).toFixed(2)}</TD>
-                    <TD mono bold color="#16a34a">${parseFloat(r.line_total||0).toFixed(2)}</TD>
+                    <TdCell>{new Date(r.orders?.created_at).toLocaleDateString()}</TdCell>
+                    <TdCell mono color="#6366f1">{r.orders?.order_number||'—'}</TdCell>
+                    <TdCell>{r.orders?.customers?.name||'Walk-in'}</TdCell>
+                    <TdCell mono bold>{r.quantity} {p.unit}</TdCell>
+                    <TdCell mono>${parseFloat(r.unit_price||0).toFixed(2)}</TdCell>
+                    <TdCell mono bold color="#16a34a">${parseFloat(r.line_total||0).toFixed(2)}</TdCell>
                   </tr>
                 ))}</tbody>
               </table>
@@ -656,10 +660,10 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
 
         {/* ── SERIALS ── */}
         {tab === 'serials' && (
-          serials.length === 0 ? <Empty msg="No serial numbers recorded"/> : (
+          serials.length === 0 ? <EmptyState msg="No serial numbers recorded"/> : (
             <table className="w-full border-collapse rounded-xl overflow-hidden"
               style={{border:'1px solid #e2e8f0'}}>
-              <thead><tr>{['Serial Number','Status','Date Added'].map(h=><T key={h} h={h}/>)}</tr></thead>
+              <thead><tr>{['Serial Number','Status','Date Added'].map(h=><ThCell key={h} h={h}/>)}</tr></thead>
               <tbody>{serials.map((sn,i) => {
                 const sc = {
                   in_stock: {bg:'#dcfce7',color:'#16a34a'},
@@ -669,14 +673,14 @@ function ProductDetailInline({ product: p, tenantId, onReceive, onAdjust, onEdit
                 }[sn.status]||{bg:'#f1f5f9',color:'#64748b'}
                 return (
                   <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                    <TD mono bold>{sn.serial}</TD>
-                    <TD>
+                    <TdCell mono bold>{sn.serial}</TdCell>
+                    <TdCell>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                         style={{background:sc.bg,color:sc.color}}>
                         {sn.status?.replace('_',' ').toUpperCase()}
                       </span>
-                    </TD>
-                    <TD color="#94a3b8">{new Date(sn.created_at).toLocaleDateString()}</TD>
+                    </TdCell>
+                    <TdCell color="#94a3b8">{new Date(sn.created_at).toLocaleDateString()}</TdCell>
                   </tr>
                 )
               })}</tbody>
