@@ -19,11 +19,8 @@ export default function ProductsPage() {
   const [filterType, setFilterType] = useState('all')
   const [showForm, setShowForm]     = useState(false)
   const [editProduct, setEditProduct] = useState(null)
-  const [showReceive, setShowReceive] = useState(null)
-  const [showAdjust, setShowAdjust]   = useState(null)
   const [expandedId, setExpandedId]   = useState(null)
   const [photoViewer, setPhotoViewer]   = useState(null)
-  const [showPromo,    setShowPromo]     = useState(null)  // product for promo panel
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
 
@@ -282,46 +279,25 @@ export default function ProductsPage() {
                         </div>
                       </td>
 
-                      {/* Actions — ALWAYS VISIBLE */}
+                      {/* Actions */}
                       <td className="px-3 py-2">
-                        <div className="flex gap-1 flex-wrap">
+                        <div className="flex gap-1.5 flex-wrap">
                           <button onClick={() => setExpandedId(expandedId===p.id ? null : p.id)}
-                            className={`rounded px-2 py-1.5 text-[10px] cursor-pointer border transition-all whitespace-nowrap ${
-                              expandedId===p.id
-                                ? 'bg-blue-500/15 border-blue-500/40 text-blue-400'
-                                : 'bg-[#111827] border border-[#1e2d42] text-[#8899b0] hover:text-white hover:border-[#243347]'
-                            }`}>
-                            📋 {expandedId===p.id ? 'Hide' : 'Detail'}
-                          </button>
-                          <button onClick={() => setShowReceive(p)}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border whitespace-nowrap"
-                            style={{background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}}>
-                            + Receive
-                          </button>
-                          <button onClick={() => setShowAdjust(p)}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border whitespace-nowrap"
-                            style={{background:'#fef9c3', borderColor:'#fde047', color:'#ca8a04'}}>
-                            Adjust
-                          </button>
-                          <button onClick={() => {setEditProduct(p); setShowForm(true)}}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border"
-                            style={{background:'#1e293b', borderColor:'#1e293b', color:'#fff'}}>
-                            Edit
-                          </button>
-                          <button onClick={() => setShowPromo(p)}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border whitespace-nowrap"
-                            style={{background:'#fdf4ff', borderColor:'#e9d5ff', color:'#9333ea'}}>
-                            🏷️ Promo
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
+                            style={expandedId===p.id
+                              ? {background:'#e0e7ff', borderColor:'#a5b4fc', color:'#6366f1'}
+                              : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
+                            📋 {expandedId===p.id ? 'Close' : 'Detail'}
                           </button>
                           <button onClick={() => handleDisable(p)}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border"
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
                             style={disabled
                               ? {background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}
                               : {background:'#fff7ed', borderColor:'#fed7aa', color:'#ea580c'}}>
                             {disabled ? '▶ Enable' : '⏸ Disable'}
                           </button>
                           <button onClick={() => handleDelete(p)}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold cursor-pointer border"
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
                             style={{background:'#fff1f2', borderColor:'#fecdd3', color:'#e11d48'}}>
                             🗑 Delete
                           </button>
@@ -346,10 +322,7 @@ export default function ProductsPage() {
       </div>
 
       {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)}/>}
-      {showPromo && (
-        <PromoQuickPanel product={showPromo} tenantId={tenant?.id}
-          onClose={() => setShowPromo(null)}/>
-      )}
+
 
       {/* Modals */}
       {showForm && (
