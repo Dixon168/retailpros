@@ -44,6 +44,9 @@ export default function ProductsPage() {
     enabled: !!tenant?.id,
   })
 
+  function getQty(p)     { return p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0 }
+  function getAvgCost(p) { return p.inventory?.[0]?.avg_cost || p.cost || 0 }
+
   const inventoryValue = products.reduce((s,p) => {
     const q = getQty(p)
     return s + q * getAvgCost(p)
@@ -62,8 +65,6 @@ export default function ProductsPage() {
   // Collect all tags from loaded products
   const allTags = [...new Set(products.flatMap(p => p.tags || []))].sort()
 
-  const getQty    = p  => p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
-  const getAvgCost = p => p.inventory?.[0]?.avg_cost || p.cost || 0
   const displayed  = filterType === 'low'
     ? products.filter(p => getQty(p) <= 5 && p.type !== 'service')
     : products
