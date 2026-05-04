@@ -799,89 +799,122 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
           <div>
             {/* Add form */}
             {promoAdding && (
-              <div className="rounded-xl p-4 mb-4" style={{background:'#f8fafc', border:'1.5px solid #e9d5ff'}}>
-                <div className="flex gap-2 mb-3">
-                  {[['sale','🏷️ Sale'],['bulk','📦 Bulk'],['time','⏰ Time']].map(([t,l])=>(
+              <div className="mb-4 rounded-xl overflow-hidden" style={{border:'1.5px solid #e9d5ff'}}>
+                {/* Type selector */}
+                <div className="flex border-b" style={{borderColor:'#e9d5ff'}}>
+                  {[['sale','🏷️','Sale'],['bulk','📦','Bulk'],['time','⏰','Time']].map(([t,icon,l])=>(
                     <button key={t} onClick={()=>setPromoType(t)}
-                      className="flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer border-2 transition-all"
-                      style={promoType===t?{background:`${TYPE_COLOR[t]}12`,borderColor:TYPE_COLOR[t],color:TYPE_COLOR[t]}:{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
-                      {l}
+                      className="flex-1 py-2.5 text-[12px] font-bold cursor-pointer border-none transition-all"
+                      style={promoType===t
+                        ? {background:TYPE_COLOR[t], color:'#fff'}
+                        : {background:'#fdf4ff', color:'#94a3b8'}}>
+                      {icon} {l}
                     </button>
                   ))}
                 </div>
-                {promoType==='sale' && (
-                  <div className="flex flex-col gap-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div><div className="text-[10px] text-slate-500 mb-1">Start</div>
-                        <input type="datetime-local" value={saleStart} onChange={e=>setSaleStart(e.target.value)}
-                          className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe',background:'#fff'}}/></div>
-                      <div><div className="text-[10px] text-slate-500 mb-1">End</div>
-                        <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
-                          className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe',background:'#fff'}}/></div>
+
+                {/* Form fields */}
+                <div className="p-3" style={{background:'#fff'}}>
+                  {/* Sale */}
+                  {promoType==='sale' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <div className="text-[10px] text-slate-500 mb-1">Start</div>
+                          <input type="datetime-local" value={saleStart} onChange={e=>setSaleStart(e.target.value)}
+                            className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe'}}/>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[10px] text-slate-500 mb-1">End</div>
+                          <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
+                            className="w-full rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe'}}/>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 mb-1">Type</div>
+                          <select value={saleType} onChange={e=>setSaleType(e.target.value)}
+                            className="rounded-lg px-2 py-2 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe'}}>
+                            <option value="fixed">$ Fixed</option>
+                            <option value="pct">% Off</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 mb-1">{saleType==='fixed'?'Sale Price':'Discount %'}</div>
+                          <input type="number" value={saleVal} onChange={e=>setSaleVal(e.target.value)}
+                            placeholder={saleType==='fixed'?'8.00':'20'} step="0.01"
+                            className="w-24 rounded-lg px-2 py-1.5 text-[12px] font-mono outline-none" style={{border:'1.5px solid #c7d2fe'}}/>
+                        </div>
+                        {saleVal && (
+                          <div className="flex items-end pb-1.5 gap-1 text-[11px]">
+                            <span className="line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
+                            <span className="font-bold" style={{color:'#6366f1'}}>
+                              →${saleType==='fixed'?parseFloat(saleVal).toFixed(2):(parseFloat(p.price||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <select value={saleType} onChange={e=>setSaleType(e.target.value)}
-                        className="rounded-lg px-2 py-2 text-[11px] outline-none" style={{border:'1.5px solid #c7d2fe',background:'#fff'}}>
-                        <option value="fixed">$ Fixed Price</option>
+                  )}
+
+                  {/* Bulk */}
+                  {promoType==='bulk' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-500 whitespace-nowrap">Buy</span>
+                      <input type="number" value={bulkQty} onChange={e=>setBulkQty(e.target.value)} placeholder="2" min="2"
+                        className="w-16 rounded-lg px-2 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #86efac'}}/>
+                      <span className="text-[11px] text-slate-400">or more at</span>
+                      <select value={bulkType} onChange={e=>setBulkType(e.target.value)}
+                        className="rounded-lg px-2 py-2 text-[11px] outline-none" style={{border:'1.5px solid #86efac'}}>
+                        <option value="fixed">$ Each</option>
                         <option value="pct">% Off</option>
                       </select>
-                      <input type="number" value={saleVal} onChange={e=>setSaleVal(e.target.value)}
-                        placeholder={saleType==='fixed'?'Sale price':'% off'} step="0.01"
-                        className="flex-1 rounded-lg px-3 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #c7d2fe',background:'#fff'}}/>
+                      <input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)}
+                        placeholder={bulkType==='fixed'?'8.00':'10'} step="0.01"
+                        className="w-24 rounded-lg px-2 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #86efac'}}/>
+                      {bulkQty && bulkVal && (
+                        <span className="text-[11px] font-semibold" style={{color:'#16a34a'}}>
+                          Buy {bulkQty}+ → {bulkType==='fixed'?`$${parseFloat(bulkVal).toFixed(2)}/ea`:`${bulkVal}% off`}
+                        </span>
+                      )}
                     </div>
-                    {saleVal && <div className="text-[11px] flex items-center gap-2 text-indigo-600 font-semibold">
-                      <span className="line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
-                      → ${saleType==='fixed'?parseFloat(saleVal).toFixed(2):(parseFloat(p.price||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
-                    </div>}
-                  </div>
-                )}
-                {promoType==='bulk' && (
-                  <div className="flex gap-2 items-center">
-                    <span className="text-[11px] text-slate-600 whitespace-nowrap">Buy</span>
-                    <input type="number" value={bulkQty} onChange={e=>setBulkQty(e.target.value)} placeholder="2" min="2"
-                      className="w-16 rounded-lg px-2 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #86efac',background:'#fff'}}/>
-                    <span className="text-[11px] text-slate-500">or more →</span>
-                    <select value={bulkType} onChange={e=>setBulkType(e.target.value)}
-                      className="rounded-lg px-2 py-2 text-[11px] outline-none" style={{border:'1.5px solid #86efac',background:'#fff'}}>
-                      <option value="fixed">$ Each</option>
-                      <option value="pct">% Off</option>
-                    </select>
-                    <input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)} placeholder="8.00" step="0.01"
-                      className="flex-1 rounded-lg px-2 py-2 text-[12px] font-mono outline-none" style={{border:'1.5px solid #86efac',background:'#fff'}}/>
-                  </div>
-                )}
-                {promoType==='time' && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-1.5">
-                      {DAYS.map((d,i)=>(
-                        <button key={i} onClick={()=>setTimeDays(ds=>ds.includes(i)?ds.filter(x=>x!==i):[...ds,i].sort())}
-                          className="w-9 h-8 rounded-lg text-[10px] font-bold cursor-pointer border-2 transition-all"
-                          style={timeDays.includes(i)?{background:'#f59e0b',borderColor:'#f59e0b',color:'#fff'}:{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
-                          {d.substring(0,2)}
-                        </button>
-                      ))}
+                  )}
+
+                  {/* Time */}
+                  {promoType==='time' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-slate-500 mr-1">Days:</span>
+                        {DAYS.map((d,i)=>(
+                          <button key={i} onClick={()=>setTimeDays(ds=>ds.includes(i)?ds.filter(x=>x!==i):[...ds,i].sort())}
+                            className="w-8 h-7 rounded text-[10px] font-bold cursor-pointer border-2 transition-all"
+                            style={timeDays.includes(i)?{background:'#f59e0b',borderColor:'#f59e0b',color:'#fff'}:{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>
+                            {d.substring(0,2)}
+                          </button>
+                        ))}
+                        <span className="text-[10px] text-slate-500 ml-2">Time:</span>
+                        <input type="time" value={timeStart} onChange={e=>setTimeStart(e.target.value)}
+                          className="rounded-lg px-2 py-1 text-[11px] outline-none" style={{border:'1.5px solid #fde047'}}/>
+                        <span className="text-slate-400 text-[10px]">→</span>
+                        <input type="time" value={timeEnd} onChange={e=>setTimeEnd(e.target.value)}
+                          className="rounded-lg px-2 py-1 text-[11px] outline-none" style={{border:'1.5px solid #fde047'}}/>
+                        <select value={timeType} onChange={e=>setTimeType(e.target.value)}
+                          className="rounded-lg px-2 py-1 text-[11px] outline-none" style={{border:'1.5px solid #fde047'}}>
+                          <option value="fixed">$ Price</option>
+                          <option value="pct">% Off</option>
+                        </select>
+                        <input type="number" value={timeVal} onChange={e=>setTimeVal(e.target.value)}
+                          placeholder={timeType==='fixed'?'3.00':'10'} step="0.01"
+                          className="w-20 rounded-lg px-2 py-1 text-[11px] font-mono outline-none" style={{border:'1.5px solid #fde047'}}/>
+                      </div>
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <input type="time" value={timeStart} onChange={e=>setTimeStart(e.target.value)}
-                        className="rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #fde047',background:'#fff'}}/>
-                      <span className="text-slate-400 text-[11px]">to</span>
-                      <input type="time" value={timeEnd} onChange={e=>setTimeEnd(e.target.value)}
-                        className="rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #fde047',background:'#fff'}}/>
-                      <select value={timeType} onChange={e=>setTimeType(e.target.value)}
-                        className="rounded-lg px-2 py-1.5 text-[11px] outline-none" style={{border:'1.5px solid #fde047',background:'#fff'}}>
-                        <option value="fixed">$ Price</option>
-                        <option value="pct">% Off</option>
-                      </select>
-                      <input type="number" value={timeVal} onChange={e=>setTimeVal(e.target.value)} placeholder="3.00" step="0.01"
-                        className="w-20 rounded-lg px-2 py-1.5 text-[11px] font-mono outline-none" style={{border:'1.5px solid #fde047',background:'#fff'}}/>
-                    </div>
-                  </div>
-                )}
-                <button onClick={savePromo} disabled={promoSaving}
-                  className="w-full mt-3 rounded-xl py-2.5 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-                  style={{background:`linear-gradient(135deg,${TYPE_COLOR[promoType]},${TYPE_COLOR[promoType]}cc)`}}>
-                  {promoSaving?'⏳ Saving...':'✓ Add Promotion'}
-                </button>
+                  )}
+
+                  {/* Save button */}
+                  <button onClick={savePromo} disabled={promoSaving}
+                    className="w-full mt-2 rounded-lg py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
+                    style={{background: TYPE_COLOR[promoType]}}>
+                    {promoSaving ? '⏳ Saving...' : `✓ Add ${TYPE_NAME[promoType]}`}
+                  </button>
+                </div>
               </div>
             )}
 
