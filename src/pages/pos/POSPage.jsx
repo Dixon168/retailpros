@@ -7,7 +7,6 @@ import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
 import ProductGrid from './ProductGrid'
-import ItemPanel from './panels/ItemPanel'
 import SerialPanel from './panels/SerialPanel'
 import WeightPanel from './panels/WeightPanel'
 import PricePanel from './panels/PricePanel'
@@ -79,7 +78,7 @@ export default function POSPage() {
     { id:'gift',    label:'Gift Card', icon:'🎁', action: () => {} },
     { id:'points',  label:'Points',    icon:'⭐', action: () => {} },
     { id:'recall',  label:'Recall',    icon:'📋', action: () => {} },
-    { id:'orders',  label:'Orders',    icon:'🔍', action: () => navigate('/orders') },
+    { id:'orders',  label:'Orders',    icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
 
   return (
@@ -99,7 +98,7 @@ export default function POSPage() {
           <div className="text-[13px] font-mono text-slate-400">
             {time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
           </div>
-          <button onClick={() => navigate('/products')}
+          <button onClick={() => window.location.href='/products'}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
             style={{background:'rgba(99,102,241,0.15)', borderColor:'rgba(99,102,241,0.4)', color:'#818cf8'}}>
             ⚙ Back Office
@@ -158,7 +157,7 @@ export default function POSPage() {
         </div>
 
         {/* Right: Cart */}
-        <div className="flex-shrink-0 h-full overflow-hidden flex" style={{width: selectedItem ? '620px' : '420px', transition:'width .2s'}}>
+        <div className="flex-shrink-0 h-full overflow-hidden flex" style={{width:'420px'}}>
           <CartPanel onRefund={() => setShowRefund(true)} />
           {selectedItem && (
             <ItemPanel

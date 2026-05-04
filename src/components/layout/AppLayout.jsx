@@ -64,7 +64,7 @@ export default function AppLayout() {
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
 
           {/* Back to POS */}
-          <button onClick={() => navigate('/pos')}
+          <button onClick={() => window.location.href='/pos'}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all flex-shrink-0"
             style={{background:'rgba(99,102,241,0.15)', borderColor:'rgba(99,102,241,0.4)', color:'#818cf8'}}>
             ← POS
