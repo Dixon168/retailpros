@@ -795,7 +795,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
             {/* ── Add New Promotion ── always visible, 3 cards */}
             <div>
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Add Promotion</div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="flex gap-3" style={{maxWidth:"480px"}}>
                 {[
                   ['sale','🏷️','Sale Pricing','Date range discount','#6366f1','#e0e7ff'],
                   ['bulk','📦','Bulk Pricing','Qty-based discount','#16a34a','#dcfce7'],
@@ -803,9 +803,9 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                 ].map(([t,icon,title,desc,color,bg])=>(
                   <button key={t} onClick={()=>{setPromoType(t);setPromoAdding(promoAdding&&promoType===t?false:true)}}
                     className="rounded-xl p-3 text-left cursor-pointer border-2 transition-all"
-                    style={promoAdding&&promoType===t
+                    style={{width:'140px', ...( promoAdding&&promoType===t
                       ? {background:bg, borderColor:color}
-                      : {background:'#fff', borderColor:'#e2e8f0'}}>
+                      : {background:'#fff', borderColor:'#e2e8f0'} )}}>
                     <div className="text-[20px] mb-1">{icon}</div>
                     <div className="text-[12px] font-bold" style={{color: promoAdding&&promoType===t?color:'#1e293b'}}>{title}</div>
                     <div className="text-[10px] text-slate-400 mt-0.5">{desc}</div>
@@ -815,7 +815,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
               {/* Inline form - shows under selected type */}
               {promoAdding && (
-                <div className="mt-3 rounded-xl p-4" style={{background:'#fff', border:`1.5px solid ${TYPE_COLOR[promoType]}`}}>
+                <div className="mt-3 rounded-xl p-4" style={{background:'#fff', border:`1.5px solid ${TYPE_COLOR[promoType]}`, maxWidth:'640px'}}>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[14px]">{{sale:'🏷️',bulk:'📦',time:'⏰'}[promoType]}</span>
                     <span className="text-[13px] font-bold" style={{color:TYPE_COLOR[promoType]}}>{TYPE_NAME[promoType]}</span>
@@ -967,7 +967,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Current Promotions ({promos.length})
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3" style={{maxWidth:'640px'}}>
                   {promos.map(promo => {
                     const now = new Date()
                     const isExpired = promo.type==='sale' && promo.sale_end && new Date(promo.sale_end) < now
