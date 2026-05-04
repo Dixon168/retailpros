@@ -209,14 +209,7 @@ export const useCartStore = create((set, get) => ({
     set(state => ({ items: state.items.filter(i => i.id !== itemId) }))
   },
 
-  // ── 单品折扣 ──
-  setItemDiscount: (itemId, discount) => {
-    set(state => ({
-      items: state.items.map(i =>
-        i.id === itemId ? { ...i, discount } : i
-      )
-    }))
-  },
+
 
   // ── 整单折扣 ──
   setOrderDiscount: (discount) => {
@@ -276,10 +269,11 @@ export const useCartStore = create((set, get) => ({
 
       // 单品折扣
       let discounted = lineAmt
-      if (item.discount) {
-        discounted = item.discount.type === 'pct'
-          ? lineAmt * (1 - item.discount.value / 100)
-          : lineAmt - Math.min(item.discount.value, lineAmt)
+      const disc = item.itemDiscount || item.discount
+      if (disc) {
+        discounted = disc.type === 'pct'
+          ? lineAmt * (1 - disc.value / 100)
+          : lineAmt - Math.min(disc.value, lineAmt)
       }
 
       subtotal += discounted

@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useEffect } from 'react'
+import { useEffect, Component } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
@@ -47,11 +47,33 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+class ErrorBoundary extends Component {
+  state = { hasError: false, error: null }
+  static getDerivedStateFromError(error) { return { hasError: true, error } }
+  render() {
+    if (this.state.hasError) return (
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',background:'#f0f2f5',gap:'16px',padding:'20px'}}>
+        <div style={{fontSize:'40px'}}>⚠️</div>
+        <div style={{fontSize:'18px',fontWeight:'bold',color:'#1e293b'}}>Something went wrong</div>
+        <div style={{fontSize:'12px',color:'#64748b',maxWidth:'400px',textAlign:'center',fontFamily:'monospace',background:'#fff',padding:'12px',borderRadius:'8px',border:'1px solid #e2e8f0'}}>
+          {this.state.error?.message}
+        </div>
+        <button onClick={() => window.location.href='/pos'}
+          style={{background:'#6366f1',color:'#fff',border:'none',borderRadius:'10px',padding:'10px 24px',fontSize:'13px',fontWeight:'bold',cursor:'pointer'}}>
+          Back to POS
+        </button>
+      </div>
+    )
+    return this.props.children
+  }
+}
+
 export default function App() {
   const { initialize } = useAuthStore()
   useEffect(() => { initialize() }, [])
 
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
@@ -90,5 +112,6 @@ export default function App() {
         error:   { iconTheme: { primary: '#dc2626', secondary: '#fff' } },
       }} />
     </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
