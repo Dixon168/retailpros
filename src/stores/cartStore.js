@@ -124,7 +124,7 @@ export const useCartStore = create((set, get) => ({
     set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, itemDiscount: discount} : i) }))
   },
   setItemQty: (itemId, qty) => {
-    if (qty <= 0) { get().removeItem(itemId); return }
+    if (qty === 0) { get().removeItem(itemId); return }
     set(s => ({ items: s.items.map(i => i.id===itemId ? {...i, qty} : i) }))
   },
 

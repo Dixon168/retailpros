@@ -40,7 +40,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
     ['4', '5', '6'],
     ['1', '2', '3'],
     [
-      allowNegative && allowDecimal ? '-' : allowNegative ? '-' : '.',
+      allowNegative ? '-' : allowDecimal ? '.' : '00',
       '0',
       allowDecimal ? '.' : '00'
     ],
@@ -48,7 +48,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
 
   const display = value || '0'
   const numVal = parseFloat(value)
-  const isValid = value !== '' && value !== '-' && !isNaN(numVal)
+  const isValid = value !== '' && value !== '-' && value !== '.' && !isNaN(numVal) && numVal !== 0
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
@@ -67,7 +67,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
           <div className="mt-3 bg-white/15 rounded-2xl px-4 py-3 min-h-[56px] flex items-center justify-end">
             <span className="text-[13px] text-white/60 mr-1">{prefix}</span>
             <span className="text-[32px] font-bold text-white font-mono tracking-tight">
-              {display}
+              <span style={{color: parseFloat(display) < 0 ? '#ef4444' : 'inherit'}}>{display}</span>
             </span>
             <span className="text-[13px] text-white/60 ml-1">{suffix}</span>
           </div>

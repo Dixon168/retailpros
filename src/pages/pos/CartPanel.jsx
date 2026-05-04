@@ -68,9 +68,7 @@ export default function CartPanel({ onRefund }) {
       return
     }
     if (id === 'dec') {
-      const n = selectedItem.qty - 1
-      if (n <= 0) { removeItem(selectedItem.id); useCartStore.setState({ selectedItemId: null }) }
-      else setItemQty(selectedItem.id, n)
+      setItemQty(selectedItem.id, selectedItem.qty - 1)
       return
     }
     if (id === 'delete') {
@@ -92,7 +90,7 @@ export default function CartPanel({ onRefund }) {
   const applyAction = (val) => {
     const v = val !== undefined ? val : parseFloat(inputVal)
     if (!selectedItem && activeAction !== 'disc') return
-    if (activeAction === 'custom' && v > 0) {
+    if (activeAction === 'custom' && v !== 0 && !isNaN(v)) {
       setItemQty(selectedItem.id, v)
       toast.success(`Qty → ${v}`)
     }
