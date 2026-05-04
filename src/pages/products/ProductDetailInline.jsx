@@ -1011,58 +1011,80 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                         </div>
 
                         {/* Details */}
-                        <div className="px-4 py-3 bg-white grid gap-1.5">
+                        <div className="px-4 py-4 bg-white">
                           {promo.type==='sale' && (
-                            <div className="flex flex-wrap gap-4 text-[12px]">
-                              <div><span className="text-slate-400 mr-1">Period:</span>
-                                <span className="font-semibold">{new Date(promo.sale_start).toLocaleDateString()} {new Date(promo.sale_start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} → {new Date(promo.sale_end).toLocaleDateString()} {new Date(promo.sale_end).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                            <div>
+                              {/* Title row */}
+                              <div className="text-[15px] font-bold text-slate-800 mb-3">
+                                Sale Price Promotion
                               </div>
-                              <div><span className="text-slate-400 mr-1">Discount:</span>
-                                <span className="font-bold" style={{color:tc}}>
-                                  {promo.sale_type==='pct'?`${promo.sale_value}% off`:`$${promo.sale_value} fixed price`}
-                                </span>
+                              {/* Product + prices */}
+                              <div className="flex items-center gap-4 mb-3 p-3 rounded-xl" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                                <div className="text-[14px] font-bold text-slate-700">{p.name}</div>
+                                <div className="flex items-center gap-2 ml-auto">
+                                  <span className="text-[14px] line-through text-slate-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</span>
+                                  <span className="text-[11px] text-slate-400">→</span>
+                                  <span className="text-[20px] font-black font-mono" style={{color:'#16a34a'}}>
+                                    ${promo.sale_type==='pct'?(parseFloat(p.price||0)*(1-promo.sale_value/100)).toFixed(2):parseFloat(promo.sale_value).toFixed(2)}
+                                  </span>
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{background:'#dcfce7', color:'#16a34a'}}>
+                                    Save ${promo.sale_type==='pct'?(parseFloat(p.price||0)*promo.sale_value/100).toFixed(2):(parseFloat(p.price||0)-promo.sale_value).toFixed(2)}
+                                  </span>
+                                </div>
                               </div>
-                              <div><span className="text-slate-400 mr-1">Original:</span>
-                                <span className="font-mono line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
-                              </div>
-                              <div><span className="text-slate-400 mr-1">Sale Price:</span>
-                                <span className="font-bold font-mono" style={{color:'#16a34a'}}>
-                                  ${promo.sale_type==='pct'?(parseFloat(p.price||0)*(1-promo.sale_value/100)).toFixed(2):parseFloat(promo.sale_value).toFixed(2)}
-                                </span>
-                              </div>
-                              <div><span className="text-slate-400 mr-1">Save:</span>
-                                <span className="font-bold text-green-600">
-                                  ${promo.sale_type==='pct'?(parseFloat(p.price||0)*promo.sale_value/100).toFixed(2):(parseFloat(p.price||0)-promo.sale_value).toFixed(2)}
+                              {/* Period */}
+                              <div className="flex items-center gap-2">
+                                <span className="text-[13px] text-slate-500">Period:</span>
+                                <span className="text-[14px] font-semibold text-slate-800">
+                                  {new Date(promo.sale_start).toLocaleDateString()} {new Date(promo.sale_start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+                                  <span className="mx-2 text-slate-400">→</span>
+                                  {new Date(promo.sale_end).toLocaleDateString()} {new Date(promo.sale_end).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
                                 </span>
                               </div>
                             </div>
                           )}
-                          {promo.type==='bulk' && (promo.bulk_tiers||[]).map((tier,i)=>(
-                            <div key={i} className="flex gap-4 text-[12px]">
-                              <div><span className="text-slate-400 mr-1">Buy:</span>
-                                <span className="font-bold">{tier.min_qty}+ units</span></div>
-                              <div><span className="text-slate-400 mr-1">Price:</span>
-                                <span className="font-bold" style={{color:tc}}>
-                                  {tier.type==='fixed'?`$${tier.value}/each`:`${tier.value}% off`}
-                                </span></div>
-                              <div><span className="text-slate-400 mr-1">You pay:</span>
-                                <span className="font-bold font-mono text-green-600">
-                                  ${tier.type==='fixed'?parseFloat(tier.value).toFixed(2):(parseFloat(p.price||0)*(1-tier.value/100)).toFixed(2)}/ea
-                                </span></div>
+                          {promo.type==='bulk' && (
+                            <div>
+                              <div className="text-[15px] font-bold text-slate-800 mb-3">Bulk Pricing Promotion</div>
+                              {(promo.bulk_tiers||[]).map((tier,i)=>(
+                                <div key={i} className="flex items-center gap-4 mb-2 p-3 rounded-xl" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                                  <div className="text-[14px] font-bold text-slate-700">{p.name}</div>
+                                  <div className="text-[13px] text-slate-500">Buy <span className="font-bold text-slate-800">{tier.min_qty}+</span> units</div>
+                                  <div className="ml-auto flex items-center gap-2">
+                                    <span className="text-[14px] line-through text-slate-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</span>
+                                    <span className="text-[11px] text-slate-400">→</span>
+                                    <span className="text-[20px] font-black font-mono" style={{color:'#16a34a'}}>
+                                      ${tier.type==='fixed'?parseFloat(tier.value).toFixed(2):(parseFloat(p.price||0)*(1-tier.value/100)).toFixed(2)}
+                                      <span className="text-[12px] font-normal text-slate-400">/ea</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                          {promo.type==='time' && (promo.time_rules||[]).map((rule,i)=>(
-                            <div key={i} className="flex gap-4 text-[12px]">
-                              <div><span className="text-slate-400 mr-1">Days:</span>
-                                <span className="font-bold">{(rule.days||[]).map(d=>DAYS[d]).join(', ')}</span></div>
-                              <div><span className="text-slate-400 mr-1">Hours:</span>
-                                <span className="font-bold">{rule.start_time} – {rule.end_time}</span></div>
-                              <div><span className="text-slate-400 mr-1">Price:</span>
-                                <span className="font-bold" style={{color:tc}}>
-                                  {rule.type==='fixed'?`$${rule.value} fixed`:`${rule.value}% off`}
-                                </span></div>
+                          )}
+                          {promo.type==='time' && (
+                            <div>
+                              <div className="text-[15px] font-bold text-slate-800 mb-3">Time Based Promotion</div>
+                              {(promo.time_rules||[]).map((rule,i)=>(
+                                <div key={i} className="mb-2">
+                                  <div className="flex items-center gap-4 p-3 rounded-xl mb-1" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                                    <div className="text-[14px] font-bold text-slate-700">{p.name}</div>
+                                    <div className="ml-auto flex items-center gap-2">
+                                      <span className="text-[14px] line-through text-slate-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</span>
+                                      <span className="text-[11px] text-slate-400">→</span>
+                                      <span className="text-[20px] font-black font-mono" style={{color:'#d97706'}}>
+                                        ${rule.type==='fixed'?parseFloat(rule.value).toFixed(2):(parseFloat(p.price||0)*(1-rule.value/100)).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-4 text-[13px] px-1">
+                                    <span className="text-slate-500">Days: <span className="font-semibold text-slate-800">{(rule.days||[]).map(d=>DAYS[d]).join(', ')}</span></span>
+                                    <span className="text-slate-500">Hours: <span className="font-semibold text-slate-800">{rule.start_time} – {rule.end_time}</span></span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     )
