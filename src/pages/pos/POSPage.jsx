@@ -98,7 +98,7 @@ export default function POSPage() {
           <div className="text-[13px] font-mono text-slate-400">
             {time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
           </div>
-          <button onClick={() => window.location.href='/products'}
+          <button onClick={() => window.location.href='/backoffice'}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
             style={{background:'rgba(99,102,241,0.15)', borderColor:'rgba(99,102,241,0.4)', color:'#818cf8'}}>
             ⚙ Back Office
