@@ -21,11 +21,12 @@ const MENU = [
 ]
 
 const QUICK_QUESTIONS = [
-  "What's my best selling product this month?",
-  "Which products are low on stock?",
-  "How's today's revenue compared to yesterday?",
-  "Which products have the highest margin?",
-  "What's my total inventory value?",
+  "Best selling product?",
+  "Low stock alerts?",
+  "Today vs yesterday revenue?",
+  "Highest margin products?",
+  "Total inventory value?",
+  "Any reorder suggestions?",
 ]
 
 async function askAI(question, context) {
@@ -308,13 +309,13 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick questions */}
-            <div className="px-4 pb-2 flex gap-1.5 flex-wrap border-t pt-3" style={{borderColor:'#1e2d42'}}>
-              {QUICK_QUESTIONS.slice(0,3).map((q,i) => (
+            <div className="px-4 pb-2 grid gap-1.5 border-t pt-3" style={{borderColor:'#1e2d42', gridTemplateColumns:'1fr 1fr'}}>
+              {QUICK_QUESTIONS.map((q,i) => (
                 <button key={i} onClick={() => handleAsk(q)}
                   disabled={thinking}
-                  className="text-[10px] px-2.5 py-1.5 rounded-lg cursor-pointer border-none transition-all disabled:opacity-40"
-                  style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc'}}>
-                  {q.length > 32 ? q.substring(0,30)+'...' : q}
+                  className="text-[10px] px-2.5 py-1.5 rounded-lg cursor-pointer border-none transition-all disabled:opacity-40 text-left"
+                  style={{background:'rgba(99,102,241,0.12)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.2)'}}>
+                  {q}
                 </button>
               ))}
             </div>
