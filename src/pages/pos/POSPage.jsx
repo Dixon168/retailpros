@@ -8,6 +8,8 @@ import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
 import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
 import { OpenItemModal } from '@/components/pos/OpenItemModal'
+import { HoldModal } from '@/components/pos/HoldModal'
+import { RecallPanel } from '@/components/pos/RecallPanel'
 import ProductGrid from './ProductGrid'
 import SerialPanel from './panels/SerialPanel'
 import WeightPanel from './panels/WeightPanel'
@@ -81,7 +83,8 @@ export default function POSPage() {
     { id:'points',  label:'Points',    icon:'⭐', action: () => {} },
     { id:'openitem',label:'Open Item', icon:'✏️', action: () => setShowOpenItem(true) },
     { id:'return',  label:'Return',    icon:'↩️', action: () => setShowRefund(true) },
-    { id:'recall',  label:'Recall',    icon:'📋', action: () => {} },
+    { id:'hold',    label:'Hold',      icon:'📌', action: () => setShowHold(true) },
+    { id:'recall',  label:'Recall',    icon:'📋', action: () => setShowRecall(true) },
     { id:'orders',  label:'Orders',    icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
 
@@ -198,6 +201,8 @@ export default function POSPage() {
       {showDiscPanel  && <DiscountPanel />}
       {showPayPanel   && <PaymentPanel />}
       {showRefund     && <RefundPanel onClose={() => setShowRefund(false)} />}
+    {showHold && <HoldModal onClose={() => setShowHold(false)}/>}
+    {showRecall && <RecallPanel onClose={() => setShowRecall(false)}/>}
     {showOpenItem && (
       <OpenItemModal
         tenantId={tenant?.id}

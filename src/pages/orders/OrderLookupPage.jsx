@@ -11,13 +11,23 @@ import { format, subDays, startOfDay, endOfDay } from 'date-fns'
 import toast from 'react-hot-toast'
 
 const STATUS_STYLE = {
-  completed:          { label: 'Completed',     bg: 'rgba(59,130,246,0.12)',  color: '#3b82f6' },
-  held:               { label: 'On Hold',       bg: 'rgba(245,158,11,0.12)',  color: '#f59e0b' },
-  needs_recharge:     { label: 'Needs Recharge',bg: 'rgba(239,68,68,0.12)',   color: '#ef4444' },
-  voided:             { label: 'Voided',        bg: 'rgba(61,80,104,0.2)',    color: '#8899b0' },
-  partial_void:       { label: 'Partial Void',  bg: 'rgba(249,115,22,0.12)', color: '#f97316' },
-  refunded:           { label: 'Refunded',      bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
-  partially_refunded: { label: 'Part. Refunded',bg: 'rgba(20,184,166,0.12)', color: '#14b8a6' },
+  completed:          { label: 'Completed',      bg: '#dcfce7', color: '#16a34a' },
+  held:               { label: 'On Hold',        bg: '#fef9c3', color: '#ca8a04' },
+  needs_recharge:     { label: 'Needs Recharge', bg: '#fee2e2', color: '#dc2626' },
+  voided:             { label: 'Voided',         bg: '#f1f5f9', color: '#64748b' },
+  partial_void:       { label: 'Partial Void',   bg: '#fff7ed', color: '#ea580c' },
+  refunded:           { label: 'Refunded',       bg: '#fdf4ff', color: '#9333ea' },
+  partial_refund:     { label: 'Part. Refunded', bg: '#eff6ff', color: '#2563eb' },
+}
+
+function getOrderStatus(order) {
+  if (order.status === 'voided') return 'voided'
+  if (order.status === 'held')   return 'held'
+  if (order.refund_status === 'full')    return 'refunded'
+  if (order.refund_status === 'partial') return 'partial_refund'
+  if (order.status === 'needs_recharge') return 'needs_recharge'
+  if (order.status === 'partial_void')   return 'partial_void'
+  return 'completed'
 }
 
 const DATE_PRESETS = [
