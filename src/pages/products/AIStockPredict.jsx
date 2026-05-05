@@ -62,8 +62,10 @@ export function AIStockBadge({ product, onExpand, isExpanded }) {
         .order('created_at', { ascending: false })
       return callClaudePredict(product, sales||[], qty)
     },
-    staleTime: 1000 * 60 * 30, // cache 30 min
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
     enabled: product.type !== 'service' && product.track_inventory !== false,
+    retry: 1,
   })
 
   if (product.type === 'service') return <td className="px-3 py-2"><span className="text-[11px] text-slate-300">—</span></td>
@@ -110,9 +112,21 @@ export function AIStockPanel({ product, onClose }) {
   const qty = product.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
   const avgCost = product.inventory?.[0]?.avg_cost || product.cost || 0
 
+  const qty2 = product.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
+
   const { data: prediction, isLoading } = useQuery({
     queryKey: ['ai-predict', product.id],
+    queryFn: async () => {
+      const { data: sales } = await supabase.from('order_items')
+        .select('quantity, created_at')
+        .eq('product_id', product.id)
+        .gte('created_at', new Date(Date.now()-30*86400000).toISOString())
+        .order('created_at', { ascending: false })
+      return callClaudePredict(product, sales||[], qty2)
+    },
     staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    retry: 1,
   })
 
   const { data: salesHistory = [] } = useQuery({

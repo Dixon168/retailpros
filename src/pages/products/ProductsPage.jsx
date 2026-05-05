@@ -333,9 +333,19 @@ export default function ProductsPage() {
                       <tr key={p.id+'-detail'}>
                         <td colSpan={11} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
                           <ProductDetailInline product={p} tenantId={tenant?.id}
-                            onRefresh={() => { qc.refetchQueries(['products']); qc.invalidateQueries(['pos-products']) }}/>
+                            onRefresh={() => { qc.invalidateQueries(['products']); qc.invalidateQueries(['pos-products']);const id=expandedId;setExpandedId(null);setTimeout(()=>setExpandedId(id),100) }}/>
                         </td>
                       </tr>
+                    )}
+                    {historyId === p.id && (
+                      <tr key={p.id+'-history'}>
+                        <td colSpan={11} className="p-0" style={{borderBottom:'2px solid #2563eb'}}>
+                          <SalesHistoryInline product={p} tenantId={tenant?.id}/>
+                        </td>
+                      </tr>
+                    )}
+                    {aiId === p.id && (
+                      <AIStockPanel key={p.id+'-ai'} product={p} onClose={() => setAiId(null)}/>
                     )}
                   </React.Fragment>
                 )
