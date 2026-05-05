@@ -1,525 +1,632 @@
 // src/pages/pos/panels/RefundPanel.jsx
-// 退款面板 — 三种模式 + PIN授权
-
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useRef, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { useCartStore } from '@/stores/cartStore'
-import { cpRefund, cpVoid } from '@/lib/cardpointe'
-import { Overlay } from './SerialPanel'
+import NumPad from '@/components/ui/NumPad'
+import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
 import toast from 'react-hot-toast'
 
-export default function RefundPanel({ onClose, preloadOrder = null }) {
-  const { user, tenant, can } = useAuthStore()
-  const [mode, setMode]         = useState(preloadOrder ? 'by_order' : null)
-  const [step, setStep]         = useState('select') // select|items|pin|processing|done
-  const [pinInput, setPinInput] = useState('')
-  const [pinError, setPinError] = useState(false)
-  const [authUser, setAuthUser] = useState(null)
+// ── Order status badge ──
+export function OrderStatusBadge({ order }) {
+  const hasRefund = order.refund_status === 'partial' || order.refund_status === 'full'
+  const isVoided  = order.status === 'voided'
 
-  // Free mode
-  const [freeAmount, setFreeAmount] = useState('')
-  const [freeReason, setFreeReason] = useState('')
-
-  // Scan mode
-  const [scannedItems, setScannedItems] = useState([])
-  const [scanInput, setScanInput]       = useState('')
-
-  // By order mode
-  const [orderSearch,  setOrderSearch]  = useState('')
-  const [selectedOrder, setSelectedOrder] = useState(preloadOrder)
-  const [selectedItems, setSelectedItems] = useState({}) // { itemId: qty }
-
-  const needsAuth = !can('can_refund')
-
-  // ── Search orders (mode 3) ──
-  const { data: orderResults = [] } = useQuery({
-    queryKey: ['refund-order-search', orderSearch],
-    queryFn: async () => {
-      if (orderSearch.length < 3) return []
-      const { data } = await supabase.from('orders')
-        .select('*, order_items(*), card_transactions(*)')
-        .eq('tenant_id', tenant.id)
-        .ilike('order_number', `%${orderSearch}%`)
-        .limit(10)
-      return data || []
-    },
-    enabled: orderSearch.length >= 3,
-  })
-
-  // ── PIN verification ──
-  const verifyPin = async () => {
-    if (pinInput.length < 4) return
-    setPinError(false)
-
-    const { data: user_match } = await supabase
-      .from('users')
-      .select('id, name, permissions, role')
-      .eq('tenant_id', tenant.id)
-      .eq('pin', pinInput)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (!user_match) {
-      setPinError(true)
-      setPinInput('')
-      return
-    }
-
-    // Check this user has refund permission
-    const hasRefund = user_match.role === 'owner' || user_match.role === 'manager'
-      || user_match.permissions?.can_refund === true
-
-    if (!hasRefund) {
-      setPinError(true)
-      setPinInput('')
-      toast.error(`${user_match.name} does not have refund permission`)
-      return
-    }
-
-    setAuthUser(user_match)
-    setStep('processing')
-    await processRefund(user_match)
+  const STATUS = {
+    completed: { bg:'#dcfce7', color:'#16a34a', label:'Completed' },
+    voided:    { bg:'#fee2e2', color:'#dc2626', label:'Voided' },
+    held:      { bg:'#fef9c3', color:'#ca8a04', label:'On Hold' },
+    refunded:  { bg:'#fdf4ff', color:'#9333ea', label:'Refunded' },
+    partial_refund: { bg:'#eff6ff', color:'#2563eb', label:'Part. Refunded' },
   }
 
-  const handleContinue = async () => {
-    if (needsAuth) {
-      setStep('pin')
-    } else {
-      setStep('processing')
-      await processRefund(user)
-    }
-  }
+  const key = isVoided ? 'voided'
+    : order.refund_status === 'full' ? 'refunded'
+    : order.refund_status === 'partial' ? 'partial_refund'
+    : order.status === 'held' ? 'held'
+    : 'completed'
 
-  // ── Process refund ──
-  const processRefund = async (authorizedUser) => {
-    try {
-      let refundAmount = 0
-      let items = []
-
-      if (mode === 'free') {
-        refundAmount = parseFloat(freeAmount)
-        if (!refundAmount || refundAmount <= 0) {
-          toast.error('Enter a valid amount')
-          setStep('select')
-          return
-        }
-      } else if (mode === 'scan') {
-        items        = scannedItems
-        refundAmount = items.reduce((s, i) => s + i.amount, 0)
-      } else if (mode === 'by_order') {
-        items = selectedOrder.order_items
-          .filter(i => (selectedItems[i.id] || 0) > 0)
-          .map(i => ({
-            product_id:   i.product_id,
-            product_name: i.product_name,
-            qty:          selectedItems[i.id],
-            unit_price:   i.unit_price,
-            amount:       selectedItems[i.id] * i.unit_price,
-          }))
-        refundAmount = items.reduce((s, i) => s + i.amount, 0)
-        if (refundAmount <= 0) {
-          toast.error('Select items to refund')
-          setStep('items')
-          return
-        }
-      }
-
-      // Find the card transaction to refund
-      const cardTx = selectedOrder?.card_transactions?.find(
-        t => t.status === 'settled' && t.amount >= refundAmount
-      ) || selectedOrder?.card_transactions?.find(
-        t => t.status === 'authorized' && t.amount >= refundAmount
-      )
-
-      if (!cardTx) {
-        toast.error('No eligible card transaction found for this refund')
-        setStep('items')
-        return
-      }
-
-      let cpResult
-      if (cardTx.status === 'authorized') {
-        // Not yet settled → Void
-        cpResult = await cpVoid({ tenantId: tenant.id, retref: cardTx.cp_retref, amount: refundAmount })
-      } else {
-        // Settled → Refund
-        cpResult = await cpRefund({ tenantId: tenant.id, retref: cardTx.cp_retref, amount: refundAmount })
-      }
-
-      if (!cpResult.success) {
-        toast.error(`Refund declined: ${cpResult.errorMessage}`)
-        setStep('items')
-        return
-      }
-
-      // Record refund
-      await supabase.from('refund_records').insert({
-        tenant_id:          tenant.id,
-        original_order_id:  selectedOrder?.id || null,
-        original_order_number: selectedOrder?.order_number || null,
-        card_tx_id:         cardTx.id,
-        original_card_tx_id: cardTx.id,
-        mode,
-        amount:             refundAmount,
-        reason:             freeReason || null,
-        items:              items,
-        refunded_by:        user.id,
-        refunded_by_name:   user.name,
-        authorized_by:      authorizedUser?.id || null,
-        authorized_by_name: authorizedUser?.name || null,
-        cp_retref:          cpResult.retref,
-        cp_authcode:        cpResult.authcode,
-      })
-
-      // Update card transaction
-      await supabase.from('card_transactions')
-        .update({
-          status:          cardTx.status === 'authorized' ? 'voided' : 'refunded',
-          refunded_amount: refundAmount,
-          voided_by:       user.id,
-          voided_by_name:  user.name,
-          voided_at:       new Date().toISOString(),
-        })
-        .eq('id', cardTx.id)
-
-      setStep('done')
-      toast.success(`Refund processed: $${refundAmount.toFixed(2)}`)
-
-      // Print refund receipt
-      setTimeout(() => { window.print() }, 500)
-
-    } catch (err) {
-      toast.error(`Refund error: ${err.message}`)
-      setStep('items')
-    }
-  }
-
-  const MODES = [
-    { id: 'free',     icon: '💵', label: 'Free Amount', desc: 'Enter any amount to refund' },
-    { id: 'scan',     icon: '📷', label: 'Scan Items',  desc: 'Scan products to return' },
-    { id: 'by_order', icon: '🧾', label: 'By Order',    desc: 'Select from original order' },
-  ]
-
+  const s = STATUS[key]
   return (
-    <Overlay onClose={onClose}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[520px]
-        max-h-[90vh] overflow-y-auto">
-
-        <div className="px-5 py-4 border-b border-[#1e2d42] flex justify-between items-center">
-          <div className="text-[15px] font-bold">↩️ Refund</div>
-          <button onClick={onClose} className="text-[#3d5068] hover:text-white text-xl">✕</button>
-        </div>
-
-        <div className="px-5 py-5">
-
-          {/* ── Step: Select mode ── */}
-          {step === 'select' && !mode && (
-            <div>
-              <div className="text-[11px] font-mono text-[#3d5068] uppercase tracking-wider mb-3">
-                Select Refund Type
-              </div>
-              <div className="flex flex-col gap-2">
-                {MODES.map(m => (
-                  <button key={m.id} onClick={() => { setMode(m.id); setStep('items') }}
-                    className="flex items-center gap-3 bg-[#111827] border border-[#1e2d42]
-                      rounded-[10px] px-4 py-3.5 hover:border-blue-500/30 transition-all text-left">
-                    <span className="text-2xl">{m.icon}</span>
-                    <div>
-                      <div className="text-[13px] font-bold">{m.label}</div>
-                      <div className="text-[11px] text-[#3d5068] mt-0.5">{m.desc}</div>
-                    </div>
-                    <span className="ml-auto text-[#3d5068]">›</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Mode 1: Free amount ── */}
-          {step === 'items' && mode === 'free' && (
-            <div>
-              <div className="text-[13px] font-bold mb-4">💵 Free Amount Refund</div>
-              <div className="mb-3">
-                <div className="text-[10px] font-mono text-[#3d5068] uppercase mb-1.5">Refund Amount</div>
-                <div className="flex items-center bg-[#111827] border border-[#1e2d42]
-                  rounded-[9px] px-3.5 focus-within:border-red-500/40 transition-colors">
-                  <span className="text-[#3d5068] font-bold mr-2">$</span>
-                  <input type="number" value={freeAmount}
-                    onChange={e => setFreeAmount(e.target.value)}
-                    autoFocus
-                    className="flex-1 bg-transparent border-none outline-none py-3
-                      text-[20px] font-bold font-mono text-right"/>
-                </div>
-              </div>
-              <div className="mb-5">
-                <div className="text-[10px] font-mono text-[#3d5068] uppercase mb-1.5">Reason (optional)</div>
-                <input value={freeReason} onChange={e => setFreeReason(e.target.value)}
-                  placeholder="Reason for refund..."
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3.5 py-2.5 text-[12px] outline-none focus:border-blue-500/40"/>
-              </div>
-              <BtnRow onBack={() => { setMode(null); setStep('select') }} onNext={handleContinue}
-                nextLabel={`Refund $${parseFloat(freeAmount||0).toFixed(2)}`}
-                nextDisabled={!freeAmount || parseFloat(freeAmount) <= 0}
-                danger />
-            </div>
-          )}
-
-          {/* ── Mode 2: Scan items ── */}
-          {step === 'items' && mode === 'scan' && (
-            <div>
-              <div className="text-[13px] font-bold mb-4">📷 Scan Items to Return</div>
-              <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42]
-                rounded-[9px] px-3 mb-3 focus-within:border-blue-500/40 transition-colors">
-                <span className="text-[#3d5068]">📷</span>
-                <input value={scanInput}
-                  onChange={e => setScanInput(e.target.value)}
-                  placeholder="Scan barcode..."
-                  className="bg-transparent border-none outline-none py-2.5 text-[12px]
-                    text-[#e8edf5] flex-1 font-mono placeholder-[#3d5068]"
-                  onKeyDown={async (e) => {
-                    if (e.key !== 'Enter' || !scanInput) return
-                    const { data: prod } = await supabase.from('products')
-                      .select('id, name, price').eq('barcode', scanInput).maybeSingle()
-                    if (prod) {
-                      setScannedItems(prev => {
-                        const ex = prev.find(i => i.product_id === prod.id)
-                        if (ex) return prev.map(i => i.product_id === prod.id
-                          ? { ...i, qty: i.qty + 1, amount: (i.qty + 1) * i.unit_price }
-                          : i)
-                        return [...prev, { product_id: prod.id, product_name: prod.name,
-                          qty: 1, unit_price: prod.price, amount: prod.price }]
-                      })
-                    } else {
-                      toast.error('Product not found')
-                    }
-                    setScanInput('')
-                  }}
-                />
-              </div>
-              {scannedItems.length > 0 && (
-                <div className="mb-4">
-                  {scannedItems.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-[#111827]
-                      border border-[#1e2d42] rounded-[8px] px-3 py-2.5 mb-1.5">
-                      <div className="flex-1">
-                        <div className="text-[12px] font-semibold">{item.product_name}</div>
-                        <div className="text-[10px] font-mono text-[#3d5068]">
-                          ${item.unit_price.toFixed(2)} each
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setScannedItems(p =>
-                          p.map(s => s.product_id === item.product_id
-                            ? { ...s, qty: Math.max(1, s.qty - 1), amount: Math.max(1, s.qty - 1) * s.unit_price }
-                            : s))}
-                          className="w-6 h-6 bg-[#1a2236] rounded text-[#8899b0]">−</button>
-                        <span className="font-mono text-[12px] w-6 text-center">{item.qty}</span>
-                        <button onClick={() => setScannedItems(p =>
-                          p.map(s => s.product_id === item.product_id
-                            ? { ...s, qty: s.qty + 1, amount: (s.qty + 1) * s.unit_price }
-                            : s))}
-                          className="w-6 h-6 bg-[#1a2236] rounded text-[#8899b0]">+</button>
-                        <span className="font-mono text-[12px] font-bold w-16 text-right">
-                          -${item.amount.toFixed(2)}
-                        </span>
-                        <button onClick={() => setScannedItems(p => p.filter(s => s.product_id !== item.product_id))}
-                          className="text-[#3d5068] hover:text-red-400 ml-1">✕</button>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="flex justify-between mt-3 px-1">
-                    <span className="text-[12px] text-[#8899b0]">Total Refund</span>
-                    <span className="font-mono text-[14px] font-bold text-red-400">
-                      -${scannedItems.reduce((s,i) => s + i.amount, 0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
-              <BtnRow onBack={() => { setMode(null); setStep('select') }} onNext={handleContinue}
-                nextLabel="Process Refund" nextDisabled={scannedItems.length === 0} danger />
-            </div>
-          )}
-
-          {/* ── Mode 3: By order ── */}
-          {step === 'items' && mode === 'by_order' && (
-            <div>
-              <div className="text-[13px] font-bold mb-4">🧾 Refund by Order</div>
-
-              {!selectedOrder ? (
-                <>
-                  <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42]
-                    rounded-[9px] px-3 mb-3 focus-within:border-blue-500/40 transition-colors">
-                    <span className="text-[#3d5068]">🔍</span>
-                    <input value={orderSearch} onChange={e => setOrderSearch(e.target.value)}
-                      placeholder="Search order number..."
-                      className="bg-transparent border-none outline-none py-2.5 text-[12px]
-                        text-[#e8edf5] flex-1 font-sans placeholder-[#3d5068]" autoFocus/>
-                  </div>
-                  {orderResults.map(o => (
-                    <div key={o.id} onClick={() => setSelectedOrder(o)}
-                      className="flex items-center gap-3 bg-[#111827] border border-[#1e2d42]
-                        rounded-[9px] px-3.5 py-3 mb-1.5 cursor-pointer hover:border-blue-500/30">
-                      <div className="flex-1">
-                        <div className="font-mono text-[12px] font-bold text-blue-400">{o.order_number}</div>
-                        <div className="text-[10px] text-[#3d5068] mt-0.5">
-                          {o.order_items?.length} items · ${o.total?.toFixed(2)}
-                        </div>
-                      </div>
-                      <span className="text-[#3d5068]">›</span>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <>
-                  <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3.5 py-2.5 mb-3 flex justify-between items-center">
-                    <div>
-                      <div className="font-mono text-[12px] font-bold text-blue-400">
-                        {selectedOrder.order_number}
-                      </div>
-                      <div className="text-[10px] text-[#3d5068]">Total: ${selectedOrder.total?.toFixed(2)}</div>
-                    </div>
-                    <button onClick={() => setSelectedOrder(null)}
-                      className="text-[10px] text-[#8899b0] hover:text-white">Change</button>
-                  </div>
-
-                  <div className="text-[10px] font-mono text-[#3d5068] uppercase mb-2">
-                    Select items to refund
-                  </div>
-                  {selectedOrder.order_items?.map(item => {
-                    const max = item.quantity
-                    const selected_qty = selectedItems[item.id] || 0
-                    return (
-                      <div key={item.id} className="flex items-center gap-3 bg-[#111827]
-                        border border-[#1e2d42] rounded-[8px] px-3 py-2.5 mb-1.5">
-                        <div className="flex-1">
-                          <div className="text-[12px] font-semibold">{item.product_name}</div>
-                          <div className="text-[10px] font-mono text-[#3d5068]">
-                            Max: {max} × ${item.unit_price?.toFixed(2)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setSelectedItems(p => ({ ...p, [item.id]: Math.max(0, (p[item.id]||0) - 1) }))}
-                            className="w-6 h-6 bg-[#1a2236] rounded text-[#8899b0]">−</button>
-                          <span className="font-mono text-[12px] w-6 text-center">{selected_qty}</span>
-                          <button onClick={() => setSelectedItems(p => ({ ...p, [item.id]: Math.min(max, (p[item.id]||0) + 1) }))}
-                            className="w-6 h-6 bg-[#1a2236] rounded text-[#8899b0]">+</button>
-                          <span className="font-mono text-[11px] text-red-400 w-14 text-right">
-                            {selected_qty > 0 ? `-$${(selected_qty * item.unit_price).toFixed(2)}` : ''}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {Object.values(selectedItems).some(q => q > 0) && (
-                    <div className="flex justify-between mt-3 px-1">
-                      <span className="text-[12px] text-[#8899b0]">Total Refund</span>
-                      <span className="font-mono text-[14px] font-bold text-red-400">
-                        -${selectedOrder.order_items
-                          ?.reduce((s,i) => s + (selectedItems[i.id]||0) * i.unit_price, 0)
-                          .toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="mt-4">
-                    <BtnRow onBack={() => { setMode(null); setStep('select') }} onNext={handleContinue}
-                      nextLabel="Process Refund"
-                      nextDisabled={!Object.values(selectedItems).some(q => q > 0)}
-                      danger />
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* ── Step: PIN authorization ── */}
-          {step === 'pin' && (
-            <div className="text-center">
-              <div className="text-2xl mb-3">🔐</div>
-              <div className="text-[14px] font-bold mb-1">Authorization Required</div>
-              <div className="text-[12px] text-[#8899b0] mb-5">
-                Enter PIN of a user with refund permission
-              </div>
-              <div className="grid grid-cols-3 gap-2 max-w-[200px] mx-auto mb-3">
-                {[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map((k, i) => (
-                  <button key={i}
-                    onClick={() => {
-                      if (k === '⌫') setPinInput(p => p.slice(0,-1))
-                      else if (k !== '') setPinInput(p => p.length < 6 ? p + k : p)
-                    }}
-                    className={`py-3 rounded-lg font-mono text-[16px] font-bold transition-all
-                      ${k === '' ? 'invisible' : 'bg-[#111827] border border-[#1e2d42] text-[#e8edf5] hover:bg-[#1a2236]'}`}>
-                    {k}
-                  </button>
-                ))}
-              </div>
-              <div className="font-mono text-[20px] tracking-widest mb-4 h-8">
-                {'●'.repeat(pinInput.length)}
-              </div>
-              {pinError && (
-                <div className="text-[11px] text-red-400 mb-3">
-                  Invalid PIN or insufficient permissions
-                </div>
-              )}
-              <div className="flex gap-2 max-w-[300px] mx-auto">
-                <button onClick={() => setStep('items')}
-                  className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-2.5 text-[12px] text-[#8899b0]">
-                  Cancel
-                </button>
-                <button onClick={verifyPin} disabled={pinInput.length < 4}
-                  className="flex-[2] bg-red-500 border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white disabled:opacity-40">
-                  Authorize
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Step: Processing ── */}
-          {step === 'processing' && (
-            <div className="text-center py-8">
-              <div className="text-3xl mb-3 animate-pulse">⚙️</div>
-              <div className="text-[14px] font-bold">Processing Refund...</div>
-            </div>
-          )}
-
-          {/* ── Step: Done ── */}
-          {step === 'done' && (
-            <div className="text-center py-6">
-              <div className="text-4xl mb-3">✅</div>
-              <div className="text-[15px] font-bold mb-2">Refund Complete</div>
-              <div className="text-[12px] text-[#8899b0] mb-5">
-                Receipt is printing...
-              </div>
-              <button onClick={onClose}
-                className="bg-blue-500 border-none rounded-[9px] px-8 py-2.5 text-[13px] font-bold text-white">
-                Done
-              </button>
-            </div>
-          )}
-
-        </div>
-      </div>
-    </Overlay>
+    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+      style={{background:s.bg, color:s.color}}>
+      {s.label}
+    </span>
   )
 }
 
-function BtnRow({ onBack, onNext, nextLabel, nextDisabled, danger }) {
+export default function RefundPanel({ onClose, preloadOrder = null }) {
+  const { user, tenant } = useAuthStore()
+  const { addProduct }   = useCartStore()
+  const qc               = useQueryClient()
+
+  const [mode, setMode]   = useState(null) // 'by_item' | 'by_invoice'
+  const [step, setStep]   = useState('select')
+
+  // ── BY ITEM mode ──
+  const [itemScan,    setItemScan]    = useState('')
+  const [returnItems, setReturnItems] = useState([]) // [{product, qty}]
+  const [showItemPad, setShowItemPad] = useState(false)
+  const [editItemIdx, setEditItemIdx] = useState(null)
+  const scanRef = useRef()
+
+  // ── BY INVOICE mode ──
+  const [invoiceSearch, setInvoiceSearch] = useState('')
+  const [selectedOrder, setSelectedOrder] = useState(preloadOrder)
+  const [returnQtys,    setReturnQtys]    = useState({}) // {itemId: qty}
+  const [showQtyPad,    setShowQtyPad]    = useState(null) // itemId
+  const [showKB,        setShowKB]        = useState(false)
+
+  // PIN auth
+  const [needPin, setNeedPin]     = useState(false)
+  const [pin,     setPin]         = useState('')
+  const [pinErr,  setPinErr]      = useState(false)
+  const [authBy,  setAuthBy]      = useState(null)
+
+  // Processing
+  const [processing, setProcessing] = useState(false)
+  const [done,       setDone]       = useState(false)
+  const [summary,    setSummary]    = useState(null)
+
+  useEffect(() => {
+    if (step === 'scan' && scanRef.current) scanRef.current.focus()
+  }, [step])
+
+  // ── Search invoices ──
+  const { data: searchResults = [], isLoading: searching } = useQuery({
+    queryKey: ['refund-search', invoiceSearch, tenant?.id],
+    queryFn: async () => {
+      if (invoiceSearch.length < 2) return []
+      const { data } = await supabase.from('orders')
+        .select('*, order_items(*, products(name, unit, price, image_url)), customers(name)')
+        .eq('tenant_id', tenant.id)
+        .or(`order_number.ilike.%${invoiceSearch}%`)
+        .in('status', ['completed','partially_refunded'])
+        .order('created_at', { ascending: false })
+        .limit(8)
+      return data || []
+    },
+    enabled: invoiceSearch.length >= 2 && mode === 'by_invoice' && !selectedOrder,
+  })
+
+  // ── Scan product for by_item ──
+  const handleProductScan = async (e) => {
+    if (e.key !== 'Enter') return
+    const code = itemScan.trim()
+    if (!code) return
+    setItemScan('')
+
+    const { data: product } = await supabase.from('products')
+      .select('id, name, price, unit, image_url, upc, sku')
+      .eq('tenant_id', tenant.id)
+      .or(`upc.eq.${code},sku.eq.${code}`)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (!product) { toast.error('Product not found: ' + code); return }
+
+    setReturnItems(prev => {
+      const existing = prev.findIndex(i => i.product.id === product.id)
+      if (existing >= 0) {
+        const updated = [...prev]
+        updated[existing].qty += 1
+        return updated
+      }
+      return [...prev, { product, qty: 1 }]
+    })
+    toast.success('Added: ' + product.name)
+  }
+
+  // ── Confirm return by item → add negative to cart ──
+  const confirmByItem = () => {
+    if (returnItems.length === 0) { toast.error('No items added'); return }
+    returnItems.forEach(({ product, qty }) => {
+      const p = { ...product, price: product.price }
+      // Add as negative qty
+      useCartStore.getState()._addItem({
+        productId: p.id, name: p.name, unitPrice: p.price,
+        qty: -qty, unit: p.unit, image_url: p.image_url,
+        isReturn: true,
+      })
+    })
+    toast.success(`↩ ${returnItems.length} item(s) added as return`)
+    onClose()
+  }
+
+  // ── Select order for by_invoice ──
+  const selectOrder = (order) => {
+    setSelectedOrder(order)
+    // Init return qty to 0 for each item
+    const init = {}
+    order.order_items?.forEach(item => { init[item.id] = 0 })
+    setReturnQtys(init)
+  }
+
+  // ── Confirm return by invoice ──
+  const confirmByInvoice = async () => {
+    const itemsToReturn = Object.entries(returnQtys)
+      .filter(([,qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const item = selectedOrder.order_items.find(i => i.id === id)
+        return { item, qty }
+      })
+
+    if (itemsToReturn.length === 0) { toast.error('Select items to return'); return }
+
+    // Validate qty
+    for (const { item, qty } of itemsToReturn) {
+      const alreadyReturned = item.returned_qty || 0
+      const maxReturn = item.quantity - alreadyReturned
+      if (qty > maxReturn) {
+        toast.error(`${item.products?.name}: max ${maxReturn} can be returned`)
+        return
+      }
+    }
+
+    setProcessing(true)
+    try {
+      const totalRefund = itemsToReturn.reduce((s, {item, qty}) =>
+        s + (item.unit_price * qty), 0)
+
+      // Update order_items returned_qty
+      for (const { item, qty } of itemsToReturn) {
+        await supabase.from('order_items')
+          .update({ returned_qty: (item.returned_qty||0) + qty })
+          .eq('id', item.id)
+      }
+
+      // Update order refund_status
+      const allItems = selectedOrder.order_items
+      const totalOrigQty = allItems.reduce((s,i) => s+i.quantity, 0)
+      const totalReturnQty = allItems.reduce((s,i) => {
+        const extra = itemsToReturn.find(r => r.item.id === i.id)?.qty || 0
+        return s + (i.returned_qty||0) + extra
+      }, 0)
+      const refundStatus = totalReturnQty >= totalOrigQty ? 'full' : 'partial'
+
+      await supabase.from('orders')
+        .update({
+          refund_status: refundStatus,
+          refunded_amount: (selectedOrder.refunded_amount||0) + totalRefund,
+          refunded_at: new Date().toISOString(),
+          refunded_by: user?.id,
+          refunded_by_name: user?.name,
+        })
+        .eq('id', selectedOrder.id)
+
+      // Record refund
+      await supabase.from('refund_records').insert({
+        tenant_id:   tenant.id,
+        original_order_id: selectedOrder.id,
+        original_order_number: selectedOrder.order_number,
+        mode: 'by_invoice',
+        amount: totalRefund,
+        items: itemsToReturn.map(({item,qty}) => ({
+          product_id: item.product_id,
+          name: item.products?.name,
+          qty, unit_price: item.unit_price,
+        })),
+        refunded_by: user?.id,
+        refunded_by_name: user?.name,
+      })
+
+      // Add negative items to cart
+      itemsToReturn.forEach(({ item, qty }) => {
+        useCartStore.getState()._addItem({
+          productId:  item.product_id,
+          name:       item.products?.name || 'Item',
+          unitPrice:  item.unit_price,
+          qty:        -qty,
+          unit:       item.products?.unit || 'ea',
+          isReturn:   true,
+          refundOrderId: selectedOrder.id,
+        })
+      })
+
+      qc.invalidateQueries(['orders'])
+      setSummary({ items: itemsToReturn, total: totalRefund, order: selectedOrder })
+      setDone(true)
+      toast.success(`↩ Return processed: $${totalRefund.toFixed(2)}`)
+    } catch(err) {
+      toast.error('Error: ' + err.message)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const totalReturnAmt = returnItems.reduce((s,{product,qty}) => s+product.price*qty, 0)
+  const invoiceReturnAmt = Object.entries(returnQtys).reduce((s,[id,qty]) => {
+    const item = selectedOrder?.order_items?.find(i=>i.id===id)
+    return s + (item?.unit_price||0)*qty
+  }, 0)
+
+  // ─────────────────────────────────────────
   return (
-    <div className="flex gap-2 mt-2">
-      <button onClick={onBack}
-        className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px] py-2.5 text-[13px] text-[#8899b0]">
-        ← Back
-      </button>
-      <button onClick={onNext} disabled={nextDisabled}
-        className={`flex-[2] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white
-          disabled:opacity-40 disabled:cursor-not-allowed ${
-          danger ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-blue-500'
-        }`}>
-        {nextLabel}
-      </button>
+    <div className="fixed inset-0 z-50 flex items-stretch"
+      style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="ml-auto flex flex-col shadow-2xl overflow-hidden"
+        style={{width:'520px', background:'#fff'}}>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
+          style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)', color:'#fff'}}>
+          <span className="text-[22px]">↩</span>
+          <div>
+            <div className="text-[16px] font-bold">Return / Refund</div>
+            <div className="text-[11px] opacity-70">Process customer returns</div>
+          </div>
+          <button onClick={onClose}
+            className="ml-auto w-8 h-8 rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer text-white text-[16px]">
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ── DONE ── */}
+          {done && summary && (
+            <div className="flex flex-col items-center p-8 text-center">
+              <div className="text-[52px] mb-3">✅</div>
+              <div className="text-[18px] font-bold text-slate-800 mb-1">Return Processed</div>
+              <div className="text-[13px] text-slate-500 mb-4">
+                Items added to cart as negative
+              </div>
+              <div className="rounded-2xl p-4 w-full mb-4 text-left"
+                style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                {summary.items.map(({item,qty},i) => (
+                  <div key={i} className="flex justify-between py-1.5 text-[13px]"
+                    style={{borderBottom: i<summary.items.length-1 ? '1px solid #f1f5f9':'none'}}>
+                    <span className="text-slate-700">{item.products?.name} × {qty}</span>
+                    <span className="font-mono text-red-500">-${(item.unit_price*qty).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between pt-2 font-bold text-[14px]">
+                  <span>Total Return</span>
+                  <span className="font-mono text-red-600">-${summary.total.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 w-full">
+                <button onClick={onClose}
+                  className="flex-1 rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
+                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                  Continue to Payment
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── SELECT MODE ── */}
+          {!done && !mode && (
+            <div className="p-6">
+              <div className="text-[13px] font-semibold text-slate-600 mb-4">
+                Select return method:
+              </div>
+              <div className="flex flex-col gap-3">
+
+                {/* By Item */}
+                <button onClick={() => setMode('by_item')}
+                  className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
+                  style={{border:'2px solid #e2e8f0', background:'#fff'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#6366f1';e.currentTarget.style.background='#f0f4ff'}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
+                    style={{background:'#e0e7ff'}}>
+                    📦
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-bold text-slate-800">By Item</div>
+                    <div className="text-[12px] text-slate-400 mt-0.5">
+                      Scan or search items to return — no invoice needed
+                    </div>
+                  </div>
+                  <span className="ml-auto text-slate-300 text-[20px]">›</span>
+                </button>
+
+                {/* By Invoice */}
+                <button onClick={() => setMode('by_invoice')}
+                  className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
+                  style={{border:'2px solid #e2e8f0', background:'#fff'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#8b5cf6';e.currentTarget.style.background='#faf5ff'}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
+                    style={{background:'#ede9fe'}}>
+                    🧾
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-bold text-slate-800">By Invoice</div>
+                    <div className="text-[12px] text-slate-400 mt-0.5">
+                      Look up original order — return only items from that order
+                    </div>
+                  </div>
+                  <span className="ml-auto text-slate-300 text-[20px]">›</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── BY ITEM MODE ── */}
+          {!done && mode === 'by_item' && (
+            <div className="p-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setMode(null)}
+                  className="text-slate-400 bg-transparent border-none cursor-pointer text-[14px]">‹ Back</button>
+                <div className="text-[14px] font-bold text-slate-700">Return by Item</div>
+              </div>
+
+              {/* Scan input */}
+              <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+                <div className="px-4 py-3 flex items-center gap-3"
+                  style={{background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+                  <span className="text-[18px]">🔍</span>
+                  <input ref={scanRef}
+                    value={itemScan} onChange={e=>setItemScan(e.target.value)}
+                    onKeyDown={handleProductScan}
+                    placeholder="Scan barcode or enter SKU/UPC..."
+                    autoFocus
+                    className="flex-1 border-none outline-none text-[13px] bg-transparent"
+                    style={{color:'#1e293b'}}/>
+                </div>
+
+                {/* Item list */}
+                {returnItems.length === 0 ? (
+                  <div className="flex flex-col items-center py-8 text-slate-300">
+                    <div className="text-[32px] mb-2">📦</div>
+                    <div className="text-[12px]">Scan items to return</div>
+                  </div>
+                ) : (
+                  <div>
+                    {returnItems.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-3 px-4 py-3 border-b"
+                        style={{borderColor:'#f1f5f9'}}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
+                          style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)'}}>
+                          {item.product.name.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[13px] font-semibold text-slate-700">{item.product.name}</div>
+                          <div className="text-[11px] text-slate-400">${item.product.price} × {item.qty} = <span className="text-red-500 font-bold">-${(item.product.price*item.qty).toFixed(2)}</span></div>
+                        </div>
+                        {/* Qty controls */}
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setReturnItems(prev => prev.map((r,i) => i===idx ? {...r, qty: Math.max(1,r.qty-1)} : r))}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border"
+                            style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>−</button>
+                          <button onClick={() => { setEditItemIdx(idx); setShowItemPad(true) }}
+                            className="w-10 h-7 rounded-lg text-[13px] font-bold text-center cursor-pointer border"
+                            style={{background:'#eff6ff', borderColor:'#93c5fd', color:'#2563eb'}}>
+                            {item.qty}
+                          </button>
+                          <button onClick={() => setReturnItems(prev => prev.map((r,i) => i===idx ? {...r, qty: r.qty+1} : r))}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border"
+                            style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>+</button>
+                        </div>
+                        <button onClick={() => setReturnItems(prev => prev.filter((_,i) => i!==idx))}
+                          className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-[16px] ml-1">✕</button>
+                      </div>
+                    ))}
+                    {/* Total */}
+                    <div className="flex justify-between px-4 py-3 font-bold"
+                      style={{background:'#fef2f2'}}>
+                      <span className="text-[13px] text-slate-600">Total Return</span>
+                      <span className="font-mono text-[15px] text-red-600">-${totalReturnAmt.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {returnItems.length > 0 && (
+                <button onClick={confirmByItem}
+                  className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none"
+                  style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)'}}>
+                  ↩ Add Returns to Cart
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* ── BY INVOICE MODE ── */}
+          {!done && mode === 'by_invoice' && (
+            <div className="p-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setMode(null); setSelectedOrder(null) }}
+                  className="text-slate-400 bg-transparent border-none cursor-pointer text-[14px]">‹ Back</button>
+                <div className="text-[14px] font-bold text-slate-700">Return by Invoice</div>
+              </div>
+
+              {/* Step 1: Search invoice */}
+              {!selectedOrder && (
+                <>
+                  <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+                    <div className="px-4 py-3 flex items-center gap-3"
+                      style={{background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+                      <span className="text-[18px]">🔍</span>
+                      <button onClick={() => setShowKB(true)}
+                        className="flex-1 text-left border-none outline-none text-[13px] bg-transparent cursor-pointer"
+                        style={{color: invoiceSearch ? '#1e293b' : '#94a3b8'}}>
+                        {invoiceSearch || 'Scan or enter invoice number...'}
+                      </button>
+                      {invoiceSearch && (
+                        <button onClick={() => setInvoiceSearch('')}
+                          className="text-slate-400 bg-transparent border-none cursor-pointer">✕</button>
+                      )}
+                    </div>
+
+                    {/* Results */}
+                    {searching && <div className="text-center py-4 text-slate-400 text-[12px]">Searching...</div>}
+                    {searchResults.map(order => (
+                      <button key={order.id} onClick={() => selectOrder(order)}
+                        className="w-full flex items-center gap-3 px-4 py-3 border-b text-left cursor-pointer hover:bg-blue-50 transition-colors"
+                        style={{borderColor:'#f1f5f9'}}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-bold text-indigo-600">{order.order_number}</span>
+                            <OrderStatusBadge order={order}/>
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">
+                            {new Date(order.created_at).toLocaleDateString()} ·
+                            {order.customers?.name || 'Walk-in'} ·
+                            ${order.grand_total?.toFixed(2)}
+                          </div>
+                        </div>
+                        <span className="text-slate-300 text-[18px]">›</span>
+                      </button>
+                    ))}
+                    {invoiceSearch.length >= 2 && !searching && searchResults.length === 0 && (
+                      <div className="text-center py-4 text-slate-400 text-[12px]">No orders found</div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Step 2: Select items from order */}
+              {selectedOrder && (
+                <>
+                  {/* Order header */}
+                  <div className="rounded-2xl p-4" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-bold text-indigo-700">{selectedOrder.order_number}</span>
+                        <OrderStatusBadge order={selectedOrder}/>
+                      </div>
+                      <button onClick={() => setSelectedOrder(null)}
+                        className="text-[11px] text-indigo-500 bg-transparent border-none cursor-pointer">
+                        Change
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {new Date(selectedOrder.created_at).toLocaleDateString()} ·
+                      {selectedOrder.customers?.name || 'Walk-in'} ·
+                      Original: ${selectedOrder.grand_total?.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+                    <div className="px-4 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+                      style={{background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+                      Select items and quantities to return
+                    </div>
+                    {selectedOrder.order_items?.map(item => {
+                      const alreadyReturned = item.returned_qty || 0
+                      const maxQty = item.quantity - alreadyReturned
+                      const retQty = returnQtys[item.id] || 0
+                      const canReturn = maxQty > 0
+
+                      return (
+                        <div key={item.id}
+                          className="flex items-center gap-3 px-4 py-3 border-b transition-colors"
+                          style={{
+                            borderColor:'#f1f5f9',
+                            background: retQty > 0 ? '#fef2f2' : '#fff',
+                            opacity: canReturn ? 1 : 0.5,
+                          }}>
+                          <div className="flex-1">
+                            <div className="text-[13px] font-semibold text-slate-700">
+                              {item.products?.name}
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              Qty: {item.quantity} {item.products?.unit} ·
+                              ${item.unit_price?.toFixed(2)}/ea
+                              {alreadyReturned > 0 && (
+                                <span className="text-orange-500 ml-1">
+                                  · {alreadyReturned} already returned
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {canReturn ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setReturnQtys(q => ({...q, [item.id]: Math.max(0,(q[item.id]||0)-1)}))}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border text-[16px] font-bold"
+                                style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>−</button>
+                              <button onClick={() => setShowQtyPad(item.id)}
+                                className="w-12 h-8 rounded-lg text-[14px] font-bold text-center cursor-pointer"
+                                style={{
+                                  background: retQty > 0 ? '#fee2e2' : '#f8fafc',
+                                  border: `1.5px solid ${retQty > 0 ? '#fca5a5' : '#e2e8f0'}`,
+                                  color: retQty > 0 ? '#dc2626' : '#94a3b8',
+                                }}>
+                                {retQty}/{maxQty}
+                              </button>
+                              <button
+                                onClick={() => setReturnQtys(q => ({...q, [item.id]: Math.min(maxQty,(q[item.id]||0)+1)}))}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border text-[16px] font-bold"
+                                style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>+</button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-semibold">All Returned</span>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {/* Total */}
+                    {invoiceReturnAmt > 0 && (
+                      <div className="flex justify-between px-4 py-3 font-bold"
+                        style={{background:'#fef2f2'}}>
+                        <span className="text-[13px] text-slate-600">Return Total</span>
+                        <span className="font-mono text-[15px] text-red-600">-${invoiceReturnAmt.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button onClick={confirmByInvoice}
+                    disabled={processing || invoiceReturnAmt === 0}
+                    className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                    style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)'}}>
+                    {processing ? '⏳ Processing...' : `↩ Confirm Return — $${invoiceReturnAmt.toFixed(2)}`}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* NumPad for item qty */}
+      {showItemPad && editItemIdx !== null && (
+        <NumPad title="Return Quantity"
+          subtitle={returnItems[editItemIdx]?.product.name}
+          value={String(returnItems[editItemIdx]?.qty || '')}
+          onChange={() => {}}
+          allowNegative={false} allowDecimal={false}
+          onConfirm={v => {
+            setReturnItems(prev => prev.map((r,i) => i===editItemIdx ? {...r, qty: Math.max(1,Math.round(v))} : r))
+            setShowItemPad(false); setEditItemIdx(null)
+          }}
+          onClose={() => { setShowItemPad(false); setEditItemIdx(null) }}/>
+      )}
+
+      {/* NumPad for invoice item qty */}
+      {showQtyPad && (
+        <NumPad title="Return Quantity"
+          subtitle={selectedOrder?.order_items?.find(i=>i.id===showQtyPad)?.products?.name}
+          value={String(returnQtys[showQtyPad] || '')}
+          onChange={() => {}}
+          allowNegative={false} allowDecimal={false}
+          onConfirm={v => {
+            const item = selectedOrder.order_items.find(i=>i.id===showQtyPad)
+            const max  = (item?.quantity||0) - (item?.returned_qty||0)
+            setReturnQtys(q => ({...q, [showQtyPad]: Math.min(max, Math.max(0, Math.round(v)))}))
+            setShowQtyPad(null)
+          }}
+          onClose={() => setShowQtyPad(null)}/>
+      )}
+
+      {/* Keyboard for invoice search */}
+      {showKB && (
+        <TouchKeyboard
+          title="Invoice Number"
+          value={invoiceSearch}
+          onChange={setInvoiceSearch}
+          placeholder="Enter invoice number..."
+          onDone={() => setShowKB(false)}
+          onClose={() => setShowKB(false)}/>
+      )}
     </div>
   )
 }

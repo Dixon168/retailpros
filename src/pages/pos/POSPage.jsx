@@ -80,6 +80,7 @@ export default function POSPage() {
     { id:'gift',    label:'Gift Card', icon:'🎁', action: () => {} },
     { id:'points',  label:'Points',    icon:'⭐', action: () => {} },
     { id:'openitem',label:'Open Item', icon:'✏️', action: () => setShowOpenItem(true) },
+    { id:'return',  label:'Return',    icon:'↩️', action: () => setShowRefund(true) },
     { id:'recall',  label:'Recall',    icon:'📋', action: () => {} },
     { id:'orders',  label:'Orders',    icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
