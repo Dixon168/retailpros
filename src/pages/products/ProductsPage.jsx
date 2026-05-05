@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { ProductForm } from './ProductForm'
 import { ProductDetailInline } from './ProductDetailInline'
+import { AIStockBadge, AIStockPanel } from './AIStockPredict'
 import { ReceiveModal } from './ReceiveModal'
 import { AdjustModal } from './AdjustModal'
 import toast from 'react-hot-toast'
@@ -24,6 +25,7 @@ export default function ProductsPage() {
   const [expandedId, setExpandedId]   = useState(null)
   const [showStock,   setShowStock]     = useState(null)
   const [historyId,   setHistoryId]     = useState(null)
+  const [aiId,        setAiId]          = useState(null)
   const [photoViewer, setPhotoViewer]   = useState(null)
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
@@ -186,7 +188,7 @@ export default function ProductsPage() {
             <table className="w-full border-collapse">
               <thead className="sticky top-0 z-10">
                 <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
-                  {['','Product','SKU','UPC','Price','Avg Cost','Stock','Stock Value','Margin','Actions'].map((h,i) => (
+                  {['','Product','SKU','UPC','Price','Avg Cost','Stock','Stock Value','Margin','🤖 AI','Actions'].map((h,i) => (
                     <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -283,10 +285,15 @@ export default function ProductsPage() {
                         </div>
                       </td>
 
+                      {/* AI Prediction */}
+                      <AIStockBadge product={p}
+                        isExpanded={aiId===p.id}
+                        onExpand={() => { setAiId(aiId===p.id?null:p.id); setExpandedId(null); setHistoryId(null) }}/>
+
                       {/* Actions */}
                       <td className="px-3 py-2">
                         <div className="flex gap-1.5 flex-wrap">
-                          <button onClick={() => { setExpandedId(expandedId===p.id?null:p.id); setHistoryId(null) }}
+                          <button onClick={() => { setExpandedId(expandedId===p.id?null:p.id); setHistoryId(null); setAiId(null) }}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={expandedId===p.id
                               ? {background:'#e0e7ff', borderColor:'#a5b4fc', color:'#6366f1'}
@@ -300,7 +307,7 @@ export default function ProductsPage() {
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📦 Stock
                           </button>
-                          <button onClick={() => { setHistoryId(historyId===p.id?null:p.id); setExpandedId(null) }}
+                          <button onClick={() => { setHistoryId(historyId===p.id?null:p.id); setExpandedId(null); setAiId(null) }}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={historyId===p.id
                               ? {background:'#dbeafe', borderColor:'#93c5fd', color:'#2563eb'}
@@ -324,7 +331,7 @@ export default function ProductsPage() {
                     </tr>
                     {expandedId === p.id && (
                       <tr key={p.id+'-detail'}>
-                        <td colSpan={10} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
+                        <td colSpan={11} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
                           <ProductDetailInline product={p} tenantId={tenant?.id}
                             onRefresh={() => { qc.refetchQueries(['products']); qc.invalidateQueries(['pos-products']) }}/>
                         </td>
