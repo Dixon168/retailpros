@@ -7,6 +7,7 @@ import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
 import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
+import { OpenItemModal } from '@/components/pos/OpenItemModal'
 import ProductGrid from './ProductGrid'
 import SerialPanel from './panels/SerialPanel'
 import WeightPanel from './panels/WeightPanel'
@@ -78,6 +79,7 @@ export default function POSPage() {
     { id:'vip',     label:'VIP Card',  icon:'🏷️', action: () => useCartStore.setState({ showCustPanel: true }) },
     { id:'gift',    label:'Gift Card', icon:'🎁', action: () => {} },
     { id:'points',  label:'Points',    icon:'⭐', action: () => {} },
+    { id:'openitem',label:'Open Item', icon:'✏️', action: () => setShowOpenItem(true) },
     { id:'recall',  label:'Recall',    icon:'📋', action: () => {} },
     { id:'orders',  label:'Orders',    icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
@@ -195,6 +197,12 @@ export default function POSPage() {
       {showDiscPanel  && <DiscountPanel />}
       {showPayPanel   && <PaymentPanel />}
       {showRefund     && <RefundPanel onClose={() => setShowRefund(false)} />}
+    {showOpenItem && (
+      <OpenItemModal
+        tenantId={tenant?.id}
+        onAdd={(item) => { useCartStore.getState().addProduct(item); setShowOpenItem(false) }}
+        onClose={() => setShowOpenItem(false)}/>
+    )}
     </div>
   )
 }
