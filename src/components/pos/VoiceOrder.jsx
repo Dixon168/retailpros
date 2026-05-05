@@ -6,32 +6,33 @@ import toast from 'react-hot-toast'
 
 async function parseVoiceOrder(transcript, products) {
   try {
-    // Build rich product list with Chinese common names for better matching
-    const productList = products.map(p => {
-      // Generate likely Chinese names for common products
-      const chineseHints = {
-        'apple': '苹果', 'mango': '芒果', 'banana': '香蕉', 'orange': '橙子/橘子',
-        'grape': '葡萄', 'watermelon': '西瓜', 'strawberry': '草莓', 'pear': '梨',
-        'lemon': '柠檬', 'peach': '桃子', 'pineapple': '菠萝', 'kiwi': '猕猴桃',
-        'milk': '牛奶', 'water': '水', 'juice': '果汁', 'beer': '啤酒',
-        'wine': '葡萄酒/红酒', 'coke': '可乐', 'pepsi': '百事可乐', 'coffee': '咖啡',
-        'tea': '茶', 'sprite': '雪碧', 'soda': '苏打水',
-        'rice': '米饭/大米', 'bread': '面包', 'egg': '鸡蛋', 'chicken': '鸡肉',
-        'beef': '牛肉', 'pork': '猪肉', 'fish': '鱼', 'shrimp': '虾',
-        'tofu': '豆腐', 'noodle': '面条', 'chips': '薯片', 'chocolate': '巧克力',
-        'candy': '糖果', 'cookie': '饼干', 'cake': '蛋糕', 'ice cream': '冰淇淋',
-      }
-      const nameLower = p.name.toLowerCase()
-      const chineseAlias = Object.entries(chineseHints).find(([en]) => nameLower.includes(en))?.[1] || ''
-      return {
-        id: p.id,
-        name: p.name,
-        chinese_name: chineseAlias,
-        tags: p.tags || [],
-        unit: p.unit || 'ea',
-        price: p.price,
-      }
-    })
+    const chineseHints = {
+      'apple':'苹果','mango':'芒果','banana':'香蕉','orange':'橙子',
+      'grape':'葡萄','watermelon':'西瓜','strawberry':'草莓','pear':'梨',
+      'milk':'牛奶','water':'水','juice':'果汁','beer':'啤酒',
+      'wine':'葡萄酒','coke':'可乐','coffee':'咖啡','tea':'茶',
+      'rice':'大米','bread':'面包','egg':'鸡蛋','chicken':'鸡肉',
+      'beef':'牛肉','pork':'猪肉','fish':'鱼','shrimp':'虾',
+      'chips':'薯片','chocolate':'巧克力','candy':'糖果',
+    }
+
+    const productLines = products.map(p => {
+      const cn = Object.entries(chineseHints).find(([en]) => p.name.toLowerCase().includes(en))
+      return 'ID:' + p.id + ' Name:' + p.name + ' Chinese:' + (cn?.[1]||'') + ' Tags:' + (p.tags||[]).join(',') + ' Unit:' + (p.unit||'ea')
+    }).join(' | ')
+
+    const prompt = 'You are a multilingual POS assistant. Match spoken words to products.\n\n' +
+      'Staff said: "' + transcript + '"\n\n' +
+      'Products: ' + productLines + '\n\n' +
+      'Rules:\n' +
+      '1. Match by meaning not exact words (苹果=Apple, 可乐=Coke, 红酒=Wine)\n' +
+      '2. Use Chinese field to match Chinese speech to English product names\n' +
+      '3. Extract quantity (三个=3, 两瓶=2, 半斤=0.5, 一打=12)\n' +
+      '4. Default qty=1 if not specified\n' +
+      '5. Only match products in the list\n\n' +
+      'Respond ONLY with JSON array:\n' +
+      '[{"product_id":"xxx","product_name":"Apple","qty":3}]\n' +
+      'Return [] if nothing matches.'
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -39,29 +40,7 @@ async function parseVoiceOrder(transcript, products) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
-        messages: [{
-          role: 'user',
-          content: `You are a multilingual POS assistant. Match spoken words to products.
-
-Staff said: "${transcript}"
-
-Products available:
-${productList.map(p => `- ID:${p.id} | Name:"${p.name}" | Chinese:"${p.chinese_name}" | Tags:${p.tags.join(',')} | Unit:${p.unit}`).join('
-')}
-
-MATCHING RULES:
-1. Match by meaning, not exact words (苹果=Apple, 可乐=Coke/Cola, 红酒=Red Wine)
-2. Use chinese_name field to match Chinese speech to English product names
-3. Extract quantity (三个=3, 两瓶=2, 半斤=0.5, 一打=12, 两打=24)
-4. Default qty = 1 if not specified
-5. Only match products in the list above
-6. Partial matches OK (说"苹果" matches "Fuji Apple", "Red Apple", "Green Apple")
-
-Respond ONLY with JSON array (no markdown, no explanation):
-[{"product_id":"xxx","product_name":"Apple","qty":3}]
-
-Empty array [] if nothing matches.`
-        }]
+        messages: [{ role: 'user', content: prompt }]
       })
     })
     const d = await res.json()
@@ -71,6 +50,7 @@ Empty array [] if nothing matches.`
     return []
   }
 }
+
 
 export function VoiceOrderButton({ products }) {
   const [state, setState]           = useState('idle') // idle | listening | processing | done
