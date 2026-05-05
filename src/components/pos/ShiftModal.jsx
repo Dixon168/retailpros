@@ -2,6 +2,7 @@
 // 开班 / 收班 弹窗
 
 import { useState } from 'react'
+import NumPad from '@/components/ui/NumPad'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -10,6 +11,7 @@ export function OpenShiftModal({ onClose }) {
   const { user, tenant, store } = useAuthStore()
   const [amount, setAmount]   = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPad, setShowPad] = useState(false)
 
   const QUICK = [0, 50, 100, 200, 300, 500]
 
@@ -40,19 +42,22 @@ export function OpenShiftModal({ onClose }) {
             tracking-wider mb-2">Opening Float (Cash in Drawer)</div>
 
           {/* Amount input */}
-          <div className="flex items-center bg-[#111827] border border-[#1e2d42]
-            rounded-[10px] px-4 mb-3 focus-within:border-green-500/40 transition-colors">
+          <button onClick={() => setShowPad(true)}
+            className="w-full flex items-center rounded-[10px] px-4 mb-3 cursor-pointer border"
+            style={{background:'#111827', borderColor: amount ? '#22c55e' : '#1e2d42'}}>
             <span className="text-[#3d5068] text-lg font-bold mr-2">$</span>
-            <input
-              autoFocus
-              type="number"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="flex-1 bg-transparent border-none outline-none py-3
-                text-[22px] font-bold font-mono text-right"
-            />
-          </div>
+            <span className="flex-1 py-3 text-[22px] font-bold font-mono text-right"
+              style={{color: amount ? '#fff' : '#3d5068'}}>
+              {amount || '0.00'}
+            </span>
+          </button>
+          {showPad && (
+            <NumPad title="Opening Float" prefix="$"
+              value={amount} onChange={setAmount}
+              allowNegative={false} allowDecimal={true}
+              onConfirm={v=>{setAmount(v.toFixed(2));setShowPad(false)}}
+              onClose={()=>setShowPad(false)}/>
+          )}
 
           {/* Quick amounts */}
           <div className="grid grid-cols-3 gap-1.5 mb-5">

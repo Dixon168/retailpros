@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import NumPad from '@/components/ui/NumPad'
+import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
 
 export function OpenItemModal({ tenantId, onAdd, onClose }) {
   const [name,      setName]      = useState('Open Item')
@@ -10,6 +11,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
   const [taxed,     setTaxed]     = useState(false)
   const [taxRateId, setTaxRateId] = useState('')
   const [showNumPad,setShowNumPad]= useState(false)
+  const [showKB,    setShowKB]    = useState(false)
   const nameRef = useRef()
 
   useEffect(() => {
@@ -79,16 +81,13 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               Item Name
             </div>
-            <input
-              ref={nameRef}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Open Item"
-              className="w-full rounded-xl px-4 py-3 text-[15px] font-semibold outline-none"
-              style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
-              onFocus={e => e.target.style.borderColor = '#6366f1'}
-              onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-            />
+            <button onClick={() => setShowKB(true)}
+              className="w-full rounded-xl px-4 py-3 text-left cursor-pointer border-2 transition-all"
+              style={{border:'2px solid #e2e8f0', background:'#f8fafc'}}>
+              <span className="text-[15px] font-semibold" style={{color: name && name !== 'Open Item' ? '#1e293b' : '#94a3b8'}}>
+                {name || 'Tap to enter name...'}
+              </span>
+            </button>
           </div>
 
           {/* Price */}
@@ -199,6 +198,18 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
           </button>
         </div>
       </div>
+
+      {/* Keyboard */}
+      {showKB && (
+        <TouchKeyboard
+          title="Item Name"
+          value={name}
+          onChange={setName}
+          placeholder="Open Item"
+          onDone={() => setShowKB(false)}
+          onClose={() => setShowKB(false)}
+        />
+      )}
 
       {/* NumPad */}
       {showNumPad && (

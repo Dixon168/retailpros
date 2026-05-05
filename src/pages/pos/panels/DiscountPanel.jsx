@@ -2,6 +2,7 @@
 // 整单折扣面板
 
 import { useState } from 'react'
+import NumPad from '@/components/ui/NumPad'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { Overlay } from './SerialPanel'
@@ -66,22 +67,24 @@ export default function DiscountPanel() {
 
         {/* 输入 */}
         <div className="flex gap-2 items-center mb-3">
-          <input
-            autoFocus
-            type="number"
-            value={value}
-            onChange={e => setValue(e.target.value)}
-            placeholder="0"
-            disabled={!canDiscount}
-            className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-lg
-              px-3 py-2.5 text-[16px] font-mono text-right outline-none
-              focus:border-pink-500/40 disabled:opacity-40 transition-colors"
-          />
-          <div className="bg-[#111827] border border-[#1e2d42] rounded-lg
-            px-3 py-2.5 text-[12px] text-[#8899b0]">
+          <button onClick={() => setShowPad(true)} disabled={!canDiscount}
+            className="flex-1 rounded-lg px-3 py-3 text-[20px] font-mono text-right cursor-pointer border disabled:opacity-40"
+            style={{background:'#111827', borderColor:'#1e2d42', color: value ? '#f472b6' : '#3d5068'}}>
+            {value || '0'}
+          </button>
+          <div className="rounded-lg px-3 py-3 text-[14px] font-bold"
+            style={{background:'#111827', border:'1px solid #1e2d42', color:'#8899b0'}}>
             {mode === 'pct' ? '%' : '$'}
           </div>
         </div>
+        {showPad && (
+          <NumPad title={mode==='pct'?'Discount %':'Discount $'}
+            value={value} onChange={setValue}
+            prefix={mode==='amt'?'$':''} suffix={mode==='pct'?'%':''}
+            allowNegative={false} allowDecimal={true}
+            onConfirm={v=>{setValue(String(v));setShowPad(false)}}
+            onClose={()=>setShowPad(false)}/>
+        )}
 
         {/* 折扣预览 */}
         <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px]

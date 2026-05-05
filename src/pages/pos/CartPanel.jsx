@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
 import NumPad from '@/components/ui/NumPad'
+import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
 import toast from 'react-hot-toast'
 
 const SIDE_BTNS = [
@@ -80,7 +81,7 @@ export default function CartPanel({ onRefund }) {
     const newAction = activeAction === id ? null : id
     setActiveAction(newAction)
     setInputVal('')
-    if (newAction && !['staff','remark'].includes(newAction)) {
+    if (newAction && !['staff','remark','disc'].includes(newAction)) {
       setShowNumPad(true)
     } else {
       setShowNumPad(false)
@@ -227,11 +228,14 @@ export default function CartPanel({ onRefund }) {
             <div className="text-[10px] font-bold text-indigo-700 mb-2">
               📝 Note — {selectedItem?.name}
             </div>
-            <textarea value={inputVal} onChange={e=>setInputVal(e.target.value)}
-              rows={2} placeholder="Add note..." autoFocus
-              className="w-full rounded-lg px-3 py-2 text-[12px] outline-none resize-none"
-              style={{border:'1.5px solid #a5b4fc', background:'#fff'}}/>
-            <div className="flex gap-1.5 mt-2">
+            <button onClick={() => setShowNumPad(true)}
+              className="w-full rounded-lg px-3 py-2 text-left cursor-pointer mb-2"
+              style={{border:'1.5px solid #a5b4fc', background:'#fff', minHeight:'48px'}}>
+              <span className="text-[12px]" style={{color: inputVal ? '#1e293b' : '#94a3b8'}}>
+                {inputVal || 'Tap to add note...'}
+              </span>
+            </button>
+            <div className="flex gap-1.5">
               <button onClick={() => applyAction()}
                 className="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white cursor-pointer border-none"
                 style={{background:'#6366f1'}}>✓ Save</button>
@@ -418,6 +422,18 @@ export default function CartPanel({ onRefund }) {
           </div>
         </div>
       </div>
+
+      {/* Touch Keyboard for remark */}
+      {activeAction === 'remark' && showNumPad && (
+        <TouchKeyboard
+          title="Item Note"
+          value={inputVal}
+          onChange={setInputVal}
+          placeholder="Add note..."
+          onDone={() => setShowNumPad(false)}
+          onClose={() => setShowNumPad(false)}
+        />
+      )}
 
       {/* NumPad */}
       {showNumPad && activeAction && !['staff','remark','inc','dec','delete'].includes(activeAction) && (

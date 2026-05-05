@@ -1,6 +1,7 @@
 // src/pages/pos/panels/PaymentPanel.jsx
 // 支付面板 - 支持多种支付方式混合支付 + PAX 真实刷卡
 
+import NumPad from '@/components/ui/NumPad'
 import { useState } from 'react'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -238,14 +239,21 @@ export default function PaymentPanel() {
           {selectedMethod !== 'card' || !terminal?.pax_enabled ? (
             <div className="mb-3">
               <div className="text-[11px] font-mono text-[#3d5068] mb-1.5">AMOUNT</div>
-              <input
-                type="number"
-                value={amountInput}
-                onChange={e => setAmountInput(e.target.value)}
-                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                  px-3.5 py-3 text-[18px] font-mono text-right outline-none
-                  focus:border-blue-500/40 transition-colors"
-              />
+              <button onClick={() => setShowAmtPad(true)}
+                className="w-full rounded-[9px] px-3.5 py-3 text-right cursor-pointer border transition-all"
+                style={{background:'#111827', borderColor: amountInput ? '#3b82f6' : '#1e2d42'}}>
+                <span className="text-[22px] font-mono font-bold"
+                  style={{color: amountInput ? '#fff' : '#3d5068'}}>
+                  ${amountInput || '0.00'}
+                </span>
+              </button>
+              {showAmtPad && (
+                <NumPad title="Payment Amount" prefix="$"
+                  value={amountInput} onChange={setAmountInput}
+                  allowNegative={false} allowDecimal={true}
+                  onConfirm={v=>{setAmountInput(v.toFixed(2));setShowAmtPad(false)}}
+                  onClose={()=>setShowAmtPad(false)}/>
+              )}
               <div className="flex gap-1.5 mt-2">
                 <button onClick={() => setAmountInput(remaining.toFixed(2))}
                   className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-lg
