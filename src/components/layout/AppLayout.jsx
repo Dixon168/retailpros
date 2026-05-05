@@ -18,7 +18,8 @@ const NAV_GROUPS = [
     items: [
       { to:'/products',   icon:'📦', label:'Products' },
       { to:'/categories', icon:'📁', label:'Categories' },
-      { to:'/vendors',    icon:'🚚', label:'Vendors' },
+      { to:'/vendors',       icon:'🚚', label:'Vendors' },
+      { to:'/smart-receive', icon:'🤖', label:'Smart Receive' },
     ]
   },
   {
