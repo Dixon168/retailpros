@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
+import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
 import ProductGrid from './ProductGrid'
 import SerialPanel from './panels/SerialPanel'
 import WeightPanel from './panels/WeightPanel'
@@ -130,6 +131,7 @@ export default function POSPage() {
                   className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
               )}
             </div>
+            <VoiceOrderButton products={products || []} />
           </div>
 
           {/* Category tabs */}
