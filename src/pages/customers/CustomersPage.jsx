@@ -650,29 +650,27 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
     setSaving(true)
     try {
       const code = 'C' + Date.now().toString().slice(-6)
+      // Minimal safe payload - only fields we know exist
       const payload = {
-        tenant_id: tenantId,
+        tenant_id:    tenantId,
         code,
-        name:             form.name.trim(),
-        phone:            form.phone || null,
-        email:            form.email || null,
-        type:             'regular',
-        notes:            form.notes || null,
-        card_number:      form.card_number || null,
-        member_level:     form.member_level || 'Level 1',
-        card_expire_date: form.card_expire_date || null,
-        is_active:        true,
-        loyalty_points:   0,
-        credit_balance:   0,
-        card_balance:     0,
-        member_since:     new Date().toISOString().split('T')[0],
+        name:         form.name.trim(),
+        phone:        form.phone || null,
+        email:        form.email || null,
+        is_active:    true,
       }
-      // Only add optional fields if they exist
-      if (form.birthday)       payload.birthday        = form.birthday
-      if (form.address)        payload.billing_address = form.address
-      if (form.referrer)       payload.referrer        = form.referrer
+      // Add optional fields safely
+      if (form.notes)            payload.notes            = form.notes
+      if (form.card_number)      payload.card_number      = form.card_number
+      if (form.member_level)     payload.member_level     = form.member_level
+      if (form.card_expire_date) payload.card_expire_date = form.card_expire_date
+      if (form.birthday)         payload.birthday         = form.birthday
+      if (form.address)          payload.billing_address  = form.address
+      if (form.gender)           payload.gender           = form.gender
+
+      console.log('Inserting customer payload:', payload)
       const { data, error } = await supabase.from('customers').insert(payload).select().single()
-      if (error) throw error
+      if (error) { console.error('Insert error:', error); throw error }
       toast.success(`✓ ${form.name} added!`)
       onSave(data)
     } catch(e) { toast.error(e.message) }
