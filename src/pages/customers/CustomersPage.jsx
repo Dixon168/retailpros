@@ -629,19 +629,17 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
 // ── Add Customer Modal ──
 function AddCustomerModal({ tenantId, onSave, onClose }) {
   const { data: memberLevels = [] } = useQuery({
-    queryKey: ['member-levels', tenantId],
+    queryKey: ['member-levels'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('member_levels')
-        .select('id, name, discount_pct').eq('tenant_id', tenantId).order('sort_order')
-      if (error) console.error('member_levels error:', error)
+      const { data } = await supabase.from('member_levels')
+        .select('id,name,discount_pct').order('sort_order')
       return data || []
     },
-    enabled: !!tenantId,
   })
   const [form, setForm] = useState({
     name:'', phone:'', email:'', birthday:'',
-    gender:'', address:'', type:'regular', notes:'',
-    card_number:'', member_level:'Level 1', card_expire_date:'',
+    gender:'', address:'', notes:'',
+    card_number:'', member_level:'', card_expire_date:'',
   })
   const setF = (k,v) => setForm(f=>({...f,[k]:v}))
   const [saving, setSaving] = useState(false)
@@ -658,7 +656,6 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
         name:             form.name.trim(),
         phone:            form.phone || null,
         email:            form.email || null,
-        gender:           form.gender || null,
         type:             'regular',
         notes:            form.notes || null,
         card_number:      form.card_number || null,
@@ -796,13 +793,12 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
 // ── Edit Customer Modal ──
 function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
   const { data: memberLevels = [] } = useQuery({
-    queryKey: ['member-levels', tenantId],
+    queryKey: ['member-levels'],
     queryFn: async () => {
       const { data } = await supabase.from('member_levels')
-        .select('id, name').eq('tenant_id', tenantId).order('sort_order')
+        .select('id,name,discount_pct').order('sort_order')
       return data || []
     },
-    enabled: !!tenantId,
   })
   const [form, setForm] = useState({
     name: customer.name||'', phone: customer.phone||'', email: customer.email||'',
