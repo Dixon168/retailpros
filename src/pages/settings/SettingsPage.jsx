@@ -911,9 +911,15 @@ function Toggle({ value, onChange, color='#3b82f6' }) {
 
 // ── Member Levels ──
 function MemberLevelsSection({ tenantId }) {
-  const [levels, setLevels]   = useState([])
-  const [newName, setNewName] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [levels,   setLevels]   = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [editId,   setEditId]   = useState(null)  // which row is editing
+  const [editName, setEditName] = useState('')
+  const [editDisc, setEditDisc] = useState('')
+  const [adding,   setAdding]   = useState(false)  // show add form
+  const [newName,  setNewName]  = useState('')
+  const [newDisc,  setNewDisc]  = useState('0')
+  const [saving,   setSaving]   = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -927,115 +933,223 @@ function MemberLevelsSection({ tenantId }) {
       ]
       const { data: created } = await supabase.from('member_levels').insert(defaults).select()
       setLevels(created || [])
-    } else { setLevels(data || []) }
+    } else {
+      setLevels(data || [])
+    }
     setLoading(false)
   }
 
   useEffect(() => { if (tenantId) load() }, [tenantId])
 
+  const startEdit = (level) => {
+    setEditId(level.id)
+    setEditName(level.name)
+    setEditDisc(String(level.discount_pct || 0))
+  }
+
+  const saveEdit = async () => {
+    if (!editName.trim()) { toast.error('Name required'); return }
+    setSaving(true)
+    await supabase.from('member_levels').update({
+      name: editName.trim(),
+      discount_pct: parseFloat(editDisc) || 0,
+    }).eq('id', editId)
+    setLevels(l => l.map(x => x.id === editId
+      ? {...x, name: editName.trim(), discount_pct: parseFloat(editDisc)||0}
+      : x))
+    setEditId(null)
+    setSaving(false)
+    toast.success('✓ Saved')
+  }
+
+  const cancelEdit = () => setEditId(null)
+
   const addLevel = async () => {
-    if (!newName.trim()) return
+    if (!newName.trim()) { toast.error('Name required'); return }
+    setSaving(true)
     const { data } = await supabase.from('member_levels').insert({
-      tenant_id: tenantId, name: newName.trim(),
-      discount_pct: 0, sort_order: levels.length, is_default: false,
+      tenant_id: tenantId,
+      name: newName.trim(),
+      discount_pct: parseFloat(newDisc) || 0,
+      sort_order: levels.length,
+      is_default: false,
     }).select().single()
-    if (data) { setLevels(l => [...l, data]); setNewName('') }
-    toast.success(`✓ ${newName} added`)
+    if (data) {
+      setLevels(l => [...l, data])
+      setNewName(''); setNewDisc('0'); setAdding(false)
+      toast.success(`✓ ${data.name} added`)
+    }
+    setSaving(false)
   }
 
   const deleteLevel = async (id, isDefault) => {
-    if (isDefault) { toast.error('Cannot delete Level 1'); return }
+    if (isDefault) { toast.error('Cannot delete default Level 1'); return }
+    if (!window.confirm('Delete this level?')) return
     await supabase.from('member_levels').delete().eq('id', id)
     setLevels(l => l.filter(x => x.id !== id))
+    toast.success('Deleted')
   }
 
-  const updateName = async (id, name) => {
-    setLevels(l => l.map(x => x.id === id ? {...x, name} : x))
-    await supabase.from('member_levels').update({ name }).eq('id', id)
-  }
-
-  const updateDiscount = async (id, val) => {
-    const v = parseFloat(val) || 0
-    setLevels(l => l.map(x => x.id === id ? {...x, discount_pct: v} : x))
-    await supabase.from('member_levels').update({ discount_pct: v }).eq('id', id)
-  }
-
-  if (loading) return <div className="text-slate-400 p-4">Loading...</div>
+  if (loading) return <div className="text-slate-400 p-4 text-[13px]">Loading...</div>
 
   return (
-    <div className="flex flex-col gap-4">
-      <SectionTitle>🏅 Member Levels</SectionTitle>
-      <p className="text-[12px] text-slate-500 -mt-3">
-        All new customers default to <strong>Level 1</strong>. Set VIP discount % for higher levels.
-      </p>
-      <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
-        <div className="grid px-5 py-2.5 text-[10px] font-bold text-slate-400 uppercase"
-          style={{gridTemplateColumns:'40px 1fr 130px 80px', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
-          <div>#</div><div>Name</div><div>VIP Discount</div><div></div>
-        </div>
-        <div className="bg-white">
-          {levels.map((level, i) => (
-            <div key={level.id} className="grid items-center px-5 py-3 gap-3"
-              style={{gridTemplateColumns:'40px 1fr 130px 80px',
-                borderBottom: i < levels.length-1 ? '1px solid #f1f5f9':'none',
-                background: level.is_default ? '#f0fdf4':'#fff'}}>
-              <div className="text-[13px] font-bold text-slate-400">{i+1}</div>
-              <div className="flex items-center gap-2">
-                <span>{level.is_default ? '👤':'⭐'}</span>
-                <input value={level.name} onChange={e => updateName(level.id, e.target.value)}
-                  readOnly={level.is_default}
-                  className="flex-1 border-none outline-none text-[13px] font-semibold bg-transparent"
-                  style={{color: level.is_default ? '#16a34a':'#1e293b'}}/>
-                {level.is_default && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                    style={{background:'#dcfce7',color:'#16a34a'}}>DEFAULT</span>
-                )}
-              </div>
-              <div>
-                {level.is_default ? (
-                  <span className="text-[12px] text-slate-400">No discount</span>
-                ) : (
-                  <div className="flex items-center gap-1 rounded-lg px-2 py-1.5"
-                    style={{border:'1.5px solid #e2e8f0',background:'#f8fafc',width:'110px'}}>
-                    <input type="number" min="0" max="100" step="0.5"
-                      value={level.discount_pct||0} onChange={e => updateDiscount(level.id, e.target.value)}
-                      className="w-12 border-none outline-none text-[13px] font-bold bg-transparent text-center"
-                      style={{color:'#6366f1'}}/>
-                    <span className="text-[11px] text-slate-400">% off</span>
-                  </div>
-                )}
-              </div>
-              <div>
-                {!level.is_default && (
-                  <button onClick={() => deleteLevel(level.id, level.is_default)}
-                    className="text-[11px] px-2.5 py-1.5 rounded-lg cursor-pointer border"
-                    style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
-                    Delete
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <input value={newName} onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key==='Enter' && addLevel()}
-          placeholder="New level name (e.g. Diamond)..."
-          className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none"
-          style={{border:'1.5px solid #e2e8f0',background:'#f8fafc'}}/>
-        <button onClick={addLevel} disabled={!newName.trim()}
-          className="rounded-xl px-4 py-2.5 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <SectionTitle>🏅 Member Levels</SectionTitle>
+        <button onClick={() => { setAdding(true); setNewName(''); setNewDisc('0') }}
+          disabled={adding}
+          className="rounded-xl px-4 py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
           style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
           + Add Level
         </button>
       </div>
-      <div className="rounded-xl px-4 py-3 flex gap-3" style={{background:'#eff6ff',border:'1px solid #bfdbfe'}}>
-        <span>ℹ️</span>
-        <div className="text-[11px] text-blue-700">
-          Click the name or % to edit inline — saves automatically.
-          <strong> Level 1</strong> is always the default, cannot be deleted.
+
+      {/* Add form */}
+      {adding && (
+        <div className="rounded-2xl p-4 flex flex-col gap-3"
+          style={{background:'#f0f4ff', border:'2px solid #a5b4fc'}}>
+          <div className="text-[12px] font-bold text-indigo-700">New Member Level</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Level Name *</div>
+              <input value={newName} onChange={e => setNewName(e.target.value)}
+                placeholder="e.g. Diamond, VIP Gold..."
+                autoFocus
+                className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                style={{border:'1.5px solid #a5b4fc', background:'#fff'}}
+                onKeyDown={e => e.key === 'Enter' && addLevel()}/>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">VIP Discount %</div>
+              <div className="flex items-center gap-2 rounded-xl px-3"
+                style={{border:'1.5px solid #a5b4fc', background:'#fff', height:'42px'}}>
+                <input type="number" min="0" max="100" step="0.5"
+                  value={newDisc} onChange={e => setNewDisc(e.target.value)}
+                  className="flex-1 border-none outline-none text-[15px] font-bold bg-transparent"
+                  style={{color:'#6366f1'}}/>
+                <span className="text-[13px] text-slate-400 font-semibold">%</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1">0% = no discount</div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setAdding(false)}
+              className="px-4 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border"
+              style={{background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+              Cancel
+            </button>
+            <button onClick={addLevel} disabled={saving || !newName.trim()}
+              className="px-5 py-2 rounded-xl text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+              style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+              {saving ? '⏳' : '✓ Save Level'}
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Levels list */}
+      <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+        {/* Header */}
+        <div className="grid px-5 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider"
+          style={{gridTemplateColumns:'36px 1fr 140px 100px', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+          <div>#</div>
+          <div>Level Name</div>
+          <div>VIP Discount</div>
+          <div>Actions</div>
+        </div>
+
+        <div className="bg-white divide-y" style={{borderColor:'#f1f5f9'}}>
+          {levels.map((level, i) => (
+            <div key={level.id}>
+              {/* View row */}
+              {editId !== level.id && (
+                <div className="grid items-center px-5 py-3.5 gap-3"
+                  style={{gridTemplateColumns:'36px 1fr 140px 100px',
+                    background: level.is_default ? '#f0fdf4' : '#fff'}}>
+                  <div className="text-[13px] font-black text-slate-400">{i+1}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[16px]">{level.is_default ? '👤' : '⭐'}</span>
+                    <span className="text-[14px] font-semibold text-slate-800">{level.name}</span>
+                    {level.is_default && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{background:'#dcfce7', color:'#16a34a'}}>DEFAULT</span>
+                    )}
+                  </div>
+                  <div>
+                    {level.discount_pct > 0 ? (
+                      <span className="text-[13px] font-bold px-2.5 py-1 rounded-lg"
+                        style={{background:'#eff6ff', color:'#6366f1'}}>
+                        {level.discount_pct}% off
+                      </span>
+                    ) : (
+                      <span className="text-[12px] text-slate-400">No discount</span>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => startEdit(level)}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border transition-all"
+                      style={{background:'#f0f4ff', borderColor:'#c7d2fe', color:'#6366f1'}}>
+                      ✏️ Edit
+                    </button>
+                    {!level.is_default && (
+                      <button onClick={() => deleteLevel(level.id, level.is_default)}
+                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border"
+                        style={{background:'#fff1f2', borderColor:'#fecdd3', color:'#e11d48'}}>
+                        🗑
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Edit row */}
+              {editId === level.id && (
+                <div className="px-5 py-4" style={{background:'#fffbeb', borderLeft:'3px solid #f59e0b'}}>
+                  <div className="text-[11px] font-bold text-amber-600 mb-3">Editing Level {i+1}</div>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Level Name</div>
+                      <input value={editName} onChange={e => setEditName(e.target.value)}
+                        autoFocus
+                        className="w-full rounded-xl px-3 py-2.5 text-[13px] font-semibold outline-none"
+                        style={{border:'1.5px solid #fde047', background:'#fff'}}
+                        readOnly={level.is_default}/>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Discount %</div>
+                      <div className="flex items-center gap-2 rounded-xl px-3"
+                        style={{border:'1.5px solid #fde047', background:'#fff', height:'42px'}}>
+                        <input type="number" min="0" max="100" step="0.5"
+                          value={editDisc} onChange={e => setEditDisc(e.target.value)}
+                          disabled={level.is_default}
+                          className="flex-1 border-none outline-none text-[15px] font-bold bg-transparent"
+                          style={{color:'#6366f1'}}/>
+                        <span className="text-[13px] text-slate-400">%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={cancelEdit}
+                      className="px-4 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border"
+                      style={{background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+                      Cancel
+                    </button>
+                    <button onClick={saveEdit} disabled={saving}
+                      className="px-5 py-2 rounded-xl text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                      style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+                      {saving ? '⏳' : '✓ Save Changes'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl px-4 py-3 flex gap-2 text-[11px]"
+        style={{background:'#eff6ff', border:'1px solid #bfdbfe', color:'#3730a3'}}>
+        ℹ️ <span>Discount % applies automatically at POS checkout for customers with that level. Level 1 is always the default.</span>
       </div>
     </div>
   )
