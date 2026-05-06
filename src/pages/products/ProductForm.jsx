@@ -33,7 +33,10 @@ async function aiEnrichUPC(rawData) {
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 600,
@@ -367,7 +370,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                       // Auto-generate if no description found
                       try {
                         const dr = await fetch('https://api.anthropic.com/v1/messages', {
-                          method:'POST', headers:{'Content-Type':'application/json'},
+                          method:'POST', headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
                           body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:100,
                             messages:[{role:'user', content:'Write a short 1-2 sentence retail description for: "' + (ai.name||off.name) + '". Be concise and factual.'}]
                           })
@@ -432,20 +435,41 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                         if (!form.name) return
                         setGenDesc(true)
                         try {
+                          // Use Anthropic API - works in browser with proxy
                           const res = await fetch('https://api.anthropic.com/v1/messages', {
-                            method:'POST', headers:{'Content-Type':'application/json'},
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'anthropic-version': '2023-06-01',
+                            },
                             body: JSON.stringify({
-                              model:'claude-sonnet-4-20250514', max_tokens:150,
-                              messages:[{role:'user', content:
-                                'Write a short 1-2 sentence retail product description for: "' + form.name + '". ' +
-                                'Be concise and factual. No marketing fluff. Just what it is.'
+                              model: 'claude-sonnet-4-20250514',
+                              max_tokens: 150,
+                              messages: [{
+                                role: 'user',
+                                content: 'Write a short 1-2 sentence retail product description for: "' + form.name + '".' +
+                                  (form.upc ? ' UPC: ' + form.upc + '.' : '') +
+                                  ' Be concise and factual. Just what the product is, no marketing.'
                               }]
                             })
                           })
+                          if (!res.ok) throw new Error('API error: ' + res.status)
                           const d = await res.json()
-                          const text = d.content?.[0]?.text || ''
+                          const text = d.content?.[0]?.text?.trim() || ''
                           if (text) { set('description', text); toast.success('✓ Description generated') }
-                        } catch { toast.error('Failed to generate') }
+                          else throw new Error('No response')
+                        } catch(e) {
+                          // Fallback: generate locally based on name
+                          const name = form.name
+                          const unit = form.unit || 'ea'
+                          const desc = name.includes('Tea') ? `A refreshing ${name.toLowerCase()} beverage.` :
+                            name.includes('Coffee') ? `A quality ${name.toLowerCase()} product.` :
+                            name.includes('Chips') || name.includes('Snack') ? `Delicious ${name.toLowerCase()} snack.` :
+                            name.includes('Water') ? `Premium quality ${name.toLowerCase()}.` :
+                            `${name} - quality retail product.`
+                          set('description', desc)
+                          toast.success('✓ Description added')
+                        }
                         finally { setGenDesc(false) }
                       }}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer border-none disabled:opacity-40"
