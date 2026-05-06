@@ -306,18 +306,18 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
-      <div className="rounded-2xl w-[700px] max-h-[94vh] overflow-y-auto"
-        style={{background:'#f0f2f5', boxShadow:'0 30px 80px rgba(0,0,0,0.25)'}}
+    <div className="fixed inset-0 z-50 flex"
+      style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(4px)'}} onClick={onClose}>
+      <div className="ml-auto flex flex-col h-full overflow-hidden shadow-2xl"
+        style={{width:'720px', background:'#f0f2f5'}}
         onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between sticky top-0 z-10"
-          style={{background:'#fff', borderBottom:'1.5px solid #e2e8f0', borderRadius:'16px 16px 0 0'}}>
+        <div className="px-6 py-4 flex items-center justify-between flex-shrink-0"
+          style={{background:'#fff', borderBottom:'1.5px solid #e2e8f0'}}>
           <div>
             <div className="text-[17px] font-bold text-slate-800">
-              {form.id ? 'Edit Product' : 'New Product'}
+              {form.id ? '✏️ Edit Product' : '➕ New Product'}
             </div>
             {form.name && <div className="text-[12px] text-slate-400 mt-0.5">{form.name}</div>}
           </div>
@@ -327,7 +327,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
           </button>
         </div>
 
-        <div className="px-6 py-5 flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
 
           {/* ── BASIC INFO ── */}
           <Section title="Basic Information" icon="📦" color="#6366f1">
