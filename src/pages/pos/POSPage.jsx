@@ -83,10 +83,7 @@ export default function POSPage() {
 
   const QUICK_BTNS = [
     { id:'member',  label:'Member',    icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
-    { id:'vip',     label:'VIP Card',  icon:'🏷️', action: () => useCartStore.setState({ showCustPanel: true }) },
     { id:'points',  label:'Points',    icon:'💎', action: () => setShowPoints(true) },
-    { id:'gift',    label:'Gift Card', icon:'🎁', action: () => {} },
-    { id:'points',  label:'Points',    icon:'⭐', action: () => {} },
     { id:'openitem',label:'Open Item', icon:'✏️', action: () => setShowOpenItem(true) },
     { id:'return',  label:'Return',    icon:'↩️', action: () => setShowRefund(true) },
     { id:'hold',    label:'Hold',      icon:'📌', action: () => setShowHold(true) },

@@ -78,6 +78,10 @@ export default function CartPanel({ onRefund, onHold }) {
       setActiveAction(null)
       return
     }
+    // Auto-select last item if none selected
+    if (!selectedItem && items.length > 0) {
+      useCartStore.setState({ selectedItemId: items[items.length-1].id })
+    }
     const newAction = activeAction === id ? null : id
     setActiveAction(newAction)
     setInputVal('')
@@ -90,7 +94,8 @@ export default function CartPanel({ onRefund, onHold }) {
 
   const applyAction = (val) => {
     const v = val !== undefined ? val : parseFloat(inputVal)
-    if (!selectedItem && activeAction !== 'disc') return
+    const workItem = selectedItem || activeItem
+    if (!workItem && activeAction !== 'disc') return
     if (activeAction === 'custom' && v !== 0 && !isNaN(v)) {
       setItemQty(selectedItem.id, v)
       toast.success(`Qty → ${v}`)
@@ -105,7 +110,7 @@ export default function CartPanel({ onRefund, onHold }) {
       toast.success('Discount applied')
     }
     if (activeAction === 'remark') {
-      setItemNote(selectedItem.id, inputVal)
+      setItemNote(workItem.id, inputVal)
       toast.success('Note saved')
     }
     setActiveAction(null)
@@ -439,7 +444,7 @@ export default function CartPanel({ onRefund, onHold }) {
       {showNumPad && activeAction && !['staff','remark','inc','dec','delete'].includes(activeAction) && (
         <NumPad
           title={{custom:'Set Quantity / Return', disc:'Item Discount', price:'Change Price', single:'Unit Price'}[activeAction] || 'Enter Value'}
-          subtitle={activeAction==='custom' ? `${selectedItem?.name} · Enter negative to return` : selectedItem?.name}
+          subtitle={activeAction==='custom' ? `${activeItem?.name} · Enter negative to return` : activeItem?.name}
           value={inputVal}
           onChange={setInputVal}
           prefix={['price','single'].includes(activeAction) ? '$' : activeAction==='disc' && discType==='amt' ? '$' : ''}
