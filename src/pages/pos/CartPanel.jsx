@@ -241,39 +241,117 @@ export default function CartPanel({ onRefund, onHold }) {
           </div>
         )}
 
-        {/* Remark input — direct textarea with system keyboard */}
+        {/* Remark input — textarea + custom keyboard both work */}
         {activeAction === 'remark' && (
-          <div className="px-3 py-2.5 flex-shrink-0 animate-fadeIn"
-            style={{background:'#eef2ff', borderBottom:'1.5px solid #6366f1'}}>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="text-[10px] font-bold text-indigo-700">
-                📝 Note — {(selectedItem || activeItem)?.name}
+          <div className="flex-shrink-0 animate-fadeIn"
+            style={{borderBottom:'1.5px solid #6366f1'}}>
+            {/* Input area */}
+            <div className="px-3 pt-2.5 pb-2" style={{background:'#eef2ff'}}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[10px] font-bold text-indigo-700">
+                  📝 Note — {(selectedItem || activeItem)?.name}
+                </div>
+                <button onClick={() => { setActiveAction(null); setInputVal('') }}
+                  className="text-slate-400 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
               </div>
-              <button onClick={() => { setActiveAction(null); setInputVal('') }}
-                className="text-slate-400 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
+              <textarea
+                id="remark-textarea"
+                autoFocus
+                value={inputVal}
+                onChange={e => {
+                  setInputVal(e.target.value)
+                  const item = selectedItem || activeItem
+                  if (item) setItemNote(item.id, e.target.value)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    setActiveAction(null)
+                    setInputVal('')
+                  }
+                }}
+                placeholder="Type here or use keyboard below..."
+                rows={2}
+                className="w-full rounded-xl px-3 py-2 text-[13px] outline-none resize-none"
+                style={{border:'1.5px solid #a5b4fc', background:'#fff', color:'#1e293b'}}
+              />
             </div>
-            <textarea
-              autoFocus
-              value={inputVal}
-              onChange={e => {
-                setInputVal(e.target.value)
-                // Auto-save on every change
-                const item = selectedItem || activeItem
-                if (item) setItemNote(item.id, e.target.value)
-              }}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  setActiveAction(null)
-                  setInputVal('')
-                }
-              }}
-              placeholder="Type note here... (Enter to done)"
-              rows={2}
-              className="w-full rounded-xl px-3 py-2 text-[13px] outline-none resize-none"
-              style={{border:'1.5px solid #a5b4fc', background:'#fff', color:'#1e293b'}}
-            />
-            <div className="text-[10px] text-indigo-400 mt-1">Press Enter to close</div>
+            {/* Custom keyboard */}
+            <div className="px-2 pb-2 pt-1" style={{background:'#f5f3ff'}}>
+              {/* Quick chars row */}
+              <div className="flex gap-1 mb-1 flex-wrap">
+                {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild','Large','Small'].map(w => (
+                  <button key={w} onClick={() => {
+                    const val = inputVal ? inputVal + ' ' + w : w
+                    setInputVal(val)
+                    const item = selectedItem || activeItem
+                    if (item) setItemNote(item.id, val)
+                    document.getElementById('remark-textarea')?.focus()
+                  }}
+                    className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer border"
+                    style={{background:'#fff', borderColor:'#c4b5fd', color:'#6366f1'}}>
+                    {w}
+                  </button>
+                ))}
+              </div>
+              {/* Letter keyboard rows */}
+              {[
+                ['q','w','e','r','t','y','u','i','o','p'],
+                ['a','s','d','f','g','h','j','k','l'],
+                ['z','x','c','v','b','n','m'],
+              ].map((row, ri) => (
+                <div key={ri} className="flex gap-1 justify-center mb-1">
+                  {row.map(k => (
+                    <button key={k} onClick={() => {
+                      const el = document.getElementById('remark-textarea')
+                      const start = el?.selectionStart ?? inputVal.length
+                      const end = el?.selectionEnd ?? inputVal.length
+                      const val = inputVal.slice(0,start) + k + inputVal.slice(end)
+                      setInputVal(val)
+                      const item = selectedItem || activeItem
+                      if (item) setItemNote(item.id, val)
+                      setTimeout(() => { el?.focus(); el?.setSelectionRange(start+1,start+1) }, 0)
+                    }}
+                      className="rounded-lg text-[13px] font-medium cursor-pointer border"
+                      style={{width:'28px', height:'32px', background:'#fff', borderColor:'#e2e8f0', color:'#1e293b', boxShadow:'0 1px 0 #d1d5db'}}>
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              ))}
+              {/* Bottom row */}
+              <div className="flex gap-1 justify-center">
+                <button onClick={() => {
+                  const val = inputVal + ' '
+                  setInputVal(val)
+                  const item = selectedItem || activeItem
+                  if (item) setItemNote(item.id, val)
+                  document.getElementById('remark-textarea')?.focus()
+                }}
+                  className="rounded-lg text-[11px] font-medium cursor-pointer border"
+                  style={{flex:4, height:'32px', background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+                  space
+                </button>
+                <button onClick={() => {
+                  const el = document.getElementById('remark-textarea')
+                  const start = el?.selectionStart ?? inputVal.length
+                  const val = start > 0 ? inputVal.slice(0,start-1) + inputVal.slice(start) : inputVal.slice(0,-1)
+                  setInputVal(val)
+                  const item = selectedItem || activeItem
+                  if (item) setItemNote(item.id, val)
+                  setTimeout(() => { el?.focus(); el?.setSelectionRange(Math.max(0,start-1),Math.max(0,start-1)) }, 0)
+                }}
+                  className="rounded-lg text-[14px] cursor-pointer border"
+                  style={{flex:1, height:'32px', background:'#fff1f2', borderColor:'#fecdd3', color:'#ef4444'}}>
+                  ⌫
+                </button>
+                <button onClick={() => { setActiveAction(null); setInputVal('') }}
+                  className="rounded-lg text-[11px] font-bold cursor-pointer border-none"
+                  style={{flex:2, height:'32px', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff'}}>
+                  ✓ Done
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
