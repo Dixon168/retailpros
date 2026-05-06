@@ -166,6 +166,8 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     track_inventory:  initial.track_inventory  ?? true,
     // Tax
     selectedTaxRates: [],
+    points_redeem:          initial.points_redeem          ?? false,
+    redeem_points_required: initial.redeem_points_required || '',
   })
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
 
@@ -276,6 +278,8 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
         vip_price:        form.vip_price ? parseFloat(form.vip_price) : null,
         points_redeemable: form.points_redeemable,
         points_mode:      form.points_mode,
+        points_redeem:    form.points_redeem,
+        redeem_points_required: parseInt(form.redeem_points_required)||null,
         points_fixed:     parseInt(form.points_fixed)   || 0,
         points_rate:      parseFloat(form.points_rate)  || 1,
         commission_type:  form.commission_type,
@@ -668,26 +672,42 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                   Tax
                   {totalTax > 0 && <span className="ml-2 text-yellow-600 font-bold normal-case">{(totalTax*100).toFixed(2)}% total</span>}
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  <label className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border transition-all ${
-                    form.selectedTaxRates.length===0 ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-slate-50 hover:bg-white'
-                  }`}>
-                    <input type="checkbox" checked={form.selectedTaxRates.length===0}
-                      onChange={()=>set('selectedTaxRates',[])} className="accent-indigo-500 w-4 h-4"/>
-                    <span className="text-[12px] font-medium text-slate-700">No Tax</span>
-                  </label>
-                  {taxRates.map(tr=>(
-                    <label key={tr.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border transition-all ${
-                      form.selectedTaxRates.includes(tr.id) ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200 bg-slate-50 hover:bg-white'
-                    }`}>
-                      <input type="checkbox" checked={form.selectedTaxRates.includes(tr.id)}
-                        onChange={()=>set('selectedTaxRates',form.selectedTaxRates.includes(tr.id)?form.selectedTaxRates.filter(t=>t!==tr.id):[...form.selectedTaxRates,tr.id])}
-                        className="accent-yellow-500 w-4 h-4"/>
-                      <span className="text-[12px] font-medium text-slate-700">{tr.name}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">{(tr.rate*100).toFixed(2)}%</span>
+                {taxRates.length === 0 ? (
+                  <div className="text-[11px] text-slate-400 py-1">
+                    No tax rates configured. Add them in Settings → Tax Rates.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border transition-all ${
+                      form.selectedTaxRates.length===0 ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-slate-50 hover:bg-white'
+                    }`} onClick={()=>set('selectedTaxRates',[])}>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        form.selectedTaxRates.length===0 ? 'border-green-500 bg-green-500' : 'border-slate-300'
+                      }`}>
+                        {form.selectedTaxRates.length===0 && <div className="w-2 h-2 rounded-full bg-white"/>}
+                      </div>
+                      <span className="text-[12px] font-medium text-slate-700">No Tax</span>
                     </label>
-                  ))}
-                </div>
+                    {taxRates.map(tr=>(
+                      <label key={tr.id}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border transition-all ${
+                          form.selectedTaxRates.includes(tr.id) ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200 bg-slate-50 hover:bg-white'
+                        }`}
+                        onClick={()=>set('selectedTaxRates', form.selectedTaxRates.includes(tr.id)
+                          ? form.selectedTaxRates.filter(t=>t!==tr.id)
+                          : [...form.selectedTaxRates, tr.id])}>
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                          form.selectedTaxRates.includes(tr.id) ? 'border-yellow-500 bg-yellow-500' : 'border-slate-300'
+                        }`}>
+                          {form.selectedTaxRates.includes(tr.id) && <span className="text-white text-[10px] font-bold">✓</span>}
+                        </div>
+                        <span className="text-[12px] font-medium text-slate-700">{tr.name}</span>
+                        <span className="text-[11px] font-bold font-mono px-1.5 py-0.5 rounded"
+                          style={{background:'#fef9c3', color:'#ca8a04'}}>{(tr.rate*100).toFixed(2)}%</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </Section>
@@ -722,40 +742,70 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               )}
             </div>
 
-            {/* Points */}
-            <div>
+            {/* Points Earn */}
+            <div className="mb-4">
               <Toggle checked={form.points_redeemable} onChange={()=>set('points_redeemable',!form.points_redeemable)}
                 label="Customers Earn Points"
                 desc="Points are awarded when this product is purchased"/>
               {form.points_redeemable && (
                 <div className="mt-3 ml-12">
-                  <div className="flex gap-3 mb-2">
-                    {[['amount','$ → Points (e.g. $1 = X pts)'],['fixed','Fixed Points per purchase']].map(([m,l])=>(
+                  <div className="flex gap-3 mb-3">
+                    {[['amount','$ → Points'],['fixed','Fixed Points']].map(([m,l])=>(
                       <label key={m} className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border flex-1 transition-all ${
                         form.points_mode===m ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200 bg-slate-50'
-                      }`}>
-                        <input type="radio" name="points_mode" value={m} checked={form.points_mode===m}
-                          onChange={()=>set('points_mode',m)} className="accent-yellow-500 w-3.5 h-3.5"/>
-                        <span className="text-[11px] text-slate-700">{l}</span>
+                      }`} onClick={()=>set('points_mode',m)}>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          form.points_mode===m ? 'border-yellow-500 bg-yellow-500' : 'border-slate-300'
+                        }`}>
+                          {form.points_mode===m && <div className="w-2 h-2 rounded-full bg-white"/>}
+                        </div>
+                        <span className="text-[12px] font-medium text-slate-700">{l}</span>
                       </label>
                     ))}
                   </div>
                   {form.points_mode==='amount' ? (
-                    <div className="flex items-center gap-2 rounded-xl px-3 w-56"
-                      style={{border:'1.5px solid #fde047', background:'#fffbeb'}}>
-                      <span className="text-[11px] text-slate-500">$1 =</span>
+                    <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+                      style={{border:'1.5px solid #fde047', background:'#fffbeb', maxWidth:'220px'}}>
+                      <span className="text-[12px] text-amber-600 font-semibold">$1 =</span>
                       <input type="number" value={form.points_rate} onChange={e=>set('points_rate',e.target.value)}
-                        placeholder="1" step="0.1"
-                        className="flex-1 border-none outline-none py-2 text-[13px] font-mono bg-transparent"/>
-                      <span className="text-[11px] text-slate-500">pts</span>
+                        placeholder="1" step="0.1" min="0"
+                        className="flex-1 border-none outline-none text-[14px] font-bold font-mono bg-transparent text-center" style={{color:'#ca8a04', width:'60px'}}/>
+                      <span className="text-[12px] text-amber-600 font-semibold">pts</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 rounded-xl px-3 w-56"
-                      style={{border:'1.5px solid #fde047', background:'#fffbeb'}}>
+                    <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+                      style={{border:'1.5px solid #fde047', background:'#fffbeb', maxWidth:'220px'}}>
                       <input type="number" value={form.points_fixed} onChange={e=>set('points_fixed',e.target.value)}
-                        placeholder="10"
-                        className="flex-1 border-none outline-none py-2 text-[13px] font-mono bg-transparent"/>
-                      <span className="text-[11px] text-slate-500">pts/purchase</span>
+                        placeholder="10" min="0"
+                        className="flex-1 border-none outline-none text-[14px] font-bold font-mono bg-transparent text-center" style={{color:'#ca8a04'}}/>
+                      <span className="text-[12px] text-amber-600 font-semibold">pts / purchase</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Points Redeem */}
+            <div className="pt-4" style={{borderTop:'1px solid #f1f5f9'}}>
+              <Toggle checked={form.points_redeem ?? false} onChange={()=>set('points_redeem',!form.points_redeem)}
+                label="Allow Points Redemption"
+                desc="Customers can use points to pay for this product"/>
+              {form.points_redeem && (
+                <div className="mt-3 ml-12">
+                  <div className="text-[11px] text-slate-500 mb-2">Points required to redeem this product for free:</div>
+                  <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+                    style={{border:'1.5px solid #c4b5fd', background:'#faf5ff', maxWidth:'220px'}}>
+                    <input type="number" value={form.redeem_points_required || ''} onChange={e=>set('redeem_points_required',e.target.value)}
+                      placeholder="e.g. 500" min="1"
+                      className="flex-1 border-none outline-none text-[14px] font-bold font-mono bg-transparent text-center" style={{color:'#8b5cf6'}}/>
+                    <span className="text-[12px] text-purple-500 font-semibold">pts</span>
+                  </div>
+                  {form.redeem_points_required && form.price && (
+                    <div className="mt-2 text-[11px] text-slate-500">
+                      = ${parseFloat(form.price).toFixed(2)} value ·
+                      <span className="text-purple-600 font-semibold ml-1">
+                        1 pt = ${(parseFloat(form.price)/parseFloat(form.redeem_points_required)).toFixed(4)}
+                      </span>
                     </div>
                   )}
                 </div>
