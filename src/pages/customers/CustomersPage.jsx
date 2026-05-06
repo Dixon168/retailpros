@@ -647,26 +647,34 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name required'); return }
+    if (!form.phone.trim()) { toast.error('Phone required'); return }
     setSaving(true)
     try {
       const code = 'C' + Date.now().toString().slice(-6)
-      const { data, error } = await supabase.from('customers').insert({
-        tenant_id: tenantId, code,
-        name: form.name.trim(), phone: form.phone||null, email: form.email||null,
-        company: form.company||null, birthday: form.birthday||null,
-        gender: form.gender||null,
-        billing_address: form.address||null,
-        type: form.type,
-        notes: form.notes||null,
-        card_number: form.card_number||null,
-        member_level: form.member_level || 'Level 1',
-        card_expire_date: form.card_expire_date||null,
-        is_active: true,
-        loyalty_points: 0,
-        credit_balance: 0,
-        card_balance: 0,
-        member_since: new Date().toISOString().split('T')[0],
-      }).select().single()
+      const payload = {
+        tenant_id: tenantId,
+        code,
+        name:             form.name.trim(),
+        phone:            form.phone || null,
+        email:            form.email || null,
+        company:          form.company || null,
+        gender:           form.gender || null,
+        type:             form.type || 'regular',
+        notes:            form.notes || null,
+        card_number:      form.card_number || null,
+        member_level:     form.member_level || 'Level 1',
+        card_expire_date: form.card_expire_date || null,
+        is_active:        true,
+        loyalty_points:   0,
+        credit_balance:   0,
+        card_balance:     0,
+        member_since:     new Date().toISOString().split('T')[0],
+      }
+      // Only add optional fields if they exist
+      if (form.birthday)       payload.birthday        = form.birthday
+      if (form.address)        payload.billing_address = form.address
+      if (form.referrer)       payload.referrer        = form.referrer
+      const { data, error } = await supabase.from('customers').insert(payload).select().single()
       if (error) throw error
       toast.success(`✓ ${form.name} added!`)
       onSave(data)
@@ -783,7 +791,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
           <button onClick={onClose}
             className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer border"
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
-          <button onClick={handleSave} disabled={saving||!form.name.trim()}
+          <button onClick={handleSave} disabled={saving||!form.name.trim()||!form.phone.trim()}
             className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
             {saving ? '⏳ Saving...' : '✓ Add Customer'}
@@ -818,19 +826,26 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name required'); return }
+    if (!form.phone.trim()) { toast.error('Phone required'); return }
     setSaving(true)
     try {
-      const { data, error } = await supabase.from('customers').update({
-        name: form.name.trim(), phone: form.phone||null, email: form.email||null,
-        company: form.company||null, birthday: form.birthday||null,
-        gender: form.gender||null,
-        billing_address: form.address||null,
-        type: form.type, notes: form.notes||null,
-        card_number: form.card_number||null,
-        member_level: form.member_level || 'Level 1',
-        card_expire_date: form.card_expire_date||null,
-        referrer: form.referrer||null,
-      }).eq('id', customer.id).select().single()
+      const payload = {
+        name:             form.name.trim(),
+        phone:            form.phone || null,
+        email:            form.email || null,
+        company:          form.company || null,
+        gender:           form.gender || null,
+        type:             form.type || 'regular',
+        notes:            form.notes || null,
+        card_number:      form.card_number || null,
+        member_level:     form.member_level || 'Level 1',
+        card_expire_date: form.card_expire_date || null,
+        referrer:         form.referrer || null,
+        billing_address:  form.address || null,
+      }
+      if (form.birthday) payload.birthday = form.birthday
+      const { data, error } = await supabase.from('customers').update(payload)
+        .eq('id', customer.id).select().single()
       if (error) throw error
       toast.success('✓ Updated!')
       onSave(data)
