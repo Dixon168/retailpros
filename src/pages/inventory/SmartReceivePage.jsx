@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 // ── Open Food Facts lookup ──
 async function lookupBarcode(upc) {
   try {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${upc}.json`)
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${upc}.json`, { headers: { 'User-Agent': 'RetailPOS/1.0 (retailpros.netlify.app)' } })
     const data = await res.json()
     if (data.status === 1 && data.product) {
       const p = data.product
