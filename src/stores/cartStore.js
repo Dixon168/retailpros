@@ -292,6 +292,10 @@ export const useCartStore = create((set, get) => ({
       orderDiscountAmt = orderDiscount.type === 'pct'
         ? subtotal * (orderDiscount.value / 100)
         : Math.min(orderDiscount.value, subtotal)
+    } else if (orderDiscount?.type === 'points_cash') {
+      orderDiscountAmt = orderDiscount.amount || 0
+    } else if (orderDiscount?.type === 'points_product') {
+      orderDiscountAmt = orderDiscount.amount || 0
     }
 
     const afterDiscount = subtotal - orderDiscountAmt

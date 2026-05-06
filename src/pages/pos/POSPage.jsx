@@ -9,6 +9,7 @@ import CartPanel from './CartPanel'
 import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
 import { OpenItemModal } from '@/components/pos/OpenItemModal'
 import { HoldModal } from '@/components/pos/HoldModal'
+import { PointsRedeemModal } from '@/components/pos/PointsRedeemModal'
 import { RecallPanel } from '@/components/pos/RecallPanel'
 import ProductGrid from './ProductGrid'
 import SerialPanel from './panels/SerialPanel'
@@ -32,6 +33,7 @@ export default function POSPage() {
   const [showRefund,     setShowRefund]     = useState(false)
   const [showHold,       setShowHold]       = useState(false)
   const [showRecall,     setShowRecall]     = useState(false)
+  const [showPoints,     setShowPoints]     = useState(false)
   const [showOpenItem,   setShowOpenItem]   = useState(false)
   const [time,           setTime]           = useState(new Date())
 
@@ -82,6 +84,7 @@ export default function POSPage() {
   const QUICK_BTNS = [
     { id:'member',  label:'Member',    icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
     { id:'vip',     label:'VIP Card',  icon:'🏷️', action: () => useCartStore.setState({ showCustPanel: true }) },
+    { id:'points',  label:'Points',    icon:'💎', action: () => setShowPoints(true) },
     { id:'gift',    label:'Gift Card', icon:'🎁', action: () => {} },
     { id:'points',  label:'Points',    icon:'⭐', action: () => {} },
     { id:'openitem',label:'Open Item', icon:'✏️', action: () => setShowOpenItem(true) },
@@ -205,6 +208,7 @@ export default function POSPage() {
       {showPayPanel   && <PaymentPanel />}
       {showRefund     && <RefundPanel onClose={() => setShowRefund(false)} />}
     {showHold && <HoldModal onClose={() => setShowHold(false)}/>}
+    {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
     {showRecall && <RecallPanel onClose={() => setShowRecall(false)}/>}
     {showOpenItem && (
       <OpenItemModal
