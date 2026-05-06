@@ -660,6 +660,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
         is_active:    true,
       }
       // Add optional fields safely
+      // type removed - has DB constraint
       if (form.notes)            payload.notes            = form.notes
       if (form.card_number)      payload.card_number      = form.card_number
       if (form.member_level)     payload.member_level     = form.member_level
