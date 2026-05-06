@@ -1,5 +1,5 @@
 // src/pages/settings/SettingsPage.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -16,6 +16,7 @@ const SECTIONS = [
   { id:'payment',   icon:'💳', label:'Payment Config',    role:'owner' },
   { id:'billing',   icon:'💰', label:'Subscription',      role:'owner' },
   { id:'language',  icon:'🌐', label:'Language & Region', role:'owner' },
+  { id:'api',       icon:'🤖', label:'API & Integrations', role:'owner' },
 ]
 
 export default function SettingsPage() {
@@ -53,6 +54,7 @@ export default function SettingsPage() {
         {active === 'payment'   && <PaymentSection tenantId={tenant?.id}/>}
         {active === 'billing'   && <BillingSection tenant={tenant}/>}
         {active === 'language'  && <LanguageSection/>}
+        {active === 'api'       && <APISection tenantId={tenant?.id}/>}
       </div>
     </div>
   )
