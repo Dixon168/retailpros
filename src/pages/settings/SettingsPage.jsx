@@ -17,6 +17,7 @@ const SECTIONS = [
   { id:'billing',   icon:'💰', label:'Subscription',      role:'owner' },
   { id:'language',  icon:'🌐', label:'Language & Region', role:'owner' },
   { id:'loyalty',   icon:'💎', label:'Loyalty & Points',   role:'owner' },
+  { id:'memberlevels', icon:'🏅', label:'Member Levels', role:'owner' },
   { id:'api',       icon:'🤖', label:'API & Integrations', role:'owner' },
 ]
 
@@ -56,6 +57,7 @@ export default function SettingsPage() {
         {active === 'billing'   && <BillingSection tenant={tenant}/>}
         {active === 'language'  && <LanguageSection/>}
         {active === 'loyalty'   && <LoyaltySettingsSection tenant={tenant}/>}
+        {active === 'memberlevels' && <MemberLevelsSection tenantId={tenant?.id}/>}
         {active === 'api'       && <APISection tenantId={tenant?.id}/>}
       </div>
     </div>

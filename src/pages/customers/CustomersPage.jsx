@@ -628,6 +628,15 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
 
 // ── Add Customer Modal ──
 function AddCustomerModal({ tenantId, onSave, onClose }) {
+  const { data: memberLevels = [] } = useQuery({
+    queryKey: ['member-levels', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('member_levels')
+        .select('id, name').eq('tenant_id', tenantId).order('sort_order')
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
   const [form, setForm] = useState({
     name:'', phone:'', email:'', company:'', birthday:'',
     gender:'', address:'', type:'regular', notes:'',
@@ -647,9 +656,13 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
         company: form.company||null, birthday: form.birthday||null,
         gender: form.gender||null, billing_address: form.address||null,
         type: form.type, notes: form.notes||null,
-        card_number: form.card_number||null, member_level: form.member_level||null,
+        card_number: form.card_number||null,
+        member_level: form.member_level||null,
         card_expire_date: form.card_expire_date||null,
-        is_active: true, loyalty_points: 0, credit_balance: 0, card_balance: 0,
+        is_active: true,
+        loyalty_points: 0,
+        credit_balance: 0,
+        card_balance: 0,
         member_since: new Date().toISOString().split('T')[0],
       }).select().single()
       if (error) throw error
@@ -716,9 +729,14 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
               </div>
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Member Level</div>
-                <input value={form.member_level} onChange={e=>setF('member_level',e.target.value)} placeholder="e.g. Gold"
-                  className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}/>
+                <select value={form.member_level} onChange={e=>setF('member_level',e.target.value)}
+                  className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}>
+                  <option value="">— Select Level —</option>
+                  {memberLevels.map(l=>(
+                    <option key={l.id} value={l.name}>{l.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Expire Date</div>
@@ -776,6 +794,15 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
 
 // ── Edit Customer Modal ──
 function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
+  const { data: memberLevels = [] } = useQuery({
+    queryKey: ['member-levels', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('member_levels')
+        .select('id, name').eq('tenant_id', tenantId).order('sort_order')
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
   const [form, setForm] = useState({
     name: customer.name||'', phone: customer.phone||'', email: customer.email||'',
     company: customer.company||'', birthday: customer.birthday||'',
@@ -850,7 +877,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
           <div className="rounded-xl p-4" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
             <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">Membership</div>
             <div className="grid grid-cols-2 gap-3">
-              {[['card_number','Card Number'],['member_level','Member Level'],['card_expire_date','Expire Date']].map(([k,l])=>(
+              {[['card_number','Card Number'],['card_expire_date','Expire Date']].map(([k,l])=>(
                 <div key={k}>
                   <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">{l}</div>
                   <input type={k==='card_expire_date'?'date':'text'} value={form[k]} onChange={e=>setF(k,e.target.value)}
@@ -858,6 +885,17 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
                     style={{border:'1.5px solid #e2e8f0',background:'#fff'}}/>
                 </div>
               ))}
+              <div>
+                <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Member Level</div>
+                <select value={form.member_level} onChange={e=>setF('member_level',e.target.value)}
+                  className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}>
+                  <option value="">— Select Level —</option>
+                  {memberLevels.map(l=>(
+                    <option key={l.id} value={l.name}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Type</div>
                 <select value={form.type} onChange={e=>setF('type',e.target.value)}
