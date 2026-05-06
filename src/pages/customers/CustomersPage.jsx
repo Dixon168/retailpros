@@ -658,9 +658,8 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
         name:             form.name.trim(),
         phone:            form.phone || null,
         email:            form.email || null,
-        company:          form.company || null,
         gender:           form.gender || null,
-        type:             form.type || 'regular',
+        type:             'regular',
         notes:            form.notes || null,
         card_number:      form.card_number || null,
         member_level:     form.member_level || 'Level 1',
@@ -755,16 +754,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
                   className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
                   style={{border:'1.5px solid #e2e8f0',background:'#fff'}}/>
               </div>
-              <div>
-                <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Type</div>
-                <select value={form.type} onChange={e=>setF('type',e.target.value)}
-                  className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}>
-                  {[['regular','Regular'],['vip','VIP'],['wholesale','Wholesale'],['staff','Staff']].map(([v,l])=>(
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </div>
+
             </div>
           </div>
 
@@ -834,9 +824,8 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
         name:             form.name.trim(),
         phone:            form.phone || null,
         email:            form.email || null,
-        company:          form.company || null,
         gender:           form.gender || null,
-        type:             form.type || 'regular',
+        type:             'regular',
         notes:            form.notes || null,
         card_number:      form.card_number || null,
         member_level:     form.member_level || 'Level 1',
@@ -917,16 +906,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
                   ))}
                 </select>
               </div>
-              <div>
-                <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Type</div>
-                <select value={form.type} onChange={e=>setF('type',e.target.value)}
-                  className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}>
-                  {[['regular','Regular'],['vip','VIP'],['wholesale','Wholesale'],['staff','Staff']].map(([v,l])=>(
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </div>
+
             </div>
           </div>
           <div className="rounded-xl p-4" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
