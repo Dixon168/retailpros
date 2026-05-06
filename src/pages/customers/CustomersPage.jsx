@@ -31,7 +31,7 @@ export default function CustomersPage() {
     queryKey: ['customers', tenant?.id, search, filter],
     queryFn: async () => {
       let q = supabase.from('customers')
-        .select('id,code,card_number,name,company,phone,email,type,tier,gender,birthday,member_since,card_expire_date,card_balance,loyalty_points,credit_balance,member_level,referrer,notes,is_active,created_at')
+        .select('id,code,card_number,name,phone,email,type,gender,birthday,member_since,card_expire_date,card_balance,loyalty_points,credit_balance,member_level,is_active,created_at')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,card_number.ilike.%${search}%,email.ilike.%${search}%`)
       if (filter === 'vip')       q = q.eq('type','vip')
@@ -631,8 +631,9 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
   const { data: memberLevels = [] } = useQuery({
     queryKey: ['member-levels', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('member_levels')
-        .select('id, name').eq('tenant_id', tenantId).order('sort_order')
+      const { data, error } = await supabase.from('member_levels')
+        .select('id, name, discount_pct').eq('tenant_id', tenantId).order('sort_order')
+      if (error) console.error('member_levels error:', error)
       return data || []
     },
     enabled: !!tenantId,
@@ -640,7 +641,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
   const [form, setForm] = useState({
     name:'', phone:'', email:'', birthday:'',
     gender:'', address:'', type:'regular', notes:'',
-    card_number:'', member_level:'', card_expire_date:'',
+    card_number:'', member_level:'Level 1', card_expire_date:'',
   })
   const setF = (k,v) => setForm(f=>({...f,[k]:v}))
   const [saving, setSaving] = useState(false)
