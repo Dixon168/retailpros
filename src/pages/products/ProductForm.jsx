@@ -331,6 +331,50 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
 
+          {/* ── UPC LOOKUP - TOP ── */}
+          <div className="rounded-2xl p-4" style={{background:'linear-gradient(135deg,#eef2ff,#f5f3ff)', border:'2px solid #a5b4fc'}}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[18px]">🤖</span>
+              <div>
+                <div className="text-[14px] font-bold" style={{color:'#6366f1'}}>Auto-Fill from Barcode</div>
+                <div className="text-[11px] text-slate-400">Scan UPC → AI fills name, description, photo & price automatically</div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <input value={form.upc} onChange={e=>set('upc',e.target.value)}
+                placeholder="Scan or enter UPC / barcode..."
+                className="flex-1 rounded-xl px-4 py-3 text-[14px] font-mono outline-none"
+                style={{border:'1.5px solid #a5b4fc', background:'#fff', color:'#1e293b'}}
+                onKeyDown={e=>{ if(e.key==='Enter' && form.upc?.trim()) document.getElementById('upc-lookup-btn').click() }}
+                autoFocus
+              />
+              <button id="upc-lookup-btn" type="button"
+                onClick={async () => {
+                  if (!form.upc?.trim()) { toast.error('Enter UPC first'); return }
+                  setUpcLooking(true)
+                  const toastId = toast.loading('🔍 Searching Open Food Facts...')
+                  try {
+                    const off = await lookupUPC(form.upc.trim())
+                    if (!off.found) { toast.error('Not found — fill manually', {id:toastId}); return }
+                    toast.loading('🤖 Claude AI enriching...', {id:toastId})
+                    const ai = await aiEnrichUPC(off.raw)
+                    if (ai.name || off.name)                   set('name',        ai.name || off.name)
+                    if (ai.description || off.description)     set('description', ai.description || off.description)
+                    if (ai.unit)                               set('unit',        ai.unit)
+                    if (ai.suggested_price)                    set('price',       String(ai.suggested_price))
+                    if (off.image_url)                         set('image_url',   off.image_url)
+                    toast.success('✓ Product info auto-filled!', {id:toastId})
+                  } catch(e) { toast.error('Lookup failed', {id:toastId}) }
+                  finally { setUpcLooking(false) }
+                }}
+                disabled={upcLooking || !form.upc?.trim()}
+                className="rounded-xl px-5 text-[13px] font-bold cursor-pointer border-none disabled:opacity-40 flex-shrink-0"
+                style={{background: upcLooking ? '#a5b4fc' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', minWidth:'100px'}}>
+                {upcLooking ? '⏳ Loading...' : '🔍 Lookup'}
+              </button>
+            </div>
+          </div>
+
           {/* ── BASIC INFO ── */}
           <Section title="Basic Information" icon="📦" color="#6366f1">
             <div className="flex gap-4">
@@ -370,45 +414,6 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.background='#fff'}}
                     onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}/>
                 </div>
-              </div>
-            </div>
-
-            {/* UPC Auto-Fill Banner */}
-            <div className="rounded-xl p-3 mb-2" style={{background:'#eef2ff', border:'1.5px solid #c7d2fe'}}>
-              <div className="text-[11px] font-bold mb-1.5" style={{color:'#6366f1'}}>
-                🤖 Auto-Fill from Barcode
-                <span className="ml-2 font-normal text-slate-400">Enter UPC → AI fills name, description, photo, price</span>
-              </div>
-              <div className="flex gap-2">
-                <input value={form.upc} onChange={e=>set('upc',e.target.value)}
-                  placeholder="Scan or type UPC / barcode then press Enter or click Lookup..."
-                  className="flex-1 rounded-xl px-3 py-2.5 text-[12px] font-mono outline-none"
-                  style={{border:'1.5px solid #a5b4fc', background:'#fff'}}
-                  onKeyDown={e=>{ if(e.key==='Enter') document.getElementById('upc-lookup-btn').click() }}/>
-                <button id="upc-lookup-btn" type="button"
-                  onClick={async () => {
-                    if (!form.upc?.trim()) { toast.error('Enter UPC first'); return }
-                    setUpcLooking(true)
-                    const toastId = toast.loading('🔍 Searching database...')
-                    try {
-                      const off = await lookupUPC(form.upc.trim())
-                      if (!off.found) { toast.error('Not found in Open Food Facts', {id:toastId}); return }
-                      toast.loading('🤖 AI enriching info...', {id:toastId})
-                      const ai = await aiEnrichUPC(off.raw)
-                      if (ai.name || off.name)             set('name',        ai.name || off.name)
-                      if (ai.description || off.description) set('description', ai.description || off.description)
-                      if (ai.unit)                          set('unit',        ai.unit)
-                      if (ai.suggested_price)               set('price',       String(ai.suggested_price))
-                      if (off.image_url)                    set('image_url',   off.image_url)
-                      toast.success('✓ Auto-filled from barcode!', {id:toastId})
-                    } catch(e) { toast.error('Lookup failed: ' + e.message, {id:toastId}) }
-                    finally { setUpcLooking(false) }
-                  }}
-                  disabled={upcLooking || !form.upc?.trim()}
-                  className="rounded-xl px-4 text-[12px] font-bold cursor-pointer border-none flex-shrink-0 disabled:opacity-40"
-                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', minWidth:'90px'}}>
-                  {upcLooking ? '⏳...' : '🤖 Lookup'}
-                </button>
               </div>
             </div>
 
