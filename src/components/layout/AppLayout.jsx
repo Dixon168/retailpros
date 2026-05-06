@@ -117,6 +117,11 @@ export default function AppLayout() {
         {/* Bottom: POS button + User */}
         <div className="border-t p-2" style={{borderColor:'#334155'}}>
           {/* Back to POS */}
+          {!collapsed && (
+            <div className="mb-2 px-1">
+              <LangSwitcher dark/>
+            </div>
+          )}
           <button onClick={() => window.location.href='/pos'}
             className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer border-none mb-1.5 transition-all"
             style={{background:'rgba(99,102,241,0.15)', color:'#818cf8'}}

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { LANGS, useLangStore } from '@/lib/i18n'
 
-export function LangSwitcher() {
+export function LangSwitcher({ dark = false }) {
   const { lang, setLang } = useLangStore()
   const [open, setOpen]   = useState(false)
   const current = LANGS.find(l => l.code === lang) || LANGS[0]
@@ -12,9 +12,9 @@ export function LangSwitcher() {
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer border transition-all"
         style={{
-          background: open ? '#e0e7ff' : '#f8fafc',
-          borderColor: open ? '#a5b4fc' : '#e2e8f0',
-          color: '#475569',
+          background: dark ? 'rgba(255,255,255,0.08)' : open ? '#e0e7ff' : '#f8fafc',
+          borderColor: dark ? 'rgba(255,255,255,0.15)' : open ? '#a5b4fc' : '#e2e8f0',
+          color: dark ? '#e2e8f0' : '#475569',
         }}>
         <span className="text-[14px]">{current.flag}</span>
         <span className="text-[11px] font-bold">{current.label}</span>
