@@ -908,3 +908,135 @@ function Toggle({ value, onChange, color='#3b82f6' }) {
     </button>
   )
 }
+
+// ── Member Levels ──
+function MemberLevelsSection({ tenantId }) {
+  const [levels, setLevels]   = useState([])
+  const [newName, setNewName] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  const load = async () => {
+    setLoading(true)
+    const { data } = await supabase.from('member_levels').select('*').order('sort_order')
+    if (!data?.length && tenantId) {
+      const defaults = [
+        { tenant_id:tenantId, name:'Level 1 - Regular',  discount_pct:0, sort_order:0, is_default:true  },
+        { tenant_id:tenantId, name:'Level 2 - Silver',   discount_pct:0, sort_order:1, is_default:false },
+        { tenant_id:tenantId, name:'Level 3 - Gold',     discount_pct:0, sort_order:2, is_default:false },
+        { tenant_id:tenantId, name:'Level 4 - Platinum', discount_pct:0, sort_order:3, is_default:false },
+      ]
+      const { data: created } = await supabase.from('member_levels').insert(defaults).select()
+      setLevels(created || [])
+    } else { setLevels(data || []) }
+    setLoading(false)
+  }
+
+  useEffect(() => { if (tenantId) load() }, [tenantId])
+
+  const addLevel = async () => {
+    if (!newName.trim()) return
+    const { data } = await supabase.from('member_levels').insert({
+      tenant_id: tenantId, name: newName.trim(),
+      discount_pct: 0, sort_order: levels.length, is_default: false,
+    }).select().single()
+    if (data) { setLevels(l => [...l, data]); setNewName('') }
+    toast.success(`✓ ${newName} added`)
+  }
+
+  const deleteLevel = async (id, isDefault) => {
+    if (isDefault) { toast.error('Cannot delete Level 1'); return }
+    await supabase.from('member_levels').delete().eq('id', id)
+    setLevels(l => l.filter(x => x.id !== id))
+  }
+
+  const updateName = async (id, name) => {
+    setLevels(l => l.map(x => x.id === id ? {...x, name} : x))
+    await supabase.from('member_levels').update({ name }).eq('id', id)
+  }
+
+  const updateDiscount = async (id, val) => {
+    const v = parseFloat(val) || 0
+    setLevels(l => l.map(x => x.id === id ? {...x, discount_pct: v} : x))
+    await supabase.from('member_levels').update({ discount_pct: v }).eq('id', id)
+  }
+
+  if (loading) return <div className="text-slate-400 p-4">Loading...</div>
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SectionTitle>🏅 Member Levels</SectionTitle>
+      <p className="text-[12px] text-slate-500 -mt-3">
+        All new customers default to <strong>Level 1</strong>. Set VIP discount % for higher levels.
+      </p>
+      <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+        <div className="grid px-5 py-2.5 text-[10px] font-bold text-slate-400 uppercase"
+          style={{gridTemplateColumns:'40px 1fr 130px 80px', background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+          <div>#</div><div>Name</div><div>VIP Discount</div><div></div>
+        </div>
+        <div className="bg-white">
+          {levels.map((level, i) => (
+            <div key={level.id} className="grid items-center px-5 py-3 gap-3"
+              style={{gridTemplateColumns:'40px 1fr 130px 80px',
+                borderBottom: i < levels.length-1 ? '1px solid #f1f5f9':'none',
+                background: level.is_default ? '#f0fdf4':'#fff'}}>
+              <div className="text-[13px] font-bold text-slate-400">{i+1}</div>
+              <div className="flex items-center gap-2">
+                <span>{level.is_default ? '👤':'⭐'}</span>
+                <input value={level.name} onChange={e => updateName(level.id, e.target.value)}
+                  readOnly={level.is_default}
+                  className="flex-1 border-none outline-none text-[13px] font-semibold bg-transparent"
+                  style={{color: level.is_default ? '#16a34a':'#1e293b'}}/>
+                {level.is_default && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    style={{background:'#dcfce7',color:'#16a34a'}}>DEFAULT</span>
+                )}
+              </div>
+              <div>
+                {level.is_default ? (
+                  <span className="text-[12px] text-slate-400">No discount</span>
+                ) : (
+                  <div className="flex items-center gap-1 rounded-lg px-2 py-1.5"
+                    style={{border:'1.5px solid #e2e8f0',background:'#f8fafc',width:'110px'}}>
+                    <input type="number" min="0" max="100" step="0.5"
+                      value={level.discount_pct||0} onChange={e => updateDiscount(level.id, e.target.value)}
+                      className="w-12 border-none outline-none text-[13px] font-bold bg-transparent text-center"
+                      style={{color:'#6366f1'}}/>
+                    <span className="text-[11px] text-slate-400">% off</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                {!level.is_default && (
+                  <button onClick={() => deleteLevel(level.id, level.is_default)}
+                    className="text-[11px] px-2.5 py-1.5 rounded-lg cursor-pointer border"
+                    style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <input value={newName} onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => e.key==='Enter' && addLevel()}
+          placeholder="New level name (e.g. Diamond)..."
+          className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none"
+          style={{border:'1.5px solid #e2e8f0',background:'#f8fafc'}}/>
+        <button onClick={addLevel} disabled={!newName.trim()}
+          className="rounded-xl px-4 py-2.5 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          + Add Level
+        </button>
+      </div>
+      <div className="rounded-xl px-4 py-3 flex gap-3" style={{background:'#eff6ff',border:'1px solid #bfdbfe'}}>
+        <span>ℹ️</span>
+        <div className="text-[11px] text-blue-700">
+          Click the name or % to edit inline — saves automatically.
+          <strong> Level 1</strong> is always the default, cannot be deleted.
+        </div>
+      </div>
+    </div>
+  )
+}
