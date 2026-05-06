@@ -15,11 +15,22 @@ export function PointsRedeemModal({ onClose }) {
 
   const { grandTotal } = totals()
 
-  // Points rate: 100 pts = $1 (from tenant settings or default)
-  const REDEEM_RATE = tenant?.points_redeem_rate || 100 // pts per $1
+  // Points rate and limits from tenant settings
+  const REDEEM_RATE   = tenant?.points_redeem_rate      || 100
+  const MIN_PTS       = tenant?.redeem_min_pts          || 100
+  const MAX_PTS_TXN   = tenant?.redeem_max_pts_per_txn  || 0   // 0 = unlimited
+  const MAX_CASH_TXN  = tenant?.redeem_max_cash_per_txn || 0
+  const MAX_PCT_TXN   = tenant?.redeem_max_pct_per_txn  || 0
 
-  const customerPts   = customer?.loyalty_points || 0
-  const maxCashValue  = customerPts / REDEEM_RATE
+  const customerPts = customer?.loyalty_points || 0
+
+  // Calculate effective max
+  const maxByPts     = MAX_PTS_TXN > 0 ? Math.min(customerPts, MAX_PTS_TXN) : customerPts
+  const maxByCash    = MAX_CASH_TXN > 0 ? Math.min(maxByPts, MAX_CASH_TXN * REDEEM_RATE) : maxByPts
+  const maxByPct     = MAX_PCT_TXN > 0 ? Math.min(maxByCash, Math.floor(grandTotal * MAX_PCT_TXN/100 * REDEEM_RATE)) : maxByCash
+  const maxByOrder   = Math.floor(grandTotal * REDEEM_RATE)
+  const effectiveMax = Math.min(maxByPct, maxByOrder)
+  const maxCashValue = effectiveMax / REDEEM_RATE
   const ptsNum        = parseInt(ptsInput) || 0
   const cashDeduct    = ptsNum / REDEEM_RATE
   const remaining     = customerPts - ptsNum
@@ -61,7 +72,9 @@ export function PointsRedeemModal({ onClose }) {
 
   const applyPtsCash = () => {
     if (ptsNum <= 0) { toast.error('Enter points to use'); return }
+    if (ptsNum < MIN_PTS) { toast.error(`Minimum ${MIN_PTS} pts required`); return }
     if (ptsNum > customerPts) { toast.error('Not enough points'); return }
+    if (ptsNum > effectiveMax) { toast.error(`Max ${effectiveMax.toLocaleString()} pts per transaction`); return }
     if (cashDeduct > grandTotal) { toast.error(`Max deduct is $${grandTotal.toFixed(2)}`); return }
     // Apply as order discount
     setOrderDiscount({ type: 'points_cash', pts: ptsNum, amount: cashDeduct })
@@ -132,6 +145,7 @@ export function PointsRedeemModal({ onClose }) {
                   </div>
                   <div className="text-[11px] font-semibold mt-1" style={{color:'#16a34a'}}>
                     Max: ${maxCashValue.toFixed(2)} off
+                    {MAX_PTS_TXN > 0 && <span className="ml-2 text-amber-600">· Limit: {MAX_PTS_TXN.toLocaleString()} pts/txn</span>}
                   </div>
                 </div>
                 <span className="ml-auto text-slate-300 text-[20px]">›</span>
@@ -187,8 +201,8 @@ export function PointsRedeemModal({ onClose }) {
 
               {/* Quick select */}
               <div className="flex gap-2 mb-4">
-                {[100, 500, Math.floor(customerPts/2), customerPts].filter((v,i,a)=>v>0&&a.indexOf(v)===i).map(q=>(
-                  <button key={q} onClick={() => setPtsInput(String(Math.min(q, Math.floor(grandTotal*REDEEM_RATE))))}
+                {[100, 500, Math.floor(effectiveMax/2), effectiveMax].filter((v,i,a)=>v>0&&a.indexOf(v)===i).map(q=>(
+                  <button key={q} onClick={() => setPtsInput(String(Math.min(q, effectiveMax)))}
                     className="flex-1 rounded-xl py-2 text-[11px] font-semibold cursor-pointer border transition-all"
                     style={{
                       background: ptsNum===Math.min(q,Math.floor(grandTotal*REDEEM_RATE)) ? '#8b5cf6' : '#f8fafc',
@@ -224,7 +238,7 @@ export function PointsRedeemModal({ onClose }) {
               )}
 
               <button onClick={applyPtsCash}
-                disabled={ptsNum<=0 || ptsNum>customerPts || cashDeduct>grandTotal}
+                disabled={ptsNum<=0 || ptsNum<MIN_PTS || ptsNum>customerPts || ptsNum>effectiveMax || cashDeduct>grandTotal}
                 className="w-full rounded-2xl py-4 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
                 style={{background:'linear-gradient(135deg,#8b5cf6,#6366f1)'}}>
                 💎 Apply {ptsNum>0 ? `${ptsNum.toLocaleString()} pts → -$${cashDeduct.toFixed(2)}` : 'Points'}
@@ -305,7 +319,7 @@ export function PointsRedeemModal({ onClose }) {
         <NumPad title="Points to Use" subtitle={`Max: ${Math.floor(grandTotal*REDEEM_RATE).toLocaleString()} pts`}
           value={ptsInput} onChange={setPtsInput}
           suffix=" pts" allowNegative={false} allowDecimal={false}
-          onConfirm={v => { setPtsInput(String(Math.min(v, customerPts, Math.floor(grandTotal*REDEEM_RATE)))); setShowPad(false) }}
+          onConfirm={v => { setPtsInput(String(Math.min(v, effectiveMax))); setShowPad(false) }}
           onClose={() => setShowPad(false)}/>
       )}
     </div>
