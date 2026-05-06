@@ -311,7 +311,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     <div className="fixed inset-0 z-50 flex"
       style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(4px)'}} onClick={onClose}>
       <div className="ml-auto flex flex-col h-full overflow-hidden shadow-2xl"
-        style={{width:'720px', background:'#f0f2f5'}}
+        style={{width:'min(820px, 100vw)', background:'#f0f2f5'}}
         onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -370,6 +370,45 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.background='#fff'}}
                     onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}/>
                 </div>
+              </div>
+            </div>
+
+            {/* UPC Auto-Fill Banner */}
+            <div className="rounded-xl p-3 mb-2" style={{background:'#eef2ff', border:'1.5px solid #c7d2fe'}}>
+              <div className="text-[11px] font-bold mb-1.5" style={{color:'#6366f1'}}>
+                🤖 Auto-Fill from Barcode
+                <span className="ml-2 font-normal text-slate-400">Enter UPC → AI fills name, description, photo, price</span>
+              </div>
+              <div className="flex gap-2">
+                <input value={form.upc} onChange={e=>set('upc',e.target.value)}
+                  placeholder="Scan or type UPC / barcode then press Enter or click Lookup..."
+                  className="flex-1 rounded-xl px-3 py-2.5 text-[12px] font-mono outline-none"
+                  style={{border:'1.5px solid #a5b4fc', background:'#fff'}}
+                  onKeyDown={e=>{ if(e.key==='Enter') document.getElementById('upc-lookup-btn').click() }}/>
+                <button id="upc-lookup-btn" type="button"
+                  onClick={async () => {
+                    if (!form.upc?.trim()) { toast.error('Enter UPC first'); return }
+                    setUpcLooking(true)
+                    const toastId = toast.loading('🔍 Searching database...')
+                    try {
+                      const off = await lookupUPC(form.upc.trim())
+                      if (!off.found) { toast.error('Not found in Open Food Facts', {id:toastId}); return }
+                      toast.loading('🤖 AI enriching info...', {id:toastId})
+                      const ai = await aiEnrichUPC(off.raw)
+                      if (ai.name || off.name)             set('name',        ai.name || off.name)
+                      if (ai.description || off.description) set('description', ai.description || off.description)
+                      if (ai.unit)                          set('unit',        ai.unit)
+                      if (ai.suggested_price)               set('price',       String(ai.suggested_price))
+                      if (off.image_url)                    set('image_url',   off.image_url)
+                      toast.success('✓ Auto-filled from barcode!', {id:toastId})
+                    } catch(e) { toast.error('Lookup failed: ' + e.message, {id:toastId}) }
+                    finally { setUpcLooking(false) }
+                  }}
+                  disabled={upcLooking || !form.upc?.trim()}
+                  className="rounded-xl px-4 text-[12px] font-bold cursor-pointer border-none flex-shrink-0 disabled:opacity-40"
+                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', minWidth:'90px'}}>
+                  {upcLooking ? '⏳...' : '🤖 Lookup'}
+                </button>
               </div>
             </div>
 
