@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useLang } from '@/lib/i18n'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
@@ -23,6 +24,7 @@ const SIDE_BTNS = [
 
 export default function CartPanel({ onRefund, onHold }) {
   const { user, tenant } = useAuthStore()
+  const { t } = useLang()
   const {
     items, customer, orderDiscount, totals,
     updateQty, removeItem, setItemNote, setItemEmployee,
@@ -205,7 +207,7 @@ export default function CartPanel({ onRefund, onHold }) {
             disabled={items.length === 0}
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer border disabled:opacity-30 transition-all"
             style={{background:'#fff1f2', borderColor:'#fca5a5', color:'#dc2626'}}>
-            🗑 Cancel
+            🗑 {t('cancel')}
           </button>
         </div>
 
@@ -216,7 +218,7 @@ export default function CartPanel({ onRefund, onHold }) {
           onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
           onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
           <span className="text-slate-400">👤</span>
-          <span className="text-[12px] text-slate-600 flex-1">{customer?.name || 'Walk-in Customer'}</span>
+          <span className="text-[12px] text-slate-600 flex-1">{customer?.name || t('walkIn')}</span>
           {customer?.tier && (
             <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
               style={{background:'#e0e7ff', color:'#6366f1'}}>{customer.tier.toUpperCase()}</span>
@@ -471,7 +473,7 @@ export default function CartPanel({ onRefund, onHold }) {
                 letterSpacing: '1px',
                 boxShadow: items.length > 0 ? '0 4px 20px rgba(99,102,241,0.4)' : 'none',
               }}>
-              PAY ${grandTotal.toFixed(2)}
+              {t('pay')} ${grandTotal.toFixed(2)}
             </button>
           </div>
         </div>

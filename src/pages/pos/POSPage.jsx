@@ -8,6 +8,8 @@ import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
 import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
 import { OpenItemModal } from '@/components/pos/OpenItemModal'
+import { LangSwitcher } from '@/components/ui/LangSwitcher'
+import { useLang } from '@/lib/i18n'
 import { HoldModal } from '@/components/pos/HoldModal'
 import { PointsRedeemModal } from '@/components/pos/PointsRedeemModal'
 import { RecallPanel } from '@/components/pos/RecallPanel'
@@ -81,14 +83,15 @@ export default function POSPage() {
 
   const selectedItem = items.find(i => i.id === selectedItemId)
 
+  const { t } = useLang()
   const QUICK_BTNS = [
-    { id:'member',  label:'Member',    icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
-    { id:'points',  label:'Points',    icon:'💎', action: () => setShowPoints(true) },
-    { id:'openitem',label:'Open Item', icon:'✏️', action: () => setShowOpenItem(true) },
-    { id:'return',  label:'Return',    icon:'↩️', action: () => setShowRefund(true) },
-    { id:'hold',    label:'Hold',      icon:'📌', action: () => setShowHold(true) },
-    { id:'recall',  label:'Recall',    icon:'📋', action: () => setShowRecall(true) },
-    { id:'orders',  label:'Orders',    icon:'🔍', action: () => { window.location.href='/orders' } },
+    { id:'member',  label:t('member'),   icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
+    { id:'points',  label:t('points'),   icon:'💎', action: () => setShowPoints(true) },
+    { id:'openitem',label:t('openItem'), icon:'✏️', action: () => setShowOpenItem(true) },
+    { id:'return',  label:t('return'),   icon:'↩️', action: () => setShowRefund(true) },
+    { id:'hold',    label:t('hold'),     icon:'📌', action: () => setShowHold(true) },
+    { id:'recall',  label:t('recall'),   icon:'📋', action: () => setShowRecall(true) },
+    { id:'orders',  label:t('orders'),   icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
 
   return (
