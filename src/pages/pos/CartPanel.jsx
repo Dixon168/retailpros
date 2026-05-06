@@ -246,7 +246,6 @@ export default function CartPanel({ onRefund, onHold }) {
           <div className="fixed inset-0 z-[200] flex items-end justify-center"
             style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(3px)'}}>
             <div className="w-full shadow-2xl" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
-              {/* Header */}
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="text-[14px] font-bold text-slate-800">
                   📝 <span style={{color:'#6366f1'}}>{(selectedItem||activeItem)?.name}</span>
@@ -254,7 +253,6 @@ export default function CartPanel({ onRefund, onHold }) {
                 <button onClick={() => { setActiveAction(null); setInputVal('') }}
                   className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500">✕</button>
               </div>
-              {/* Text input */}
               <div className="px-4 pb-2">
                 <textarea id="remark-input" autoFocus value={inputVal}
                   onChange={e => setInputVal(e.target.value)}
@@ -263,21 +261,17 @@ export default function CartPanel({ onRefund, onHold }) {
                   className="w-full rounded-2xl px-4 py-3 text-[15px] outline-none resize-none"
                   style={{border:'2px solid #a5b4fc', background:'#f8f9ff', color:'#1e293b'}}/>
               </div>
-              {/* Quick words */}
               <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
-                {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild','Large','Small'].map(w => (
+                {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild'].map(w => (
                   <button key={w} onClick={() => {
                     const v = inputVal ? inputVal + ', ' + w : w
                     setInputVal(v)
                     document.getElementById('remark-input')?.focus()
                   }}
                     className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border"
-                    style={{background:'#eef2ff', borderColor:'#c7d2fe', color:'#6366f1'}}>
-                    {w}
-                  </button>
+                    style={{background:'#eef2ff', borderColor:'#c7d2fe', color:'#6366f1'}}>{w}</button>
                 ))}
               </div>
-              {/* Custom keyboard */}
               <div className="px-2 pb-1 pt-1" style={{background:'#f8fafc'}}>
                 {[['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l'],['z','x','c','v','b','n','m']].map((row,ri) => (
                   <div key={ri} className="flex gap-1 justify-center mb-1">
@@ -291,7 +285,7 @@ export default function CartPanel({ onRefund, onHold }) {
                         setTimeout(() => { el?.focus(); el?.setSelectionRange(s+1,s+1) }, 0)
                       }}
                         className="rounded-xl text-[14px] font-medium cursor-pointer border"
-                        style={{width:'32px', height:'36px', background:'#fff', borderColor:'#e2e8f0', color:'#1e293b', boxShadow:'0 2px 0 #d1d5db'}}>
+                        style={{width:'32px',height:'36px',background:'#fff',borderColor:'#e2e8f0',color:'#1e293b',boxShadow:'0 2px 0 #d1d5db'}}>
                         {k}
                       </button>
                     ))}
@@ -299,12 +293,11 @@ export default function CartPanel({ onRefund, onHold }) {
                 ))}
                 <div className="flex gap-1.5 justify-center mt-1 mb-1">
                   <button onClick={() => { const el=document.getElementById('remark-input'); const s=el?.selectionStart??inputVal.length; const v=inputVal.slice(0,s)+' '+inputVal.slice(s); setInputVal(v); setTimeout(()=>{el?.focus();el?.setSelectionRange(s+1,s+1)},0) }}
-                    className="rounded-xl text-[11px] cursor-pointer border" style={{flex:4, height:'36px', background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>space</button>
+                    className="rounded-xl text-[11px] cursor-pointer border" style={{flex:4,height:'36px',background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>space</button>
                   <button onClick={() => { const el=document.getElementById('remark-input'); const s=el?.selectionStart??inputVal.length; const v=s>0?inputVal.slice(0,s-1)+inputVal.slice(s):inputVal.slice(0,-1); setInputVal(v); setTimeout(()=>{el?.focus();el?.setSelectionRange(Math.max(0,s-1),Math.max(0,s-1))},0) }}
-                    className="rounded-xl text-[16px] cursor-pointer border" style={{flex:1, height:'36px', background:'#fff1f2', borderColor:'#fecdd3', color:'#ef4444'}}>⌫</button>
+                    className="rounded-xl text-[16px] cursor-pointer border" style={{flex:1,height:'36px',background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}}>⌫</button>
                 </div>
               </div>
-              {/* Save */}
               <div className="px-4 pb-6 pt-2">
                 <button onClick={() => {
                   const item = selectedItem || activeItem
@@ -320,3 +313,194 @@ export default function CartPanel({ onRefund, onHold }) {
             </div>
           </div>
         )}
+
+        {/* Staff picker */}
+        {activeAction === 'staff' && selectedItem && (
+          <div className="px-3 py-2.5 flex-shrink-0 animate-fadeIn"
+            style={{background:'#eef2ff', borderBottom:'1.5px solid #6366f1'}}>
+            <div className="text-[10px] font-bold text-indigo-700 mb-2">👤 Select Staff — {selectedItem.name}</div>
+            <div className="flex flex-col gap-1 max-h-[130px] overflow-y-auto">
+              {staffList.map(s => (
+                <button key={s.id}
+                  onClick={() => {
+                    setItemEmployee(selectedItem.id, { id: s.id, name: s.name })
+                    setActiveAction(null)
+                    toast.success(`Staff: ${s.name}`)
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-left border transition-all"
+                  style={selectedItem.employee?.id===s.id
+                    ? {background:'#6366f1', borderColor:'#6366f1', color:'#fff'}
+                    : {background:'#fff', borderColor:'#e2e8f0', color:'#1e293b'}}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                    style={{background:'#e0e7ff', color:'#6366f1'}}>
+                    {s.name.charAt(0)}
+                  </div>
+                  <span className="text-[12px] font-medium">{s.name}</span>
+                  <span className="text-[10px] ml-auto" style={{color: selectedItem.employee?.id===s.id ? '#c7d2fe' : '#94a3b8'}}>{s.role}</span>
+                </button>
+              ))}
+              {staffList.length === 0 && (
+                <div className="text-[11px] text-slate-400 text-center py-2">No staff found</div>
+              )}
+            </div>
+            <button onClick={() => setActiveAction(null)}
+              className="w-full mt-2 rounded-lg py-1 text-[10px] text-slate-400 cursor-pointer border"
+              style={{background:'#fff', borderColor:'#e2e8f0'}}>Cancel</button>
+          </div>
+        )}
+
+        {/* Cart items */}
+        <div className="flex-1 overflow-y-auto">
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-300">
+              <div className="text-[48px] mb-2">🛒</div>
+              <div className="text-[12px]">Cart is empty</div>
+              <div className="text-[10px] mt-1 text-slate-200">Tap a product to add</div>
+            </div>
+          ) : (
+            items.map(item => {
+              const isSelected = item.id === selectedItemId
+              const linePrice  = item.itemDiscount
+                ? item.itemDiscount.type === 'pct'
+                  ? item.unitPrice * (1 - item.itemDiscount.value / 100)
+                  : Math.max(0, item.unitPrice - item.itemDiscount.value)
+                : item.unitPrice
+              const lineTotal  = linePrice * item.qty
+
+              return (
+                <div key={item.id} onClick={() => selectItem(item.id)}
+                  className="px-3 py-2.5 cursor-pointer transition-all"
+                  style={{
+                    borderBottom: '1px solid #f8fafc',
+                    background: isSelected ? '#eef2ff' : 'transparent',
+                    borderLeft: `3px solid ${isSelected ? '#6366f1' : 'transparent'}`,
+                  }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#fafbff' }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
+
+                  <div className="flex items-start gap-2.5">
+                    {/* Photo */}
+                    <div onClick={e => { e.stopPropagation(); setPhotoViewer(item) }}
+                      className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer"
+                      style={{background:'#f1f5f9', border:`2px solid ${isSelected?'#a5b4fc':'#e2e8f0'}`}}>
+                      {item.imageUrl
+                        ? <img src={item.imageUrl} alt="" className="w-full h-full object-cover"/>
+                        : <span className="text-[9px] font-bold text-slate-400">{item.name?.substring(0,2).toUpperCase()}</span>
+                      }
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="text-[13px] font-semibold leading-tight" style={{color: isSelected ? '#4338ca' : '#1e293b'}}>
+                          {item.name}
+                        </div>
+                        <div className="text-[13px] font-bold font-mono flex-shrink-0"
+                          style={{color: item.qty < 0 ? '#dc2626' : isSelected ? '#4338ca' : '#1e293b'}}>
+                          {item.qty < 0 ? '-' : ''}${Math.abs(lineTotal).toFixed(2)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className={`text-[11px] font-mono ${item.qty < 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                          {item.qty < 0 ? '↩ RETURN ' : ''}{item.qty} × ${item.unitPrice.toFixed(2)}
+                        </span>
+                        {item.itemDiscount && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
+                            style={{background:'#fdf2f8', color:'#db2777'}}>
+                            {item.itemDiscount.type==='pct' ? `-${item.itemDiscount.value}%` : `-$${item.itemDiscount.value}`}
+                          </span>
+                        )}
+                        {item.priceOverridden && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
+                            style={{background:'#fefce8', color:'#ca8a04'}}>CUSTOM</span>
+                        )}
+                        {item.employee && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded"
+                            style={{background:'#eff6ff', color:'#3b82f6'}}>{item.employee.name}</span>
+                        )}
+                        {item.note && (
+                          <span className="text-[9px] text-slate-400 italic truncate max-w-[100px]">
+                            "{item.note}"
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selected hint */}
+                  {isSelected && (
+                    <div className="mt-1.5 text-[9px] font-semibold" style={{color:'#6366f1'}}>
+                      ← Use side buttons to modify
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Totals */}
+        <div className="flex-shrink-0" style={{borderTop:'1.5px solid #e2e8f0'}}>
+          <div className="px-3 py-2.5 space-y-1">
+            {[
+              ['Subtotal',       `$${subtotal.toFixed(2)}`,         '#374151'],
+              ...(orderDiscountAmt > 0 ? [['Discount', `-$${orderDiscountAmt.toFixed(2)}`, '#16a34a']] : []),
+              ['Tax',            `$${taxAmount.toFixed(2)}`,        '#374151'],
+              ['Tip',            '$0.00',                           '#94a3b8'],
+            ].map(([l,v,c]) => (
+              <div key={l} className="flex justify-between">
+                <span className="text-[12px]" style={{color:'#94a3b8'}}>{l}</span>
+                <span className="text-[12px] font-mono font-semibold" style={{color:c}}>{v}</span>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-0.5" style={{borderTop:'1px solid #f1f5f9'}}>
+              <span className="text-[11px] text-slate-400 cursor-pointer hover:text-slate-600">Remark ›</span>
+            </div>
+          </div>
+
+
+
+          {/* PAY button */}
+          <div className="px-3 pb-3">
+            <button onClick={() => useCartStore.setState({ showPayPanel: true })}
+              disabled={items.length === 0}
+              className="w-full rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none disabled:opacity-30 transition-all"
+              style={{
+                background: items.length > 0 ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : '#e2e8f0',
+                letterSpacing: '1px',
+                boxShadow: items.length > 0 ? '0 4px 20px rgba(99,102,241,0.4)' : 'none',
+              }}>
+              PAY ${grandTotal.toFixed(2)}
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+
+      {/* NumPad */}
+      {showNumPad && activeAction && !['staff','remark','inc','dec','delete'].includes(activeAction) && (
+        <NumPad
+          title={{custom:'Set Quantity / Return', disc:'Item Discount', price:'Change Price', single:'Unit Price'}[activeAction] || 'Enter Value'}
+          subtitle={activeAction==='custom' ? `${activeItem?.name} · Enter negative to return` : activeItem?.name}
+          value={inputVal}
+          onChange={setInputVal}
+          prefix={['price','single'].includes(activeAction) ? '$' : activeAction==='disc' && discType==='amt' ? '$' : ''}
+          suffix={activeAction==='disc' && discType==='pct' ? '%' : activeAction==='custom' ? ` ${selectedItem?.unit||'ea'}` : ''}
+          allowNegative={activeAction === 'custom'}
+          allowDecimal={activeAction !== 'custom'}
+          onConfirm={(val) => applyAction(val)}
+          onClose={() => { setShowNumPad(false); setActiveAction(null); setInputVal('') }}
+        />
+      )}
+
+      {photoViewer && (
+        <PhotoViewer
+          product={{ name: photoViewer.name, image_url: photoViewer.imageUrl, price: photoViewer.unitPrice, inventory: photoViewer.inventory }}
+          onClose={() => setPhotoViewer(null)}
+        />
+      )}
+    </div>
+  )
+}
