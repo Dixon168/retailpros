@@ -1,38 +1,48 @@
 // src/pages/pos/panels/CustomerPanel.jsx
-// 客户搜索面板
-
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useRef, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
-import { Overlay } from './SerialPanel'
+import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
+import toast from 'react-hot-toast'
 
 export default function CustomerPanel() {
-  const { setCustomer } = useCartStore()
-  const { tenant } = useAuthStore()
-  const [search, setSearch] = useState('')
+  const { setCustomer }    = useCartStore()
+  const { tenant }         = useAuthStore()
+  const qc                 = useQueryClient()
+  const [search, setSearch]   = useState('')
+  const [mode, setMode]       = useState('search') // 'search' | 'add'
+  const [saving, setSaving]   = useState(false)
+  const [showKB, setShowKB]   = useState(false)
+  const [kbField, setKbField] = useState(null)
+  const searchRef = useRef()
 
   const close = () => useCartStore.setState({ showCustPanel: false })
 
-  // 搜索客户
+  const [form, setForm] = useState({
+    name: '', phone: '', email: '', company: '',
+    birthday: '', gender: '', address: '',
+    type: 'regular', notes: '',
+  })
+  const setF = (k, v) => setForm(f => ({...f, [k]: v}))
+
+  useEffect(() => {
+    if (mode === 'search') setTimeout(() => searchRef.current?.focus(), 100)
+  }, [mode])
+
   const { data: customers = [] } = useQuery({
     queryKey: ['customer-search', tenant?.id, search],
     queryFn: async () => {
-      let q = supabase
-        .from('customers')
-        .select('id, code, name, company, phone, email, type, credit_balance, loyalty_points, credit_enabled')
-        .eq('tenant_id', tenant.id)
-        .eq('is_active', true)
-
-      if (search) {
-        q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,company.ilike.%${search}%`)
-      }
-
+      let q = supabase.from('customers')
+        .select('id, code, name, company, phone, email, type, credit_balance, loyalty_points, tier')
+        .eq('tenant_id', tenant.id).eq('is_active', true)
+      if (search)
+        q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,email.ilike.%${search}%`)
       const { data } = await q.order('name').limit(20)
       return data || []
     },
-    enabled: !!tenant?.id
+    enabled: !!tenant?.id,
   })
 
   const handleSelect = (customer) => {
@@ -40,105 +50,274 @@ export default function CustomerPanel() {
     close()
   }
 
-  return (
-    <Overlay onClose={close}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[460px] overflow-hidden">
+  const handleAdd = async () => {
+    if (!form.name.trim()) { toast.error('Name required'); return }
+    setSaving(true)
+    try {
+      // Generate customer code
+      const code = 'C' + Date.now().toString().slice(-6)
+      const { data, error } = await supabase.from('customers').insert({
+        tenant_id:    tenant.id,
+        code,
+        name:         form.name.trim(),
+        phone:        form.phone || null,
+        email:        form.email || null,
+        company:      form.company || null,
+        birthday:     form.birthday || null,
+        gender:       form.gender || null,
+        billing_address: form.address || null,
+        type:         form.type,
+        notes:        form.notes || null,
+        is_active:    true,
+        loyalty_points: 0,
+        credit_balance: 0,
+      }).select().single()
+      if (error) throw error
+      qc.invalidateQueries(['customer-search'])
+      toast.success(`✓ ${form.name} added!`)
+      handleSelect(data)
+    } catch(e) { toast.error(e.message) }
+    finally { setSaving(false) }
+  }
 
-        {/* Header + 搜索 */}
-        <div className="px-5 py-4 border-b border-[#1e2d42]">
-          <div className="text-[15px] font-bold mb-3">👥 Select Customer</div>
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42]
-            rounded-[9px] px-3 focus-within:border-purple-500/30 transition-colors">
-            <span className="text-[#3d5068]">🔍</span>
-            <input
-              autoFocus
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, phone, or code..."
-              className="flex-1 bg-transparent border-none outline-none py-2.5
-                text-[13px] text-[#e8edf5] font-sans placeholder-[#3d5068]"
-            />
+  const openKB = (field) => { setKbField(field); setShowKB(true) }
+
+  return (
+    <>
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}
+      onClick={close}>
+      <div className="rounded-2xl overflow-hidden shadow-2xl w-[480px] max-h-[90vh] flex flex-col"
+        style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          <span className="text-[22px]">👥</span>
+          <div className="flex-1">
+            <div className="text-[16px] font-bold text-white">
+              {mode === 'search' ? 'Select Customer' : 'Add New Customer'}
+            </div>
+            <div className="text-[11px] text-indigo-200">
+              {mode === 'search' ? 'Search or add new' : 'Fill in customer details'}
+            </div>
           </div>
+          <button onClick={close}
+            className="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer text-white flex items-center justify-center">✕</button>
         </div>
 
-        {/* 客户列表 */}
-        <div className="max-h-[320px] overflow-y-auto px-3 py-2">
-          {customers.length === 0 ? (
-            <div className="text-center py-8 text-[#3d5068] text-sm">No customers found</div>
-          ) : (
-            customers.map(customer => (
-              <CustomerRow
-                key={customer.id}
-                customer={customer}
-                onClick={() => handleSelect(customer)}
-              />
-            ))
-          )}
+        {/* Tab switcher */}
+        <div className="flex flex-shrink-0" style={{borderBottom:'1px solid #e2e8f0'}}>
+          {[['search','🔍 Search'],['add','➕ New Customer']].map(([m,l])=>(
+            <button key={m} onClick={()=>setMode(m)}
+              className="flex-1 py-2.5 text-[12px] font-semibold cursor-pointer border-none border-b-2 transition-all"
+              style={{
+                background: mode===m ? '#f0f4ff' : '#fff',
+                borderBottomColor: mode===m ? '#6366f1' : 'transparent',
+                color: mode===m ? '#6366f1' : '#64748b',
+              }}>
+              {l}
+            </button>
+          ))}
         </div>
 
-        {/* 新建客户 */}
-        <div className="px-3 pb-3 pt-1 border-t border-[#1e2d42]">
-          <button
-            onClick={() => { close(); /* 打开新建客户表单 */ }}
-            className="w-full bg-blue-500/10 border border-blue-500/20 rounded-lg
-              py-2.5 text-[12px] text-blue-400 font-sans
-              hover:bg-blue-500/15 transition-colors">
-            + Add New Customer
-          </button>
-        </div>
+        {/* ── SEARCH MODE ── */}
+        {mode === 'search' && (
+          <>
+            <div className="px-4 py-3 flex-shrink-0" style={{borderBottom:'1px solid #f1f5f9'}}>
+              <div className="flex items-center gap-2 rounded-xl px-3"
+                style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}>
+                <span className="text-slate-400">🔍</span>
+                <input ref={searchRef} autoFocus
+                  value={search} onChange={e=>setSearch(e.target.value)}
+                  placeholder="Search name, phone, email, code..."
+                  className="flex-1 border-none outline-none py-2.5 text-[13px] bg-transparent"
+                  style={{color:'#1e293b'}}/>
+                {search && <button onClick={()=>setSearch('')}
+                  className="text-slate-400 bg-transparent border-none cursor-pointer">✕</button>}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {/* Walk-in option */}
+              <button onClick={() => handleSelect(null)}
+                className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer border-none text-left transition-all hover:bg-slate-50"
+                style={{borderBottom:'1px solid #f1f5f9', background:'#fff'}}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] flex-shrink-0"
+                  style={{background:'#f1f5f9'}}>🚶</div>
+                <div>
+                  <div className="text-[13px] font-semibold text-slate-700">Walk-in Customer</div>
+                  <div className="text-[11px] text-slate-400">No account needed</div>
+                </div>
+              </button>
+
+              {customers.length === 0 && search && (
+                <div className="flex flex-col items-center py-10 text-slate-400">
+                  <div className="text-[32px] mb-2">😕</div>
+                  <div className="text-[13px]">No customer found</div>
+                  <button onClick={()=>setMode('add')}
+                    className="mt-3 px-4 py-2 rounded-xl text-[12px] font-bold cursor-pointer border-none"
+                    style={{background:'#e0e7ff', color:'#6366f1'}}>
+                    + Add "{search}" as new customer
+                  </button>
+                </div>
+              )}
+
+              {customers.map(c => {
+                const initials = c.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()
+                const TIER_STYLE = {
+                  vip:       {bg:'#fef9c3', color:'#ca8a04'},
+                  silver:    {bg:'#f1f5f9', color:'#64748b'},
+                  gold:      {bg:'#fffbeb', color:'#d97706'},
+                  platinum:  {bg:'#f0f4ff', color:'#6366f1'},
+                }
+                const ts = TIER_STYLE[c.tier] || TIER_STYLE[c.type] || {bg:'#f0f4ff',color:'#6366f1'}
+                return (
+                  <button key={c.id} onClick={()=>handleSelect(c)}
+                    className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer border-none text-left transition-all hover:bg-blue-50"
+                    style={{borderBottom:'1px solid #f8fafc', background:'#fff'}}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0"
+                      style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-bold text-slate-800">{c.name}</span>
+                        {c.tier && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
+                            style={ts}>{c.tier}</span>
+                        )}
+                        {c.type === 'vip' && !c.tier && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-600">VIP</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        {c.phone || c.email || '—'}
+                        {c.company && <span className="ml-1.5">· {c.company}</span>}
+                      </div>
+                      <div className="flex gap-2 mt-1">
+                        {c.loyalty_points > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                            style={{background:'#fdf4ff', color:'#9333ea'}}>
+                            💎 {c.loyalty_points} pts
+                          </span>
+                        )}
+                        {c.credit_balance > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                            style={{background:'#fff1f2', color:'#e11d48'}}>
+                            Owes ${c.credit_balance.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-slate-300 text-[18px]">›</span>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── ADD NEW MODE ── */}
+        {mode === 'add' && (
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex flex-col gap-4">
+
+              {/* Basic */}
+              <div className="rounded-xl p-4" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Basic Info</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name *</div>
+                    <input value={form.name} onChange={e=>setF('name',e.target.value)}
+                      placeholder="Customer name" autoFocus
+                      className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none font-semibold"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Phone</div>
+                    <input value={form.phone} onChange={e=>setF('phone',e.target.value)}
+                      placeholder="Phone number" type="tel"
+                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Email</div>
+                    <input value={form.email} onChange={e=>setF('email',e.target.value)}
+                      placeholder="Email address" type="email"
+                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Company</div>
+                    <input value={form.company} onChange={e=>setF('company',e.target.value)}
+                      placeholder="Company (optional)"
+                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Birthday</div>
+                    <input value={form.birthday} onChange={e=>setF('birthday',e.target.value)}
+                      type="date"
+                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Type */}
+              <div className="rounded-xl p-4" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Customer Type</div>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    ['regular','👤 Regular','#f1f5f9','#475569'],
+                    ['vip','⭐ VIP','#fef9c3','#ca8a04'],
+                    ['wholesale','🏢 Wholesale','#eff6ff','#2563eb'],
+                    ['staff','👔 Staff','#f0fdf4','#16a34a'],
+                  ].map(([t,l,bg,color])=>(
+                    <button key={t} onClick={()=>setF('type',t)}
+                      className="flex-1 rounded-xl py-2 text-[12px] font-semibold cursor-pointer border-2 transition-all"
+                      style={form.type===t
+                        ? {background:bg, borderColor:color, color}
+                        : {background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Address & Notes */}
+              <div className="rounded-xl p-4" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Additional</div>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Address</div>
+                    <input value={form.address} onChange={e=>setF('address',e.target.value)}
+                      placeholder="Address (optional)"
+                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Notes</div>
+                    <textarea value={form.notes} onChange={e=>setF('notes',e.target.value)}
+                      placeholder="Internal notes (optional)" rows={2}
+                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none resize-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save button */}
+              <button onClick={handleAdd} disabled={saving || !form.name.trim()}
+                className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                {saving ? '⏳ Saving...' : '✓ Add Customer & Select'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </Overlay>
-  )
-}
-
-function CustomerRow({ customer, onClick }) {
-  const initials = customer.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-
-  return (
-    <div
-      onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-[9px] cursor-pointer
-        hover:bg-[#111827] transition-colors"
-    >
-      {/* 头像 */}
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[13px]
-        font-bold text-white flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }}>
-        {initials}
-      </div>
-
-      {/* 信息 */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-semibold">
-          {customer.name}
-          {customer.company && (
-            <span className="text-[10px] text-[#3d5068] ml-1.5">· {customer.company}</span>
-          )}
-        </div>
-        <div className="text-[10px] font-mono text-[#3d5068] mt-0.5">
-          {customer.code} · {customer.phone || customer.email || '—'} · {customer.type}
-        </div>
-        <div className="flex gap-1.5 mt-1">
-          {customer.credit_balance > 0 && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-mono
-              bg-red-500/10 text-red-400">
-              Owes ${customer.credit_balance.toFixed(2)}
-            </span>
-          )}
-          {customer.loyalty_points > 0 && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-mono
-              bg-purple-500/10 text-purple-400">
-              {customer.loyalty_points} pts
-            </span>
-          )}
-          {customer.type === 'vip' && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-mono
-              bg-yellow-500/10 text-yellow-400">VIP</span>
-          )}
-        </div>
-      </div>
-
-      <span className="text-[#3d5068] text-sm">›</span>
     </div>
+    </>
   )
 }
