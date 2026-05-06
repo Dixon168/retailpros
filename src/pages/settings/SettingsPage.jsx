@@ -967,19 +967,24 @@ function MemberLevelsSection({ tenantId }) {
   const addLevel = async () => {
     if (!newName.trim()) { toast.error('Name required'); return }
     setSaving(true)
-    const { data } = await supabase.from('member_levels').insert({
-      tenant_id: tenantId,
-      name: newName.trim(),
-      discount_pct: parseFloat(newDisc) || 0,
-      sort_order: levels.length,
-      is_default: false,
-    }).select().single()
-    if (data) {
+    try {
+      const { data, error } = await supabase.from('member_levels').insert({
+        tenant_id: tenantId,
+        name: newName.trim(),
+        discount_pct: parseFloat(newDisc) || 0,
+        sort_order: levels.length,
+        is_default: false,
+      }).select().single()
+      if (error) throw error
       setLevels(l => [...l, data])
       setNewName(''); setNewDisc('0'); setAdding(false)
       toast.success(`✓ ${data.name} added`)
+    } catch(e) {
+      toast.error('Error: ' + e.message)
+      console.error('addLevel error:', e)
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const deleteLevel = async (id, isDefault) => {
