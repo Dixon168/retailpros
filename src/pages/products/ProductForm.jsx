@@ -5,6 +5,54 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 const UNITS = ['ea','lb','kg','oz','g','l','ml','ft','m','hr','pair','box','case','pack','roll','bag','bottle','can']
+
+// ── Open Food Facts + Claude AI lookup ──
+async function lookupUPC(upc) {
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${upc}.json`)
+    const data = await res.json()
+    if (data.status === 1 && data.product) {
+      const p = data.product
+      return {
+        found: true,
+        name:        p.product_name || p.product_name_en || '',
+        brand:       p.brands || '',
+        image_url:   p.image_front_url || p.image_url || '',
+        description: p.generic_name || '',
+        quantity:    p.quantity || '',
+        raw:         p,
+      }
+    }
+    return { found: false }
+  } catch { return { found: false } }
+}
+
+async function aiEnrichUPC(rawData) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        messages: [{ role: 'user', content:
+          'You are a retail product data assistant. Given this product info from Open Food Facts, return ONLY a JSON object (no markdown):\n' +
+          JSON.stringify(rawData) + '\n\n' +
+          'JSON format:\n{' +
+          '"name":"clean english product name",' +
+          '"description":"1-2 sentence product description",' +
+          '"unit":"one of: ea,lb,kg,oz,g,l,ml,bottle,can,pack,box,case",' +
+          '"suggested_price":number,' +
+          '"category":"one of: Food & Beverage,Alcohol & Wine,Snacks,Dairy,Produce,Meat,Health & Beauty,Household,Other"' +
+          '}'
+        }]
+      })
+    })
+    const d = await res.json()
+    const text = d.content?.[0]?.text || '{}'
+    return JSON.parse(text.replace(/```json|```/g, '').trim())
+  } catch { return {} }
+}
 const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 // ── Reusable field components ──
@@ -68,6 +116,7 @@ function Toggle({ checked, onChange, label, desc }) {
 }
 
 export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
+  const [upcLooking, setUpcLooking] = useState(false)
   const qc = useQueryClient()
   const fileRef = useRef()
   const [saving,    setSaving]    = useState(false)
@@ -330,7 +379,39 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               </div>
               <div>
                 <Label>UPC / Barcode</Label>
-                <Input value={form.upc} onChange={e=>set('upc',e.target.value)} placeholder="012345678901" mono/>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input value={form.upc} onChange={e=>set('upc',e.target.value)} placeholder="012345678901" mono/>
+                  </div>
+                  <button type="button"
+                    onClick={async () => {
+                      if (!form.upc?.trim()) { toast.error('Enter UPC first'); return }
+                      setUpcLooking(true)
+                      const toastId = toast.loading('🔍 Looking up barcode...')
+                      try {
+                        const off = await lookupUPC(form.upc.trim())
+                        if (!off.found) { toast.error('Product not found in database', {id:toastId}); return }
+                        toast.loading('🤖 AI enriching info...', {id:toastId})
+                        const ai = await aiEnrichUPC(off.raw)
+                        // Auto-fill fields
+                        if (ai.name || off.name)        set('name',        ai.name || off.name)
+                        if (ai.description || off.description) set('description', ai.description || off.description)
+                        if (ai.unit)                    set('unit',        ai.unit)
+                        if (ai.suggested_price)         set('price',       String(ai.suggested_price))
+                        if (off.image_url)              set('image_url',   off.image_url)
+                        toast.success('✓ Product info filled!', {id:toastId})
+                      } catch(e) {
+                        toast.error('Lookup failed', {id:toastId})
+                      } finally {
+                        setUpcLooking(false)
+                      }
+                    }}
+                    disabled={upcLooking || !form.upc?.trim()}
+                    className="rounded-xl px-3 text-[11px] font-bold cursor-pointer border-none flex-shrink-0 disabled:opacity-40 whitespace-nowrap"
+                    style={{background: upcLooking ? '#e0e7ff' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', height:'40px'}}>
+                    {upcLooking ? '⏳' : '🔍 Lookup'}
+                  </button>
+                </div>
               </div>
             </div>
 
