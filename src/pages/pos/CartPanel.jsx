@@ -246,54 +246,40 @@ export default function CartPanel({ onRefund, onHold }) {
           <div className="fixed inset-0 z-[200] flex items-end justify-center"
             style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(3px)'}}>
             <div className="w-full shadow-2xl" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
-
               {/* Header */}
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="text-[14px] font-bold text-slate-800">
-                  📝 Note — <span style={{color:'#6366f1'}}>{(selectedItem||activeItem)?.name}</span>
+                  📝 <span style={{color:'#6366f1'}}>{(selectedItem||activeItem)?.name}</span>
                 </div>
                 <button onClick={() => { setActiveAction(null); setInputVal('') }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500 text-[14px]">
-                  ✕
-                </button>
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500">✕</button>
               </div>
-
-              {/* Text input - open for any keyboard */}
-              <div className="px-4 pb-3">
-                <textarea
-                  id="remark-input"
-                  autoFocus
-                  value={inputVal}
+              {/* Text input */}
+              <div className="px-4 pb-2">
+                <textarea id="remark-input" autoFocus value={inputVal}
                   onChange={e => setInputVal(e.target.value)}
                   placeholder="Type here using any keyboard..."
                   rows={3}
                   className="w-full rounded-2xl px-4 py-3 text-[15px] outline-none resize-none"
-                  style={{border:'2px solid #a5b4fc', background:'#f8f9ff', color:'#1e293b', lineHeight:'1.5'}}
-                />
+                  style={{border:'2px solid #a5b4fc', background:'#f8f9ff', color:'#1e293b'}}/>
               </div>
-
               {/* Quick words */}
               <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
-                {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild','Large','Small','On side'].map(w => (
+                {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild','Large','Small'].map(w => (
                   <button key={w} onClick={() => {
-                    const newVal = inputVal ? inputVal + ', ' + w : w
-                    setInputVal(newVal)
+                    const v = inputVal ? inputVal + ', ' + w : w
+                    setInputVal(v)
                     document.getElementById('remark-input')?.focus()
                   }}
-                    className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
+                    className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border"
                     style={{background:'#eef2ff', borderColor:'#c7d2fe', color:'#6366f1'}}>
                     {w}
                   </button>
                 ))}
               </div>
-
               {/* Custom keyboard */}
-              <div className="px-2 pb-2 pt-1" style={{background:'#f8fafc'}}>
-                {[
-                  ['q','w','e','r','t','y','u','i','o','p'],
-                  ['a','s','d','f','g','h','j','k','l'],
-                  ['z','x','c','v','b','n','m'],
-                ].map((row, ri) => (
+              <div className="px-2 pb-1 pt-1" style={{background:'#f8fafc'}}>
+                {[['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l'],['z','x','c','v','b','n','m']].map((row,ri) => (
                   <div key={ri} className="flex gap-1 justify-center mb-1">
                     {row.map(k => (
                       <button key={k} onClick={() => {
@@ -311,45 +297,23 @@ export default function CartPanel({ onRefund, onHold }) {
                     ))}
                   </div>
                 ))}
-                <div className="flex gap-1.5 justify-center mt-1">
-                  <button onClick={() => {
-                    const el = document.getElementById('remark-input')
-                    const s = el?.selectionStart ?? inputVal.length
-                    const e2 = el?.selectionEnd ?? inputVal.length
-                    const val = inputVal.slice(0,s) + ' ' + inputVal.slice(e2)
-                    setInputVal(val)
-                    setTimeout(() => { el?.focus(); el?.setSelectionRange(s+1,s+1) }, 0)
-                  }}
-                    className="rounded-xl text-[11px] cursor-pointer border"
-                    style={{flex:4, height:'36px', background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
-                    space
-                  </button>
-                  <button onClick={() => {
-                    const el = document.getElementById('remark-input')
-                    const s = el?.selectionStart ?? inputVal.length
-                    const val = s > 0 ? inputVal.slice(0,s-1) + inputVal.slice(s) : inputVal.slice(0,-1)
-                    setInputVal(val)
-                    setTimeout(() => { el?.focus(); el?.setSelectionRange(Math.max(0,s-1),Math.max(0,s-1)) }, 0)
-                  }}
-                    className="rounded-xl text-[16px] cursor-pointer border"
-                    style={{flex:1, height:'36px', background:'#fff1f2', borderColor:'#fecdd3', color:'#ef4444'}}>
-                    ⌫
-                  </button>
+                <div className="flex gap-1.5 justify-center mt-1 mb-1">
+                  <button onClick={() => { const el=document.getElementById('remark-input'); const s=el?.selectionStart??inputVal.length; const v=inputVal.slice(0,s)+' '+inputVal.slice(s); setInputVal(v); setTimeout(()=>{el?.focus();el?.setSelectionRange(s+1,s+1)},0) }}
+                    className="rounded-xl text-[11px] cursor-pointer border" style={{flex:4, height:'36px', background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>space</button>
+                  <button onClick={() => { const el=document.getElementById('remark-input'); const s=el?.selectionStart??inputVal.length; const v=s>0?inputVal.slice(0,s-1)+inputVal.slice(s):inputVal.slice(0,-1); setInputVal(v); setTimeout(()=>{el?.focus();el?.setSelectionRange(Math.max(0,s-1),Math.max(0,s-1))},0) }}
+                    className="rounded-xl text-[16px] cursor-pointer border" style={{flex:1, height:'36px', background:'#fff1f2', borderColor:'#fecdd3', color:'#ef4444'}}>⌫</button>
                 </div>
               </div>
-
-              {/* Save button */}
+              {/* Save */}
               <div className="px-4 pb-6 pt-2">
                 <button onClick={() => {
                   const item = selectedItem || activeItem
-                  if (item) {
-                    setItemNote(item.id, inputVal)
-                  }
+                  if (item) setItemNote(item.id, inputVal)
                   setActiveAction(null)
                   setInputVal('')
                 }}
                   className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow:'0 4px 16px rgba(99,102,241,0.3)'}}>
+                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
                   ✓ Save Note
                 </button>
               </div>
