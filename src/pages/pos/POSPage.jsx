@@ -30,6 +30,9 @@ export default function POSPage() {
   const [searchQuery,    setSearchQuery]    = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
   const [showRefund,     setShowRefund]     = useState(false)
+  const [showHold,       setShowHold]       = useState(false)
+  const [showRecall,     setShowRecall]     = useState(false)
+  const [showOpenItem,   setShowOpenItem]   = useState(false)
   const [time,           setTime]           = useState(new Date())
 
   useEffect(() => {
