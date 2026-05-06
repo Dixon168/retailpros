@@ -118,7 +118,8 @@ function Toggle({ checked, onChange, label, desc }) {
 }
 
 export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
-  const [upcLooking, setUpcLooking] = useState(false)
+  const [upcLooking,  setUpcLooking]  = useState(false)
+  const [genDesc,     setGenDesc]     = useState(false)
   const qc = useQueryClient()
   const fileRef = useRef()
   const [saving,    setSaving]    = useState(false)
@@ -359,7 +360,23 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     toast.loading('🤖 Claude AI enriching...', {id:toastId})
                     const ai = await aiEnrichUPC(off.raw)
                     if (ai.name || off.name)                   set('name',        ai.name || off.name)
-                    if (ai.description || off.description)     set('description', ai.description || off.description)
+                    const desc = ai.description || off.description
+                    if (desc) {
+                      set('description', desc)
+                    } else if (ai.name || off.name) {
+                      // Auto-generate if no description found
+                      try {
+                        const dr = await fetch('https://api.anthropic.com/v1/messages', {
+                          method:'POST', headers:{'Content-Type':'application/json'},
+                          body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:100,
+                            messages:[{role:'user', content:'Write a short 1-2 sentence retail description for: "' + (ai.name||off.name) + '". Be concise and factual.'}]
+                          })
+                        })
+                        const dd = await dr.json()
+                        const dt = dd.content?.[0]?.text || ''
+                        if (dt) set('description', dt)
+                      } catch {}
+                    }
                     if (ai.unit)                               set('unit',        ai.unit)
                     if (ai.suggested_price)                    set('price',       String(ai.suggested_price))
                     if (off.image_url) set('image_url', off.image_url.replace('http://', 'https://'))
@@ -408,9 +425,36 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     placeholder="e.g. iPhone 15 Pro, Fuji Apple, Screen Repair"/>
                 </div>
                 <div>
-                  <Label>Description</Label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label>Description</Label>
+                    <button type="button" disabled={!form.name || genDesc}
+                      onClick={async () => {
+                        if (!form.name) return
+                        setGenDesc(true)
+                        try {
+                          const res = await fetch('https://api.anthropic.com/v1/messages', {
+                            method:'POST', headers:{'Content-Type':'application/json'},
+                            body: JSON.stringify({
+                              model:'claude-sonnet-4-20250514', max_tokens:150,
+                              messages:[{role:'user', content:
+                                'Write a short 1-2 sentence retail product description for: "' + form.name + '". ' +
+                                'Be concise and factual. No marketing fluff. Just what it is.'
+                              }]
+                            })
+                          })
+                          const d = await res.json()
+                          const text = d.content?.[0]?.text || ''
+                          if (text) { set('description', text); toast.success('✓ Description generated') }
+                        } catch { toast.error('Failed to generate') }
+                        finally { setGenDesc(false) }
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer border-none disabled:opacity-40"
+                      style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff'}}>
+                      {genDesc ? '⏳' : '🤖'} {genDesc ? 'Generating...' : 'AI Generate'}
+                    </button>
+                  </div>
                   <textarea value={form.description} onChange={e=>set('description',e.target.value)}
-                    rows={3} placeholder="Optional product description..."
+                    rows={3} placeholder="Optional — or click 🤖 AI Generate..."
                     className="w-full rounded-xl px-3.5 py-2.5 text-[12px] outline-none resize-none transition-all"
                     style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
                     onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.background='#fff'}}
