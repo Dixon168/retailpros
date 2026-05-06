@@ -523,9 +523,9 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
       <div className="rounded-2xl overflow-hidden shadow-2xl w-[400px]"
-        style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+        style={{background:'#fff'}}>
 
         <div className="px-5 py-4 flex items-center justify-between"
           style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
@@ -638,7 +638,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
     enabled: !!tenantId,
   })
   const [form, setForm] = useState({
-    name:'', phone:'', email:'', company:'', birthday:'',
+    name:'', phone:'', email:'', birthday:'',
     gender:'', address:'', type:'regular', notes:'',
     card_number:'', member_level:'', card_expire_date:'',
   })
@@ -684,9 +684,9 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
       <div className="rounded-2xl overflow-hidden shadow-2xl w-[560px] max-h-[90vh] flex flex-col"
-        style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+        style={{background:'#fff'}}>
 
         <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
           style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
@@ -705,7 +705,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
                   className="w-full rounded-xl px-3 py-2.5 text-[14px] font-semibold outline-none"
                   style={{border:'1.5px solid #a5b4fc',background:'#fff'}}/>
               </div>
-              {[['phone','Phone','tel'],['email','Email','email'],['company','Company','text'],['birthday','Birthday','date']].map(([k,l,t])=>(
+              {[['phone','Phone','tel'],['email','Email','email'],['birthday','Birthday','date']].map(([k,l,t])=>(
                 <div key={k}>
                   <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">{l}</div>
                   <input type={t} value={form[k]} onChange={e=>setF(k,e.target.value)} placeholder={l}
@@ -855,9 +855,9 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
       <div className="rounded-2xl overflow-hidden shadow-2xl w-[560px] max-h-[90vh] flex flex-col"
-        style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
+        style={{background:'#fff'}}>
         <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
           style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
           <div className="text-[16px] font-bold text-white">✏️ Edit — {customer.name}</div>
