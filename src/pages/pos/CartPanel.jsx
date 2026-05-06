@@ -396,21 +396,7 @@ export default function CartPanel({ onRefund, onHold }) {
             </div>
           </div>
 
-          {/* Action row */}
-          <div className="px-3 pb-2 grid grid-cols-4 gap-1.5">
-            {[
-              ['📌 Hold',   '#eff6ff','#bfdbfe','#2563eb', onHold],
-              ['↩️ Refund', '#faf5ff','#e9d5ff','#9333ea', onRefund],
-              ['✂️ Disc',   '#fff7ed','#fed7aa','#ea580c', () => useCartStore.setState({showDiscPanel:true})],
-              ['🗑 Clear',  '#fff1f2','#fecdd3','#e11d48', () => useCartStore.getState().clearCart()],
-            ].map(([label, bg, border, color, action]) => (
-              <button key={label} onClick={action}
-                className="rounded-xl py-2 text-[10px] font-bold cursor-pointer border transition-all"
-                style={{background:bg, borderColor:border, color}}>
-                {label}
-              </button>
-            ))}
-          </div>
+
 
           {/* PAY button */}
           <div className="px-3 pb-3">
