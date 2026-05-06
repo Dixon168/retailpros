@@ -31,10 +31,10 @@ export default function CustomersPage() {
     queryKey: ['customers', tenant?.id, search, filter],
     queryFn: async () => {
       let q = supabase.from('customers')
-        .select('id,code,name,phone,email,type,loyalty_points,credit_balance,is_active,created_at,card_number,card_balance,card_expire_date,member_level,member_since,birthday,gender')
+        .select('id,code,name,phone,email,loyalty_points,credit_balance,is_active,created_at,card_number,card_balance,card_expire_date,member_level,member_since,birthday,gender')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,card_number.ilike.%${search}%,email.ilike.%${search}%`)
-      if (filter === 'vip')       q = q.eq('type','vip')
+      if (filter === 'vip')       q = q.eq('member_level', 'Level 4 - Platinum')
       if (filter === 'owes')      q = q.gt('credit_balance',0)
       if (filter === 'balance')   q = q.gt('card_balance',0)
       if (filter === 'expiring') {
@@ -108,7 +108,7 @@ export default function CustomersPage() {
               <div className="text-[13px]">No customers found</div>
             </div>
           ) : customers.map(c => {
-            const ts = TIER_STYLE[c.tier||c.type] || TIER_STYLE.regular
+            const ts = TIER_STYLE[c.tier||c.member_level?.split(' ')[0]?.toLowerCase()] || TIER_STYLE.regular
             const initials = c.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()
             const isSelected = selected?.id === c.id
             const isExpiring = c.card_expire_date && new Date(c.card_expire_date) < new Date(Date.now()+30*86400000)
@@ -215,7 +215,7 @@ export default function CustomersPage() {
 
 // ── Customer Detail ──
 function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, setActiveTab, onTopup, onEdit, onRefresh }) {
-  const ts = TIER_STYLE[c.tier||c.type] || TIER_STYLE.regular
+  const ts = TIER_STYLE[c.tier||c.member_level?.split(' ')[0]?.toLowerCase()] || TIER_STYLE.regular
   const isExpired  = c.card_expire_date && new Date(c.card_expire_date) < new Date()
   const isExpiring = c.card_expire_date && !isExpired && new Date(c.card_expire_date) < new Date(Date.now()+30*86400000)
 
@@ -347,7 +347,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
               {[
                 ['Card #', c.card_number || '—'],
                 ['Member Code', c.code || '—'],
-                ['Type', c.type || 'regular'],
+                
                 ['Level', c.member_level || '—'],
                 ['Member Since', c.member_since ? new Date(c.member_since).toLocaleDateString() : '—'],
                 ['Expire Date', c.card_expire_date ? new Date(c.card_expire_date).toLocaleDateString() : '—'],
@@ -439,7 +439,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                     <td className="px-3 py-2.5">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                         style={{background:p.type==='earn'?'#dcfce7':p.type==='redeem'?'#fdf4ff':'#f1f5f9', color:p.type==='earn'?'#16a34a':p.type==='redeem'?'#9333ea':'#64748b'}}>
-                        {p.type?.toUpperCase()}
+                        {(p.type||'earn').toUpperCase()}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-[13px] font-bold font-mono"
@@ -803,7 +803,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
     name: customer.name||'', phone: customer.phone||'', email: customer.email||'',
     company: customer.company||'', birthday: customer.birthday||'',
     gender: customer.gender||'', address: customer.billing_address||'',
-    type: customer.type||'regular', notes: customer.notes||'',
+    notes: customer.notes||'',
     card_number: customer.card_number||'', member_level: customer.member_level||'',
     card_expire_date: customer.card_expire_date||'', referrer: customer.referrer||'',
   })
