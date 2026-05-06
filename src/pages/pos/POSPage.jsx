@@ -166,7 +166,7 @@ export default function POSPage() {
 
         {/* Right: Cart */}
         <div className="flex-shrink-0 h-full overflow-hidden flex" style={{width:'420px'}}>
-          <CartPanel onRefund={() => setShowRefund(true)} />
+          <CartPanel onRefund={() => setShowRefund(true)} onHold={() => setShowHold(true)} />
 
         </div>
       </div>

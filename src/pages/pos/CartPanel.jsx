@@ -21,7 +21,7 @@ const SIDE_BTNS = [
   { id:'remark', icon:'📝', label:'Remark' },
 ]
 
-export default function CartPanel({ onRefund }) {
+export default function CartPanel({ onRefund, onHold }) {
   const { user, tenant } = useAuthStore()
   const {
     items, customer, orderDiscount, totals,
@@ -394,7 +394,7 @@ export default function CartPanel({ onRefund }) {
           {/* Action row */}
           <div className="px-3 pb-2 grid grid-cols-4 gap-1.5">
             {[
-              ['📌 Hold',   '#eff6ff','#bfdbfe','#2563eb', () => items.length > 0 ? useCartStore.setState({showHoldForm:true}) : toast.error('Cart is empty')],
+              ['📌 Hold',   '#eff6ff','#bfdbfe','#2563eb', onHold],
               ['↩️ Refund', '#faf5ff','#e9d5ff','#9333ea', onRefund],
               ['✂️ Disc',   '#fff7ed','#fed7aa','#ea580c', () => useCartStore.setState({showDiscPanel:true})],
               ['🗑 Clear',  '#fff1f2','#fecdd3','#e11d48', () => useCartStore.getState().clearCart()],
