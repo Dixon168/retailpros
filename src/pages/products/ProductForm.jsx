@@ -1,5 +1,5 @@
 // src/pages/products/ProductForm.jsx
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -123,6 +123,12 @@ function Toggle({ checked, onChange, label, desc }) {
 export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
   const [upcLooking,  setUpcLooking]  = useState(false)
   const [genDesc,     setGenDesc]     = useState(false)
+  const upcRef = useRef(null)
+
+  // Auto-focus UPC on open
+  useEffect(() => {
+    setTimeout(() => upcRef.current?.focus(), 100)
+  }, [])
   const qc = useQueryClient()
   const fileRef = useRef()
   const [saving,    setSaving]    = useState(false)
@@ -313,10 +319,9 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4 px-4"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)', overflowY:'auto'}} onClick={onClose}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)', overflowY:'auto'}}>
       <div className="flex flex-col rounded-2xl overflow-hidden shadow-2xl w-full"
-        style={{maxWidth:'860px', background:'#f0f2f5', minHeight:'auto'}}
-        onClick={e=>e.stopPropagation()}>
+        style={{maxWidth:'860px', background:'#f0f2f5', minHeight:'auto'}}>
 
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between flex-shrink-0"
