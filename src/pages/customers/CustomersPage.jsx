@@ -654,10 +654,12 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
         tenant_id: tenantId, code,
         name: form.name.trim(), phone: form.phone||null, email: form.email||null,
         company: form.company||null, birthday: form.birthday||null,
-        gender: form.gender||null, billing_address: form.address||null,
-        type: form.type, notes: form.notes||null,
+        gender: form.gender||null,
+        billing_address: form.address||null,
+        type: form.type,
+        notes: form.notes||null,
         card_number: form.card_number||null,
-        member_level: form.member_level||null,
+        member_level: form.member_level || 'Level 1',
         card_expire_date: form.card_expire_date||null,
         is_active: true,
         loyalty_points: 0,
@@ -821,10 +823,13 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
       const { data, error } = await supabase.from('customers').update({
         name: form.name.trim(), phone: form.phone||null, email: form.email||null,
         company: form.company||null, birthday: form.birthday||null,
-        gender: form.gender||null, billing_address: form.address||null,
+        gender: form.gender||null,
+        billing_address: form.address||null,
         type: form.type, notes: form.notes||null,
-        card_number: form.card_number||null, member_level: form.member_level||null,
-        card_expire_date: form.card_expire_date||null, referrer: form.referrer||null,
+        card_number: form.card_number||null,
+        member_level: form.member_level || 'Level 1',
+        card_expire_date: form.card_expire_date||null,
+        referrer: form.referrer||null,
       }).eq('id', customer.id).select().single()
       if (error) throw error
       toast.success('✓ Updated!')
