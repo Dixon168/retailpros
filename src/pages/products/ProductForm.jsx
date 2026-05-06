@@ -19,7 +19,7 @@ async function lookupUPC(upc) {
         found: true,
         name:        p.product_name || p.product_name_en || '',
         brand:       p.brands || '',
-        image_url:   p.image_front_url || p.image_url || '',
+        image_url:   p.image_front_url || p.image_front_small_url || p.image_url || p.image_thumb_url || '',
         description: p.generic_name || '',
         quantity:    p.quantity || '',
         raw:         p,
@@ -308,10 +308,10 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex"
-      style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(4px)'}} onClick={onClose}>
-      <div className="ml-auto flex flex-col h-full overflow-hidden shadow-2xl"
-        style={{width:'min(820px, 100vw)', background:'#f0f2f5'}}
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4 px-4"
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)', overflowY:'auto'}} onClick={onClose}>
+      <div className="flex flex-col rounded-2xl overflow-hidden shadow-2xl w-full"
+        style={{maxWidth:'860px', background:'#f0f2f5', minHeight:'auto'}}
         onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -329,7 +329,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+        <div className="px-6 py-5 flex flex-col gap-4">
 
           {/* ── UPC LOOKUP - TOP ── */}
           <div className="rounded-2xl p-4" style={{background:'linear-gradient(135deg,#eef2ff,#f5f3ff)', border:'2px solid #a5b4fc'}}>
@@ -362,7 +362,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     if (ai.description || off.description)     set('description', ai.description || off.description)
                     if (ai.unit)                               set('unit',        ai.unit)
                     if (ai.suggested_price)                    set('price',       String(ai.suggested_price))
-                    if (off.image_url)                         set('image_url',   off.image_url)
+                    if (off.image_url) set('image_url', off.image_url.replace('http://', 'https://'))
                     toast.success('✓ Product info auto-filled!', {id:toastId})
                   } catch(e) { toast.error('Lookup failed', {id:toastId}) }
                   finally { setUpcLooking(false) }
@@ -444,7 +444,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                         if (ai.description || off.description) set('description', ai.description || off.description)
                         if (ai.unit)                    set('unit',        ai.unit)
                         if (ai.suggested_price)         set('price',       String(ai.suggested_price))
-                        if (off.image_url)              set('image_url',   off.image_url)
+                        if (off.image_url) set('image_url', off.image_url.replace('http://', 'https://'))
                         toast.success('✓ Product info filled!', {id:toastId})
                       } catch(e) {
                         toast.error('Lookup failed', {id:toastId})
