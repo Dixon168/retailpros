@@ -20,7 +20,7 @@ async function lookupUPC(upc) {
         name:        p.product_name || p.product_name_en || '',
         brand:       p.brands || '',
         image_url:   p.image_front_url || p.image_front_small_url || p.image_url || p.image_thumb_url || '',
-        description: p.generic_name || '',
+        description: p.generic_name || p.product_name_en || p.abbreviated_product_name || '',
         quantity:    p.quantity || '',
         raw:         p,
       }
@@ -363,7 +363,9 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     if (ai.unit)                               set('unit',        ai.unit)
                     if (ai.suggested_price)                    set('price',       String(ai.suggested_price))
                     if (off.image_url) set('image_url', off.image_url.replace('http://', 'https://'))
-                    toast.success('✓ Product info auto-filled!', {id:toastId})
+                    // Count what was filled
+                    const filled = [ai.name||off.name, ai.description||off.description, ai.unit, ai.suggested_price, off.image_url].filter(Boolean).length
+                    toast.success(`✓ Auto-filled ${filled} fields from barcode!`, {id:toastId})
                   } catch(e) { toast.error('Lookup failed', {id:toastId}) }
                   finally { setUpcLooking(false) }
                 }}
@@ -383,11 +385,11 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                 <Label>Photo</Label>
                 <div onClick={()=>fileRef.current?.click()}
                   className="rounded-xl overflow-hidden cursor-pointer transition-all hover:opacity-90 relative flex items-center justify-center"
-                  style={{width:'90px', height:'90px', background:'#f1f5f9', border:'2px dashed #cbd5e1'}}>
+                  style={{width:'100px', height:'100px', background:'#f1f5f9', border:'2px dashed #cbd5e1'}}>
                   {uploading ? (
                     <div className="text-[10px] text-slate-400 animate-pulse">Uploading...</div>
                   ) : form.image_url ? (
-                    <img src={form.image_url} alt="" className="w-full h-full object-cover"/>
+                    <img src={form.image_url} alt="" className="w-full h-full" style={{objectFit:'contain', padding:'4px'}}/>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <div className="text-[24px]">📷</div>
@@ -408,7 +410,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                 <div>
                   <Label>Description</Label>
                   <textarea value={form.description} onChange={e=>set('description',e.target.value)}
-                    rows={2} placeholder="Optional..."
+                    rows={3} placeholder="Optional product description..."
                     className="w-full rounded-xl px-3.5 py-2.5 text-[12px] outline-none resize-none transition-all"
                     style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
                     onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.background='#fff'}}
