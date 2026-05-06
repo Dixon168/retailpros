@@ -31,7 +31,7 @@ export default function CustomersPage() {
     queryKey: ['customers', tenant?.id, search, filter],
     queryFn: async () => {
       let q = supabase.from('customers')
-        .select('id,code,card_number,name,phone,email,type,gender,birthday,member_since,card_expire_date,card_balance,loyalty_points,credit_balance,member_level,is_active,created_at')
+        .select('id,code,name,phone,email,type,loyalty_points,credit_balance,is_active,created_at,card_number,card_balance,card_expire_date,member_level,member_since,birthday,gender')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,card_number.ilike.%${search}%,email.ilike.%${search}%`)
       if (filter === 'vip')       q = q.eq('type','vip')
@@ -743,7 +743,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
                 <select value={form.member_level} onChange={e=>setF('member_level',e.target.value)}
                   className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
                   style={{border:'1.5px solid #e2e8f0',background:'#fff'}}>
-                  <option value="">— Select Level —</option>
+                  {memberLevels.length === 0 && <option value="Level 1 - Regular">Level 1 - Regular (default)</option>}
                   {memberLevels.map(l=>(
                     <option key={l.id} value={l.name}>{l.name}</option>
                   ))}
@@ -911,7 +911,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
                 <select value={form.member_level} onChange={e=>setF('member_level',e.target.value)}
                   className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
                   style={{border:'1.5px solid #e2e8f0',background:'#fff'}}>
-                  <option value="">— Select Level —</option>
+                  {memberLevels.length === 0 && <option value="Level 1 - Regular">Level 1 - Regular (default)</option>}
                   {memberLevels.map(l=>(
                     <option key={l.id} value={l.name}>{l.name}</option>
                   ))}
