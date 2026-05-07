@@ -75,6 +75,12 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
               {k}
             </button>
           ))}
+          <button onClick={()=>setInput('')}
+            disabled={!input}
+            className="col-span-3 rounded-xl py-2.5 text-[13px] font-bold cursor-pointer border-2 disabled:opacity-40"
+            style={{background:'#fff7ed',borderColor:'#fed7aa',color:'#ea580c'}}>
+            ✕ Clear
+          </button>
           <button onClick={()=>{ const v=parseFloat(input)||0; if(v>0) onConfirm(v) }}
             disabled={!input||parseFloat(input)<=0}
             className="col-span-3 rounded-2xl py-4 text-[15px] font-black text-white cursor-pointer border-none disabled:opacity-40"
@@ -485,16 +491,22 @@ export default function PaymentPanel() {
                   {k}
                 </button>
               ))}
-              <button onClick={()=>{setPayInput(remaining.toFixed(2));setShowPayPad(false)}}
+              <button onClick={()=>setPayInput('')}
+                disabled={!payInput}
+                className="col-span-3 rounded-xl py-2.5 text-[13px] font-bold cursor-pointer border-2 disabled:opacity-40"
+                style={{background:'#fff7ed',borderColor:'#fed7aa',color:'#ea580c'}}>
+                ✕ Clear
+              </button>
+              <button onClick={()=>{setPayInput(remaining.toFixed(2));setShowPayPad(false);setTimeout(()=>handleAddPayment(),50)}}
                 className="col-span-3 rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2 mb-1"
                 style={{background:'#f0fdf4',borderColor:'#86efac',color:'#16a34a'}}>
-                Exact — ${remaining.toFixed(2)}
+                Exact — ${remaining.toFixed(2)} (auto pay)
               </button>
-              <button onClick={()=>{if(parseFloat(payInput)>0)setShowPayPad(false)}}
+              <button onClick={()=>{if(parseFloat(payInput)>0){setShowPayPad(false);setTimeout(()=>handleAddPayment(),50)}}}
                 disabled={!payInput||parseFloat(payInput)<=0}
                 className="col-span-3 rounded-2xl py-4 text-[15px] font-black text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
-                ✓ Set ${payInput?parseFloat(payInput).toFixed(2):'0.00'}
+                style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+                ✓ Pay ${payInput?parseFloat(payInput).toFixed(2):'0.00'}
               </button>
             </div>
           </div>
