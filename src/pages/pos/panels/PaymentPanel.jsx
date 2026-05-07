@@ -208,22 +208,45 @@ export default function PaymentPanel() {
           {/* Totals breakdown */}
           <div className="flex-shrink-0 px-4 pb-4">
             <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
-              {[
-                ['Subtotal', subtotal, '#1e293b', false],
-                orderDiscountAmt > 0 ? ['✂️ Discount', -orderDiscountAmt, '#16a34a', false] : null,
-                !taxExempt && taxAmount > 0 ? ['Tax', taxAmount, '#1e293b', false] : null,
-                taxExempt ? ['🏛️ Tax Exempt', 0, '#2563eb', false] : null,
-                tip > 0 ? ['🙏 Tip', tip, '#ca8a04', false] : null,
-                feeAmt > 0 ? [`💼 ${feeLabel}`, feeAmt, '#9333ea', false] : null,
-              ].filter(Boolean).map(([label, val, color]) => (
-                <div key={label} className="flex justify-between px-4 py-2.5 text-[12px]"
-                  style={{borderBottom:'1px solid #f1f5f9'}}>
-                  <span style={{color:'#64748b'}}>{label}</span>
-                  <span className="font-mono font-semibold" style={{color}}>
-                    {val < 0 ? '-' : ''}${Math.abs(val).toFixed(2)}
-                  </span>
-                </div>
-              ))}
+              {/* Subtotal - always show */}
+              <div className="flex justify-between px-4 py-2.5 text-[12px]" style={{borderBottom:'1px solid #f1f5f9'}}>
+                <span className="text-slate-400">Subtotal</span>
+                <span className="font-mono font-semibold text-slate-700">${subtotal.toFixed(2)}</span>
+              </div>
+              {/* Discount */}
+              <div className="flex justify-between px-4 py-2.5 text-[12px]"
+                style={{borderBottom:'1px solid #f1f5f9', background: orderDiscountAmt>0?'#f0fdf4':'transparent'}}>
+                <span style={{color: orderDiscountAmt>0?'#16a34a':'#cbd5e1'}}>
+                  ✂️ Discount {orderDiscount?.type==='pct'?`(${orderDiscount.value}%)`:orderDiscount?.type==='amt'?`($${orderDiscount.value})`:''}</span>
+                <span className="font-mono font-bold" style={{color: orderDiscountAmt>0?'#16a34a':'#cbd5e1'}}>
+                  {orderDiscountAmt>0?`-$${orderDiscountAmt.toFixed(2)}`:'-'}
+                </span>
+              </div>
+              {/* Tax */}
+              <div className="flex justify-between px-4 py-2.5 text-[12px]"
+                style={{borderBottom:'1px solid #f1f5f9', background: taxExempt?'#eff6ff':'transparent'}}>
+                <span style={{color: taxExempt?'#2563eb':'#64748b'}}>
+                  {taxExempt?'🏛️ Tax (Exempt)':'Tax'}</span>
+                <span className="font-mono font-semibold" style={{color: taxExempt?'#2563eb':'#64748b'}}>
+                  {taxExempt?'$0.00':`$${taxAmount.toFixed(2)}`}
+                </span>
+              </div>
+              {/* Tip - always show */}
+              <div className="flex justify-between px-4 py-2.5 text-[12px]"
+                style={{borderBottom:'1px solid #f1f5f9', background: tip>0?'#fffbeb':'transparent'}}>
+                <span style={{color: tip>0?'#ca8a04':'#cbd5e1'}}>🙏 Tip</span>
+                <span className="font-mono font-bold" style={{color: tip>0?'#ca8a04':'#cbd5e1'}}>
+                  {tip>0?`$${tip.toFixed(2)}`:'-'}
+                </span>
+              </div>
+              {/* Surcharge - always show */}
+              <div className="flex justify-between px-4 py-2.5 text-[12px]"
+                style={{borderBottom:'1px solid #f1f5f9', background: feeAmt>0?'#fdf4ff':'transparent'}}>
+                <span style={{color: feeAmt>0?'#9333ea':'#cbd5e1'}}>💼 {feeLabel}</span>
+                <span className="font-mono font-bold" style={{color: feeAmt>0?'#9333ea':'#cbd5e1'}}>
+                  {feeAmt>0?`$${feeAmt.toFixed(2)}`:'-'}
+                </span>
+              </div>
               {/* TOTAL */}
               <div className="flex justify-between px-4 py-4 text-[22px] font-black"
                 style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
@@ -296,91 +319,57 @@ export default function PaymentPanel() {
                 Invoice Adjustments
               </div>
               <div className="p-3">
-                {/* Tab buttons */}
-                <div className="grid grid-cols-4 gap-2 mb-3">
+                {/* Adjustment buttons - click = open NumPad, confirm = apply instantly */}
+                <div className="grid grid-cols-2 gap-2">
                   {[
-                    ['disc_pct', '✂️', 'Disc %',    '#16a34a','#f0fdf4','#86efac'],
-                    ['disc_amt', '💰', 'Disc $',    '#2563eb','#eff6ff','#93c5fd'],
-                    ['tip',      '🙏', 'Tip',       '#ca8a04','#fffbeb','#fde047'],
-                    ['fee',      '💼', 'Fee',       '#9333ea','#fdf4ff','#d8b4fe'],
-                  ].map(([id,icon,label,col,bg,bdr]) => (
+                    ['disc_pct', '✂️', 'Discount %',   '#16a34a','#f0fdf4','#86efac', orderDiscount?.type==='pct'?`${orderDiscount.value}%`:null],
+                    ['disc_amt', '💰', 'Discount $',   '#2563eb','#eff6ff','#93c5fd', orderDiscount?.type==='amt'?`$${orderDiscount.value}`:null],
+                    ['tip',      '🙏', 'Tip',          '#ca8a04','#fffbeb','#fde047', tip>0?`$${tip.toFixed(2)}`:null],
+                    ['fee',      '💼', 'Surcharge',    '#9333ea','#fdf4ff','#d8b4fe', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
+                  ].map(([id,icon,label,col,bg,bdr,applied]) => (
                     <button key={id}
-                      onClick={() => { setAdjTab(adjTab===id?null:id); setAdjVal('') }}
-                      className="flex flex-col items-center py-3 rounded-xl cursor-pointer border-2 transition-all"
-                      style={adjTab===id
-                        ? {background:bg, borderColor:col, color:col}
-                        : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#94a3b8'}}>
-                      <span className="text-[20px] mb-1">{icon}</span>
-                      <span className="text-[10px] font-bold">{label}</span>
+                      onClick={() => { setAdjTab(id); setAdjVal(''); setShowAdjPad(true) }}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer border-2 transition-all"
+                      style={applied
+                        ? {background:bg, borderColor:col}
+                        : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
+                      <span className="text-[20px]">{icon}</span>
+                      <div className="flex-1 text-left">
+                        <div className="text-[12px] font-bold" style={{color:applied?col:'#64748b'}}>{label}</div>
+                        {applied
+                          ? <div className="text-[11px] font-black" style={{color:col}}>{applied}</div>
+                          : <div className="text-[10px] text-slate-400">Tap to set</div>
+                        }
+                      </div>
+                      {applied && (
+                        <button onClick={e=>{e.stopPropagation();
+                          if(id==='disc_pct'||id==='disc_amt') setOrderDiscount(null)
+                          else if(id==='tip') setTip(0)
+                          else setFeeAmt(0)
+                        }} className="w-6 h-6 rounded-full bg-transparent border-none cursor-pointer text-[12px] flex items-center justify-center"
+                          style={{color:col}}>✕</button>
+                      )}
                     </button>
                   ))}
                 </div>
 
-                {/* Applied badges */}
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {orderDiscount && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                      style={{background:'#f0fdf4', color:'#16a34a', border:'1px solid #86efac'}}>
-                      ✂️ {orderDiscount.type==='pct' ? `${orderDiscount.value}%` : `$${orderDiscount.value}`} off
-                      <button onClick={()=>setOrderDiscount(null)} className="bg-transparent border-none cursor-pointer text-[12px]">✕</button>
-                    </span>
-                  )}
-                  {tip > 0 && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                      style={{background:'#fffbeb', color:'#ca8a04', border:'1px solid #fde047'}}>
-                      🙏 Tip ${tip.toFixed(2)}
-                      <button onClick={()=>setTip(0)} className="bg-transparent border-none cursor-pointer text-[12px]">✕</button>
-                    </span>
-                  )}
-                  {feeAmt > 0 && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                      style={{background:'#fdf4ff', color:'#9333ea', border:'1px solid #d8b4fe'}}>
-                      💼 {feeLabel} ${feeAmt.toFixed(2)}
-                      <button onClick={()=>setFeeAmt(0)} className="bg-transparent border-none cursor-pointer text-[12px]">✕</button>
-                    </span>
-                  )}
-                  {taxExempt && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                      style={{background:'#eff6ff', color:'#2563eb', border:'1px solid #93c5fd'}}>
-                      🏛️ Tax Exempt
-                      <button onClick={()=>setTaxExempt(false)} className="bg-transparent border-none cursor-pointer text-[12px]">✕</button>
-                    </span>
-                  )}
-                  <button onClick={()=>setTaxExempt(!taxExempt)}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer border transition-all"
-                    style={taxExempt
-                      ? {background:'#eff6ff',borderColor:'#93c5fd',color:'#2563eb'}
-                      : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#94a3b8'}}>
-                    🏛️ Tax Exempt
-                  </button>
-                </div>
-
-                {/* Adjustment input */}
-                {adjTab && adjTab !== 'tax_exempt' && (
-                  <div className="flex gap-2 mt-2">
-                    {adjTab === 'fee' && (
-                      <input value={feeLabel} onChange={e=>setFeeLabel(e.target.value)}
-                        className="rounded-xl px-3 py-2.5 text-[12px] outline-none border"
-                        style={{width:'120px', borderColor:'#e2e8f0', background:'#f8fafc'}}
-                        placeholder="Fee name"/>
-                    )}
-                    <button onClick={()=>setShowAdjPad(true)}
-                      className="flex-1 rounded-xl px-4 py-3 text-left cursor-pointer border-2 transition-all"
-                      style={{borderColor: adjVal?'#a5b4fc':'#e2e8f0', background: adjVal?'#eef2ff':'#f8fafc'}}>
-                      <span className="text-[22px] font-black font-mono"
-                        style={{color: adjVal?'#6366f1':'#94a3b8'}}>
-                        {adjVal
-                          ? (adjTab==='disc_pct' ? `${adjVal}%` : `$${parseFloat(adjVal).toFixed(2)}`)
-                          : (adjTab==='disc_pct' ? '0%' : '$0.00')}
-                      </span>
-                    </button>
-                    <button onClick={applyAdj} disabled={!adjVal}
-                      className="rounded-xl px-5 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                      style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
-                      ✓ Apply
-                    </button>
+                {/* Tax Exempt toggle */}
+                <button onClick={()=>setTaxExempt(!taxExempt)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer border-2 transition-all mt-2"
+                  style={taxExempt
+                    ? {background:'#eff6ff', borderColor:'#93c5fd'}
+                    : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
+                  <span className="text-[20px]">🏛️</span>
+                  <div className="flex-1 text-left">
+                    <div className="text-[12px] font-bold" style={{color:taxExempt?'#2563eb':'#64748b'}}>Tax Exempt</div>
+                    <div className="text-[10px]" style={{color:taxExempt?'#2563eb':'#94a3b8'}}>
+                      {taxExempt ? 'Applied — no tax on this order' : 'Tap to apply'}
+                    </div>
                   </div>
-                )}
+                  <div className={`w-10 h-6 rounded-full transition-all flex items-center px-1 ${taxExempt?'bg-blue-500 justify-end':'bg-slate-200 justify-start'}`}>
+                    <div className="w-4 h-4 rounded-full bg-white shadow"/>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -525,11 +514,20 @@ export default function PaymentPanel() {
 
       {/* NumPads */}
       {showAdjPad && (
-        <NumPad title={adjTab==='disc_pct'?'Discount %':adjTab==='tip'?'Tip Amount':adjTab==='fee'?'Fee Amount':'Discount $'}
+        <NumPad
+          title={adjTab==='disc_pct'?'Discount %':adjTab==='tip'?'Add Tip':adjTab==='fee'?'Surcharge Amount':'Discount $'}
           prefix={adjTab!=='disc_pct'?'$':''} suffix={adjTab==='disc_pct'?'%':''}
           value={adjVal} onChange={setAdjVal}
           allowNegative={false} allowDecimal={true}
-          onConfirm={v=>{setAdjVal(String(v));setShowAdjPad(false)}}
+          onConfirm={v=>{
+            const val = v
+            if (adjTab==='disc_pct')       { setOrderDiscount({type:'pct', value:val}); toast.success(`✂️ ${val}% discount`) }
+            else if (adjTab==='disc_amt')  { setOrderDiscount({type:'amt', value:val}); toast.success(`✂️ $${val.toFixed(2)} discount`) }
+            else if (adjTab==='tip')       { setTip(val); toast.success(`🙏 Tip $${val.toFixed(2)}`) }
+            else if (adjTab==='fee')       { setFeeAmt(val); toast.success(`💼 Surcharge $${val.toFixed(2)}`) }
+            setAdjVal(String(val))
+            setShowAdjPad(false)
+          }}
           onClose={()=>setShowAdjPad(false)}/>
       )}
       {showPayPad && (
