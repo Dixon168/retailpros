@@ -360,10 +360,65 @@ export default function OrderLookupPage() {
   }
 
   const handleVoid = async (o) => {
-    if (!window.confirm('Void this order?')) return
-    await supabase.from('orders').update({ status:'voided' }).eq('id', o.id)
-    toast.success('Order voided')
-    setSelected(s => s?.id===o.id ? {...s, status:'voided'} : s)
+    const payMethods = o.order_payments || []
+    const total = parseFloat(o.grand_total || 0)
+    const hasCash = payMethods.some(p => p.method === 'cash')
+    const hasCard = payMethods.some(p => ['card','credit_card','debit_card'].includes(p.method))
+    const hasMember = payMethods.some(p => ['member_card','vip_card'].includes(p.method))
+
+    // Build confirmation message
+    let msg = `Void order ${o.order_number}?\n\nAmount: $${total.toFixed(2)}\n`
+    if (hasCash) msg += `\n💵 Cash — please return $${total.toFixed(2)} to customer from drawer`
+    if (hasCard) msg += `\n💳 Card — authorization will be voided at terminal`
+    if (hasMember) msg += `\n🏷️ VIP Card — balance will be restored to customer`
+    msg += `\n\nThis void will be recorded on TODAY's report (${new Date().toLocaleDateString()})`
+
+    if (!window.confirm(msg)) return
+
+    try {
+      // 1. Mark order as voided
+      await supabase.from('orders').update({
+        status: 'voided',
+        voided_at: new Date().toISOString(),
+        voided_by: user?.id,
+        voided_by_name: user?.name,
+      }).eq('id', o.id)
+
+      // 2. Create adjustment record on TODAY (not original date)
+      for (const p of payMethods) {
+        await supabase.from('order_adjustments').insert({
+          tenant_id:      tenant.id,
+          order_id:       o.id,
+          order_number:   o.order_number,
+          type:           'void',
+          amount:         -parseFloat(p.amount || 0),
+          payment_method: p.method,
+          reason:         `Void of order ${o.order_number} (original: ${new Date(o.created_at).toLocaleDateString()})`,
+          staff_id:       user?.id,
+          staff_name:     user?.name,
+        })
+      }
+
+      // 3. Restore member card balance if applicable
+      if (hasMember && o.customer_id) {
+        const memberPay = payMethods.filter(p => ['member_card','vip_card'].includes(p.method))
+        const restoreAmt = memberPay.reduce((s,p) => s + parseFloat(p.amount||0), 0)
+        if (restoreAmt > 0) {
+          const { data: cust } = await supabase.from('customers')
+            .select('card_balance').eq('id', o.customer_id).single()
+          if (cust) {
+            await supabase.from('customers').update({
+              card_balance: (cust.card_balance || 0) + restoreAmt
+            }).eq('id', o.customer_id)
+          }
+        }
+      }
+
+      toast.success(`✓ Order ${o.order_number} voided — recorded on today's report`)
+      setSelected(s => s?.id===o.id ? {...s, status:'voided'} : s)
+    } catch(e) {
+      toast.error('Void failed: ' + e.message)
+    }
   }
 
 
