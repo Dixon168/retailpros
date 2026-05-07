@@ -26,7 +26,7 @@ export default function PaymentPanel() {
   const { totals, payments, addPayment, removePayment, paidAmount, submitOrder } = useCartStore()
   const { user, tenant, store } = useAuthStore()
   const { terminal, paxOnline } = useTerminalStore()
-  const { grandTotal } = totals()
+  const { grandTotal } = totals() // kept for compat
 
   const [selectedMethod, setSelectedMethod] = useState('cash')
   const [amountInput,  setAmountInput]      = useState(grandTotal.toFixed(2))
@@ -193,10 +193,17 @@ export default function PaymentPanel() {
     { id: 'on_account',    icon: '📋', label: 'On Account',  enabled: terminal?.accept_on_account   !== false },
   ].filter(m => m.enabled)
 
+  // Live totals with adjustments
+  const { subtotal, taxAmount, orderDiscountAmt, grandTotal: liveTotal } = totals()
+  const { items, customer, orderDiscount, tipAmount: cartTip } = useCartStore.getState()
+  const livePaid      = paidAmount()
+  const liveRemaining = Math.max(0, liveTotal - livePaid)
+  const liveChange    = livePaid > liveTotal ? livePaid - liveTotal : 0
+
   return (
     <Overlay onClose={paxState !== 'idle' ? undefined : close}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl"
-        style={{width:'580px', maxHeight:'95vh', overflowY:'auto', background:'#fff'}}>
+      <div className="rounded-2xl overflow-hidden shadow-2xl flex"
+        style={{width:'920px', maxHeight:'95vh', background:'#fff'}}>
 
         {/* Header */}
         <div className="px-6 py-4 flex justify-between items-center"
@@ -222,6 +229,116 @@ export default function PaymentPanel() {
             </button>
           </div>
         </div>
+
+        {/* ── LEFT: Receipt Preview ── */}
+        <div className="flex flex-col flex-shrink-0 overflow-y-auto"
+          style={{width:'320px', background:'#f8fafc', borderRight:'1px solid #e2e8f0'}}>
+
+          {/* Receipt header */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Order Summary</div>
+
+            {/* Customer */}
+            {customer && (
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2 mb-3"
+                style={{background:'#e0e7ff', border:'1px solid #c7d2fe'}}>
+                <span className="text-[14px]">👤</span>
+                <div>
+                  <div className="text-[12px] font-bold text-indigo-700">{customer.name}</div>
+                  {customer.loyalty_points > 0 && (
+                    <div className="text-[10px] text-indigo-500">💎 {customer.loyalty_points} pts</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Items list */}
+            <div className="rounded-xl overflow-hidden mb-3" style={{border:'1px solid #e2e8f0'}}>
+              <div className="grid px-3 py-2 text-[9px] font-bold text-slate-400 uppercase"
+                style={{gridTemplateColumns:'1fr 30px 60px', background:'#f1f5f9'}}>
+                <div>Item</div><div className="text-center">Qty</div><div className="text-right">Total</div>
+              </div>
+              {items.map((item, i) => (
+                <div key={i} className="grid px-3 py-2 text-[11px]"
+                  style={{gridTemplateColumns:'1fr 30px 60px',
+                    borderTop:'1px solid #f1f5f9',
+                    background: item.qty < 0 ? '#fef2f2' : '#fff'}}>
+                  <div>
+                    <div className="font-semibold text-slate-700 leading-tight truncate">{item.name}</div>
+                    <div className="text-[10px] text-slate-400">${item.unitPrice.toFixed(2)}</div>
+                    {item.note && <div className="text-[10px] text-indigo-500 truncate">📝 {item.note}</div>}
+                  </div>
+                  <div className="text-center font-mono text-slate-500 self-center"
+                    style={{color: item.qty<0?'#ef4444':''}}>
+                    {item.qty<0?'↩':''}{Math.abs(item.qty)}
+                  </div>
+                  <div className="text-right font-bold font-mono self-center"
+                    style={{color: item.qty<0?'#ef4444':'#1e293b'}}>
+                    ${Math.abs(item.unitPrice * item.qty).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals breakdown - live update */}
+            <div className="rounded-xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
+              <div className="flex justify-between px-3 py-2 text-[11px]" style={{borderBottom:'1px solid #f1f5f9'}}>
+                <span className="text-slate-400">Subtotal</span>
+                <span className="font-mono text-slate-700">${subtotal.toFixed(2)}</span>
+              </div>
+              {taxAmount > 0 && (
+                <div className="flex justify-between px-3 py-2 text-[11px]" style={{borderBottom:'1px solid #f1f5f9'}}>
+                  <span className="text-slate-400">Tax</span>
+                  <span className="font-mono text-slate-700">${taxAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {orderDiscountAmt > 0 && (
+                <div className="flex justify-between px-3 py-2 text-[11px]" style={{borderBottom:'1px solid #f1f5f9', background:'#f0fdf4'}}>
+                  <span className="text-green-600 font-semibold">✂️ Discount
+                    {orderDiscount?.type==='pct' ? ` (${orderDiscount.value}%)` : ''}
+                  </span>
+                  <span className="font-mono text-green-600 font-bold">-${orderDiscountAmt.toFixed(2)}</span>
+                </div>
+              )}
+              {(cartTip||0) > 0 && (
+                <div className="flex justify-between px-3 py-2 text-[11px]" style={{borderBottom:'1px solid #f1f5f9', background:'#fffbeb'}}>
+                  <span className="text-amber-600 font-semibold">🙏 Tip</span>
+                  <span className="font-mono text-amber-600 font-bold">+${(cartTip||0).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between px-3 py-3 text-[15px] font-black"
+                style={{background:'#f0f4ff'}}>
+                <span style={{color:'#1e293b'}}>TOTAL</span>
+                <span className="font-mono" style={{color:'#6366f1'}}>${liveTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Payment summary */}
+            {livePaid > 0 && (
+              <div className="mt-3 rounded-xl px-3 py-2" style={{background:'#f0fdf4', border:'1px solid #86efac'}}>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-500">Paid</span>
+                  <span className="font-mono font-bold text-green-600">${livePaid.toFixed(2)}</span>
+                </div>
+                {liveRemaining > 0 && (
+                  <div className="flex justify-between text-[11px] mt-1">
+                    <span className="text-slate-500">Remaining</span>
+                    <span className="font-mono font-bold text-red-500">${liveRemaining.toFixed(2)}</span>
+                  </div>
+                )}
+                {liveChange > 0 && (
+                  <div className="flex justify-between text-[13px] font-bold mt-1">
+                    <span className="text-slate-700">Change</span>
+                    <span className="font-mono text-blue-600">${liveChange.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── RIGHT: Payment ── */}
+        <div className="flex-1 flex flex-col overflow-y-auto">
 
         {/* ── Invoice Adjustments ── */}
         {(() => {
