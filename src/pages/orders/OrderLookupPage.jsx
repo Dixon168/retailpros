@@ -180,28 +180,38 @@ export default function OrderLookupPage() {
             <div className="p-4 flex flex-col gap-3">
               {/* Order header */}
               <div className="rounded-xl p-3" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
-                {selected._source === 'held' ? (
-                  <>
-                    <div className="text-[14px] font-bold text-amber-600">📌 {selected.label||'Held Order'}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
-                      {format(new Date(selected.created_at),'MMM d, h:mm a')} · {selected.held_by_name}
-                    </div>
-                  </>
+                {/* Order # */}
+                {selected._source==='held' ? (
+                  <div className="text-[14px] font-bold text-amber-600">📌 {selected.label||'Held Order'}</div>
                 ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-bold font-mono" style={{color:'#6366f1'}}>{selected.order_number}</span>
-                      {(() => { const ss=STATUS[getStatus(selected)]; return ss ? (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={ss}>{ss.label}</span>
-                      ) : null })()}
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
-                      {format(new Date(selected.created_at),'MMM d, h:mm a')}
-                      {selected.customers?.name && <span className="ml-1.5">· {selected.customers.name}</span>}
-                    </div>
-                  </>
+                  <div className="text-[15px] font-black font-mono" style={{color:'#6366f1'}}>{selected.order_number}</div>
                 )}
-                <div className="text-[20px] font-black font-mono mt-1" style={{color:'#1e293b'}}>
+                {/* Status badge */}
+                {(() => { const ss=STATUS[getStatus(selected)]; return ss ? (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full inline-block mt-1" style={ss}>{ss.label}</span>
+                ) : null })()}
+                {/* Date & Time */}
+                <div className="text-[11px] text-slate-400 mt-1">
+                  📅 {format(new Date(selected.created_at),'MMM d, yyyy h:mm a')}
+                </div>
+                {/* Customer */}
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  👤 {selected.customers?.name || 'Walk-in'}
+                  {selected.users?.name && <span className="ml-2 text-slate-400">· {selected.users.name}</span>}
+                </div>
+                {/* Payment */}
+                {(selected.order_payments||[]).length > 0 && (
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {selected.order_payments.map((p,i) => (
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded"
+                        style={{background:'#f1f5f9',color:'#475569'}}>
+                        {PAY_ICON[p.method]||'💰'} {PAY_LABEL[p.method]||p.method} ${parseFloat(p.amount).toFixed(0)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Amount */}
+                <div className="text-[22px] font-black font-mono mt-2" style={{color:'#1e293b'}}>
                   ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
                 </div>
               </div>
@@ -362,6 +372,18 @@ export default function OrderLookupPage() {
           </div>
         </div>
 
+        {/* Column headers */}
+        <div className="flex-shrink-0 grid px-5 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider"
+          style={{gridTemplateColumns:'160px 130px 140px 100px 110px 90px 40px', borderBottom:'1.5px solid #e2e8f0', background:'#f8fafc'}}>
+          <div>Order #</div>
+          <div>Date & Time</div>
+          <div>Customer</div>
+          <div className="text-right">Amount</div>
+          <div className="text-center">Order Status</div>
+          <div className="text-center">Payment</div>
+          <div></div>
+        </div>
+
         {/* Order List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
@@ -377,52 +399,64 @@ export default function OrderLookupPage() {
             const isHeld = o._source === 'held'
             const isSelected = selected?.id === o.id
             const payMethods = o.order_payments || []
+            const payStr = payMethods.map(p => PAY_ICON[p.method]||'💰').join(' ') || '—'
             return (
               <div key={o.id}
-                className="flex items-center gap-4 px-5 py-3.5 border-b cursor-pointer transition-all"
+                className="grid items-center px-5 py-3 border-b cursor-pointer transition-all"
                 style={{
+                  gridTemplateColumns:'160px 130px 140px 100px 110px 90px 40px',
                   borderColor:'#f8fafc',
                   background: isSelected ? '#f0f4ff' : '#fff',
                   borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
                 }}
                 onClick={() => setSelected(o)}>
 
-                {/* Order info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    {isHeld ? (
-                      <span className="text-[13px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
-                    ) : (
-                      <span className="text-[13px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
-                    )}
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={ss}>{ss.label}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    {format(new Date(o.created_at),'MMM d, h:mma')}
-                    {o.customers?.name && <span className="ml-1.5">· {o.customers.name}</span>}
-                    {o.users?.name && <span className="ml-1.5">· {o.users.name}</span>}
-                  </div>
-                  {payMethods.length > 0 && (
-                    <div className="flex gap-1 mt-1">
-                      {payMethods.map((p,i) => (
-                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded"
-                          style={{background:'#f1f5f9',color:'#475569'}}>
-                          {PAY_ICON[p.method]||'💰'} ${parseFloat(p.amount).toFixed(0)}
-                        </span>
-                      ))}
-                    </div>
+                {/* Order # */}
+                <div>
+                  {isHeld ? (
+                    <span className="text-[12px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
+                  ) : (
+                    <span className="text-[12px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
                   )}
                 </div>
 
-                {/* Amount + view */}
-                <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
-                  <div className="text-[15px] font-black font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400">
-                      {(o.order_items||o.cart_snapshot?.items||[]).length} items
-                    </span>
-                    <span className="text-[15px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
+                {/* Date & Time */}
+                <div>
+                  <div className="text-[12px] text-slate-700">{format(new Date(o.created_at),'MMM d, yyyy')}</div>
+                  <div className="text-[11px] text-slate-400">{format(new Date(o.created_at),'h:mm a')}</div>
+                </div>
+
+                {/* Customer */}
+                <div>
+                  <div className="text-[12px] text-slate-700 truncate">
+                    {o.customers?.name || <span className="text-slate-400">Walk-in</span>}
                   </div>
+                  {o.users?.name && <div className="text-[10px] text-slate-400 truncate">Staff: {o.users.name}</div>}
+                </div>
+
+                {/* Amount */}
+                <div className="text-right">
+                  <div className="text-[14px] font-black font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
+                  <div className="text-[10px] text-slate-400">{(o.order_items||o.cart_snapshot?.items||[]).length} items</div>
+                </div>
+
+                {/* Order Status */}
+                <div className="flex justify-center">
+                  <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={ss}>{ss.label}</span>
+                </div>
+
+                {/* Payment methods */}
+                <div className="flex flex-wrap justify-center gap-1">
+                  {payMethods.length > 0 ? payMethods.map((p,i) => (
+                    <span key={i} className="text-[14px]" title={PAY_LABEL[p.method]||p.method}>
+                      {PAY_ICON[p.method]||'💰'}
+                    </span>
+                  )) : <span className="text-[11px] text-slate-300">—</span>}
+                </div>
+
+                {/* View icon */}
+                <div className="flex justify-center">
+                  <span className="text-[16px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
                 </div>
               </div>
             )
