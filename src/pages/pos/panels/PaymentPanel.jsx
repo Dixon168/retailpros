@@ -19,6 +19,105 @@ const PAX_STATE = {
   error:      { icon: '⚠️', label: 'Error' },
 }
 
+// ── Custom NumPad with $ / % toggle ──
+function DiscountNumPad({ adjTab, discMode, setDiscMode, value, onChange, onConfirm, onClose }) {
+  const [input, setInput] = useState(value || '')
+
+  const isDisc = adjTab === 'disc'
+  const title = adjTab==='disc' ? 'Discount' : adjTab==='tip' ? 'Add Tip' : 'Surcharge'
+  const icon  = adjTab==='disc' ? '✂️' : adjTab==='tip' ? '🙏' : '💼'
+
+  const press = (k) => {
+    if (k === '⌫') { setInput(i => i.slice(0,-1)); return }
+    if (k === '.' && input.includes('.')) return
+    if (input.length >= 7) return
+    setInput(i => i + k)
+  }
+
+  const confirm = () => {
+    const v = parseFloat(input) || 0
+    if (v <= 0) return
+    onConfirm(v)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center"
+      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(6px)'}}>
+      <div className="rounded-3xl overflow-hidden shadow-2xl"
+        style={{width:'340px', background:'#fff'}}>
+
+        {/* Header */}
+        <div className="px-5 py-4 flex items-center justify-between"
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          <div className="text-[16px] font-bold text-white">{icon} {title}</div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer text-white flex items-center justify-center">✕</button>
+        </div>
+
+        {/* $ / % toggle - only for discount */}
+        {isDisc && (
+          <div className="flex gap-2 px-5 pt-4">
+            <button onClick={() => { setDiscMode('pct'); setInput('') }}
+              className="flex-1 py-3 rounded-xl text-[15px] font-black cursor-pointer border-2 transition-all"
+              style={discMode==='pct'
+                ? {background:'#e0e7ff', borderColor:'#6366f1', color:'#6366f1'}
+                : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#94a3b8'}}>
+              % Percent
+            </button>
+            <button onClick={() => { setDiscMode('amt'); setInput('') }}
+              className="flex-1 py-3 rounded-xl text-[15px] font-black cursor-pointer border-2 transition-all"
+              style={discMode==='amt'
+                ? {background:'#dcfce7', borderColor:'#16a34a', color:'#16a34a'}
+                : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#94a3b8'}}>
+              $ Amount
+            </button>
+          </div>
+        )}
+
+        {/* Display */}
+        <div className="px-5 py-4 text-center">
+          <div className="text-[11px] text-slate-400 mb-1">
+            {isDisc ? (discMode==='pct' ? 'Enter discount percentage' : 'Enter discount amount') :
+             adjTab==='tip' ? 'Enter tip amount' : 'Enter surcharge amount'}
+          </div>
+          <div className="rounded-2xl py-4 flex items-center justify-center gap-1"
+            style={{background:'#f0f4ff', border:'2px solid #a5b4fc'}}>
+            {!isDisc || discMode==='amt' ? (
+              <span className="text-[28px] font-black text-indigo-400">$</span>
+            ) : null}
+            <span className="text-[42px] font-black font-mono" style={{color:'#6366f1'}}>
+              {input || '0'}
+            </span>
+            {isDisc && discMode==='pct' ? (
+              <span className="text-[28px] font-black text-indigo-400">%</span>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Keys */}
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+          {['7','8','9','4','5','6','1','2','3','.','0','⌫'].map(k => (
+            <button key={k} onClick={() => press(k)}
+              className="rounded-xl py-4 text-[20px] font-bold cursor-pointer border transition-all active:scale-95"
+              style={k==='⌫'
+                ? {background:'#fff1f2', borderColor:'#fecdd3', color:'#ef4444'}
+                : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#1e293b', boxShadow:'0 2px 0 #d1d5db'}}>
+              {k}
+            </button>
+          ))}
+          <button onClick={confirm} disabled={!input || parseFloat(input)<=0}
+            className="col-span-3 rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none disabled:opacity-40 mt-1"
+            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow:'0 4px 16px rgba(99,102,241,0.35)'}}>
+            ✓ Apply {isDisc && input ? (discMode==='pct'?`${input}% off`:`$${parseFloat(input).toFixed(2)} off`) :
+                     input ? `$${parseFloat(input).toFixed(2)}` : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 const METHODS = [
   { id:'cash',          icon:'💵', label:'Cash',        color:'#16a34a', bg:'#f0fdf4', border:'#86efac' },
   { id:'card',          icon:'💳', label:'Card',        color:'#2563eb', bg:'#eff6ff', border:'#93c5fd' },
@@ -42,8 +141,9 @@ export default function PaymentPanel() {
   const [taxExempt,  setTaxExempt]  = useState(false)
 
   // Adjustment states
-  const [adjTab,     setAdjTab]     = useState(null) // null | 'disc_pct' | 'disc_amt' | 'tip' | 'fee'
+  const [adjTab,     setAdjTab]     = useState(null) // null | 'disc' | 'tip' | 'fee'
   const [adjVal,     setAdjVal]     = useState('')
+  const [discMode,   setDiscMode]   = useState('pct') // 'pct' | 'amt'
   const [feeLabel,   setFeeLabel]   = useState('Service Fee')
   const [feeAmt,     setFeeAmt]     = useState(0)
   const [showAdjPad, setShowAdjPad] = useState(false)
@@ -319,35 +419,33 @@ export default function PaymentPanel() {
                 Invoice Adjustments
               </div>
               <div className="p-3">
-                {/* Adjustment buttons - click = open NumPad, confirm = apply instantly */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Adjustment buttons */}
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    ['disc_pct', '✂️', 'Discount %',   '#16a34a','#f0fdf4','#86efac', orderDiscount?.type==='pct'?`${orderDiscount.value}%`:null],
-                    ['disc_amt', '💰', 'Discount $',   '#2563eb','#eff6ff','#93c5fd', orderDiscount?.type==='amt'?`$${orderDiscount.value}`:null],
-                    ['tip',      '🙏', 'Tip',          '#ca8a04','#fffbeb','#fde047', tip>0?`$${tip.toFixed(2)}`:null],
-                    ['fee',      '💼', 'Surcharge',    '#9333ea','#fdf4ff','#d8b4fe', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
-                  ].map(([id,icon,label,col,bg,bdr,applied]) => (
+                    ['disc', '✂️', 'Discount', '#16a34a','#f0fdf4',
+                      orderDiscount ? (orderDiscount.type==='pct'?`${orderDiscount.value}%`:`$${orderDiscount.value}`) : null],
+                    ['tip',  '🙏', 'Tip',      '#ca8a04','#fffbeb', tip>0?`$${tip.toFixed(2)}`:null],
+                    ['fee',  '💼', 'Surcharge','#9333ea','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
+                  ].map(([id,icon,label,col,bg,applied]) => (
                     <button key={id}
                       onClick={() => { setAdjTab(id); setAdjVal(''); setShowAdjPad(true) }}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer border-2 transition-all"
+                      className="flex flex-col items-center py-3.5 rounded-xl cursor-pointer border-2 transition-all"
                       style={applied
                         ? {background:bg, borderColor:col}
                         : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
-                      <span className="text-[20px]">{icon}</span>
-                      <div className="flex-1 text-left">
-                        <div className="text-[12px] font-bold" style={{color:applied?col:'#64748b'}}>{label}</div>
-                        {applied
-                          ? <div className="text-[11px] font-black" style={{color:col}}>{applied}</div>
-                          : <div className="text-[10px] text-slate-400">Tap to set</div>
-                        }
-                      </div>
+                      <span className="text-[22px] mb-1">{icon}</span>
+                      <div className="text-[11px] font-bold" style={{color:applied?col:'#64748b'}}>{label}</div>
+                      {applied
+                        ? <div className="text-[12px] font-black mt-0.5" style={{color:col}}>{applied}</div>
+                        : <div className="text-[10px] text-slate-400 mt-0.5">Tap to set</div>
+                      }
                       {applied && (
                         <button onClick={e=>{e.stopPropagation();
-                          if(id==='disc_pct'||id==='disc_amt') setOrderDiscount(null)
+                          if(id==='disc') setOrderDiscount(null)
                           else if(id==='tip') setTip(0)
                           else setFeeAmt(0)
-                        }} className="w-6 h-6 rounded-full bg-transparent border-none cursor-pointer text-[12px] flex items-center justify-center"
-                          style={{color:col}}>✕</button>
+                        }} className="mt-1 text-[10px] px-2 py-0.5 rounded-full border-none cursor-pointer font-bold"
+                          style={{background:'rgba(0,0,0,0.08)', color:col}}>✕ Remove</button>
                       )}
                     </button>
                   ))}
@@ -514,21 +612,22 @@ export default function PaymentPanel() {
 
       {/* NumPads */}
       {showAdjPad && (
-        <NumPad
-          title={adjTab==='disc_pct'?'Discount %':adjTab==='tip'?'Add Tip':adjTab==='fee'?'Surcharge Amount':'Discount $'}
-          prefix={adjTab!=='disc_pct'?'$':''} suffix={adjTab==='disc_pct'?'%':''}
+        <DiscountNumPad
+          adjTab={adjTab}
+          discMode={discMode} setDiscMode={setDiscMode}
           value={adjVal} onChange={setAdjVal}
-          allowNegative={false} allowDecimal={true}
-          onConfirm={v=>{
-            const val = v
-            if (adjTab==='disc_pct')       { setOrderDiscount({type:'pct', value:val}); toast.success(`✂️ ${val}% discount`) }
-            else if (adjTab==='disc_amt')  { setOrderDiscount({type:'amt', value:val}); toast.success(`✂️ $${val.toFixed(2)} discount`) }
-            else if (adjTab==='tip')       { setTip(val); toast.success(`🙏 Tip $${val.toFixed(2)}`) }
-            else if (adjTab==='fee')       { setFeeAmt(val); toast.success(`💼 Surcharge $${val.toFixed(2)}`) }
-            setAdjVal(String(val))
-            setShowAdjPad(false)
+          onConfirm={v => {
+            if (adjTab==='disc') {
+              setOrderDiscount({type:discMode, value:v})
+              toast.success(`✂️ ${discMode==='pct'?v+'%':'$'+v.toFixed(2)} discount applied`)
+            } else if (adjTab==='tip') {
+              setTip(v); toast.success(`🙏 Tip $${v.toFixed(2)}`)
+            } else if (adjTab==='fee') {
+              setFeeAmt(v); toast.success(`💼 Surcharge $${v.toFixed(2)}`)
+            }
+            setAdjVal(String(v)); setShowAdjPad(false)
           }}
-          onClose={()=>setShowAdjPad(false)}/>
+          onClose={() => setShowAdjPad(false)}/>
       )}
       {showPayPad && (
         <NumPad title="Payment Amount" prefix="$"
