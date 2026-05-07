@@ -195,29 +195,31 @@ export default function PaymentPanel() {
 
   return (
     <Overlay onClose={paxState !== 'idle' ? undefined : close}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[480px]
-        max-h-[90vh] overflow-y-auto">
+      <div className="rounded-2xl overflow-hidden shadow-2xl"
+        style={{width:'580px', maxHeight:'95vh', overflowY:'auto', background:'#fff'}}>
 
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#1e2d42] flex justify-between items-start">
+        <div className="px-6 py-4 flex justify-between items-center"
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
           <div>
-            <div className="text-[16px] font-bold">💳 Payment</div>
-            <div className="text-[24px] font-bold text-blue-400 font-mono mt-1">
+            <div className="text-[14px] font-bold text-white opacity-80">💳 Payment</div>
+            <div className="text-[32px] font-black text-white font-mono leading-none mt-1">
               ${grandTotal.toFixed(2)}
             </div>
           </div>
-          {/* Terminal + PAX status */}
           <div className="text-right">
-            <div className="text-[10px] font-mono text-[#3d5068]">{terminal?.name || 'Terminal'}</div>
+            <div className="text-[11px] text-indigo-200">{terminal?.name || 'Terminal'}</div>
             {terminal?.pax_enabled && (
-              <div className={`text-[9px] font-mono mt-1 px-2 py-0.5 rounded inline-block ${
-                paxOnline
-                  ? 'bg-green-500/10 text-green-400'
-                  : 'bg-red-500/10 text-red-400'
+              <div className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${
+                paxOnline ? 'bg-green-400/20 text-green-200' : 'bg-red-400/20 text-red-200'
               }`}>
-                PAX {paxOnline ? 'ONLINE' : 'OFFLINE'}
+                PAX {paxOnline ? '● ONLINE' : '○ OFFLINE'}
               </div>
             )}
+            <button onClick={paxState==='idle'?close:undefined}
+              className="mt-2 w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer text-white flex items-center justify-center text-[16px] ml-auto">
+              ✕
+            </button>
           </div>
         </div>
 
@@ -256,65 +258,57 @@ export default function PaymentPanel() {
                   )}
                 </div>
               )}
-              {/* Toggle button */}
-              <button onClick={() => setShowAdjust(a => !a)}
-                className="w-full rounded-xl py-2 text-[11px] font-semibold cursor-pointer border transition-all mb-3"
-                style={{background: showAdjust?'#f0f4ff':'#f8fafc', borderColor: showAdjust?'#a5b4fc':'#1e2d42', color: showAdjust?'#6366f1':'#8899b0'}}>
-                {showAdjust ? '▲ Hide' : '▼'} Invoice Adjustments
-              </button>
-              {/* Adjustment panel */}
-              {showAdjust && (
-                <div className="rounded-xl p-3 mb-3" style={{background:'#111827', border:'1px solid #1e2d42'}}>
-                  {/* Type selector */}
-                  <div className="grid grid-cols-2 gap-1.5 mb-3">
-                    {[
-                      ['disc_pct', '✂️ Discount %'],
-                      ['disc_amt', '✂️ Discount $'],
-                      ['tip',      '🙏 Add Tip'],
-                      ['tax_exempt','🏛️ Tax Exempt'],
-                    ].map(([id, label]) => (
-                      <button key={id} onClick={() => { setAdjType(id); setAdjValue('') }}
-                        className="py-2 rounded-lg text-[11px] font-semibold cursor-pointer border transition-all"
-                        style={adjType===id
-                          ? {background:'#6366f1', borderColor:'#6366f1', color:'#fff'}
-                          : {background:'#0d1117', borderColor:'#1e2d42', color:'#8899b0'}}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Value input */}
-                  {adjType !== 'tax_exempt' ? (
-                    <div className="flex gap-2">
-                      <button onClick={() => setShowAdjPad(true)}
-                        className="flex-1 rounded-xl px-3 py-2.5 text-left cursor-pointer border"
-                        style={{background:'#0d1117', borderColor: adjValue?'#6366f1':'#1e2d42'}}>
-                        <span className="text-[16px] font-bold font-mono" style={{color: adjValue?'#818cf8':'#3d5068'}}>
-                          {adjValue ? (adjType==='disc_pct' ? `${adjValue}%` : `$${adjValue}`) : (adjType==='disc_pct'?'0%':'$0.00')}
-                        </span>
-                      </button>
-                      <button onClick={applyAdjustment} disabled={!adjValue}
-                        className="rounded-xl px-4 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                        style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
-                        Apply
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={applyAdjustment}
-                      className="w-full rounded-xl py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
-                      style={{background:'linear-gradient(135deg,#2563eb,#1d4ed8)'}}>
-                      🏛️ Apply Tax Exempt
+              {/* Adjustment options - always visible */}
+              <div className="rounded-2xl p-4 mb-3" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Invoice Adjustments</div>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {[
+                    ['disc_pct',  '✂️', 'Disc %'],
+                    ['disc_amt',  '💰', 'Disc $'],
+                    ['tip',       '🙏', 'Tip'],
+                    ['tax_exempt','🏛️', 'Tax Free'],
+                  ].map(([id, icon, label]) => (
+                    <button key={id} onClick={() => { setAdjType(id); setAdjValue('') }}
+                      className="flex flex-col items-center gap-1 py-2.5 rounded-xl cursor-pointer border-2 transition-all"
+                      style={adjType===id
+                        ? {background:'#e0e7ff', borderColor:'#6366f1', color:'#6366f1'}
+                        : {background:'#fff', borderColor:'#e2e8f0', color:'#64748b'}}>
+                      <span className="text-[18px]">{icon}</span>
+                      <span className="text-[10px] font-bold">{label}</span>
                     </button>
-                  )}
+                  ))}
                 </div>
-              )}
+                {adjType !== 'tax_exempt' ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowAdjPad(true)}
+                      className="flex-1 rounded-xl px-4 py-3 text-left cursor-pointer border-2 transition-all"
+                      style={{borderColor: adjValue?'#a5b4fc':'#e2e8f0', background: adjValue?'#eef2ff':'#fff'}}>
+                      <span className="text-[20px] font-black font-mono" style={{color: adjValue?'#6366f1':'#94a3b8'}}>
+                        {adjValue ? (adjType==='disc_pct' ? `${adjValue}%` : `$${parseFloat(adjValue).toFixed(2)}`) : '—'}
+                      </span>
+                    </button>
+                    <button onClick={applyAdjustment} disabled={!adjValue}
+                      className="rounded-xl px-5 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                      style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                      ✓ Apply
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={applyAdjustment}
+                    className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
+                    style={{background:'linear-gradient(135deg,#2563eb,#1d4ed8)'}}>
+                    🏛️ Apply Tax Exempt
+                  </button>
+                )}
+              </div>
             </div>
           )
         })()}
 
         {/* PAX waiting overlay (inside panel) */}
         {paxState !== 'idle' && (
-          <div className="mx-5 mt-4 mb-0 bg-[#111827] border border-[#243347]
-            rounded-[12px] p-4 text-center">
+          <div className="mx-5 mt-4 mb-0 rounded-2xl p-4 text-center"
+            style={{background:'#f0f4ff', border:'2px solid #a5b4fc'}}>
             <div className="text-3xl mb-2">{PAX_STATE[paxState]?.icon}</div>
             <div className="text-[14px] font-bold mb-1">{PAX_STATE[paxState]?.label}</div>
             {paxState === 'waiting' && (
@@ -438,7 +432,7 @@ export default function PaymentPanel() {
 
           {/* Payments list */}
           {payments.length > 0 && (
-            <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 mb-3">
+            <div className="rounded-2xl px-4 py-3 mb-3" style={{background:'#f0fdf4', border:'1.5px solid #86efac'}}>
               {payments.map((p, i) => (
                 <div key={i} className="flex justify-between items-center py-1.5
                   border-b border-[#1e2d42] last:border-0">
