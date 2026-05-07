@@ -33,10 +33,9 @@ export const useCartStore = create((set, get) => ({
   // ── 加载税率 ──
   loadTaxGroups: async (tenantId) => {
     const { data } = await supabase
-      .from('tax_groups')
-      .select('*, tax_rates(*)')
+      .from('tax_rates')
+      .select('id, name, rate')
       .eq('tenant_id', tenantId)
-      .eq('is_active', true)
     set({ taxGroups: data || [] })
   },
 

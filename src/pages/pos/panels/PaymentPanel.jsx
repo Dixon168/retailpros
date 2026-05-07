@@ -29,7 +29,8 @@ export default function PaymentPanel() {
   const { grandTotal } = totals()
 
   const [selectedMethod, setSelectedMethod] = useState('cash')
-  const [amountInput, setAmountInput]       = useState(grandTotal.toFixed(2))
+  const [amountInput,  setAmountInput]      = useState(grandTotal.toFixed(2))
+  const [showAmtPad,   setShowAmtPad]     = useState(false)
   const [processing, setProcessing]         = useState(false)
   const [paxState, setPaxState]             = useState('idle')
   const [paxResult, setPaxResult]           = useState(null) // approved card result

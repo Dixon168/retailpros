@@ -193,7 +193,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     queryKey: ['tax-rates', tenantId],
     queryFn: async () => {
       const { data } = await supabase.from('tax_rates')
-        .select('id,name,rate,tax_groups(name)').eq('tenant_id', tenantId)
+        .select('id,name,rate').eq('tenant_id', tenantId)
       return data || []
     },
     enabled: !!tenantId,
