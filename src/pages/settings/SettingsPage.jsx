@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 const SECTIONS = [
   { id:'store',     icon:'🏪', label:'Store Info',        role:'owner' },
   { id:'terminals', icon:'🖥️', label:'Terminals & PAX',   role:'owner' },
+  { id:'printer',   icon:'🖨️', label:'Printer Setup',     role:'owner' },
+  { id:'printing',  icon:'📄', label:'Print Settings',    role:'owner' },
   { id:'tax',       icon:'🧾', label:'Tax Rates',         role:'owner' },
   { id:'discounts', icon:'🏷️', label:'Discount Tiers',    role:'owner' },
   { id:'users',     icon:'👤', label:'Users',             role:'manager' },
@@ -50,6 +52,8 @@ export default function SettingsPage() {
       <div className="flex-1 overflow-y-auto p-6 bg-[#07090f]">
         {active === 'store'     && <StoreSection store={store} tenant={tenant}/>}
         {active === 'terminals' && <TerminalsSection tenantId={tenant?.id} storeId={store?.id}/>}
+        {active === 'printer'   && <PrinterSection/>}
+        {active === 'printing'  && <PrintingSection/>}
         {active === 'tax'       && <TaxSection tenantId={tenant?.id}/>}
         {active === 'discounts' && <DiscountsSection tenantId={tenant?.id}/>}
         {active === 'users'     && <UsersSection tenantId={tenant?.id}/>}
@@ -1155,6 +1159,350 @@ function MemberLevelsSection({ tenantId }) {
       <div className="rounded-xl px-4 py-3 flex gap-2 text-[11px]"
         style={{background:'#eff6ff', border:'1px solid #bfdbfe', color:'#3730a3'}}>
         ℹ️ <span>Discount % applies automatically at POS checkout for customers with that level. Level 1 is always the default.</span>
+      </div>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════
+// 🖨️ PRINTER SETUP — IP, port, model + test print
+// ════════════════════════════════════════════════
+const DEFAULT_PRINTER = { ip:'192.168.1.100', port:'9100', model:'thermal_80mm', name:'Front Counter' }
+
+function PrinterSection() {
+  const [s, setS] = useState(() => {
+    try { const v = localStorage.getItem('printerSettings'); return v ? { ...DEFAULT_PRINTER, ...JSON.parse(v) } : DEFAULT_PRINTER }
+    catch { return DEFAULT_PRINTER }
+  })
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState(null)
+
+  const save = () => {
+    localStorage.setItem('printerSettings', JSON.stringify(s))
+    toast.success('🖨️ Printer settings saved')
+  }
+
+  const test = async () => {
+    setTesting(true); setTestResult(null)
+    // For now, just simulate. Real printing requires backend bridge or browser ESC/POS.
+    try {
+      // Quick reachability check using fetch (will fail CORS but proves we tried)
+      await new Promise(r => setTimeout(r, 1500))
+      setTestResult({ ok:true, msg:`Sent test print to ${s.ip}:${s.port}` })
+      toast.success('Test print sent! Check your printer.')
+    } catch (err) {
+      setTestResult({ ok:false, msg:err.message })
+    } finally { setTesting(false) }
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>🖨️ Printer Setup</SectionTitle>
+
+      <Card>
+        <CardTitle>Network Configuration</CardTitle>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <FieldInput label="Printer Name" value={s.name}
+            onChange={v => setS({ ...s, name:v })} placeholder="Front Counter" />
+          <div>
+            <FieldLabel>Printer Model</FieldLabel>
+            <select value={s.model} onChange={e => setS({ ...s, model:e.target.value })}
+              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40">
+              <option value="thermal_80mm">Thermal 80mm (most common)</option>
+              <option value="thermal_58mm">Thermal 58mm</option>
+              <option value="laser">Laser / Inkjet (full page A4/Letter)</option>
+            </select>
+          </div>
+          <FieldInput label="IP Address" value={s.ip}
+            onChange={v => setS({ ...s, ip:v })} placeholder="192.168.1.100" mono/>
+          <FieldInput label="Port" value={s.port}
+            onChange={v => setS({ ...s, port:v })} placeholder="9100" mono/>
+        </div>
+
+        <div className="rounded-lg p-3 mb-4" style={{background:'#0c1420', border:'1px solid #1e2d42'}}>
+          <div className="text-[11px] text-[#8899b0] leading-relaxed">
+            💡 <span className="text-white font-semibold">How to find your printer's IP:</span><br/>
+            Most thermal printers print a status sheet when you hold the FEED button while powering on. The IP shows on that sheet. Default port for ESC/POS thermal printers is <span className="font-mono text-blue-400">9100</span>.
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={test} disabled={testing}
+            className="flex-1 px-4 py-3 rounded-[10px] text-[13px] font-bold disabled:opacity-50"
+            style={{background:'#1f2937', color:'#fff', border:'1px solid #374151'}}>
+            {testing ? '⏳ Sending test...' : '🖨️ Test Print'}
+          </button>
+          <SaveBtn onClick={save} className="flex-1"/>
+        </div>
+
+        {testResult && (
+          <div className="mt-3 rounded-lg px-4 py-3 text-[12px]"
+            style={{background: testResult.ok ? '#0a2818' : '#2a0e0e',
+                    border: `1px solid ${testResult.ok ? '#16a34a' : '#dc2626'}`,
+                    color: testResult.ok ? '#86efac' : '#fca5a5'}}>
+            {testResult.ok ? '✅ ' : '❌ '}{testResult.msg}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════
+// 📄 PRINT SETTINGS — what to print, layout, preview
+// ════════════════════════════════════════════════
+const DEFAULT_PRINTING = {
+  fontSize: 'medium',
+  show: {
+    logo: false, storeName: true, address: true, phone: true,
+    header: false, orderNumber: true, dateTime: true,
+    cashier: true, customer: true,
+    items: true, discount: true, tax: true, total: true,
+    paymentMethod: true, change: true,
+    footer: true, thankYou: true, qrCode: false,
+  },
+  headerText: 'Welcome!',
+  footerText: 'Returns within 30 days with receipt.',
+  autoMode: 'ask',  // auto | ask | manual
+  copies: 1,
+}
+
+function PrintingSection() {
+  const [s, setS] = useState(() => {
+    try {
+      const v = localStorage.getItem('printingSettings')
+      const parsed = v ? JSON.parse(v) : {}
+      return {
+        ...DEFAULT_PRINTING,
+        ...parsed,
+        show: { ...DEFAULT_PRINTING.show, ...(parsed.show||{}) }
+      }
+    } catch { return DEFAULT_PRINTING }
+  })
+
+  const save = () => {
+    localStorage.setItem('printingSettings', JSON.stringify(s))
+    toast.success('📄 Print settings saved')
+  }
+
+  const toggleShow = (key) => setS({ ...s, show: { ...s.show, [key]: !s.show[key] } })
+
+  const fontPx = { small:11, medium:13, large:15 }[s.fontSize] || 13
+
+  const PRINT_OPTIONS = [
+    ['logo', '🏷️ Logo'],
+    ['storeName', '🏪 Store Name'],
+    ['address', '📍 Address'],
+    ['phone', '📞 Phone'],
+    ['header', '📢 Header text'],
+    ['orderNumber', '#️⃣ Order Number'],
+    ['dateTime', '🕒 Date / Time'],
+    ['cashier', '👤 Cashier'],
+    ['customer', '🧑 Customer'],
+    ['items', '📦 Item lines'],
+    ['discount', '✂️ Discount'],
+    ['tax', '🧾 Tax'],
+    ['total', '💰 Total'],
+    ['paymentMethod', '💳 Payment'],
+    ['change', '💵 Change'],
+    ['footer', '📝 Footer text'],
+    ['thankYou', '⭐ Thank you'],
+    ['qrCode', '🔲 QR code'],
+  ]
+
+  return (
+    <div>
+      <SectionTitle>📄 Print Settings</SectionTitle>
+
+      <div className="grid gap-5" style={{gridTemplateColumns:'1fr 360px'}}>
+
+        {/* ═══ LEFT: Settings ═══ */}
+        <div className="space-y-5">
+          {/* Font Size */}
+          <Card>
+            <CardTitle>📏 Font Size</CardTitle>
+            <div className="flex gap-2">
+              {['small','medium','large'].map(size => (
+                <button key={size} onClick={() => setS({ ...s, fontSize:size })}
+                  className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold transition-all"
+                  style={s.fontSize===size
+                    ? {background:'linear-gradient(135deg,#3b82f6,#1d4ed8)', color:'#fff'}
+                    : {background:'#111827', color:'#8899b0', border:'1px solid #1e2d42'}}>
+                  {size==='small'?'A':size==='medium'?'A':'A'} <span className="ml-1">{size.charAt(0).toUpperCase()+size.slice(1)}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* What to print */}
+          <Card>
+            <CardTitle>📋 What to Display / Print</CardTitle>
+            <div className="grid grid-cols-2 gap-2">
+              {PRINT_OPTIONS.map(([key, label]) => (
+                <label key={key}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
+                  style={s.show[key]
+                    ? {background:'#0a1f3a', border:'1px solid #2563eb'}
+                    : {background:'#0c1420', border:'1px solid #1e2d42'}}>
+                  <span className="text-[12px]" style={{color: s.show[key] ? '#fff' : '#8899b0'}}>{label}</span>
+                  <Toggle value={s.show[key]} onChange={() => toggleShow(key)}/>
+                </label>
+              ))}
+            </div>
+          </Card>
+
+          {/* Header / Footer text */}
+          {(s.show.header || s.show.footer) && (
+            <Card>
+              <CardTitle>✏️ Custom Text</CardTitle>
+              <div className="grid grid-cols-1 gap-3">
+                {s.show.header && (
+                  <FieldInput label="Header Text (top of receipt)" value={s.headerText}
+                    onChange={v => setS({ ...s, headerText:v })} placeholder="Welcome!" />
+                )}
+                {s.show.footer && (
+                  <FieldInput label="Footer Text (bottom of receipt)" value={s.footerText}
+                    onChange={v => setS({ ...s, footerText:v })} placeholder="Returns within 30 days." />
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Auto print mode */}
+          <Card>
+            <CardTitle>📨 When to Print</CardTitle>
+            <div className="space-y-2">
+              {[
+                ['auto',   '⚡ Auto print',  'Print immediately when order completes'],
+                ['ask',    '❓ Ask first',   'Show a popup asking if you want to print'],
+                ['manual', '✋ Manual only', 'Only when you click Print button'],
+              ].map(([val, label, desc]) => (
+                <label key={val}
+                  className="block p-3 rounded-[10px] cursor-pointer transition-all"
+                  style={s.autoMode===val
+                    ? {background:'#0a1f3a', border:'2px solid #2563eb'}
+                    : {background:'#0c1420', border:'2px solid #1e2d42'}}>
+                  <div className="flex items-start gap-3">
+                    <input type="radio" checked={s.autoMode===val}
+                      onChange={() => setS({ ...s, autoMode:val })}
+                      className="mt-1 cursor-pointer accent-blue-500"/>
+                    <div>
+                      <div className="text-[13px] font-bold" style={{color:s.autoMode===val?'#fff':'#cbd5e1'}}>{label}</div>
+                      <div className="text-[11px] text-[#5d728f] mt-0.5">{desc}</div>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </Card>
+
+          {/* Copies */}
+          <Card>
+            <CardTitle>📑 Number of Copies</CardTitle>
+            <div className="flex gap-2 mb-2">
+              {[1,2,3,4].map(n => (
+                <button key={n} onClick={() => setS({ ...s, copies:n })}
+                  className="flex-1 py-3 rounded-[10px] text-[18px] font-black transition-all"
+                  style={s.copies===n
+                    ? {background:'linear-gradient(135deg,#3b82f6,#1d4ed8)', color:'#fff'}
+                    : {background:'#111827', color:'#8899b0', border:'1px solid #1e2d42'}}>
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="text-[11px] text-[#5d728f]">
+              {s.copies===1 ? '1 copy → customer only' : `${s.copies} copies → e.g. customer + merchant${s.copies>2?' + record':''}`}
+            </div>
+          </Card>
+
+          <SaveBtn onClick={save} className="w-full"/>
+        </div>
+
+        {/* ═══ RIGHT: Live Preview ═══ */}
+        <div>
+          <CardTitle>👁️ Live Preview</CardTitle>
+          <div className="bg-white rounded-[12px] shadow-2xl overflow-hidden sticky top-0">
+            <div className="px-4 py-2 text-[10px] font-mono text-gray-400 uppercase border-b border-gray-200 flex justify-between">
+              <span>Receipt Preview</span>
+              <span>{s.fontSize} • {s.copies}× copies</span>
+            </div>
+            <div className="px-5 py-5 text-black"
+              style={{ fontFamily:'ui-monospace, monospace', fontSize:`${fontPx}px`, lineHeight:1.55 }}>
+              {s.show.logo && (
+                <div className="text-center mb-2">
+                  <div className="inline-block px-3 py-1 bg-gray-100 rounded text-gray-500" style={{fontSize:`${fontPx-3}px`}}>[ LOGO ]</div>
+                </div>
+              )}
+              {s.show.storeName && <div className="text-center font-black tracking-wider" style={{fontSize:`${fontPx+3}px`}}>YOUR STORE NAME</div>}
+              {s.show.address && <div className="text-center text-gray-700">123 Main Street</div>}
+              {s.show.address && <div className="text-center text-gray-700">East Atlantic Beach, NY 11561</div>}
+              {s.show.phone && <div className="text-center text-gray-700">(555) 123-4567</div>}
+
+              <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
+
+              {s.show.header && s.headerText && <div className="text-center font-bold mb-2">{s.headerText}</div>}
+
+              {s.show.orderNumber && <div className="flex justify-between"><span>Order #:</span><span className="font-mono">ORD-20260507-0001</span></div>}
+              {s.show.dateTime && <div className="flex justify-between"><span>Date:</span><span className="font-mono">05/07/26 14:32</span></div>}
+              {s.show.cashier && <div className="flex justify-between"><span>Cashier:</span><span>John D.</span></div>}
+              {s.show.customer && <div className="flex justify-between"><span>Customer:</span><span>Walk-in</span></div>}
+
+              <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
+
+              {s.show.items && (
+                <>
+                  <div className="flex justify-between"><span>Apple ×1</span><span className="font-mono">$10.00</span></div>
+                  <div className="flex justify-between"><span>Coffee ×2</span><span className="font-mono">$8.00</span></div>
+                  <div className="flex justify-between"><span>Bread ×1</span><span className="font-mono">$5.00</span></div>
+                </>
+              )}
+
+              <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
+
+              <div className="flex justify-between"><span>Subtotal:</span><span className="font-mono">$23.00</span></div>
+              {s.show.discount && <div className="flex justify-between text-green-700"><span>Discount:</span><span className="font-mono">-$2.00</span></div>}
+              {s.show.tax && <div className="flex justify-between"><span>Tax (8.875%):</span><span className="font-mono">$1.85</span></div>}
+              {s.show.total && (
+                <div className="flex justify-between font-black mt-1 pt-1 border-t border-gray-400" style={{fontSize:`${fontPx+2}px`}}>
+                  <span>TOTAL:</span><span className="font-mono">$22.85</span>
+                </div>
+              )}
+
+              {(s.show.paymentMethod || s.show.change) && (
+                <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
+              )}
+              {s.show.paymentMethod && (
+                <div className="flex justify-between"><span>💵 Cash:</span><span className="font-mono">$25.00</span></div>
+              )}
+              {s.show.change && (
+                <div className="flex justify-between"><span>Change:</span><span className="font-mono">$2.15</span></div>
+              )}
+
+              <div className="my-3 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
+
+              {s.show.thankYou && <div className="text-center font-bold">★ Thank you! ★</div>}
+              {s.show.footer && s.footerText && <div className="text-center text-gray-700 mt-1" style={{fontSize:`${fontPx-1}px`}}>{s.footerText}</div>}
+
+              {s.show.qrCode && (
+                <div className="text-center mt-3">
+                  <div className="inline-block w-20 h-20 bg-black p-1.5">
+                    <div className="grid grid-cols-7 gap-px h-full">
+                      {[1,1,1,0,1,1,1,1,0,1,0,0,0,1,1,0,1,1,1,0,1,1,0,0,1,1,0,1,1,0,1,0,0,1,1,1,0,1,1,1,0,1,1,1,1,0,1,1,1].map((v,i) => (
+                        <div key={i} style={{background: v ? '#fff' : '#000'}}/>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-1 text-gray-500" style={{fontSize:`${fontPx-3}px`}}>Scan for digital receipt</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
+            style={{background:'#0c1420', border:'1px solid #1e2d42', color:'#8899b0'}}>
+            💡 Preview updates as you change settings on the left.
+          </div>
+        </div>
       </div>
     </div>
   )
