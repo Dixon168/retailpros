@@ -620,6 +620,7 @@ export default function PaymentPanel() {
             {processing ? '⏳ Processing...' : '✓ Complete Order'}
           </button>
         </div>
+        </div>
       </div>
     </Overlay>
   )
