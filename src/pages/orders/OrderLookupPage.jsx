@@ -57,27 +57,45 @@ const STATUS_FILTERS = [
 
 // ── Order Actions Component ──
 function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid, onRefund }) {
-  const st = order._source === 'held' ? 'held' : (() => {
-    if (order.status === 'voided') return 'voided'
-    if (order.refund_status === 'full') return 'refunded'
+  const [addNote, setAddNote] = useState(false)
+  const [note,    setNote]    = useState(order.staff_note || '')
+  const [saving,  setSaving]  = useState(false)
+
+  const st         = order._source === 'held' ? 'held' : (() => {
+    if (order.status === 'voided')         return 'voided'
+    if (order.refund_status === 'full')    return 'refunded'
     if (order.refund_status === 'partial') return 'partial_refund'
+    if (order.status === 'needs_recharge') return 'needs_recharge'
     return 'completed'
   })()
 
-  const payMethods = (order.order_payments||[]).map(p => p.method)
-  const hasCard    = payMethods.some(m => ['card','credit_card','debit_card'].includes(m))
-  const hasCash    = payMethods.includes('cash')
+  const payMethods  = (order.order_payments||[]).map(p => p.method)
+  const hasCard     = payMethods.some(m => ['card','credit_card','debit_card'].includes(m))
+  const hasCash     = payMethods.includes('cash')
+  const hasMember   = payMethods.some(m => ['member_card','vip_card'].includes(m))
+  const hasGift     = payMethods.includes('gift_card')
+  const isSplit     = payMethods.length > 1
 
-  // Check card transaction status
-  const cardTxStatus = order.card_transactions?.[0]?.status // 'authorized' | 'settled'
+  const cardTxStatus = order.card_transactions?.[0]?.status
   const batchOpen    = cardTxStatus === 'authorized'
   const batchClosed  = cardTxStatus === 'settled'
+  const batchUnknown = !cardTxStatus
 
-  if (st === 'held') {
-    return (
-      <div className="flex flex-col gap-2 mt-3">
-        <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
-          📌 Held Order — add/remove items then pay
+  const saveNote = async () => {
+    setSaving(true)
+    await supabase.from('orders').update({ staff_note: note }).eq('id', order.id)
+    setSaving(false); setAddNote(false)
+    toast.success('Note saved')
+  }
+
+  return (
+    <div className="flex flex-col gap-2 mt-3">
+
+      {/* ── ON HOLD ── */}
+      {st === 'held' && <>
+        <div className="rounded-xl p-2.5 text-[11px] font-semibold text-center"
+          style={{background:'#fffbeb', color:'#ca8a04', border:'1px solid #fde047'}}>
+          📌 On Hold — resume to add/remove items
         </div>
         <button onClick={() => onResume(order)}
           className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
@@ -86,95 +104,174 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
         </button>
         <button onClick={onCancelHeld}
           className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-          style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
+          style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>
           🗑 Cancel Held Order
         </button>
-      </div>
-    )
-  }
+      </>}
 
-  if (st === 'completed') {
-    return (
-      <div className="flex flex-col gap-2 mt-3">
-        {hasCard && (
-          <div className="rounded-xl p-3 text-[11px]"
-            style={{background: batchOpen ? '#fffbeb' : batchClosed ? '#fef2f2' : '#f8fafc',
-                    border: `1px solid ${batchOpen ? '#fde047' : batchClosed ? '#fca5a5' : '#e2e8f0'}`}}>
-            <div className="flex items-center gap-2 mb-1">
-              <span>💳</span>
-              <span className="font-bold" style={{color: batchOpen ? '#ca8a04' : batchClosed ? '#dc2626' : '#64748b'}}>
-                Card Batch: {batchOpen ? '🟡 Open (can void)' : batchClosed ? '🔴 Closed (refund only)' : '⚪ Unknown'}
-              </span>
-            </div>
-            {!cardTxStatus && (
-              <div className="text-slate-400 text-[10px]">Check terminal for batch status</div>
-            )}
+      {/* ── NEEDS RECHARGE ── */}
+      {st === 'needs_recharge' && <>
+        <div className="rounded-xl p-3 text-[11px]"
+          style={{background:'#fef2f2',border:'1px solid #fca5a5',color:'#dc2626'}}>
+          <div className="font-bold mb-1">⚠️ Payment Incomplete</div>
+          <div>Terminal disconnected mid-payment. Verify with PAX terminal before taking action.</div>
+        </div>
+        <button onClick={onVoid}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>
+          🚫 Void Incomplete Order
+        </button>
+        <button onClick={() => onResume(order)}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          🔄 Retry Payment in POS
+        </button>
+      </>}
+
+      {/* ── COMPLETED ── */}
+      {st === 'completed' && <>
+
+        {/* Split payment notice */}
+        {isSplit && (
+          <div className="rounded-xl p-2.5 text-[10px]"
+            style={{background:'#eff6ff',border:'1px solid #bfdbfe',color:'#2563eb'}}>
+            💳 Split payment — all methods will be reversed on void/refund
           </div>
         )}
 
-        {/* Void options */}
-        {(!hasCard || batchOpen) && (
+        {/* Card batch status */}
+        {hasCard && (
+          <div className="rounded-xl p-2.5 text-[11px]"
+            style={{background: batchOpen?'#fffbeb':batchClosed?'#fef2f2':'#f8fafc',
+                    border:`1px solid ${batchOpen?'#fde047':batchClosed?'#fca5a5':'#e2e8f0'}`}}>
+            <div className="flex items-center gap-1.5 font-semibold"
+              style={{color:batchOpen?'#ca8a04':batchClosed?'#dc2626':'#64748b'}}>
+              💳 {batchOpen ? '🟡 Batch Open — void available'
+                : batchClosed ? '🔴 Batch Closed — refund only'
+                : '⚪ Batch status unknown — check terminal'}
+            </div>
+          </div>
+        )}
+
+        {/* Member card notice */}
+        {hasMember && (
+          <div className="rounded-xl p-2.5 text-[10px]"
+            style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#9333ea'}}>
+            🏷️ VIP Card payment — balance will be restored on void/refund
+          </div>
+        )}
+
+        {/* Gift card notice */}
+        {hasGift && (
+          <div className="rounded-xl p-2.5 text-[10px]"
+            style={{background:'#fff7ed',border:'1px solid #fed7aa',color:'#ea580c'}}>
+            🎁 Gift Card payment — value will be restored on void/refund
+          </div>
+        )}
+
+        {/* VOID — only if batch open or cash/member/gift */}
+        {(!hasCard || batchOpen || batchUnknown) && (
           <button onClick={onVoid}
             className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
             style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>
-            🚫 Void Order {hasCard ? '+ Void Card' : ''}
+            🚫 Void Order {hasCard && batchOpen ? '+ Void Card Auth' : ''}
           </button>
         )}
 
-        {/* Refund option */}
-        {(batchClosed || !hasCard) && (
-          <button onClick={onRefund}
-            className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-            style={{background:'#fdf4ff',borderColor:'#e9d5ff',color:'#9333ea'}}>
-            ↩ Process Refund
-          </button>
-        )}
+        {/* REFUND */}
+        <button onClick={onRefund}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#fdf4ff',borderColor:'#e9d5ff',color:'#9333ea'}}>
+          ↩ {batchClosed ? 'Process Card Refund' : 'Process Refund'}
+        </button>
+      </>}
 
-        {/* Cash void */}
-        {hasCash && !hasCard && (
-          <div className="text-[10px] text-slate-400 text-center">
-            💵 Cash order — void to cancel and reprocess
+      {/* ── PARTIAL REFUNDED ── */}
+      {st === 'partial_refund' && <>
+        <div className="rounded-xl p-2.5 text-[10px] font-semibold text-center"
+          style={{background:'#eff6ff',color:'#2563eb',border:'1px solid #bfdbfe'}}>
+          🔵 Partial Refund — more items can still be returned
+        </div>
+        {hasCard && (
+          <div className="rounded-xl p-2.5 text-[10px]"
+            style={{background: batchClosed?'#fef2f2':'#fffbeb',
+                    border:`1px solid ${batchClosed?'#fca5a5':'#fde047'}`,
+                    color: batchClosed?'#dc2626':'#ca8a04'}}>
+            💳 {batchClosed ? '🔴 Batch Closed — card refund to original card' : '🟡 Batch Open — can void remaining'}
           </div>
         )}
-      </div>
-    )
-  }
-
-  if (st === 'partial_refund') {
-    return (
-      <div className="flex flex-col gap-2 mt-3">
-        <div className="text-[10px] font-semibold text-blue-600 mb-1">
-          Part. refunded — remaining balance can still be refunded
-        </div>
         <button onClick={onRefund}
           className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
           style={{background:'#eff6ff',borderColor:'#bfdbfe',color:'#2563eb'}}>
           ↩ Continue Refund
         </button>
-      </div>
-    )
-  }
+      </>}
 
-  if (st === 'refunded') {
-    return (
-      <div className="mt-3 rounded-xl p-3 text-center text-[11px]"
-        style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#9333ea'}}>
-        🟣 Fully Refunded — no further action needed
-      </div>
-    )
-  }
+      {/* ── FULLY REFUNDED ── */}
+      {st === 'refunded' && (
+        <div className="rounded-xl p-3 text-center text-[11px]"
+          style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#9333ea'}}>
+          🟣 Fully Refunded
+          {order.refunded_at && (
+            <div className="text-[10px] text-slate-400 mt-1">
+              {format(new Date(order.refunded_at),'MMM d, h:mm a')} · {order.refunded_by_name}
+            </div>
+          )}
+        </div>
+      )}
 
-  if (st === 'voided') {
-    return (
-      <div className="mt-3 rounded-xl p-3 text-center text-[11px]"
-        style={{background:'#f1f5f9',border:'1px solid #e2e8f0',color:'#64748b'}}>
-        🚫 Order Voided — no further action
-      </div>
-    )
-  }
+      {/* ── VOIDED ── */}
+      {st === 'voided' && (
+        <div className="rounded-xl p-3 text-center text-[11px]"
+          style={{background:'#f1f5f9',border:'1px solid #e2e8f0',color:'#64748b'}}>
+          🚫 Order Voided — no further action available
+        </div>
+      )}
 
-  return null
+      {/* ── REPRINT (all completed/refunded) ── */}
+      {['completed','refunded','partial_refund','voided'].includes(st) && (
+        <button onClick={() => window.print()}
+          className="w-full rounded-xl py-2 text-[11px] font-semibold cursor-pointer border"
+          style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+          🖨️ Reprint Receipt
+        </button>
+      )}
+
+      {/* ── ADD NOTE ── */}
+      {!addNote ? (
+        <button onClick={() => setAddNote(true)}
+          className="w-full rounded-xl py-2 text-[11px] font-semibold cursor-pointer border"
+          style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+          📝 {order.staff_note ? 'Edit Note' : 'Add Note'}
+        </button>
+      ) : (
+        <div className="rounded-xl overflow-hidden" style={{border:'1.5px solid #a5b4fc'}}>
+          <textarea value={note} onChange={e=>setNote(e.target.value)} rows={2}
+            placeholder="Add internal note..."
+            className="w-full px-3 py-2 text-[12px] outline-none resize-none border-none"
+            style={{background:'#f8f9ff'}}/>
+          <div className="flex gap-2 px-3 pb-2">
+            <button onClick={() => setAddNote(false)}
+              className="flex-1 rounded-lg py-1.5 text-[11px] cursor-pointer border"
+              style={{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
+            <button onClick={saveNote} disabled={saving}
+              className="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white cursor-pointer border-none"
+              style={{background:'#6366f1'}}>
+              {saving?'Saving...':'✓ Save Note'}
+            </button>
+          </div>
+        </div>
+      )}
+      {order.staff_note && !addNote && (
+        <div className="rounded-xl px-3 py-2 text-[10px]"
+          style={{background:'#fffbeb',border:'1px solid #fde047',color:'#92400e'}}>
+          📝 {order.staff_note}
+        </div>
+      )}
+    </div>
+  )
 }
+
 
 export default function OrderLookupPage() {
   const { tenant, user } = useAuthStore()
