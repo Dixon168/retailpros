@@ -10,6 +10,7 @@ import {
   getPrintingSettings, buildReceiptHTML, printReceipt,
   sendEmailReceipt, sendSmsReceipt, isValidEmail, isValidPhone,
 } from '@/lib/receipt'
+import { QWERTYKeyboard, NumericKeypad } from '@/components/ui/TouchKeyboards'
 import toast from 'react-hot-toast'
 
 const PAX_STATE = {
@@ -591,13 +592,20 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
   const [email, setEmail] = useState(customerEmail || '')
   const [phone, setPhone] = useState(customerPhone || '')
   const [busy,  setBusy]  = useState(false)
-  const [done,  setDone]  = useState({ printed:false, emailed:false, smsed:false })
+  const [done,  setDone]  = useState({ printChoice: null, emailed: false, smsed: false })
+  const [showEmailKB, setShowEmailKB] = useState(false)
+  const [showPhoneKB, setShowPhoneKB] = useState(false)
 
   const handlePrint = () => {
     printReceipt(html, settings.copies || 1)
-    setDone(d => ({ ...d, printed:true }))
+    setDone(d => ({ ...d, printChoice: 'yes' }))
     toast.success(`🖨️ Printing ${settings.copies||1} cop${settings.copies>1?'ies':'y'}...`)
   }
+  const handleNoPrint = () => {
+    setDone(d => ({ ...d, printChoice: 'no' }))
+  }
+
+  const cleanPhone = (p) => String(p||'').replace(/\D/g, '')
 
   const handleEmail = async () => {
     if (!isValidEmail(email)) { toast.error('Invalid email'); return }
@@ -609,104 +617,152 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
   }
 
   const handleSms = async () => {
-    if (!isValidPhone(phone)) { toast.error('Invalid phone (need 10+ digits)'); return }
+    const cleaned = cleanPhone(phone)
+    if (!isValidPhone(cleaned)) { toast.error('Invalid phone (need 10+ digits)'); return }
     setBusy(true)
-    const r = await sendSmsReceipt(phone, html, orderNumber, tenantId)
+    const r = await sendSmsReceipt(cleaned, html, orderNumber, tenantId)
     setBusy(false)
     if (r.ok) { toast.success(r.msg); setDone(d => ({ ...d, smsed:true })) }
     else toast.error(r.msg)
   }
 
+  // Format phone for display
+  const displayPhone = (v) => {
+    if (!v) return ''
+    const d = v.replace(/\D/g,'')
+    if (d.length === 0) return v.startsWith('+') ? v : ''
+    if (d.length <= 3) return `(${d}`
+    if (d.length <= 6) return `(${d.slice(0,3)}) ${d.slice(3)}`
+    if (d.length <= 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+    return v
+  }
+
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
-      <div className="rounded-3xl overflow-hidden shadow-2xl" style={{width:'480px', background:'#fff', maxHeight:'92vh', overflowY:'auto'}}>
-        {/* Header */}
-        <div className="px-6 py-5 text-center"
-          style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
-          <div className="text-[42px] mb-1">✅</div>
-          <div className="text-[18px] font-black text-white">Order Complete</div>
-          <div className="text-[12px] text-green-100 mt-1 font-mono">#{orderNumber}</div>
-        </div>
+    <>
+      <div className="fixed inset-0 z-[400] flex items-center justify-center"
+        style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
+        <div className="rounded-3xl overflow-hidden shadow-2xl" style={{width:'520px', background:'#fff', maxHeight:'94vh', overflowY:'auto'}}>
 
-        <div className="px-6 py-5 space-y-4">
-          <div className="text-[14px] font-bold text-slate-700 text-center mb-1">Send Receipt?</div>
-
-          {/* Print */}
-          <div className="rounded-2xl p-4" style={{background:'#f8fafc', border:'2px solid #e2e8f0'}}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="text-[28px]">🖨️</div>
-                <div>
-                  <div className="text-[14px] font-bold text-slate-800">Print Paper Receipt</div>
-                  <div className="text-[11px] text-slate-500">{settings.copies || 1} cop{settings.copies>1?'ies':'y'}</div>
-                </div>
-              </div>
-              <button onClick={handlePrint} disabled={busy}
-                className="rounded-xl px-5 py-2.5 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-                style={{background: done.printed ? '#16a34a' : '#3b82f6'}}>
-                {done.printed ? '✓ Printed' : 'Print'}
-              </button>
-            </div>
+          {/* Header */}
+          <div className="px-6 py-5 text-center"
+            style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+            <div className="text-[42px] mb-1">✅</div>
+            <div className="text-[18px] font-black text-white">Order Complete</div>
+            <div className="text-[12px] text-green-100 mt-1 font-mono">#{orderNumber}</div>
           </div>
 
-          {/* Email */}
-          {settings.enableEmail && (
-            <div className="rounded-2xl p-4" style={{background:'#f0f9ff', border:'2px solid #bae6fd'}}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="text-[24px]">📧</div>
-                <div className="text-[13px] font-bold text-slate-800">Email Receipt</div>
+          <div className="px-6 py-5 space-y-4">
+
+            {/* ── Print / No Print — Two big tiles ── */}
+            <div>
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
+                🖨️ Paper Receipt?
               </div>
-              <div className="flex gap-2">
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                  placeholder="customer@example.com"
-                  className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none"
-                  style={{background:'#fff', border:'1.5px solid #bae6fd'}}/>
-                <button onClick={handleEmail} disabled={busy || !email}
-                  className="rounded-xl px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-                  style={{background: done.emailed ? '#16a34a' : '#0284c7'}}>
-                  {done.emailed ? '✓ Sent' : 'Send'}
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={handlePrint} disabled={busy}
+                  className="rounded-2xl py-5 px-3 cursor-pointer border-2 active:scale-95 transition-all disabled:opacity-50"
+                  style={done.printChoice === 'yes'
+                    ? {background:'#dcfce7', borderColor:'#16a34a', color:'#15803d'}
+                    : {background:'#eff6ff', borderColor:'#3b82f6', color:'#1d4ed8'}}>
+                  <div className="text-[36px] mb-1">{done.printChoice === 'yes' ? '✅' : '🖨️'}</div>
+                  <div className="text-[15px] font-black">{done.printChoice === 'yes' ? 'Printed' : 'Print'}</div>
+                  <div className="text-[10px] mt-0.5 opacity-70">{settings.copies||1} cop{settings.copies>1?'ies':'y'}</div>
+                </button>
+                <button onClick={handleNoPrint} disabled={busy}
+                  className="rounded-2xl py-5 px-3 cursor-pointer border-2 active:scale-95 transition-all disabled:opacity-50"
+                  style={done.printChoice === 'no'
+                    ? {background:'#f1f5f9', borderColor:'#64748b', color:'#334155'}
+                    : {background:'#fff', borderColor:'#cbd5e1', color:'#64748b'}}>
+                  <div className="text-[36px] mb-1">{done.printChoice === 'no' ? '✅' : '✕'}</div>
+                  <div className="text-[15px] font-black">{done.printChoice === 'no' ? 'No Print' : 'No Print'}</div>
+                  <div className="text-[10px] mt-0.5 opacity-70">Skip paper</div>
                 </button>
               </div>
             </div>
-          )}
 
-          {/* SMS */}
-          {settings.enableSms && (
-            <div className="rounded-2xl p-4" style={{background:'#fdf4ff', border:'2px solid #f0abfc'}}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="text-[24px]">💬</div>
-                <div className="text-[13px] font-bold text-slate-800">SMS Receipt</div>
+            {/* ── Email Receipt ── */}
+            {settings.enableEmail && (
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  📧 Email Receipt
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowEmailKB(true)} disabled={busy}
+                    className="flex-1 rounded-xl px-4 py-3 text-left cursor-pointer border-2 active:scale-[0.99] transition-all disabled:opacity-50"
+                    style={{background:'#f0f9ff', borderColor:'#bae6fd'}}>
+                    <div className="text-[10px] text-sky-700 font-bold uppercase">Tap to {email?'edit':'enter'}</div>
+                    <div className="text-[15px] font-mono text-slate-900 truncate min-h-[20px]">
+                      {email || <span className="text-slate-400 font-normal">customer@example.com</span>}
+                    </div>
+                  </button>
+                  <button onClick={handleEmail} disabled={busy || !email}
+                    className="rounded-xl px-5 text-[14px] font-black cursor-pointer border-none text-white disabled:opacity-40 active:scale-95"
+                    style={{background: done.emailed ? '#16a34a' : 'linear-gradient(135deg,#0ea5e9,#0369a1)', minWidth:'90px'}}>
+                    {done.emailed ? '✓ Sent' : 'Send'}
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
-                  className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none font-mono"
-                  style={{background:'#fff', border:'1.5px solid #f0abfc'}}/>
-                <button onClick={handleSms} disabled={busy || !phone}
-                  className="rounded-xl px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-                  style={{background: done.smsed ? '#16a34a' : '#9333ea'}}>
-                  {done.smsed ? '✓ Sent' : 'Send'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Footer actions */}
-        <div className="px-6 py-4 flex gap-3" style={{background:'#f8fafc', borderTop:'1px solid #e2e8f0'}}>
-          <button onClick={onDone}
-            className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-2"
-            style={{background:'#fff', borderColor:'#cbd5e1', color:'#64748b'}}>
-            Skip — No Receipt
-          </button>
-          <button onClick={onDone}
-            className="flex-1 rounded-xl py-3 text-[14px] font-black cursor-pointer border-none text-white"
-            style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
-            ✓ Done
-          </button>
+            {/* ── SMS Receipt ── */}
+            {settings.enableSms && (
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  💬 SMS Receipt
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowPhoneKB(true)} disabled={busy}
+                    className="flex-1 rounded-xl px-4 py-3 text-left cursor-pointer border-2 active:scale-[0.99] transition-all disabled:opacity-50"
+                    style={{background:'#fdf4ff', borderColor:'#f0abfc'}}>
+                    <div className="text-[10px] text-purple-700 font-bold uppercase">Tap to {phone?'edit':'enter'}</div>
+                    <div className="text-[15px] font-mono text-slate-900 truncate min-h-[20px]">
+                      {phone ? displayPhone(phone) : <span className="text-slate-400 font-normal">(555) 123-4567</span>}
+                    </div>
+                  </button>
+                  <button onClick={handleSms} disabled={busy || !phone}
+                    className="rounded-xl px-5 text-[14px] font-black cursor-pointer border-none text-white disabled:opacity-40 active:scale-95"
+                    style={{background: done.smsed ? '#16a34a' : 'linear-gradient(135deg,#a855f7,#7e22ce)', minWidth:'90px'}}>
+                    {done.smsed ? '✓ Sent' : 'Send'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4" style={{background:'#f8fafc', borderTop:'1px solid #e2e8f0'}}>
+            <button onClick={onDone}
+              className="w-full rounded-xl py-4 text-[15px] font-black cursor-pointer border-none text-white active:scale-[0.98]"
+              style={{background:'linear-gradient(135deg,#16a34a,#15803d)', boxShadow:'0 4px 0 #14532d'}}>
+              ✓ Done — Next Order
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* QWERTY Keyboard for Email */}
+      {showEmailKB && (
+        <QWERTYKeyboard
+          value={email}
+          onChange={setEmail}
+          onClose={() => setShowEmailKB(false)}
+          title="Customer Email"
+          mode="email"
+          placeholder="customer@example.com"
+        />
+      )}
+
+      {/* Numeric Keypad for Phone */}
+      {showPhoneKB && (
+        <NumericKeypad
+          value={phone}
+          onChange={setPhone}
+          onClose={() => setShowPhoneKB(false)}
+          title="Customer Phone"
+          placeholder="(555) 123-4567"
+          formatPhone={true}
+        />
+      )}
+    </>
   )
 }
