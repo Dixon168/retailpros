@@ -55,6 +55,127 @@ const STATUS_FILTERS = [
   { id:'voided',       label:'Void' },
 ]
 
+// ── Order Actions Component ──
+function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid, onRefund }) {
+  const st = order._source === 'held' ? 'held' : (() => {
+    if (order.status === 'voided') return 'voided'
+    if (order.refund_status === 'full') return 'refunded'
+    if (order.refund_status === 'partial') return 'partial_refund'
+    return 'completed'
+  })()
+
+  const payMethods = (order.order_payments||[]).map(p => p.method)
+  const hasCard    = payMethods.some(m => ['card','credit_card','debit_card'].includes(m))
+  const hasCash    = payMethods.includes('cash')
+
+  // Check card transaction status
+  const cardTxStatus = order.card_transactions?.[0]?.status // 'authorized' | 'settled'
+  const batchOpen    = cardTxStatus === 'authorized'
+  const batchClosed  = cardTxStatus === 'settled'
+
+  if (st === 'held') {
+    return (
+      <div className="flex flex-col gap-2 mt-3">
+        <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
+          📌 Held Order — add/remove items then pay
+        </div>
+        <button onClick={() => onResume(order)}
+          className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
+          style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+          ↩ Resume & Go to POS
+        </button>
+        <button onClick={onCancelHeld}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
+          🗑 Cancel Held Order
+        </button>
+      </div>
+    )
+  }
+
+  if (st === 'completed') {
+    return (
+      <div className="flex flex-col gap-2 mt-3">
+        {hasCard && (
+          <div className="rounded-xl p-3 text-[11px]"
+            style={{background: batchOpen ? '#fffbeb' : batchClosed ? '#fef2f2' : '#f8fafc',
+                    border: `1px solid ${batchOpen ? '#fde047' : batchClosed ? '#fca5a5' : '#e2e8f0'}`}}>
+            <div className="flex items-center gap-2 mb-1">
+              <span>💳</span>
+              <span className="font-bold" style={{color: batchOpen ? '#ca8a04' : batchClosed ? '#dc2626' : '#64748b'}}>
+                Card Batch: {batchOpen ? '🟡 Open (can void)' : batchClosed ? '🔴 Closed (refund only)' : '⚪ Unknown'}
+              </span>
+            </div>
+            {!cardTxStatus && (
+              <div className="text-slate-400 text-[10px]">Check terminal for batch status</div>
+            )}
+          </div>
+        )}
+
+        {/* Void options */}
+        {(!hasCard || batchOpen) && (
+          <button onClick={onVoid}
+            className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+            style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>
+            🚫 Void Order {hasCard ? '+ Void Card' : ''}
+          </button>
+        )}
+
+        {/* Refund option */}
+        {(batchClosed || !hasCard) && (
+          <button onClick={onRefund}
+            className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+            style={{background:'#fdf4ff',borderColor:'#e9d5ff',color:'#9333ea'}}>
+            ↩ Process Refund
+          </button>
+        )}
+
+        {/* Cash void */}
+        {hasCash && !hasCard && (
+          <div className="text-[10px] text-slate-400 text-center">
+            💵 Cash order — void to cancel and reprocess
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (st === 'partial_refund') {
+    return (
+      <div className="flex flex-col gap-2 mt-3">
+        <div className="text-[10px] font-semibold text-blue-600 mb-1">
+          Part. refunded — remaining balance can still be refunded
+        </div>
+        <button onClick={onRefund}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#eff6ff',borderColor:'#bfdbfe',color:'#2563eb'}}>
+          ↩ Continue Refund
+        </button>
+      </div>
+    )
+  }
+
+  if (st === 'refunded') {
+    return (
+      <div className="mt-3 rounded-xl p-3 text-center text-[11px]"
+        style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#9333ea'}}>
+        🟣 Fully Refunded — no further action needed
+      </div>
+    )
+  }
+
+  if (st === 'voided') {
+    return (
+      <div className="mt-3 rounded-xl p-3 text-center text-[11px]"
+        style={{background:'#f1f5f9',border:'1px solid #e2e8f0',color:'#64748b'}}>
+        🚫 Order Voided — no further action
+      </div>
+    )
+  }
+
+  return null
+}
+
 export default function OrderLookupPage() {
   const { tenant, user } = useAuthStore()
   const { resumeHeldOrder, cancelHeldOrder } = useHeldOrdersStore()
@@ -138,7 +259,7 @@ export default function OrderLookupPage() {
     if (cartItems.length > 0 && !window.confirm('Clear cart and resume this order?')) return
     if (cartItems.length > 0) useCartStore.getState().clearCart()
     const ok = await resumeHeldOrder({ heldOrderId: o.id, tenantId: tenant.id, userId: user?.id })
-    if (ok) { toast.success('Order resumed'); setSelected(null) }
+    if (ok) { toast.success('↩ Order resumed — returning to POS'); setTimeout(() => { window.location.href = '/pos' }, 800) }
   }
 
   const handleVoid = async (o) => {
@@ -298,32 +419,19 @@ export default function OrderLookupPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col gap-2 mt-3">
-                {selected._source === 'held' ? (
-                  <>
-                    <button onClick={() => handleResume(selected)}
-                      className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
-                      style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
-                      ↩ Resume Order
-                    </button>
-                    <button onClick={async () => {
-                      if (!window.confirm('Cancel this held order?')) return
-                      await cancelHeldOrder({ heldOrderId: selected.id, tenantId: tenant.id })
-                      setSelected(null); toast.success('Cancelled')
-                    }}
-                      className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-                      style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
-                      🗑 Cancel
-                    </button>
-                  </>
-                ) : getStatus(selected)==='completed' ? (
-                  <button onClick={() => handleVoid(selected)}
-                    className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-                    style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
-                    🚫 Void Order
-                  </button>
-                ) : null}
-              </div>
+              <OrderActions
+                order={selected}
+                tenantId={tenant?.id}
+                userId={user?.id}
+                onResume={handleResume}
+                onCancelHeld={async () => {
+                  if (!window.confirm('Cancel this held order?')) return
+                  await cancelHeldOrder({ heldOrderId: selected.id, tenantId: tenant.id })
+                  setSelected(null); toast.success('Cancelled')
+                }}
+                onVoid={() => handleVoid(selected)}
+                onRefund={() => { window.location.href = '/pos?refund=' + selected.id }}
+              />
             </div>
           )}
         </div>
