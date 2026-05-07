@@ -22,6 +22,17 @@ const PAX_STATE = {
   error:       { icon: '⚠️', label: 'Communication error' },
 }
 
+const METHODS_BG = {
+  cash:'#f0fdf4', card:'#eff6ff', check:'#fff7ed',
+  bank_transfer:'#f8fafc', member_card:'#fdf4ff', on_account:'#fefce8',
+  gift_card:'#fff7ed',
+}
+const METHODS_COLOR = {
+  cash:'#16a34a', card:'#2563eb', check:'#ea580c',
+  bank_transfer:'#64748b', member_card:'#9333ea', on_account:'#ca8a04',
+  gift_card:'#ea580c',
+}
+
 export default function PaymentPanel() {
   const { totals, payments, addPayment, removePayment, paidAmount, submitOrder } = useCartStore()
   const { user, tenant, store } = useAuthStore()
