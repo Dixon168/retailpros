@@ -169,11 +169,11 @@ export default function PaymentPanel() {
     <Overlay onClose={paxState!=='idle'?undefined:close}>
       {/* Full screen no-scroll container */}
       <div className="rounded-3xl overflow-hidden shadow-2xl"
-        style={{width:'1080px', height:'88vh', background:'#f0f2f5', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px 1fr 220px'}}>
+        style={{width:'min(1080px, 96vw)', height:'min(88vh, 800px)', background:'#f0f2f5', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
 
         {/* ══ HEADER - full width ══ */}
         <div className="col-span-3 flex items-center justify-between px-6 py-4"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', gridRow:'1'}}>
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', gridRow:'1', gridColumn:'1 / -1'}}>
           <div className="flex items-center gap-4">
             {customer ? (
               <div className="flex items-center gap-2.5">
@@ -212,7 +212,7 @@ export default function PaymentPanel() {
 
         {/* ══ COL 1: ORDER SUMMARY ══ */}
         <div className="flex flex-col overflow-hidden"
-          style={{gridRow:'2 / 4', gridColumn:'1', background:'#fff', borderRight:'1px solid #e2e8f0'}}>
+          style={{gridRow:'2', gridColumn:'1', background:'#fff', borderRight:'1px solid #e2e8f0', minHeight:0}}>
 
           {/* Items - scrollable but compact */}
           <div className="flex-1 overflow-y-auto px-3 py-2" style={{minHeight:0}}>
@@ -266,7 +266,7 @@ export default function PaymentPanel() {
 
         {/* ══ COL 2: ADJUSTMENTS + PAYMENT ══ */}
         <div className="flex flex-col overflow-hidden px-4 py-3 gap-3"
-          style={{gridRow:'2 / 4', gridColumn:'2'}}>
+          style={{gridRow:'2', gridColumn:'2', minHeight:0}}>
 
           {/* Adjustments - compact row */}
           <div className="rounded-2xl overflow-hidden flex-shrink-0" style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
@@ -385,7 +385,7 @@ export default function PaymentPanel() {
 
         {/* ══ COL 3: PAYMENTS LIST ══ */}
         <div className="flex flex-col overflow-hidden"
-          style={{gridRow:'2 / 4', gridColumn:'3', background:'#fff', borderLeft:'1px solid #e2e8f0'}}>
+          style={{gridRow:'2', gridColumn:'3', background:'#fff', borderLeft:'1px solid #e2e8f0', minHeight:0}}>
           <div className="px-3 py-2.5 flex-shrink-0"
             style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
             <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payments</div>
@@ -436,7 +436,7 @@ export default function PaymentPanel() {
 
         {/* ══ FOOTER - full width ══ */}
         <div className="col-span-3 px-6 py-4 flex items-center gap-4"
-          style={{gridRow:'3', background:'#fff', borderTop:'1px solid #e2e8f0'}}>
+          style={{gridRow:'3', gridColumn:'1 / -1', background:'#fff', borderTop:'1px solid #e2e8f0'}}>
           <button onClick={close}
             className="rounded-2xl px-6 py-3.5 text-[14px] font-bold cursor-pointer border-2"
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
