@@ -73,12 +73,9 @@ export const useHeldOrdersStore = create((set, get) => ({
     if (!held) { toast.error('Order not found'); return false }
     if (held.status !== 'held') { toast.error('This order is no longer available'); return false }
 
-    // 当前购物车有东西 → 先挂起
+    // 清空当前购物车再恢复
     const cart = useCartStore.getState()
-    if (cart.items.length > 0) {
-      toast('Current cart has items. Please hold or clear it first.', { icon: '⚠️' })
-      return false
-    }
+    cart.clearCart()
 
     // 恢复购物车快照
     const snap = held.cart_snapshot

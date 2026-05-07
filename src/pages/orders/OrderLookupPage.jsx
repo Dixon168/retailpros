@@ -353,10 +353,14 @@ export default function OrderLookupPage() {
 
   const handleResume = async (o) => {
     const cartItems = useCartStore.getState().items
-    if (cartItems.length > 0 && !window.confirm('Clear cart and resume this order?')) return
-    if (cartItems.length > 0) useCartStore.getState().clearCart()
+    if (cartItems.length > 0) {
+      if (!window.confirm('Current cart will be cleared. Resume this order?')) return
+    }
     const ok = await resumeHeldOrder({ heldOrderId: o.id, tenantId: tenant.id, userId: user?.id })
-    if (ok) { toast.success('↩ Order resumed — returning to POS'); setTimeout(() => { window.location.href = '/pos' }, 800) }
+    if (ok) {
+      toast.success('↩ Returning to POS with held order...')
+      setTimeout(() => { window.location.href = '/pos' }, 600)
+    }
   }
 
   const handleVoid = async (o) => {
