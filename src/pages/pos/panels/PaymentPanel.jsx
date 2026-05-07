@@ -31,6 +31,11 @@ export default function PaymentPanel() {
   const [selectedMethod, setSelectedMethod] = useState('cash')
   const [amountInput,  setAmountInput]      = useState(grandTotal.toFixed(2))
   const [showAmtPad,   setShowAmtPad]     = useState(false)
+  const [showAdjust,   setShowAdjust]    = useState(false)
+  const [adjType,      setAdjType]       = useState('disc_pct') // disc_pct|disc_amt|tip|tax_exempt
+  const [adjValue,     setAdjValue]      = useState('')
+  const [taxExempt,    setTaxExempt]     = useState(false)
+  const [showAdjPad,   setShowAdjPad]    = useState(false)
   const [processing, setProcessing]         = useState(false)
   const [paxState, setPaxState]             = useState('idle')
   const [paxResult, setPaxResult]           = useState(null) // approved card result
@@ -124,6 +129,44 @@ export default function PaymentPanel() {
     setAmountInput(newRemaining > 0 ? newRemaining.toFixed(2) : '')
   }
 
+  const applyAdjustment = () => {
+    const val = parseFloat(adjValue) || 0
+    const { setOrderDiscount } = useCartStore.getState()
+    if (adjType === 'disc_pct') {
+      if (val <= 0 || val > 100) { toast.error('Enter 0-100%'); return }
+      setOrderDiscount({ type: 'pct', value: val })
+      toast.success(`✓ ${val}% discount applied`)
+    } else if (adjType === 'disc_amt') {
+      if (val <= 0) { toast.error('Enter amount'); return }
+      setOrderDiscount({ type: 'amt', value: val })
+      toast.success(`✓ $${val.toFixed(2)} discount applied`)
+    } else if (adjType === 'tip') {
+      if (val < 0) { toast.error('Invalid tip'); return }
+      useCartStore.setState({ tipAmount: val })
+      toast.success(`✓ Tip $${val.toFixed(2)} added`)
+    } else if (adjType === 'tax_exempt') {
+      setTaxExempt(true)
+      useCartStore.setState({ taxExempt: true })
+      toast.success('✓ Tax exempt applied')
+    }
+    setAdjValue('')
+    setShowAdjust(false)
+  }
+
+  const removeAdjustment = (type) => {
+    if (type === 'discount') {
+      useCartStore.getState().setOrderDiscount(null)
+      toast.success('Discount removed')
+    } else if (type === 'tip') {
+      useCartStore.setState({ tipAmount: 0 })
+      toast.success('Tip removed')
+    } else if (type === 'tax_exempt') {
+      setTaxExempt(false)
+      useCartStore.setState({ taxExempt: false })
+      toast.success('Tax exempt removed')
+    }
+  }
+
   const handleComplete = async () => {
     if (paid < grandTotal) {
       const hasAccount = payments.some(p => p.method === 'on_account')
@@ -177,6 +220,96 @@ export default function PaymentPanel() {
             )}
           </div>
         </div>
+
+        {/* ── Invoice Adjustments ── */}
+        {(() => {
+          const { orderDiscount, tipAmount, taxExempt: cartTaxExempt } = useCartStore.getState()
+          const hasAdj = orderDiscount || tipAmount > 0 || cartTaxExempt
+          return (
+            <div className="px-5 pt-3">
+              {/* Applied adjustments */}
+              {hasAdj && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {orderDiscount && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold"
+                      style={{background:'#dcfce7', color:'#16a34a'}}>
+                      ✂️ {orderDiscount.type==='pct' ? `${orderDiscount.value}% off` : `-$${orderDiscount.value}`}
+                      <button onClick={() => removeAdjustment('discount')}
+                        className="ml-1 bg-transparent border-none cursor-pointer text-[12px] text-green-600">✕</button>
+                    </div>
+                  )}
+                  {tipAmount > 0 && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold"
+                      style={{background:'#fef9c3', color:'#ca8a04'}}>
+                      🙏 Tip ${tipAmount.toFixed(2)}
+                      <button onClick={() => removeAdjustment('tip')}
+                        className="ml-1 bg-transparent border-none cursor-pointer text-[12px]">✕</button>
+                    </div>
+                  )}
+                  {cartTaxExempt && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold"
+                      style={{background:'#eff6ff', color:'#2563eb'}}>
+                      🏛️ Tax Exempt
+                      <button onClick={() => removeAdjustment('tax_exempt')}
+                        className="ml-1 bg-transparent border-none cursor-pointer text-[12px]">✕</button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Toggle button */}
+              <button onClick={() => setShowAdjust(a => !a)}
+                className="w-full rounded-xl py-2 text-[11px] font-semibold cursor-pointer border transition-all mb-3"
+                style={{background: showAdjust?'#f0f4ff':'#f8fafc', borderColor: showAdjust?'#a5b4fc':'#1e2d42', color: showAdjust?'#6366f1':'#8899b0'}}>
+                {showAdjust ? '▲ Hide' : '▼'} Invoice Adjustments
+              </button>
+              {/* Adjustment panel */}
+              {showAdjust && (
+                <div className="rounded-xl p-3 mb-3" style={{background:'#111827', border:'1px solid #1e2d42'}}>
+                  {/* Type selector */}
+                  <div className="grid grid-cols-2 gap-1.5 mb-3">
+                    {[
+                      ['disc_pct', '✂️ Discount %'],
+                      ['disc_amt', '✂️ Discount $'],
+                      ['tip',      '🙏 Add Tip'],
+                      ['tax_exempt','🏛️ Tax Exempt'],
+                    ].map(([id, label]) => (
+                      <button key={id} onClick={() => { setAdjType(id); setAdjValue('') }}
+                        className="py-2 rounded-lg text-[11px] font-semibold cursor-pointer border transition-all"
+                        style={adjType===id
+                          ? {background:'#6366f1', borderColor:'#6366f1', color:'#fff'}
+                          : {background:'#0d1117', borderColor:'#1e2d42', color:'#8899b0'}}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Value input */}
+                  {adjType !== 'tax_exempt' ? (
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowAdjPad(true)}
+                        className="flex-1 rounded-xl px-3 py-2.5 text-left cursor-pointer border"
+                        style={{background:'#0d1117', borderColor: adjValue?'#6366f1':'#1e2d42'}}>
+                        <span className="text-[16px] font-bold font-mono" style={{color: adjValue?'#818cf8':'#3d5068'}}>
+                          {adjValue ? (adjType==='disc_pct' ? `${adjValue}%` : `$${adjValue}`) : (adjType==='disc_pct'?'0%':'$0.00')}
+                        </span>
+                      </button>
+                      <button onClick={applyAdjustment} disabled={!adjValue}
+                        className="rounded-xl px-4 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                        style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                        Apply
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={applyAdjustment}
+                      className="w-full rounded-xl py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
+                      style={{background:'linear-gradient(135deg,#2563eb,#1d4ed8)'}}>
+                      🏛️ Apply Tax Exempt
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* PAX waiting overlay (inside panel) */}
         {paxState !== 'idle' && (
@@ -248,7 +381,20 @@ export default function PaymentPanel() {
                   ${amountInput || '0.00'}
                 </span>
               </button>
-              {showAmtPad && (
+              {showAdjPad && (
+        <NumPad
+          title={adjType==='disc_pct' ? 'Discount %' : adjType==='disc_amt' ? 'Discount $' : 'Tip Amount'}
+          prefix={adjType!=='disc_pct' ? '$' : ''}
+          suffix={adjType==='disc_pct' ? '%' : ''}
+          value={adjValue}
+          onChange={setAdjValue}
+          allowNegative={false}
+          allowDecimal={true}
+          onConfirm={v => { setAdjValue(String(v)); setShowAdjPad(false) }}
+          onClose={() => setShowAdjPad(false)}/>
+      )}
+
+      {showAmtPad && (
                 <NumPad title="Payment Amount" prefix="$"
                   value={amountInput} onChange={setAmountInput}
                   allowNegative={false} allowDecimal={true}
