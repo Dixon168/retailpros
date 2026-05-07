@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
+import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
 import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
 import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
@@ -101,7 +102,7 @@ export default function POSPage() {
       })
       if (ok) toast.success('📌 Order held')
     }},
-    { id:'recall',  label:t('recall'),   icon:'📋', action: () => setShowRecall(true) },
+    { id:'recall',  label:t('recall'),   icon:'📋', action: () => { window.location.href='/orders' } },
     { id:'orders',  label:t('orders'),   icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
 
@@ -221,7 +222,7 @@ export default function POSPage() {
       {showRefund     && <RefundPanel onClose={() => setShowRefund(false)} />}
 
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
-    {showRecall && <RecallPanel onClose={() => setShowRecall(false)}/>}
+
     {showOpenItem && (
       <OpenItemModal
         tenantId={tenant?.id}
