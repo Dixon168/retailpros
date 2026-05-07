@@ -152,109 +152,153 @@ export default function OrderLookupPage() {
   return (
     <div className="flex h-full" style={{background:'#f0f2f5'}}>
 
-      {/* ── LEFT: Preview Panel (small) ── */}
+      {/* ── LEFT: Receipt Preview (small) ── */}
       <div className="flex flex-col flex-shrink-0"
         style={{width:'300px', background:'#fff', borderRight:'1px solid #e2e8f0'}}>
 
         {/* Header */}
         <div className="px-4 py-3 flex-shrink-0 flex items-center justify-between"
           style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
-          <div className="text-[14px] font-bold text-white">👁️ Preview</div>
+          <div className="text-[14px] font-bold text-white">🧾 Receipt Preview</div>
           {selected && (
             <button onClick={()=>setSelected(null)}
               className="w-6 h-6 rounded-full bg-white/20 border-none cursor-pointer text-white text-[12px]">✕</button>
           )}
         </div>
 
-        {/* Preview content */}
+        {/* Receipt content */}
         <div className="flex-1 overflow-y-auto">
           {!selected ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-300 py-10">
-              <div className="text-[48px] mb-3">👁️</div>
-              <div className="text-[13px] font-semibold text-slate-400">Select an order</div>
+              <div className="text-[48px] mb-3">🧾</div>
+              <div className="text-[13px] font-semibold text-slate-400">No order selected</div>
               <div className="text-[11px] mt-1 text-slate-300 text-center px-4">
                 Click 👁️ on any order to preview
               </div>
             </div>
           ) : (
-            <div className="p-4 flex flex-col gap-3">
-              {/* Order header */}
-              <div className="rounded-xl p-3" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
-                {/* Order # */}
-                {selected._source==='held' ? (
-                  <div className="text-[14px] font-bold text-amber-600">📌 {selected.label||'Held Order'}</div>
-                ) : (
-                  <div className="text-[15px] font-black font-mono" style={{color:'#6366f1'}}>{selected.order_number}</div>
-                )}
-                {/* Status badge */}
-                {(() => { const ss=STATUS[getStatus(selected)]; return ss ? (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full inline-block mt-1" style={ss}>{ss.label}</span>
-                ) : null })()}
-                {/* Date & Time */}
-                <div className="text-[11px] text-slate-400 mt-1">
-                  📅 {format(new Date(selected.created_at),'MMM d, yyyy h:mm a')}
-                </div>
-                {/* Customer */}
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  👤 {selected.customers?.name || 'Walk-in'}
-                  {selected.users?.name && <span className="ml-2 text-slate-400">· {selected.users.name}</span>}
-                </div>
-                {/* Payment */}
-                {(selected.order_payments||[]).length > 0 && (
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {selected.order_payments.map((p,i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded"
-                        style={{background:'#f1f5f9',color:'#475569'}}>
-                        {PAY_ICON[p.method]||'💰'} {PAY_LABEL[p.method]||p.method} ${parseFloat(p.amount).toFixed(0)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {/* Amount */}
-                <div className="text-[22px] font-black font-mono mt-2" style={{color:'#1e293b'}}>
-                  ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
-                </div>
-              </div>
+            <div className="p-4">
+              <div className="rounded-2xl overflow-hidden shadow-sm" style={{border:'1px solid #e2e8f0', background:'#fff'}}>
 
-              {/* Items */}
-              <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Items</div>
-                <div className="rounded-xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
+                {/* Store header */}
+                <div className="px-4 py-4 text-center" style={{background:'linear-gradient(135deg,#1e293b,#334155)'}}>
+                  <div className="text-[14px] font-black tracking-widest text-white">RETAILPOS</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Official Receipt</div>
+                </div>
+
+                {/* Invoice info */}
+                <div className="px-4 py-3" style={{background:'#f8fafc', borderBottom:'1px dashed #e2e8f0'}}>
+                  {[
+                    ['Invoice #', selected._source==='held' ? '📌 HELD' : selected.order_number],
+                    ['Date', format(new Date(selected.created_at),'MMM d, yyyy')],
+                    ['Time', format(new Date(selected.created_at),'h:mm a')],
+                    ...(selected.customers?.name ? [['Customer', selected.customers.name]] : []),
+                    ...(selected.users?.name ? [['Staff', selected.users.name]] : []),
+                  ].map(([l,v]) => (
+                    <div key={l} className="flex justify-between text-[11px] mb-1.5">
+                      <span className="text-slate-400">{l}</span>
+                      <span className="font-semibold text-slate-700 text-right ml-2 max-w-[150px] truncate" style={l==='Invoice #'?{color:'#6366f1'}:{}}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Items header */}
+                <div className="grid px-4 py-2 text-[9px] font-bold text-slate-400 uppercase"
+                  style={{gridTemplateColumns:'1fr 28px 60px', borderBottom:'1px solid #f1f5f9', background:'#f8fafc'}}>
+                  <div>Item</div><div className="text-center">Qty</div><div className="text-right">Amount</div>
+                </div>
+
+                {/* Items */}
+                <div style={{borderBottom:'1px dashed #e2e8f0'}}>
                   {(selected._source==='held'
                     ? selected.cart_snapshot?.items||[]
                     : selected.order_items||[]
                   ).map((item,i,arr) => {
                     const name  = selected._source==='held' ? item.name : (item.product_name||'Item')
                     const qty   = selected._source==='held' ? item.qty  : item.quantity
+                    const price = selected._source==='held' ? item.unitPrice : item.unit_price
                     const total = selected._source==='held' ? item.unitPrice*item.qty : item.line_total
                     return (
-                      <div key={i} className="flex justify-between px-3 py-2 text-[12px]"
-                        style={{borderBottom:i<arr.length-1?'1px solid #f1f5f9':'none', background:'#fff'}}>
-                        <span className="text-slate-700 truncate flex-1">{name} ×{qty}</span>
-                        <span className="font-bold font-mono ml-2">${parseFloat(total||0).toFixed(2)}</span>
+                      <div key={i} className="grid px-4 py-2 text-[11px]"
+                        style={{gridTemplateColumns:'1fr 28px 60px', borderBottom:i<arr.length-1?'1px solid #f8fafc':'none'}}>
+                        <div>
+                          <div className="text-slate-800 font-semibold leading-tight">{name}</div>
+                          <div className="text-[10px] text-slate-400">${parseFloat(price||0).toFixed(2)}</div>
+                        </div>
+                        <div className="text-center text-slate-500 font-mono self-center">×{qty}</div>
+                        <div className="text-right font-bold font-mono text-slate-800 self-center">${parseFloat(total||0).toFixed(2)}</div>
                       </div>
                     )
                   })}
                 </div>
-              </div>
 
-              {/* Payment */}
-              {(selected.order_payments||[]).length > 0 && (
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Payment</div>
-                  <div className="rounded-xl p-3 flex flex-col gap-1.5" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
-                    {selected.order_payments.map((p,i) => (
-                      <div key={i} className="flex justify-between text-[12px]">
-                        <span>{PAY_ICON[p.method]||'💰'} {PAY_LABEL[p.method]||p.method}</span>
-                        <span className="font-bold font-mono">${parseFloat(p.amount).toFixed(2)}</span>
-                      </div>
-                    ))}
+                {/* Subtotal / Tax / Discount / Total */}
+                <div className="px-4 py-3" style={{borderBottom:'1px dashed #e2e8f0'}}>
+                  {selected.subtotal > 0 && (
+                    <div className="flex justify-between text-[11px] mb-1.5">
+                      <span className="text-slate-400">Subtotal</span>
+                      <span className="font-mono text-slate-700">${parseFloat(selected.subtotal).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selected.tax_amount > 0 && (
+                    <div className="flex justify-between text-[11px] mb-1.5">
+                      <span className="text-slate-400">Tax</span>
+                      <span className="font-mono text-slate-700">${parseFloat(selected.tax_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selected.discount_amount > 0 && (
+                    <div className="flex justify-between text-[11px] mb-1.5">
+                      <span className="text-slate-400">Discount</span>
+                      <span className="font-mono text-green-600">-${parseFloat(selected.discount_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selected.tip_amount > 0 && (
+                    <div className="flex justify-between text-[11px] mb-1.5">
+                      <span className="text-slate-400">Tip</span>
+                      <span className="font-mono text-slate-700">${parseFloat(selected.tip_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-[15px] font-black pt-2 mt-1"
+                    style={{borderTop:'2px solid #1e293b'}}>
+                    <span className="text-slate-800">TOTAL</span>
+                    <span className="font-mono" style={{color:'#6366f1'}}>
+                      ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
+                    </span>
                   </div>
                 </div>
-              )}
+
+                {/* Payment */}
+                <div className="px-4 py-3" style={{borderBottom:'1px dashed #e2e8f0'}}>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Payment</div>
+                  {(selected.order_payments||[]).length > 0 ? (
+                    selected.order_payments.map((p,i) => (
+                      <div key={i} className="flex justify-between text-[11px] mb-1.5">
+                        <span className="flex items-center gap-1.5">
+                          <span>{PAY_ICON[p.method]||'💰'}</span>
+                          <span className="text-slate-600">{PAY_LABEL[p.method]||p.method}</span>
+                        </span>
+                        <span className="font-mono font-bold text-slate-800">${parseFloat(p.amount||0).toFixed(2)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[11px] text-slate-400">No payment recorded</div>
+                  )}
+                </div>
+
+                {/* Order Status */}
+                <div className="px-4 py-3 flex items-center justify-between">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Status</div>
+                  {(() => {
+                    const ss = STATUS[getStatus(selected)]
+                    return ss ? (
+                      <span className="text-[11px] font-bold px-3 py-1.5 rounded-full" style={ss}>{ss.label}</span>
+                    ) : null
+                  })()}
+                </div>
+              </div>
 
               {/* Actions */}
-              <div className="flex flex-col gap-2 pt-1">
+              <div className="flex flex-col gap-2 mt-3">
                 {selected._source === 'held' ? (
                   <>
                     <button onClick={() => handleResume(selected)}
@@ -263,8 +307,8 @@ export default function OrderLookupPage() {
                       ↩ Resume Order
                     </button>
                     <button onClick={async () => {
-                      if (!window.confirm('Cancel?')) return
-                      await cancelHeldOrder({ heldOrderId:selected.id, tenantId:tenant.id })
+                      if (!window.confirm('Cancel this held order?')) return
+                      await cancelHeldOrder({ heldOrderId: selected.id, tenantId: tenant.id })
                       setSelected(null); toast.success('Cancelled')
                     }}
                       className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
@@ -290,8 +334,6 @@ export default function OrderLookupPage() {
 
         {/* Filters */}
         <div className="flex-shrink-0 px-5 pt-4 pb-3" style={{borderBottom:'1px solid #f1f5f9'}}>
-
-          {/* Row 1: Search + Stats */}
           <div className="flex items-center gap-3 mb-3">
             <div className="flex-1 flex items-center gap-2 rounded-xl px-3"
               style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}>
@@ -307,20 +349,16 @@ export default function OrderLookupPage() {
             </div>
           </div>
 
-          {/* Row 2: Date presets */}
           <div className="flex gap-1.5 mb-3">
             {[['today','Today'],['3days','3 Days'],['week','Week'],['month','Month'],['custom','📅 Custom']].map(([id,label])=>(
               <button key={id} onClick={()=>setDateMode(id)}
                 className="flex-1 py-2 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                style={dateMode===id
-                  ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'}
-                  : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                style={dateMode===id?{background:'#6366f1',borderColor:'#6366f1',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                 {label}
               </button>
             ))}
           </div>
 
-          {/* Custom date range */}
           {dateMode==='custom' && (
             <div className="flex gap-3 mb-3">
               <div className="flex-1">
@@ -338,34 +376,26 @@ export default function OrderLookupPage() {
             </div>
           )}
 
-          {/* Row 3: Status */}
           <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
             {STATUS_FILTERS.map(f => {
               const count = f.id==='all' ? allOrders.length : allOrders.filter(o=>getStatus(o)===f.id).length
               return (
                 <button key={f.id} onClick={()=>setStatusF(f.id)}
                   className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                  style={statusF===f.id
-                    ? {background:'#1e293b',borderColor:'#1e293b',color:'#fff'}
-                    : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                  style={statusF===f.id?{background:'#1e293b',borderColor:'#1e293b',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                   {f.label}
                   <span className="text-[9px] px-1 rounded-full"
-                    style={{background:statusF===f.id?'rgba(255,255,255,0.2)':'#e2e8f0'}}>
-                    {count}
-                  </span>
+                    style={{background:statusF===f.id?'rgba(255,255,255,0.2)':'#e2e8f0'}}>{count}</span>
                 </button>
               )
             })}
           </div>
 
-          {/* Row 4: Payment type */}
           <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{scrollbarWidth:'none'}}>
             {PAY_FILTERS.map(f => (
               <button key={f.id} onClick={()=>setPayF(f.id)}
                 className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                style={payF===f.id
-                  ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'}
-                  : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                style={payF===f.id?{background:'#6366f1',borderColor:'#6366f1',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                 {f.icon} {f.label}
               </button>
             ))}
@@ -379,7 +409,7 @@ export default function OrderLookupPage() {
           <div>Date & Time</div>
           <div>Customer</div>
           <div className="text-right">Amount</div>
-          <div className="text-center">Order Status</div>
+          <div className="text-center">Status</div>
           <div className="text-center">Payment</div>
           <div></div>
         </div>
@@ -399,7 +429,6 @@ export default function OrderLookupPage() {
             const isHeld = o._source === 'held'
             const isSelected = selected?.id === o.id
             const payMethods = o.order_payments || []
-            const payStr = payMethods.map(p => PAY_ICON[p.method]||'💰').join(' ') || '—'
             return (
               <div key={o.id}
                 className="grid items-center px-5 py-3 border-b cursor-pointer transition-all"
@@ -410,413 +439,34 @@ export default function OrderLookupPage() {
                   borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
                 }}
                 onClick={() => setSelected(o)}>
-
-                {/* Order # */}
                 <div>
-                  {isHeld ? (
-                    <span className="text-[12px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
-                  ) : (
-                    <span className="text-[12px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
-                  )}
+                  {isHeld
+                    ? <span className="text-[12px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
+                    : <span className="text-[12px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
+                  }
                 </div>
-
-                {/* Date & Time */}
                 <div>
                   <div className="text-[12px] text-slate-700">{format(new Date(o.created_at),'MMM d, yyyy')}</div>
                   <div className="text-[11px] text-slate-400">{format(new Date(o.created_at),'h:mm a')}</div>
                 </div>
-
-                {/* Customer */}
                 <div>
-                  <div className="text-[12px] text-slate-700 truncate">
-                    {o.customers?.name || <span className="text-slate-400">Walk-in</span>}
-                  </div>
-                  {o.users?.name && <div className="text-[10px] text-slate-400 truncate">Staff: {o.users.name}</div>}
+                  <div className="text-[12px] text-slate-700 truncate">{o.customers?.name || <span className="text-slate-400">Walk-in</span>}</div>
+                  {o.users?.name && <div className="text-[10px] text-slate-400 truncate">{o.users.name}</div>}
                 </div>
-
-                {/* Amount */}
                 <div className="text-right">
                   <div className="text-[14px] font-black font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
                   <div className="text-[10px] text-slate-400">{(o.order_items||o.cart_snapshot?.items||[]).length} items</div>
                 </div>
-
-                {/* Order Status */}
                 <div className="flex justify-center">
                   <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={ss}>{ss.label}</span>
                 </div>
-
-                {/* Payment methods */}
-                <div className="flex flex-wrap justify-center gap-1">
+                <div className="flex justify-center gap-0.5">
                   {payMethods.length > 0 ? payMethods.map((p,i) => (
-                    <span key={i} className="text-[14px]" title={PAY_LABEL[p.method]||p.method}>
-                      {PAY_ICON[p.method]||'💰'}
-                    </span>
+                    <span key={i} className="text-[13px]">{PAY_ICON[p.method]||'💰'}</span>
                   )) : <span className="text-[11px] text-slate-300">—</span>}
                 </div>
-
-                {/* View icon */}
                 <div className="flex justify-center">
-                  <span className="text-[16px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}            {!selected ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-300 py-10">
-                <div className="text-[48px] mb-3">🧾</div>
-                <div className="text-[13px] font-semibold text-slate-400">Select an order</div>
-                <div className="text-[11px] mt-1 text-slate-300 text-center px-4">
-                  Click 👁️ to preview receipt
-                </div>
-              </div>
-            ) : (
-              <div className="p-4">
-                {/* ── RECEIPT ── */}
-                <div className="rounded-2xl overflow-hidden shadow-sm" style={{border:'1px solid #e2e8f0', background:'#fff', fontFamily:'monospace'}}>
-
-                  {/* Store header */}
-                  <div className="px-5 py-4 text-center" style={{background:'linear-gradient(135deg,#1e293b,#334155)', color:'#fff'}}>
-                    <div className="text-[14px] font-bold tracking-wide">RETAILPOS</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">Official Receipt</div>
-                  </div>
-
-                  {/* Invoice info */}
-                  <div className="px-4 py-3" style={{background:'#f8fafc', borderBottom:'1px dashed #e2e8f0'}}>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-500">Invoice #</span>
-                      <span className="font-bold" style={{color:'#6366f1'}}>
-                        {selected._source==='held' ? '📌 HELD' : selected.order_number}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-500">Date</span>
-                      <span className="text-slate-700">{format(new Date(selected.created_at),'MMM d, yyyy')}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-500">Time</span>
-                      <span className="text-slate-700">{format(new Date(selected.created_at),'h:mm a')}</span>
-                    </div>
-                    {selected.customers?.name && (
-                      <div className="flex justify-between text-[11px] mb-1">
-                        <span className="text-slate-500">Customer</span>
-                        <span className="text-slate-700">{selected.customers.name}</span>
-                      </div>
-                    )}
-                    {selected.users?.name && (
-                      <div className="flex justify-between text-[11px]">
-                        <span className="text-slate-500">Staff</span>
-                        <span className="text-slate-700">{selected.users.name}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Items header */}
-                  <div className="grid px-4 py-2 text-[9px] font-bold text-slate-400 uppercase"
-                    style={{gridTemplateColumns:'1fr 35px 65px', borderBottom:'1px solid #f1f5f9', background:'#f8fafc'}}>
-                    <div>Item</div><div className="text-center">Qty</div><div className="text-right">Amount</div>
-                  </div>
-
-                  {/* Items */}
-                  <div style={{borderBottom:'1px dashed #e2e8f0'}}>
-                    {(selected._source==='held'
-                      ? selected.cart_snapshot?.items||[]
-                      : selected.order_items||[]
-                    ).map((item,i) => {
-                      const name  = selected._source==='held' ? item.name : (item.product_name||'Item')
-                      const qty   = selected._source==='held' ? item.qty  : item.quantity
-                      const price = selected._source==='held' ? item.unitPrice : item.unit_price
-                      const total = selected._source==='held' ? item.unitPrice*item.qty : item.line_total
-                      return (
-                        <div key={i} className="grid px-4 py-2 text-[11px]"
-                          style={{gridTemplateColumns:'1fr 35px 65px', borderBottom:'1px solid #f8fafc'}}>
-                          <div>
-                            <div className="text-slate-800 font-semibold">{name}</div>
-                            <div className="text-[10px] text-slate-400">${parseFloat(price||0).toFixed(2)} each</div>
-                          </div>
-                          <div className="text-center text-slate-600 font-mono">×{qty}</div>
-                          <div className="text-right font-bold font-mono text-slate-800">${parseFloat(total||0).toFixed(2)}</div>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Totals */}
-                  <div className="px-4 py-3" style={{borderBottom:'1px dashed #e2e8f0'}}>
-                    {selected.subtotal > 0 && (
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span className="text-slate-500">Subtotal</span>
-                        <span className="font-mono text-slate-700">${parseFloat(selected.subtotal||0).toFixed(2)}</span>
-                      </div>
-                    )}
-                    {selected.tax_amount > 0 && (
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span className="text-slate-500">Tax</span>
-                        <span className="font-mono text-slate-700">${parseFloat(selected.tax_amount||0).toFixed(2)}</span>
-                      </div>
-                    )}
-                    {selected.discount_amount > 0 && (
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span className="text-slate-500">Discount</span>
-                        <span className="font-mono text-green-600">-${parseFloat(selected.discount_amount||0).toFixed(2)}</span>
-                      </div>
-                    )}
-                    {selected.tip_amount > 0 && (
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span className="text-slate-500">Tip</span>
-                        <span className="font-mono text-slate-700">${parseFloat(selected.tip_amount||0).toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-[15px] font-black pt-2 mt-1"
-                      style={{borderTop:'2px solid #1e293b'}}>
-                      <span className="text-slate-800">TOTAL</span>
-                      <span className="font-mono" style={{color:'#6366f1'}}>
-                        ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment status */}
-                  <div className="px-4 py-3" style={{borderBottom:'1px dashed #e2e8f0'}}>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Payment</div>
-                    {(selected.order_payments||[]).length > 0 ? (
-                      selected.order_payments.map((p,i) => (
-                        <div key={i} className="flex justify-between text-[11px] mb-1.5">
-                          <span className="flex items-center gap-1.5">
-                            <span>{PAY_ICON[p.method]||'💰'}</span>
-                            <span className="text-slate-600">{PAY_LABEL[p.method]||p.method}</span>
-                          </span>
-                          <span className="font-mono font-bold text-slate-800">${parseFloat(p.amount||0).toFixed(2)}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-[11px] text-slate-400">No payment recorded</div>
-                    )}
-                  </div>
-
-                  {/* Order status badge */}
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">Status</div>
-                    {(() => {
-                      const ss = STATUS[getStatus(selected)]
-                      return ss ? (
-                        <span className="text-[11px] font-bold px-3 py-1.5 rounded-full" style={ss}>
-                          {ss.label}
-                        </span>
-                      ) : null
-                    })()}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-              <div className="flex flex-col gap-2 pt-1">
-                {selected._source === 'held' ? (
-                  <>
-                    <button onClick={() => handleResume(selected)}
-                      className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
-                      style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
-                      ↩ Resume Order
-                    </button>
-                    <button onClick={async () => {
-                      if (!window.confirm('Cancel?')) return
-                      await cancelHeldOrder({ heldOrderId:selected.id, tenantId:tenant.id })
-                      setSelected(null); toast.success('Cancelled')
-                    }}
-                      className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-                      style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
-                      🗑 Cancel
-                    </button>
-                  </>
-                ) : getStatus(selected)==='completed' ? (
-                  <button onClick={() => handleVoid(selected)}
-                    className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-                    style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
-                    🚫 Void Order
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── RIGHT: Filters + List (big) ── */}
-      <div className="flex-1 flex flex-col overflow-hidden" style={{background:'#fff'}}>
-
-        {/* Filters */}
-        <div className="flex-shrink-0 px-5 pt-4 pb-3" style={{borderBottom:'1px solid #f1f5f9'}}>
-
-          {/* Row 1: Search + Stats */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex-1 flex items-center gap-2 rounded-xl px-3"
-              style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}>
-              <span className="text-slate-400">🔍</span>
-              <input value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Order # or customer..."
-                className="flex-1 border-none outline-none py-2.5 text-[13px] bg-transparent"/>
-              {search && <button onClick={()=>setSearch('')} className="text-slate-400 bg-transparent border-none cursor-pointer">✕</button>}
-            </div>
-            <div className="text-right flex-shrink-0">
-              <div className="text-[11px] text-slate-400">{filtered.length} orders</div>
-              <div className="text-[15px] font-black" style={{color:'#6366f1'}}>${totalAmt.toFixed(2)}</div>
-            </div>
-          </div>
-
-          {/* Row 2: Date presets */}
-          <div className="flex gap-1.5 mb-3">
-            {[['today','Today'],['3days','3 Days'],['week','Week'],['month','Month'],['custom','📅 Custom']].map(([id,label])=>(
-              <button key={id} onClick={()=>setDateMode(id)}
-                className="flex-1 py-2 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                style={dateMode===id
-                  ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'}
-                  : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom date range */}
-          {dateMode==='custom' && (
-            <div className="flex gap-3 mb-3">
-              <div className="flex-1">
-                <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">From</div>
-                <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
-                  className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0',background:'#f8fafc'}}/>
-              </div>
-              <div className="flex-1">
-                <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">To</div>
-                <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
-                  className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0',background:'#f8fafc'}}/>
-              </div>
-            </div>
-          )}
-
-          {/* Row 3: Status */}
-          <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
-            {STATUS_FILTERS.map(f => {
-              const count = f.id==='all' ? allOrders.length : allOrders.filter(o=>getStatus(o)===f.id).length
-              return (
-                <button key={f.id} onClick={()=>setStatusF(f.id)}
-                  className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                  style={statusF===f.id
-                    ? {background:'#1e293b',borderColor:'#1e293b',color:'#fff'}
-                    : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
-                  {f.label}
-                  <span className="text-[9px] px-1 rounded-full"
-                    style={{background:statusF===f.id?'rgba(255,255,255,0.2)':'#e2e8f0'}}>
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Row 4: Payment type */}
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{scrollbarWidth:'none'}}>
-            {PAY_FILTERS.map(f => (
-              <button key={f.id} onClick={()=>setPayF(f.id)}
-                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                style={payF===f.id
-                  ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'}
-                  : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
-                {f.icon} {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Column headers */}
-        <div className="flex-shrink-0 grid px-5 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider"
-          style={{gridTemplateColumns:'160px 130px 140px 100px 110px 90px 40px', borderBottom:'1.5px solid #e2e8f0', background:'#f8fafc'}}>
-          <div>Order #</div>
-          <div>Date & Time</div>
-          <div>Customer</div>
-          <div className="text-right">Amount</div>
-          <div className="text-center">Order Status</div>
-          <div className="text-center">Payment</div>
-          <div></div>
-        </div>
-
-        {/* Order List */}
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-slate-400">Loading...</div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-slate-300">
-              <div className="text-[48px] mb-3">📋</div>
-              <div className="text-[14px]">No orders found</div>
-            </div>
-          ) : filtered.map(o => {
-            const st = getStatus(o)
-            const ss = STATUS[st] || STATUS.completed
-            const isHeld = o._source === 'held'
-            const isSelected = selected?.id === o.id
-            const payMethods = o.order_payments || []
-            const payStr = payMethods.map(p => PAY_ICON[p.method]||'💰').join(' ') || '—'
-            return (
-              <div key={o.id}
-                className="grid items-center px-5 py-3 border-b cursor-pointer transition-all"
-                style={{
-                  gridTemplateColumns:'160px 130px 140px 100px 110px 90px 40px',
-                  borderColor:'#f8fafc',
-                  background: isSelected ? '#f0f4ff' : '#fff',
-                  borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
-                }}
-                onClick={() => setSelected(o)}>
-
-                {/* Order # */}
-                <div>
-                  {isHeld ? (
-                    <span className="text-[12px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
-                  ) : (
-                    <span className="text-[12px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
-                  )}
-                </div>
-
-                {/* Date & Time */}
-                <div>
-                  <div className="text-[12px] text-slate-700">{format(new Date(o.created_at),'MMM d, yyyy')}</div>
-                  <div className="text-[11px] text-slate-400">{format(new Date(o.created_at),'h:mm a')}</div>
-                </div>
-
-                {/* Customer */}
-                <div>
-                  <div className="text-[12px] text-slate-700 truncate">
-                    {o.customers?.name || <span className="text-slate-400">Walk-in</span>}
-                  </div>
-                  {o.users?.name && <div className="text-[10px] text-slate-400 truncate">Staff: {o.users.name}</div>}
-                </div>
-
-                {/* Amount */}
-                <div className="text-right">
-                  <div className="text-[14px] font-black font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
-                  <div className="text-[10px] text-slate-400">{(o.order_items||o.cart_snapshot?.items||[]).length} items</div>
-                </div>
-
-                {/* Order Status */}
-                <div className="flex justify-center">
-                  <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={ss}>{ss.label}</span>
-                </div>
-
-                {/* Payment methods */}
-                <div className="flex flex-wrap justify-center gap-1">
-                  {payMethods.length > 0 ? payMethods.map((p,i) => (
-                    <span key={i} className="text-[14px]" title={PAY_LABEL[p.method]||p.method}>
-                      {PAY_ICON[p.method]||'💰'}
-                    </span>
-                  )) : <span className="text-[11px] text-slate-300">—</span>}
-                </div>
-
-                {/* View icon */}
-                <div className="flex justify-center">
-                  <span className="text-[16px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
+                  <span className="text-[15px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
                 </div>
               </div>
             )
