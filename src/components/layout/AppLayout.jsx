@@ -2,6 +2,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import { LangSwitcher } from '@/components/ui/LangSwitcher'
 import { OpenShiftModal, CloseShiftModal } from '@/components/pos/ShiftModal'
 
 const NAV_GROUPS = [
