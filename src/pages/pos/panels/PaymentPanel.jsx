@@ -6,6 +6,10 @@ import { useTerminalStore } from '@/stores/terminalStore'
 import { Overlay } from './SerialPanel'
 import { TERMINAL_ID } from '@/hooks/useLock'
 import { paxSale, paxCancel, dollarsToCents } from '@/lib/pax'
+import {
+  getPrintingSettings, buildReceiptHTML, printReceipt,
+  sendEmailReceipt, sendSmsReceipt, isValidEmail, isValidPhone,
+} from '@/lib/receipt'
 import toast from 'react-hot-toast'
 
 const PAX_STATE = {
@@ -112,6 +116,7 @@ export default function PaymentPanel() {
   const [showPayPad,setShowPayPad]= useState(false)
   const [paxState,  setPaxState]  = useState('idle')
   const [processing,setProcessing]= useState(false)
+  const [receiptPrompt, setReceiptPrompt] = useState(null)  // { html, orderNumber, settings } or null
 
   const liveTotal = subtotal - orderDiscountAmt + (taxExempt?0:taxAmount) + tip + feeAmt
   const paid      = paidAmount()
@@ -154,13 +159,64 @@ export default function PaymentPanel() {
     const totalPaid = overridePaid || paid
     if (totalPaid < liveTotal && !payments.some(p=>p.method==='on_account')) { toast.error('Payment incomplete'); return }
     setProcessing(true)
+
+    // ── Capture order data BEFORE submitting (cart will be cleared) ──
+    const snapshotItems = items.map(it => {
+      const d = it.itemDiscount
+      const lp = d ? (d.type==='pct' ? it.unitPrice*(1-d.value/100) : Math.max(0,it.unitPrice-d.value)) : it.unitPrice
+      return { name: it.name, qty: it.qty, line_total: lp * it.qty }
+    })
+    const snapshotPayments = payments.map(p => ({ method:p.method, amount:p.amount }))
+    const orderSnapshot = {
+      items: snapshotItems,
+      payments: snapshotPayments,
+      subtotal,
+      discount: orderDiscountAmt,
+      tax: taxExempt ? 0 : taxAmount,
+      total: liveTotal,
+      change,
+      cashier_name: user?.name || user?.email || 'Cashier',
+      customer_name: customer?.name || 'Walk-in',
+      date: new Date().toLocaleString(),
+    }
+
     try {
-      await submitOrder(store.id, user.id, tenant.id, TERMINAL_ID)
+      const result = await submitOrder(store.id, user.id, tenant.id, TERMINAL_ID)
+      if (!result) { setProcessing(false); return }  // submitOrder returned null on error
+
       toast.success('✓ Order saved!')
-      close()
-      window.location.href = '/pos'
-    } catch { toast.error('Failed') }
-    finally { setProcessing(false) }
+
+      // ── Receipt logic ──
+      const settings = getPrintingSettings()
+      const storeInfo = {
+        name: store?.name,
+        address: [store?.address, store?.city, store?.state, store?.zip].filter(Boolean).join(', '),
+        phone: store?.phone,
+      }
+      const receiptOrder = { ...orderSnapshot, order_number: result.order_number }
+      const html = buildReceiptHTML(receiptOrder, settings, storeInfo)
+
+      if (settings.autoMode === 'auto') {
+        // Auto print + auto close
+        printReceipt(html, settings.copies || 1)
+        setTimeout(() => { close(); window.location.href = '/pos' }, 600)
+      } else if (settings.autoMode === 'manual' && !settings.enableEmail && !settings.enableSms) {
+        // Skip prompt, just close
+        close()
+        window.location.href = '/pos'
+      } else {
+        // Show prompt: ask mode OR (manual mode + email/sms enabled)
+        setReceiptPrompt({ html, orderNumber: result.order_number, settings })
+        setProcessing(false)
+        // Don't close yet — user will click an action in the modal
+      }
+    } catch { toast.error('Failed'); setProcessing(false) }
+  }
+
+  const finishAndClose = () => {
+    setReceiptPrompt(null)
+    close()
+    window.location.href = '/pos'
   }
 
   const enabledMethods = METHODS.filter(m => {
@@ -512,6 +568,145 @@ export default function PaymentPanel() {
           </div>
         </div>
       )}
+
+      {receiptPrompt && (
+        <ReceiptPromptModal
+          html={receiptPrompt.html}
+          orderNumber={receiptPrompt.orderNumber}
+          settings={receiptPrompt.settings}
+          tenantId={tenant?.id}
+          customerEmail={customer?.email}
+          customerPhone={customer?.phone}
+          onDone={finishAndClose}
+        />
+      )}
     </Overlay>
+  )
+}
+
+// ════════════════════════════════════════════════
+// 🧾 ReceiptPromptModal — Print / Email / SMS prompt after order
+// ════════════════════════════════════════════════
+function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEmail, customerPhone, onDone }) {
+  const [email, setEmail] = useState(customerEmail || '')
+  const [phone, setPhone] = useState(customerPhone || '')
+  const [busy,  setBusy]  = useState(false)
+  const [done,  setDone]  = useState({ printed:false, emailed:false, smsed:false })
+
+  const handlePrint = () => {
+    printReceipt(html, settings.copies || 1)
+    setDone(d => ({ ...d, printed:true }))
+    toast.success(`🖨️ Printing ${settings.copies||1} cop${settings.copies>1?'ies':'y'}...`)
+  }
+
+  const handleEmail = async () => {
+    if (!isValidEmail(email)) { toast.error('Invalid email'); return }
+    setBusy(true)
+    const r = await sendEmailReceipt(email, html, orderNumber, tenantId)
+    setBusy(false)
+    if (r.ok) { toast.success(r.msg); setDone(d => ({ ...d, emailed:true })) }
+    else toast.error(r.msg)
+  }
+
+  const handleSms = async () => {
+    if (!isValidPhone(phone)) { toast.error('Invalid phone (need 10+ digits)'); return }
+    setBusy(true)
+    const r = await sendSmsReceipt(phone, html, orderNumber, tenantId)
+    setBusy(false)
+    if (r.ok) { toast.success(r.msg); setDone(d => ({ ...d, smsed:true })) }
+    else toast.error(r.msg)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center"
+      style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
+      <div className="rounded-3xl overflow-hidden shadow-2xl" style={{width:'480px', background:'#fff', maxHeight:'92vh', overflowY:'auto'}}>
+        {/* Header */}
+        <div className="px-6 py-5 text-center"
+          style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+          <div className="text-[42px] mb-1">✅</div>
+          <div className="text-[18px] font-black text-white">Order Complete</div>
+          <div className="text-[12px] text-green-100 mt-1 font-mono">#{orderNumber}</div>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="text-[14px] font-bold text-slate-700 text-center mb-1">Send Receipt?</div>
+
+          {/* Print */}
+          <div className="rounded-2xl p-4" style={{background:'#f8fafc', border:'2px solid #e2e8f0'}}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="text-[28px]">🖨️</div>
+                <div>
+                  <div className="text-[14px] font-bold text-slate-800">Print Paper Receipt</div>
+                  <div className="text-[11px] text-slate-500">{settings.copies || 1} cop{settings.copies>1?'ies':'y'}</div>
+                </div>
+              </div>
+              <button onClick={handlePrint} disabled={busy}
+                className="rounded-xl px-5 py-2.5 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
+                style={{background: done.printed ? '#16a34a' : '#3b82f6'}}>
+                {done.printed ? '✓ Printed' : 'Print'}
+              </button>
+            </div>
+          </div>
+
+          {/* Email */}
+          {settings.enableEmail && (
+            <div className="rounded-2xl p-4" style={{background:'#f0f9ff', border:'2px solid #bae6fd'}}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[24px]">📧</div>
+                <div className="text-[13px] font-bold text-slate-800">Email Receipt</div>
+              </div>
+              <div className="flex gap-2">
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                  placeholder="customer@example.com"
+                  className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none"
+                  style={{background:'#fff', border:'1.5px solid #bae6fd'}}/>
+                <button onClick={handleEmail} disabled={busy || !email}
+                  className="rounded-xl px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
+                  style={{background: done.emailed ? '#16a34a' : '#0284c7'}}>
+                  {done.emailed ? '✓ Sent' : 'Send'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SMS */}
+          {settings.enableSms && (
+            <div className="rounded-2xl p-4" style={{background:'#fdf4ff', border:'2px solid #f0abfc'}}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[24px]">💬</div>
+                <div className="text-[13px] font-bold text-slate-800">SMS Receipt</div>
+              </div>
+              <div className="flex gap-2">
+                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none font-mono"
+                  style={{background:'#fff', border:'1.5px solid #f0abfc'}}/>
+                <button onClick={handleSms} disabled={busy || !phone}
+                  className="rounded-xl px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
+                  style={{background: done.smsed ? '#16a34a' : '#9333ea'}}>
+                  {done.smsed ? '✓ Sent' : 'Send'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="px-6 py-4 flex gap-3" style={{background:'#f8fafc', borderTop:'1px solid #e2e8f0'}}>
+          <button onClick={onDone}
+            className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-2"
+            style={{background:'#fff', borderColor:'#cbd5e1', color:'#64748b'}}>
+            Skip — No Receipt
+          </button>
+          <button onClick={onDone}
+            className="flex-1 rounded-xl py-3 text-[14px] font-black cursor-pointer border-none text-white"
+            style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+            ✓ Done
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

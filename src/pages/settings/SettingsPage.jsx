@@ -1265,6 +1265,8 @@ const DEFAULT_PRINTING = {
   footerText: 'Returns within 30 days with receipt.',
   autoMode: 'ask',  // auto | ask | manual
   copies: 1,
+  enableEmail: false,
+  enableSms: false,
 }
 
 function PrintingSection() {
@@ -1413,6 +1415,53 @@ function PrintingSection() {
             <div className="text-[11px] text-[#5d728f]">
               {s.copies===1 ? '1 copy → customer only' : `${s.copies} copies → e.g. customer + merchant${s.copies>2?' + record':''}`}
             </div>
+          </Card>
+
+          {/* Digital Receipt — Email & SMS */}
+          <Card>
+            <CardTitle>📱 Digital Receipt (Email / SMS)</CardTitle>
+
+            <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] cursor-pointer mb-2"
+              style={s.enableEmail
+                ? {background:'#0a1f3a', border:'1px solid #2563eb'}
+                : {background:'#0c1420', border:'1px solid #1e2d42'}}>
+              <div className="flex items-start gap-3 flex-1">
+                <span className="text-[20px]">📧</span>
+                <div>
+                  <div className="text-[13px] font-bold" style={{color: s.enableEmail ? '#fff' : '#cbd5e1'}}>Email Receipt</div>
+                  <div className="text-[11px] text-[#5d728f]">Send HTML receipt to customer's email</div>
+                </div>
+              </div>
+              <Toggle value={s.enableEmail} onChange={v => setS({ ...s, enableEmail:v })}/>
+            </label>
+
+            <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] cursor-pointer"
+              style={s.enableSms
+                ? {background:'#0a1f3a', border:'1px solid #2563eb'}
+                : {background:'#0c1420', border:'1px solid #1e2d42'}}>
+              <div className="flex items-start gap-3 flex-1">
+                <span className="text-[20px]">💬</span>
+                <div>
+                  <div className="text-[13px] font-bold" style={{color: s.enableSms ? '#fff' : '#cbd5e1'}}>SMS Receipt</div>
+                  <div className="text-[11px] text-[#5d728f]">Send a text message with receipt link</div>
+                </div>
+              </div>
+              <Toggle value={s.enableSms} onChange={v => setS({ ...s, enableSms:v })}/>
+            </label>
+
+            {(s.enableEmail || s.enableSms) && s.autoMode === 'ask' && (
+              <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
+                style={{background:'#0a2818', border:'1px solid #16a34a', color:'#86efac'}}>
+                ✅ <span className="font-bold">Ask popup will include</span> Email{s.enableSms?' + SMS':''} input field{s.enableSms?'s':''} alongside Print/Skip options.
+              </div>
+            )}
+
+            {(s.enableEmail || s.enableSms) && s.autoMode !== 'ask' && (
+              <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
+                style={{background:'#2a1f0a', border:'1px solid #ca8a04', color:'#fde047'}}>
+                ⚠️ <span className="font-bold">Note:</span> Digital receipts only ask the customer when "Ask first" mode is selected above. Switch "When to Print" to "Ask first" to use this.
+              </div>
+            )}
           </Card>
 
           <SaveBtn onClick={save} className="w-full"/>
