@@ -331,6 +331,7 @@ export function RecallPanel({ onClose }) {
                 </div>
               )}
             </div>
+            </>}
           </div>
         )}
       </div>
