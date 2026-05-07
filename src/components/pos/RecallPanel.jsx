@@ -182,8 +182,11 @@ export function RecallPanel({ onClose }) {
                       {new Date(order.held_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · {order.held_by_name} · {order.item_count} items
                     </div>
                   </div>
-                  <div className="text-[16px] font-black font-mono flex-shrink-0" style={{color:'#d97706'}}>
-                    ${parseFloat(order.total||0).toFixed(2)}
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div className="text-[16px] font-black font-mono" style={{color:'#d97706'}}>
+                      ${parseFloat(order.total||0).toFixed(2)}
+                    </div>
+                    <span className="text-[14px]" style={{color: selected?.id===order.id ? '#f59e0b':'#cbd5e1'}}>👁️</span>
                   </div>
                 </div>
               ))
@@ -230,11 +233,18 @@ export function RecallPanel({ onClose }) {
           </div>
         </div>
 
-        {/* Right: Order Detail */}
-        {selected && (
+        {/* Right: Order Detail - always visible */}
+        {true && (
           <div className="flex flex-col h-full flex-1"
             style={{background:'#f8fafc', borderLeft:'1px solid #e2e8f0'}}>
 
+            {!selected && (
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
+                <div className="text-[52px] mb-3">👁️</div>
+                <div className="text-[14px] font-semibold text-slate-400">Click an order to preview</div>
+              </div>
+            )}
+            {selected && <>
             {/* Detail header */}
             <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
               style={{background:'#fff', borderBottom:'1px solid #e2e8f0'}}>

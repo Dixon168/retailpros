@@ -153,7 +153,7 @@ export default function OrderLookupPage() {
 
       {/* ── Left: Filters + List ── */}
       <div className="flex flex-col flex-shrink-0"
-        style={{width: selected ? '420px' : '100%', transition:'width 0.2s', background:'#fff', borderRight:'1px solid #e2e8f0'}}>
+        style={{width:'460px', transition:'width 0.2s', background:'#fff', borderRight:'1px solid #e2e8f0', flexShrink:0}}>
 
         {/* Top filters bar */}
         <div className="flex-shrink-0 px-4 pt-4 pb-3" style={{borderBottom:'1px solid #f1f5f9'}}>
@@ -298,12 +298,15 @@ export default function OrderLookupPage() {
                     </div>
                   )}
                 </div>
-                <div className="text-right flex-shrink-0">
+                <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
                   <div className="text-[15px] font-black font-mono" style={{color:'#1e293b'}}>
                     ${parseFloat(o.grand_total||o.total||0).toFixed(2)}
                   </div>
-                  <div className="text-[10px] text-slate-400">
-                    {(o.order_items||o.cart_snapshot?.items||[]).length} items
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400">
+                      {(o.order_items||o.cart_snapshot?.items||[]).length} items
+                    </span>
+                    <span className="text-[14px]" style={{color: selected?.id===o.id ? '#6366f1' : '#cbd5e1'}}>👁️</span>
                   </div>
                 </div>
               </div>
@@ -313,9 +316,17 @@ export default function OrderLookupPage() {
       </div>
 
       {/* ── Right: Order Detail ── */}
-      {selected && (
+      {true && (
         <div className="flex-1 flex flex-col overflow-hidden">
 
+          {!selected && (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
+              <div className="text-[64px] mb-4">👁️</div>
+              <div className="text-[16px] font-semibold text-slate-400">Select an order</div>
+              <div className="text-[12px] mt-1 text-slate-300">Click any order to preview details</div>
+            </div>
+          )}
+          {selected && <>
           {/* Detail header */}
           <div className="px-6 py-4 flex-shrink-0 flex items-start justify-between"
             style={{background:'#fff', borderBottom:'1px solid #e2e8f0'}}>
@@ -468,6 +479,7 @@ export default function OrderLookupPage() {
               </>
             )}
           </div>
+          </>}
         </div>
       )}
     </div>
