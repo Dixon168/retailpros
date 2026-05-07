@@ -89,7 +89,18 @@ export default function POSPage() {
     { id:'points',  label:t('points'),   icon:'💎', action: () => setShowPoints(true) },
     { id:'openitem',label:t('openItem'), icon:'✏️', action: () => setShowOpenItem(true) },
     { id:'return',  label:t('return'),   icon:'↩️', action: () => setShowRefund(true) },
-    { id:'hold',    label:t('hold'),     icon:'📌', action: () => setShowHold(true) },
+    { id:'hold', label:t('hold'), icon:'📌', action: async () => {
+      const { items, customer, totals } = useCartStore.getState()
+      if (items.length === 0) { toast.error('Cart is empty'); return }
+      const { tenant, store, terminal, user } = useAuthStore.getState()
+      const ok = await useHeldOrdersStore.getState().holdCurrentCart({
+        tenantId: tenant?.id, storeId: store?.id,
+        terminalId: terminal?.id, terminalName: terminal?.name,
+        userId: user?.id, userName: user?.name,
+        label: customer?.name || null,
+      })
+      if (ok) toast.success('📌 Order held')
+    }},
     { id:'recall',  label:t('recall'),   icon:'📋', action: () => setShowRecall(true) },
     { id:'orders',  label:t('orders'),   icon:'🔍', action: () => { window.location.href='/orders' } },
   ]
@@ -208,7 +219,7 @@ export default function POSPage() {
       {showDiscPanel  && <DiscountPanel />}
       {showPayPanel   && <PaymentPanel />}
       {showRefund     && <RefundPanel onClose={() => setShowRefund(false)} />}
-    {showHold && <HoldModal onClose={() => setShowHold(false)}/>}
+
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
     {showRecall && <RecallPanel onClose={() => setShowRecall(false)}/>}
     {showOpenItem && (
