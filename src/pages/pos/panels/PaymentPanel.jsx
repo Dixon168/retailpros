@@ -457,25 +457,24 @@ export default function PaymentPanel() {
 
         <div className="px-5 py-4">
           {/* Payment method grid */}
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Payment Method</div>
           <div className="grid grid-cols-3 gap-2 mb-4">
             {ALL_METHODS.map(m => (
-              <button
-                key={m.id}
+              <button key={m.id}
                 onClick={() => {
                   setSelectedMethod(m.id)
                   if (m.id === 'card' && terminal?.pax_enabled) handleCardMethod()
                 }}
                 disabled={paxState === 'waiting' || paxState === 'processing'}
-                className={`rounded-[9px] py-3 text-center transition-all cursor-pointer
-                  border disabled:opacity-40 ${selectedMethod === m.id
-                    ? 'border-blue-500/40 bg-blue-500/8'
-                    : 'border-[#1e2d42] bg-[#111827] hover:border-[#243347]'
-                  }`}
-              >
-                <div className="text-[18px] mb-1">{m.icon}</div>
-                <div className={`text-[9px] leading-tight px-1 ${
-                  selectedMethod === m.id ? 'text-blue-400' : 'text-[#8899b0]'
-                }`}>{m.label}</div>
+                className="rounded-2xl py-3 text-center cursor-pointer border-2 transition-all disabled:opacity-40"
+                style={selectedMethod===m.id
+                  ? {background: METHODS_BG[m.id]||'#e0e7ff', borderColor: METHODS_COLOR[m.id]||'#6366f1'}
+                  : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
+                <div className="text-[20px] mb-1">{m.icon}</div>
+                <div className="text-[10px] font-semibold leading-tight px-1"
+                  style={{color: selectedMethod===m.id ? METHODS_COLOR[m.id]||'#6366f1' : '#64748b'}}>
+                  {m.label}
+                </div>
               </button>
             ))}
           </div>
@@ -483,12 +482,12 @@ export default function PaymentPanel() {
           {/* Amount input (hidden when PAX is active) */}
           {selectedMethod !== 'card' || !terminal?.pax_enabled ? (
             <div className="mb-3">
-              <div className="text-[11px] font-mono text-[#3d5068] mb-1.5">AMOUNT</div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Amount</div>
               <button onClick={() => setShowAmtPad(true)}
-                className="w-full rounded-[9px] px-3.5 py-3 text-right cursor-pointer border transition-all"
-                style={{background:'#111827', borderColor: amountInput ? '#3b82f6' : '#1e2d42'}}>
-                <span className="text-[22px] font-mono font-bold"
-                  style={{color: amountInput ? '#fff' : '#3d5068'}}>
+                className="w-full rounded-2xl px-4 py-3 text-right cursor-pointer border-2 transition-all"
+                style={{background: amountInput?'#eef2ff':'#f8fafc', borderColor: amountInput?'#a5b4fc':'#e2e8f0'}}>
+                <span className="text-[28px] font-black font-mono"
+                  style={{color: amountInput?'#6366f1':'#94a3b8'}}>
                   ${amountInput || '0.00'}
                 </span>
               </button>
@@ -549,7 +548,7 @@ export default function PaymentPanel() {
 
           {/* Payments list */}
           {payments.length > 0 && (
-            <div className="rounded-2xl px-4 py-3 mb-3" style={{background:'#f0fdf4', border:'1.5px solid #86efac'}}>
+            <div className="rounded-2xl px-4 py-3 mb-3" style={{background:'#eff6ff', border:'1.5px solid #bfdbfe'}}>
               {payments.map((p, i) => (
                 <div key={i} className="flex justify-between items-center py-1.5
                   border-b border-[#1e2d42] last:border-0">
