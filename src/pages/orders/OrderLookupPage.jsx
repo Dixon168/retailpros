@@ -148,15 +148,138 @@ export default function OrderLookupPage() {
     setSelected(s => s?.id===o.id ? {...s, status:'voided'} : s)
   }
 
+
   return (
     <div className="flex h-full" style={{background:'#f0f2f5'}}>
 
-      {/* ── Left: Filters + List ── */}
+      {/* ── LEFT: Preview Panel (small) ── */}
       <div className="flex flex-col flex-shrink-0"
-        style={{width:'460px', transition:'width 0.2s', background:'#fff', borderRight:'1px solid #e2e8f0', flexShrink:0}}>
+        style={{width:'300px', background:'#fff', borderRight:'1px solid #e2e8f0'}}>
 
-        {/* Top filters bar */}
-        <div className="flex-shrink-0 px-4 pt-4 pb-3" style={{borderBottom:'1px solid #f1f5f9'}}>
+        {/* Header */}
+        <div className="px-4 py-3 flex-shrink-0 flex items-center justify-between"
+          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          <div className="text-[14px] font-bold text-white">👁️ Preview</div>
+          {selected && (
+            <button onClick={()=>setSelected(null)}
+              className="w-6 h-6 rounded-full bg-white/20 border-none cursor-pointer text-white text-[12px]">✕</button>
+          )}
+        </div>
+
+        {/* Preview content */}
+        <div className="flex-1 overflow-y-auto">
+          {!selected ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-300 py-10">
+              <div className="text-[48px] mb-3">👁️</div>
+              <div className="text-[13px] font-semibold text-slate-400">Select an order</div>
+              <div className="text-[11px] mt-1 text-slate-300 text-center px-4">
+                Click 👁️ on any order to preview
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 flex flex-col gap-3">
+              {/* Order header */}
+              <div className="rounded-xl p-3" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+                {selected._source === 'held' ? (
+                  <>
+                    <div className="text-[14px] font-bold text-amber-600">📌 {selected.label||'Held Order'}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {format(new Date(selected.created_at),'MMM d, h:mm a')} · {selected.held_by_name}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px] font-bold font-mono" style={{color:'#6366f1'}}>{selected.order_number}</span>
+                      {(() => { const ss=STATUS[getStatus(selected)]; return ss ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={ss}>{ss.label}</span>
+                      ) : null })()}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {format(new Date(selected.created_at),'MMM d, h:mm a')}
+                      {selected.customers?.name && <span className="ml-1.5">· {selected.customers.name}</span>}
+                    </div>
+                  </>
+                )}
+                <div className="text-[20px] font-black font-mono mt-1" style={{color:'#1e293b'}}>
+                  ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
+                </div>
+              </div>
+
+              {/* Items */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Items</div>
+                <div className="rounded-xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
+                  {(selected._source==='held'
+                    ? selected.cart_snapshot?.items||[]
+                    : selected.order_items||[]
+                  ).map((item,i,arr) => {
+                    const name  = selected._source==='held' ? item.name : (item.product_name||'Item')
+                    const qty   = selected._source==='held' ? item.qty  : item.quantity
+                    const total = selected._source==='held' ? item.unitPrice*item.qty : item.line_total
+                    return (
+                      <div key={i} className="flex justify-between px-3 py-2 text-[12px]"
+                        style={{borderBottom:i<arr.length-1?'1px solid #f1f5f9':'none', background:'#fff'}}>
+                        <span className="text-slate-700 truncate flex-1">{name} ×{qty}</span>
+                        <span className="font-bold font-mono ml-2">${parseFloat(total||0).toFixed(2)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Payment */}
+              {(selected.order_payments||[]).length > 0 && (
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Payment</div>
+                  <div className="rounded-xl p-3 flex flex-col gap-1.5" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+                    {selected.order_payments.map((p,i) => (
+                      <div key={i} className="flex justify-between text-[12px]">
+                        <span>{PAY_ICON[p.method]||'💰'} {PAY_LABEL[p.method]||p.method}</span>
+                        <span className="font-bold font-mono">${parseFloat(p.amount).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2 pt-1">
+                {selected._source === 'held' ? (
+                  <>
+                    <button onClick={() => handleResume(selected)}
+                      className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
+                      style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+                      ↩ Resume Order
+                    </button>
+                    <button onClick={async () => {
+                      if (!window.confirm('Cancel?')) return
+                      await cancelHeldOrder({ heldOrderId:selected.id, tenantId:tenant.id })
+                      setSelected(null); toast.success('Cancelled')
+                    }}
+                      className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+                      style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
+                      🗑 Cancel
+                    </button>
+                  </>
+                ) : getStatus(selected)==='completed' ? (
+                  <button onClick={() => handleVoid(selected)}
+                    className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+                    style={{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}}>
+                    🚫 Void Order
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── RIGHT: Filters + List (big) ── */}
+      <div className="flex-1 flex flex-col overflow-hidden" style={{background:'#fff'}}>
+
+        {/* Filters */}
+        <div className="flex-shrink-0 px-5 pt-4 pb-3" style={{borderBottom:'1px solid #f1f5f9'}}>
 
           {/* Row 1: Search + Stats */}
           <div className="flex items-center gap-3 mb-3">
@@ -170,13 +293,13 @@ export default function OrderLookupPage() {
             </div>
             <div className="text-right flex-shrink-0">
               <div className="text-[11px] text-slate-400">{filtered.length} orders</div>
-              <div className="text-[14px] font-black" style={{color:'#6366f1'}}>${totalAmt.toFixed(2)}</div>
+              <div className="text-[15px] font-black" style={{color:'#6366f1'}}>${totalAmt.toFixed(2)}</div>
             </div>
           </div>
 
           {/* Row 2: Date presets */}
           <div className="flex gap-1.5 mb-3">
-            {[['today','Today'],['3days','3 Days'],['week','Week'],['month','Month'],['custom','Custom']].map(([id,label])=>(
+            {[['today','Today'],['3days','3 Days'],['week','Week'],['month','Month'],['custom','📅 Custom']].map(([id,label])=>(
               <button key={id} onClick={()=>setDateMode(id)}
                 className="flex-1 py-2 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
                 style={dateMode===id
@@ -187,29 +310,28 @@ export default function OrderLookupPage() {
             ))}
           </div>
 
-          {/* Custom date picker */}
-          {dateMode === 'custom' && (
-            <div className="flex gap-2 mb-3">
+          {/* Custom date range */}
+          {dateMode==='custom' && (
+            <div className="flex gap-3 mb-3">
               <div className="flex-1">
                 <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">From</div>
                 <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
                   className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
+                  style={{border:'1.5px solid #e2e8f0',background:'#f8fafc'}}/>
               </div>
               <div className="flex-1">
                 <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">To</div>
                 <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
                   className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
+                  style={{border:'1.5px solid #e2e8f0',background:'#f8fafc'}}/>
               </div>
             </div>
           )}
 
-          {/* Row 3: Status filter */}
+          {/* Row 3: Status */}
           <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
             {STATUS_FILTERS.map(f => {
-              const count = f.id==='all' ? filtered.length
-                : allOrders.filter(o=>getStatus(o)===f.id).length
+              const count = f.id==='all' ? allOrders.length : allOrders.filter(o=>getStatus(o)===f.id).length
               return (
                 <button key={f.id} onClick={()=>setStatusF(f.id)}
                   className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
@@ -217,8 +339,8 @@ export default function OrderLookupPage() {
                     ? {background:'#1e293b',borderColor:'#1e293b',color:'#fff'}
                     : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                   {f.label}
-                  <span className="text-[9px] px-1 py-0.5 rounded-full"
-                    style={{background: statusF===f.id ? 'rgba(255,255,255,0.2)' : '#e2e8f0'}}>
+                  <span className="text-[9px] px-1 rounded-full"
+                    style={{background:statusF===f.id?'rgba(255,255,255,0.2)':'#e2e8f0'}}>
                     {count}
                   </span>
                 </button>
@@ -226,8 +348,8 @@ export default function OrderLookupPage() {
             })}
           </div>
 
-          {/* Row 4: Payment type filter */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+          {/* Row 4: Payment type */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{scrollbarWidth:'none'}}>
             {PAY_FILTERS.map(f => (
               <button key={f.id} onClick={()=>setPayF(f.id)}
                 className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
@@ -240,10 +362,10 @@ export default function OrderLookupPage() {
           </div>
         </div>
 
-        {/* Order list */}
+        {/* Order List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-slate-400 text-[13px]">Loading...</div>
+            <div className="flex items-center justify-center py-12 text-slate-400">Loading...</div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-slate-300">
               <div className="text-[48px] mb-3">📋</div>
@@ -255,58 +377,51 @@ export default function OrderLookupPage() {
             const isHeld = o._source === 'held'
             const isSelected = selected?.id === o.id
             const payMethods = o.order_payments || []
-
             return (
-              <div key={o.id} onClick={()=>setSelected(o)}
-                className="flex items-center gap-3 px-4 py-3 cursor-pointer border-b transition-all"
+              <div key={o.id}
+                className="flex items-center gap-4 px-5 py-3.5 border-b cursor-pointer transition-all"
                 style={{
                   borderColor:'#f8fafc',
                   background: isSelected ? '#f0f4ff' : '#fff',
                   borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
-                }}>
+                }}
+                onClick={() => setSelected(o)}>
+
+                {/* Order info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     {isHeld ? (
-                      <span className="text-[13px] font-bold text-amber-600">
-                        📌 {o.label || 'Held Order'}
-                      </span>
+                      <span className="text-[13px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
                     ) : (
-                      <span className="text-[13px] font-bold font-mono" style={{color:'#6366f1'}}>
-                        {o.order_number}
-                      </span>
+                      <span className="text-[13px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
                     )}
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={ss}>
-                      {ss.label}
-                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={ss}>{ss.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-400">
-                      {format(new Date(o.created_at),'MMM d, h:mma')}
-                    </span>
-                    {o.customers?.name && (
-                      <span className="text-[11px] text-slate-500">· {o.customers.name}</span>
-                    )}
+                  <div className="text-[11px] text-slate-400">
+                    {format(new Date(o.created_at),'MMM d, h:mma')}
+                    {o.customers?.name && <span className="ml-1.5">· {o.customers.name}</span>}
+                    {o.users?.name && <span className="ml-1.5">· {o.users.name}</span>}
                   </div>
                   {payMethods.length > 0 && (
                     <div className="flex gap-1 mt-1">
                       {payMethods.map((p,i) => (
                         <span key={i} className="text-[10px] px-1.5 py-0.5 rounded"
-                          style={{background:'#f1f5f9', color:'#475569'}}>
+                          style={{background:'#f1f5f9',color:'#475569'}}>
                           {PAY_ICON[p.method]||'💰'} ${parseFloat(p.amount).toFixed(0)}
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
+
+                {/* Amount + view */}
                 <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
-                  <div className="text-[15px] font-black font-mono" style={{color:'#1e293b'}}>
-                    ${parseFloat(o.grand_total||o.total||0).toFixed(2)}
-                  </div>
+                  <div className="text-[15px] font-black font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] text-slate-400">
                       {(o.order_items||o.cart_snapshot?.items||[]).length} items
                     </span>
-                    <span className="text-[14px]" style={{color: selected?.id===o.id ? '#6366f1' : '#cbd5e1'}}>👁️</span>
+                    <span className="text-[15px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
                   </div>
                 </div>
               </div>
@@ -314,174 +429,6 @@ export default function OrderLookupPage() {
           })}
         </div>
       </div>
-
-      {/* ── Right: Order Detail ── */}
-      {true && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-
-          {!selected && (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
-              <div className="text-[64px] mb-4">👁️</div>
-              <div className="text-[16px] font-semibold text-slate-400">Select an order</div>
-              <div className="text-[12px] mt-1 text-slate-300">Click any order to preview details</div>
-            </div>
-          )}
-          {selected && <>
-          {/* Detail header */}
-          <div className="px-6 py-4 flex-shrink-0 flex items-start justify-between"
-            style={{background:'#fff', borderBottom:'1px solid #e2e8f0'}}>
-            <div>
-              {selected._source === 'held' ? (
-                <>
-                  <div className="text-[18px] font-black text-amber-600">📌 {selected.label || 'Held Order'}</div>
-                  <div className="text-[12px] text-slate-400 mt-0.5">
-                    Held {format(new Date(selected.created_at),'MMM d, h:mm a')} · by {selected.held_by_name}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
-                    <div className="text-[20px] font-black font-mono" style={{color:'#6366f1'}}>{selected.order_number}</div>
-                    {(() => { const ss=STATUS[getStatus(selected)]; return ss ? (
-                      <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={ss}>{ss.label}</span>
-                    ) : null })()}
-                  </div>
-                  <div className="text-[12px] text-slate-400 mt-0.5">
-                    {format(new Date(selected.created_at),'MMM d, yyyy h:mm a')}
-                    {selected.customers?.name && <span className="ml-2">· 👤 {selected.customers.name}</span>}
-                    {selected.users?.name && <span className="ml-2">· Staff: {selected.users.name}</span>}
-                  </div>
-                </>
-              )}
-            </div>
-            <button onClick={()=>setSelected(null)}
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500 text-[16px]">
-              ✕
-            </button>
-          </div>
-
-          {/* Detail body */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="grid grid-cols-2 gap-4 max-w-3xl">
-
-              {/* Items */}
-              <div className="col-span-2">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Items</div>
-                <div className="rounded-2xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
-                  <div className="grid px-4 py-2 text-[10px] font-bold text-slate-400 uppercase"
-                    style={{gridTemplateColumns:'1fr 60px 80px 80px', background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
-                    <div>Item</div><div className="text-right">Qty</div><div className="text-right">Price</div><div className="text-right">Total</div>
-                  </div>
-                  {(selected._source==='held'
-                    ? selected.cart_snapshot?.items||[]
-                    : selected.order_items||[]
-                  ).map((item,i,arr) => {
-                    const name  = selected._source==='held' ? item.name : (item.product_name||'Item')
-                    const qty   = selected._source==='held' ? item.qty  : item.quantity
-                    const price = selected._source==='held' ? item.unitPrice : item.unit_price
-                    const total = selected._source==='held' ? item.unitPrice*item.qty : item.line_total
-                    return (
-                      <div key={i} className="grid px-4 py-3 items-center"
-                        style={{gridTemplateColumns:'1fr 60px 80px 80px',
-                          borderBottom: i<arr.length-1?'1px solid #f8fafc':'none',
-                          background:'#fff'}}>
-                        <div className="text-[13px] font-semibold text-slate-700">{name}</div>
-                        <div className="text-[12px] text-slate-400 font-mono text-right">×{qty}</div>
-                        <div className="text-[12px] font-mono text-right">${parseFloat(price||0).toFixed(2)}</div>
-                        <div className="text-[13px] font-bold font-mono text-right">${parseFloat(total||0).toFixed(2)}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Totals */}
-              <div>
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Summary</div>
-                <div className="rounded-2xl p-4 flex flex-col gap-2" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
-                  {[
-                    ['Subtotal', selected.subtotal],
-                    ['Tax', selected.tax_amount],
-                    ['Discount', selected.discount_amount ? -selected.discount_amount : null],
-                    ['Tip', selected.tip_amount],
-                  ].filter(([,v]) => v).map(([l,v]) => (
-                    <div key={l} className="flex justify-between text-[12px]">
-                      <span className="text-slate-500">{l}</span>
-                      <span className="font-mono">${parseFloat(v).toFixed(2)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between text-[16px] font-black pt-2"
-                    style={{borderTop:'2px solid #f1f5f9'}}>
-                    <span>Total</span>
-                    <span className="font-mono" style={{color:'#6366f1'}}>
-                      ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment methods */}
-              {(selected.order_payments||[]).length > 0 && (
-                <div>
-                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Payment</div>
-                  <div className="rounded-2xl p-4 flex flex-col gap-2" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
-                    {selected.order_payments.map((p,i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[16px]">{PAY_ICON[p.method]||'💰'}</span>
-                          <span className="text-[13px] font-semibold text-slate-700">
-                            {PAY_LABEL[p.method]||p.method}
-                          </span>
-                        </div>
-                        <span className="text-[14px] font-bold font-mono" style={{color:'#16a34a'}}>
-                          ${parseFloat(p.amount).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="px-6 py-4 flex gap-3 flex-shrink-0"
-            style={{borderTop:'1px solid #e2e8f0', background:'#fff'}}>
-            {selected._source === 'held' ? (
-              <>
-                <button onClick={() => handleResume(selected)}
-                  className="flex-1 rounded-2xl py-3.5 text-[14px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
-                  ↩ Resume Order
-                </button>
-                <button onClick={async () => {
-                  if (!window.confirm('Cancel this held order?')) return
-                  await cancelHeldOrder({ heldOrderId: selected.id, tenantId: tenant.id })
-                  setSelected(null); toast.success('Cancelled')
-                }}
-                  className="rounded-2xl px-5 py-3.5 text-[13px] font-bold cursor-pointer border"
-                  style={{background:'#fff1f2', borderColor:'#fecdd3', color:'#e11d48'}}>
-                  🗑 Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                {getStatus(selected) === 'completed' && (
-                  <button onClick={() => handleVoid(selected)}
-                    className="rounded-2xl px-5 py-3.5 text-[13px] font-bold cursor-pointer border"
-                    style={{background:'#fff1f2', borderColor:'#fecdd3', color:'#e11d48'}}>
-                    🚫 Void
-                  </button>
-                )}
-                <div className="flex-1 flex items-center justify-center text-[12px] text-slate-400">
-                  {format(new Date(selected.created_at),'EEEE, MMMM d yyyy · h:mm a')}
-                </div>
-              </>
-            )}
-          </div>
-          </>}
-        </div>
-      )}
     </div>
   )
 }
