@@ -37,7 +37,7 @@ function ProtectedRoute({ children }) {
       fontFamily:'monospace', fontSize:'13px', gap:'12px'
     }}>
       <div style={{
-        width:'32px', height:'32px', border:'2px solid #1e2d42',
+        width:'32px', height:'32px', border:'2px solid #E5E5E5',
         borderTop:'2px solid #3b82f6', borderRadius:'50%',
         animation:'spin 0.8s linear infinite'
       }}/>
@@ -56,7 +56,7 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) return (
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',background:'#FFFFFF',gap:'16px',padding:'20px'}}>
         <div style={{fontSize:'40px'}}>⚠️</div>
-        <div style={{fontSize:'18px',fontWeight:'bold',color:'#1e293b'}}>Something went wrong</div>
+        <div style={{fontSize:'18px',fontWeight:'bold',color:'#1F1F1F'}}>Something went wrong</div>
         <div style={{fontSize:'12px',color:'#64748b',maxWidth:'400px',textAlign:'center',fontFamily:'monospace',background:'#fff',padding:'12px',borderRadius:'8px',border:'1px solid #e2e8f0'}}>
           {this.state.error?.message}
         </div>
@@ -107,7 +107,7 @@ export default function App() {
 
       <Toaster position="bottom-center" toastOptions={{
         style: {
-          background: '#fff', color: '#1e293b',
+          background: '#fff', color: '#1F1F1F',
           border: '1px solid #e2e8f0', borderRadius: '12px',
           fontFamily: 'Inter, sans-serif', fontSize: '13px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)',

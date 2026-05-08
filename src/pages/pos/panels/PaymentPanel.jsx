@@ -76,7 +76,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           {['7','8','9','4','5','6','1','2','3','.','0','⌫'].map(k=>(
             <button key={k} onClick={()=>press(k)}
               className="rounded-xl py-3.5 text-[20px] font-bold cursor-pointer border-2 active:scale-95"
-              style={k==='⌫'?{background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#1e293b',boxShadow:'0 2px 0 #d1d5db'}}>
+              style={k==='⌫'?{background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#1F1F1F',boxShadow:'0 2px 0 #d1d5db'}}>
               {k}
             </button>
           ))}
@@ -246,19 +246,19 @@ export default function PaymentPanel() {
                 </div>
                 <div>
                   <div className="text-[14px] font-black text-white">{customer.name}</div>
-                  {customer.loyalty_points>0 && <div className="text-[10px] text-indigo-200">💎 {customer.loyalty_points} pts</div>}
+                  {customer.loyalty_points>0 && <div className="text-[10px] text-white/80">💎 {customer.loyalty_points} pts</div>}
                 </div>
               </div>
-            ) : <div className="text-[14px] text-indigo-200">🚶 Walk-in</div>}
+            ) : <div className="text-[14px] text-white/80">🚶 Walk-in</div>}
             <div className="w-px h-8 bg-white/20"/>
             <div>
-              <div className="text-[11px] text-indigo-200 uppercase tracking-wider">Due Now</div>
+              <div className="text-[11px] text-white/80 uppercase tracking-wider">Due Now</div>
               <div className="text-[36px] font-black text-white font-mono leading-none">${remaining.toFixed(2)}</div>
             </div>
             {paid > 0 && <>
               <div className="w-px h-8 bg-white/20"/>
               <div>
-                <div className="text-[11px] text-indigo-200">Paid</div>
+                <div className="text-[11px] text-white/80">Paid</div>
                 <div className="text-[20px] font-black text-green-300 font-mono">${paid.toFixed(2)}</div>
               </div>
             </>}
@@ -291,7 +291,7 @@ export default function PaymentPanel() {
                     <div className="text-[10px] text-slate-400">${item.unitPrice.toFixed(2)} ×{Math.abs(item.qty)}</div>
                   </div>
                   <div className="text-[12px] font-bold font-mono flex-shrink-0"
-                    style={{color:item.qty<0?'#ef4444':'#1e293b'}}>
+                    style={{color:item.qty<0?'#ef4444':'#1F1F1F'}}>
                     ${Math.abs(total).toFixed(2)}
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export default function PaymentPanel() {
                   </div>
                   <button onClick={handleAddPayment}
                     className="flex-shrink-0 w-full rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none"
-                    style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1e293b)`, boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+                    style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1F1F1F)`, boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
                     {METHODS.find(m=>m.id===selMethod)?.icon} Add {METHODS.find(m=>m.id===selMethod)?.label} — ${payInput||remaining.toFixed(2)}
                   </button>
                 </>
@@ -521,7 +521,7 @@ export default function PaymentPanel() {
           style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
           <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'360px',background:'#fff'}}>
             <div className="px-5 py-4 flex items-center justify-between"
-              style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1e293b)`}}>
+              style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1F1F1F)`}}>
               <div>
                 <div className="text-[12px] text-white/70">Payment {payments.length+1}</div>
                 <div className="text-[18px] font-bold text-white">{METHODS.find(m=>m.id===selMethod)?.icon} {METHODS.find(m=>m.id===selMethod)?.label}</div>
@@ -544,7 +544,7 @@ export default function PaymentPanel() {
                   setPayInput(i=>i+k)
                 }}
                   className="rounded-xl py-3.5 text-[20px] font-bold cursor-pointer border-2 active:scale-95"
-                  style={k==='⌫'?{background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#1e293b',boxShadow:'0 2px 0 #d1d5db'}}>
+                  style={k==='⌫'?{background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#1F1F1F',boxShadow:'0 2px 0 #d1d5db'}}>
                   {k}
                 </button>
               ))}
@@ -671,7 +671,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
                 <button onClick={handleNoPrint} disabled={busy}
                   className="rounded-2xl py-5 px-3 cursor-pointer border-2 active:scale-95 transition-all disabled:opacity-50"
                   style={done.printChoice === 'no'
-                    ? {background:'#f1f5f9', borderColor:'#64748b', color:'#334155'}
+                    ? {background:'#f1f5f9', borderColor:'#64748b', color:'#666666'}
                     : {background:'#fff', borderColor:'#cbd5e1', color:'#64748b'}}>
                   <div className="text-[36px] mb-1">{done.printChoice === 'no' ? '✅' : '✕'}</div>
                   <div className="text-[15px] font-black">{done.printChoice === 'no' ? 'No Print' : 'No Print'}</div>

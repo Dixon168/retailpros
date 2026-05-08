@@ -148,15 +148,15 @@ export default function ReportsPage() {
   const groups = [...new Set(REPORT_NAV.map(r=>r.group))]
 
   return (
-    <div className="flex h-full bg-[#07090f]">
+    <div className="flex h-full bg-[#FAFAFA]">
       {/* Sidebar */}
-      <div className="w-[220px] bg-[#0d1117] border-r border-[#1e2d42] p-3 flex-shrink-0 overflow-y-auto">
+      <div className="w-[220px] bg-[#FFFFFF] border-r border-[#E5E5E5] p-3 flex-shrink-0 overflow-y-auto">
         {groups.map(group => (
           <div key={group}>
-            <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-widest px-2 mb-2 mt-3 first:mt-0">{group}</div>
+            <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest px-2 mb-2 mt-3 first:mt-0">{group}</div>
             {REPORT_NAV.filter(r=>r.group===group).map(r => (
               <div key={r.id} onClick={()=>setActiveReport(r.id)}
-                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${activeReport===r.id?'bg-teal-500/10 text-teal-400':'text-[#8899b0] hover:bg-[#111827] hover:text-white'}`}>
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${activeReport===r.id?'bg-teal-500/10 text-teal-400':'text-[#666666] hover:bg-[#F5F5F5] hover:text-[#1F1F1F]'}`}>
                 <span className="text-[14px]">{r.icon}</span>
                 {r.label}
               </div>
@@ -168,21 +168,21 @@ export default function ReportsPage() {
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Date bar */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#1e2d42] bg-[#0d1117] flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#E5E5E5] bg-[#FFFFFF] flex-shrink-0">
           <div className="flex gap-1.5">
             {DATE_PRESETS.map(p => (
               <button key={p.id} onClick={()=>setDatePreset(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] border transition-all ${datePreset===p.id?'border-teal-500/40 bg-teal-500/8 text-teal-400':'border-[#1e2d42] bg-[#111827] text-[#8899b0] hover:text-white'}`}>
+                className={`px-3 py-1.5 rounded-lg text-[11px] border transition-all ${datePreset===p.id?'border-teal-500/40 bg-teal-500/8 text-teal-400':'border-[#E5E5E5] bg-[#F5F5F5] text-[#666666] hover:text-[#1F1F1F]'}`}>
                 {p.label}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <input type="date" defaultValue={format(dateFrom,'yyyy-MM-dd')}
-              className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5 text-[11px] text-[#e8edf5] font-mono outline-none"/>
-            <span className="text-[#3d5068] text-sm">→</span>
+              className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#1F1F1F] font-mono outline-none"/>
+            <span className="text-[#999999] text-sm">→</span>
             <input type="date" defaultValue={format(dateTo,'yyyy-MM-dd')}
-              className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5 text-[11px] text-[#e8edf5] font-mono outline-none"/>
+              className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#1F1F1F] font-mono outline-none"/>
             <button onClick={()=>toast.success('Exporting...')}
               className="bg-teal-500 border-none rounded-lg px-3 py-1.5 text-[11px] font-bold text-white ml-2">
               ⬇ Export
@@ -203,21 +203,21 @@ export default function ReportsPage() {
                   ['Avg Order Value', `$${avgOrder.toFixed(0)}`, '#06b6d4', 'per transaction'],
                   ['Tax Collected', `$${totalTax.toFixed(0)}`, '#f59e0b', '7.25% avg rate'],
                 ].map(([l,v,c,sub]) => (
-                  <div key={l} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4">
-                    <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">{l}</div>
+                  <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                    <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
                     <div className="text-[24px] font-bold" style={{color:c}}>{v}</div>
-                    <div className="text-[10px] text-[#3d5068] mt-1">{sub}</div>
+                    <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
                   </div>
                 ))}
               </div>
 
               {/* Daily chart */}
-              <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-5 mb-5">
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5 mb-5">
                 <div className="text-[13px] font-bold mb-4">Daily Sales (Last 7 Days)</div>
                 <div className="flex items-end gap-2 h-[120px] mb-2">
                   {dailyData.map((d,i) => (
                     <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0">
-                      <div className="text-[9px] font-mono text-[#3d5068] mb-1">
+                      <div className="text-[9px] font-mono text-[#999999] mb-1">
                         {d.total > 0 ? `$${(d.total/1000).toFixed(1)}k` : ''}
                       </div>
                       <div className="w-full rounded-t-sm transition-all hover:opacity-80 cursor-pointer"
@@ -233,17 +233,17 @@ export default function ReportsPage() {
                 </div>
                 <div className="flex gap-2">
                   {dailyData.map((d,i) => (
-                    <div key={i} className="flex-1 text-[9px] font-mono text-[#3d5068] text-center">{d.day}</div>
+                    <div key={i} className="flex-1 text-[9px] font-mono text-[#999999] text-center">{d.day}</div>
                   ))}
                 </div>
               </div>
 
               {/* Payment breakdown */}
-              <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-5">
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
                 <div className="text-[13px] font-bold mb-4">💳 Payment Methods</div>
                 <div className="flex flex-col gap-3">
                   {Object.entries(paymentBreakdown).length === 0 ? (
-                    <div className="text-[#3d5068] text-sm text-center py-4">No payment data</div>
+                    <div className="text-[#999999] text-sm text-center py-4">No payment data</div>
                   ) : Object.entries(paymentBreakdown)
                     .sort(([,a],[,b])=>b-a)
                     .map(([method, amount]) => {
@@ -252,11 +252,11 @@ export default function ReportsPage() {
                       return (
                         <div key={method} className="flex items-center gap-3">
                           <div className="text-[12px] w-[110px] capitalize">{method.replace('_',' ')}</div>
-                          <div className="flex-1 h-2 bg-[#1a2236] rounded overflow-hidden">
+                          <div className="flex-1 h-2 bg-[#F5F5F5] rounded overflow-hidden">
                             <div className="h-full rounded transition-all" style={{width:`${pct}%`, background:colors[method]||'#3b82f6'}}/>
                           </div>
                           <div className="font-mono text-[12px] font-bold w-[80px] text-right">${amount.toFixed(0)}</div>
-                          <div className="font-mono text-[10px] text-[#3d5068] w-[40px] text-right">{pct.toFixed(0)}%</div>
+                          <div className="font-mono text-[10px] text-[#999999] w-[40px] text-right">{pct.toFixed(0)}%</div>
                         </div>
                       )
                     })
@@ -275,16 +275,16 @@ export default function ReportsPage() {
                   ['Tax Collected', `$${(taxData||[]).reduce((s,o)=>s+(o.tax_amount||0),0).toFixed(2)}`, '#f59e0b'],
                   ['Transactions', (taxData||[]).length, undefined],
                 ].map(([l,v,c]) => (
-                  <div key={l} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4">
-                    <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">{l}</div>
+                  <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                    <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
                     <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
                   </div>
                 ))}
               </div>
-              <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] overflow-hidden">
-                <div className="grid border-b border-[#1e2d42] bg-[#111827]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
                   {['Tax Name','Rate','Taxable Sales','Tax Amount','Transactions'].map(h => (
-                    <div key={h} className="px-4 py-2.5 font-mono text-[10px] text-[#3d5068] uppercase tracking-wider">{h}</div>
+                    <div key={h} className="px-4 py-2.5 font-mono text-[10px] text-[#999999] uppercase tracking-wider">{h}</div>
                   ))}
                 </div>
                 {[
@@ -292,15 +292,15 @@ export default function ReportsPage() {
                   ['County Tax',      '0.25%', '$22,800', '$57',    '142'],
                   ['City Tax (LA)',   '1.00%', '$22,800', '$228',   '142'],
                 ].map(row => (
-                  <div key={row[0]} className="grid border-b border-[#1e2d42] last:border-0 hover:bg-[#111827] transition-colors" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
+                  <div key={row[0]} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F5F5F5] transition-colors" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
                     {row.map((cell,i) => (
-                      <div key={i} className={`px-4 py-3 text-[12px] ${i===1?'font-mono text-yellow-400 font-bold':i>=2?'font-mono font-semibold':''}`}>{cell}</div>
+                      <div key={i} className={`px-4 py-3 text-[12px] ${i===1?'font-mono text-[#FA8C16] font-bold':i>=2?'font-mono font-semibold':''}`}>{cell}</div>
                     ))}
                   </div>
                 ))}
-                <div className="grid bg-[#111827]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
+                <div className="grid bg-[#F5F5F5]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
                   {['TOTAL','7.25%','$22,800','$1,653','142'].map((cell,i) => (
-                    <div key={i} className={`px-4 py-3 text-[12px] font-bold ${i===1?'font-mono text-yellow-400':i>=2?'font-mono text-green-400':''}`}>{cell}</div>
+                    <div key={i} className={`px-4 py-3 text-[12px] font-bold ${i===1?'font-mono text-[#FA8C16]':i>=2?'font-mono text-[#00B23B]':''}`}>{cell}</div>
                   ))}
                 </div>
               </div>
@@ -310,16 +310,16 @@ export default function ReportsPage() {
           {/* ── STATION & SHIFT ── */}
           {activeReport === 'shift' && (
             <div>
-              <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4 mb-5 flex gap-4 items-center">
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4 mb-5 flex gap-4 items-center">
                 <div className="text-3xl">🖥️</div>
                 <div className="flex-1">
                   <div className="text-[18px] font-bold">{store?.name} — Terminal 1</div>
-                  <div className="text-[12px] text-[#8899b0] mt-1">
+                  <div className="text-[12px] text-[#666666] mt-1">
                     Period: {format(dateFrom,'MMM d')} – {format(dateTo,'MMM d, yyyy')}
                   </div>
                 </div>
                 <button onClick={()=>toast.success('Printing shift report')}
-                  className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-2 text-[11px] text-[#8899b0] hover:border-teal-500/30 hover:text-teal-400 transition-all">
+                  className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[11px] text-[#666666] hover:border-teal-500/30 hover:text-teal-400 transition-all">
                   🖨 Print Report
                 </button>
               </div>
@@ -331,15 +331,15 @@ export default function ReportsPage() {
                   ['Refunds', shiftOrders.filter(o=>o.status==='refunded').length, '#ef4444'],
                   ['Discounts', `$${shiftOrders.reduce((s,o)=>s+(o.discount_amount||0),0).toFixed(0)}`, '#f59e0b'],
                 ].map(([l,v,c]) => (
-                  <div key={l} className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3">
-                    <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-wider mb-1">{l}</div>
+                  <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[10px] p-3">
+                    <div className="text-[9px] font-mono text-[#999999] uppercase tracking-wider mb-1">{l}</div>
                     <div className="text-[18px] font-bold" style={{color:c}}>{v}</div>
                   </div>
                 ))}
               </div>
 
               {/* Cash reconciliation */}
-              <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4 mb-5">
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4 mb-5">
                 <div className="text-[13px] font-bold mb-3">💵 Cash Reconciliation</div>
                 {[
                   ['Opening Float', '$200.00', undefined],
@@ -347,8 +347,8 @@ export default function ReportsPage() {
                   ['Cash Refunds', '-$0.00', '#ef4444'],
                   ['Expected in Drawer', `$${(200 + cashTotal).toFixed(2)}`, undefined],
                 ].map(([l,v,c]) => (
-                  <div key={l} className="flex justify-between py-2 border-b border-[#1e2d42] last:border-0">
-                    <span className="text-[12px] text-[#8899b0]">{l}</span>
+                  <div key={l} className="flex justify-between py-2 border-b border-[#E5E5E5] last:border-0">
+                    <span className="text-[12px] text-[#666666]">{l}</span>
                     <span className="font-mono text-[13px] font-bold" style={{color:c}}>{v}</span>
                   </div>
                 ))}
@@ -356,18 +356,18 @@ export default function ReportsPage() {
 
               {/* Orders */}
               <div className="text-[13px] font-bold mb-3">Recent Orders</div>
-              <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] overflow-hidden">
-                <div className="grid border-b border-[#1e2d42] bg-[#111827]" style={{gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr'}}>
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]" style={{gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr'}}>
                   {['Order','Time','Customer','Payment','Amount'].map(h => (
-                    <div key={h} className="px-3.5 py-2.5 font-mono text-[10px] text-[#3d5068] uppercase tracking-wider">{h}</div>
+                    <div key={h} className="px-3.5 py-2.5 font-mono text-[10px] text-[#999999] uppercase tracking-wider">{h}</div>
                   ))}
                 </div>
                 {shiftOrders.slice(0,10).map(o => (
-                  <div key={o.id} className="grid border-b border-[#1e2d42] last:border-0 hover:bg-[#111827] transition-colors" style={{gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr'}}>
-                    <div className="px-3.5 py-3 font-mono text-[11px] text-blue-400">{o.order_number}</div>
-                    <div className="px-3.5 py-3 text-[11px] text-[#8899b0]">{format(new Date(o.created_at),'h:mm a')}</div>
+                  <div key={o.id} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F5F5F5] transition-colors" style={{gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr'}}>
+                    <div className="px-3.5 py-3 font-mono text-[11px] text-[#006AFF]">{o.order_number}</div>
+                    <div className="px-3.5 py-3 text-[11px] text-[#666666]">{format(new Date(o.created_at),'h:mm a')}</div>
                     <div className="px-3.5 py-3 text-[12px]">{o.customer_id ? 'Customer' : 'Walk-in'}</div>
-                    <div className="px-3.5 py-3 text-[11px] text-[#8899b0]">
+                    <div className="px-3.5 py-3 text-[11px] text-[#666666]">
                       {o.order_payments?.[0]?.method?.replace('_',' ')||'—'}
                     </div>
                     <div className="px-3.5 py-3 font-mono text-[13px] font-bold">${o.total?.toFixed(2)}</div>
@@ -386,8 +386,8 @@ export default function ReportsPage() {
                   ['Total Orders', orders.length, undefined],
                   ['Best Performer', empData?.[0]?.name||'—', '#f59e0b'],
                 ].map(([l,v,c]) => (
-                  <div key={l} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4">
-                    <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">{l}</div>
+                  <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                    <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
                     <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
                   </div>
                 ))}
@@ -396,7 +396,7 @@ export default function ReportsPage() {
                 {(empData||[]).map((emp,i) => {
                   const COLORS = ['linear-gradient(135deg,#3b82f6,#006AFF)','linear-gradient(135deg,#10b981,#14b8a6)','linear-gradient(135deg,#f59e0b,#f97316)','linear-gradient(135deg,#ec4899,#006AFF)']
                   return (
-                    <div key={i} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4">
+                    <div key={i} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
                           style={{background:COLORS[i%COLORS.length]}}>
@@ -404,7 +404,7 @@ export default function ReportsPage() {
                         </div>
                         <div>
                           <div className="text-[13px] font-bold">{emp.name}</div>
-                          <div className="text-[10px] text-[#3d5068] capitalize">{emp.role}</div>
+                          <div className="text-[10px] text-[#999999] capitalize">{emp.role}</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -414,9 +414,9 @@ export default function ReportsPage() {
                           ['Avg Order', emp.orders>0?`$${(emp.revenue/emp.orders).toFixed(0)}`:'—', undefined],
                           ['Discounts', `$${emp.discounts.toFixed(0)}`, '#f59e0b'],
                         ].map(([l,v,c]) => (
-                          <div key={l} className="bg-[#111827] rounded-lg p-2.5 text-center">
+                          <div key={l} className="bg-[#F5F5F5] rounded-lg p-2.5 text-center">
                             <div className="text-[14px] font-bold font-mono" style={{color:c}}>{v}</div>
-                            <div className="text-[9px] text-[#3d5068] mt-1">{l}</div>
+                            <div className="text-[9px] text-[#999999] mt-1">{l}</div>
                           </div>
                         ))}
                       </div>
@@ -430,7 +430,7 @@ export default function ReportsPage() {
           {/* Placeholder for other reports */}
           {['products','payments','pnl','aging','inventory'].includes(activeReport) && (
             <div className="flex items-center justify-center h-64">
-              <div className="text-center text-[#3d5068]">
+              <div className="text-center text-[#999999]">
                 <div className="text-4xl mb-3 opacity-30">{REPORT_NAV.find(r=>r.id===activeReport)?.icon}</div>
                 <div className="text-[14px] font-bold">{REPORT_NAV.find(r=>r.id===activeReport)?.label}</div>
                 <div className="text-[11px] font-mono mt-2 opacity-60">Full implementation coming in next build</div>

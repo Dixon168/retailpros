@@ -366,7 +366,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                     placeholder="Scan barcode or enter SKU/UPC..."
                     autoFocus
                     className="flex-1 border-none outline-none text-[13px] bg-transparent"
-                    style={{color:'#1e293b'}}/>
+                    style={{color:'#1F1F1F'}}/>
                 </div>
 
                 {/* Item list */}
@@ -444,7 +444,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                       <span className="text-[18px]">🔍</span>
                       <button onClick={() => setShowKB(true)}
                         className="flex-1 text-left border-none outline-none text-[13px] bg-transparent cursor-pointer"
-                        style={{color: invoiceSearch ? '#1e293b' : '#94a3b8'}}>
+                        style={{color: invoiceSearch ? '#1F1F1F' : '#94a3b8'}}>
                         {invoiceSearch || 'Scan or enter invoice number...'}
                       </button>
                       {invoiceSearch && (

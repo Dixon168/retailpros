@@ -30,7 +30,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
       ? { background:'#fee2e2', color:'#dc2626', boxShadow:'0 3px 0 #fca5a5' }
       : warn
       ? { background:'#fef3c7', color:'#854d0e', boxShadow:'0 3px 0 #fcd34d' }
-      : { background:'#f1f5f9', color:'#1e293b', boxShadow:'0 3px 0 #cbd5e1' }
+      : { background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 3px 0 #cbd5e1' }
     return (
       <button onClick={onClick}
         className={`${wide ? 'flex-[2]' : 'flex-1'} h-14 rounded-xl text-[18px] font-bold cursor-pointer border-none active:scale-95 transition-transform select-none`}
@@ -89,7 +89,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
                   className="px-3 h-14 rounded-xl text-[16px] font-bold cursor-pointer border-none active:scale-95"
                   style={shift
                     ? { background:'#3b82f6', color:'#fff', boxShadow:'0 3px 0 #1d4ed8' }
-                    : { background:'#e2e8f0', color:'#1e293b', boxShadow:'0 3px 0 #94a3b8' }}>
+                    : { background:'#e2e8f0', color:'#1F1F1F', boxShadow:'0 3px 0 #94a3b8' }}>
                   ⇧
                 </button>
               )}
@@ -107,7 +107,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
             <Key label="-" onClick={() => press('-')} warn/>
             <button onClick={space}
               className="flex-[4] h-14 rounded-xl text-[14px] font-bold cursor-pointer border-none active:scale-95 select-none"
-              style={{background:'#f1f5f9', color:'#1e293b', boxShadow:'0 3px 0 #cbd5e1'}}>
+              style={{background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 3px 0 #cbd5e1'}}>
               space
             </button>
           </div>
@@ -184,7 +184,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
             {['1','2','3','4','5','6','7','8','9'].map(k => (
               <button key={k} onClick={() => press(k)}
                 className="h-16 rounded-2xl text-[28px] font-bold cursor-pointer border-none active:scale-95 transition-transform select-none"
-                style={{background:'#f1f5f9', color:'#1e293b', boxShadow:'0 4px 0 #cbd5e1'}}>
+                style={{background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 4px 0 #cbd5e1'}}>
                 {k}
               </button>
             ))}
@@ -197,7 +197,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
             </button>
             <button onClick={() => press('0')}
               className="h-16 rounded-2xl text-[28px] font-bold cursor-pointer border-none active:scale-95"
-              style={{background:'#f1f5f9', color:'#1e293b', boxShadow:'0 4px 0 #cbd5e1'}}>
+              style={{background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 4px 0 #cbd5e1'}}>
               0
             </button>
             <button onClick={back}

@@ -58,7 +58,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
           style={{background:'#000000'}}>
           <div>
             <div className="text-[16px] font-bold text-white">✏️ Open Item</div>
-            <div className="text-[11px] text-indigo-200">Custom product</div>
+            <div className="text-[11px] text-white/80">Custom product</div>
           </div>
           <button onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer text-white text-[16px] flex items-center justify-center">
@@ -79,7 +79,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
               onChange={e => setName(e.target.value)}
               placeholder="Open Item"
               className="w-full rounded-xl px-4 py-3 text-[15px] font-semibold outline-none"
-              style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1e293b'}}
+              style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1F1F1F'}}
             />
           </div>
 
@@ -138,7 +138,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
                     background: taxRateId===tr.id ? '#eff6ff' : '#f8fafc',
                     borderColor: taxRateId===tr.id ? '#93c5fd' : '#e2e8f0',
                   }}>
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${taxRateId===tr.id ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${taxRateId===tr.id ? 'border-blue-500 bg-[#006AFF]' : 'border-slate-300'}`}>
                     {taxRateId===tr.id && <div className="w-2 h-2 rounded-full bg-white"/>}
                   </div>
                   <span className="text-[13px] font-semibold" style={{color: taxRateId===tr.id ? '#2563eb' : '#64748b'}}>
@@ -172,7 +172,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
                 </div>
               )}
               <div className="flex justify-between text-[15px] font-bold pt-2"
-                style={{borderTop:'1px solid #B3D1FF', color:'#1e293b'}}>
+                style={{borderTop:'1px solid #B3D1FF', color:'#1F1F1F'}}>
                 <span>Total</span>
                 <span className="font-mono" style={{color:'#006AFF'}}>${totalAmt.toFixed(2)}</span>
               </div>

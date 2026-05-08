@@ -73,7 +73,7 @@ function Input({ value, onChange, placeholder, type='text', step, min, autoFocus
     <input type={type} value={value} onChange={onChange} placeholder={placeholder}
       step={step} min={min} autoFocus={autoFocus}
       className={`w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none transition-all ${mono?'font-mono':''} ${className}`}
-      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
+      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}
       onFocus={e=>{e.target.style.borderColor='#006AFF';e.target.style.background='#fff'}}
       onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}
     />
@@ -357,7 +357,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               <input value={form.upc} onChange={e=>set('upc',e.target.value)}
                 placeholder="Scan or enter UPC / barcode..."
                 className="flex-1 rounded-xl px-4 py-3 text-[14px] font-mono outline-none"
-                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1e293b'}}
+                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}
                 onKeyDown={e=>{ if(e.key==='Enter' && form.upc?.trim()) document.getElementById('upc-lookup-btn').click() }}
                 autoFocus
               />
@@ -489,7 +489,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                   <textarea value={form.description} onChange={e=>set('description',e.target.value)}
                     rows={3} placeholder="Optional — or click 🤖 AI Generate..."
                     className="w-full rounded-xl px-3.5 py-2.5 text-[12px] outline-none resize-none transition-all"
-                    style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}
+                    style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}
                     onFocus={e=>{e.target.style.borderColor='#006AFF';e.target.style.background='#fff'}}
                     onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}/>
                 </div>
@@ -547,7 +547,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                 <select value={selCatId}
                   onChange={e=>{if(e.target.value==='__add__'){setShowAddCat(true);return};setSelCatId(e.target.value);set('subcategory_id','')}}
                   className="w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}>
+                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}>
                   <option value="">— No category —</option>
                   <option value="__add__">✚ Add new...</option>
                   {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
@@ -558,7 +558,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                 <select value={form.subcategory_id}
                   onChange={e=>{if(e.target.value==='__add__'){setShowAddSub(true);setNewSubCatId(selCatId);return};set('subcategory_id',e.target.value);const pc=categories.find(c=>c.subcategories?.some(s=>s.id===e.target.value));if(pc)setSelCatId(pc.id)}}
                   className="w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}>
+                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}>
                   <option value="">— No subcategory —</option>
                   <option value="__add__">✚ Add new...</option>
                   {categories.map(c=>(
@@ -630,14 +630,14 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                   <span className="text-slate-400 mr-1">$</span>
                   <input type="number" value={form.cost} onChange={e=>set('cost',e.target.value)}
                     placeholder="0.00" step="0.01"
-                    className="flex-1 border-none outline-none py-2.5 text-[13px] font-mono bg-transparent" style={{color:'#374151'}}/>
+                    className="flex-1 border-none outline-none py-2.5 text-[13px] font-mono bg-transparent" style={{color:'#E5E5E5'}}/>
                 </div>
               </div>
               <div>
                 <Label>Unit</Label>
                 <select value={form.unit} onChange={e=>set('unit',e.target.value)}
                   className="w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#374151'}}>
+                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#E5E5E5'}}>
                   {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
                 </select>
               </div>

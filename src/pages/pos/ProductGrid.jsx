@@ -130,7 +130,7 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
       {/* Info */}
       <div onClick={onAdd} className="p-2">
         <div className="text-[12px] font-semibold leading-tight mb-1 line-clamp-2"
-          style={{color:'#1e293b'}}>
+          style={{color:'#1F1F1F'}}>
           {product.name}
         </div>
         <div>

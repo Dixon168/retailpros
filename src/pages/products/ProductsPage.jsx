@@ -87,10 +87,10 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="flex h-full bg-[#07090f]">
+    <div className="flex h-full bg-[#FAFAFA]">
       {/* Sidebar */}
       <div className="w-[180px] p-3 flex-shrink-0" style={{background:'#fff', borderRight:'1.5px solid #e2e8f0'}}>
-        <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-widest px-2 mb-2">Filter</div>
+        <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest px-2 mb-2">Filter</div>
         {[
           ['all','All Products',null],
           ['unit','Unit','#3b82f6'],
@@ -100,20 +100,20 @@ export default function ProductsPage() {
         ].map(([id,label,color]) => (
           <div key={id} onClick={() => setFilterType(id)}
             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${
-              filterType===id ? 'bg-[#1a2236] text-white' : 'text-[#8899b0] hover:bg-[#111827] hover:text-white'
+              filterType===id ? 'bg-[#F5F5F5] text-white' : 'text-[#666666] hover:bg-[#F5F5F5] hover:text-[#1F1F1F]'
             }`}>
             {color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:color}}/>}
             {label}
           </div>
         ))}
-        <div className="h-px bg-[#1e2d42] my-2"/>
+        <div className="h-px bg-[#E5E5E5] my-2"/>
         <div onClick={() => setFilterType('low')}
           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] transition-all ${
-            filterType==='low' ? 'bg-red-500/10 text-red-400' : 'text-[#8899b0] hover:bg-[#111827]'
+            filterType==='low' ? 'bg-red-500/10 text-[#CF1322]' : 'text-[#666666] hover:bg-[#F5F5F5]'
           }`}>
           <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"/>
           Low Stock
-          {lowStock > 0 && <span className="ml-auto text-[10px] font-mono bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">{lowStock}</span>}
+          {lowStock > 0 && <span className="ml-auto text-[10px] font-mono bg-red-500/10 text-[#CF1322] px-1.5 py-0.5 rounded">{lowStock}</span>}
         </div>
       </div>
 
@@ -124,31 +124,31 @@ export default function ProductsPage() {
           <div className="flex gap-4 mr-2">
             {[
               ['Products', products.length, ''],
-              ['Low Stock', lowStock, 'text-red-400'],
-              ['Value', '$'+products.reduce((s,p)=>{const q=getQty(p);return s+q*getAvgCost(p)},0).toFixed(0), 'text-green-400'],
+              ['Low Stock', lowStock, 'text-[#CF1322]'],
+              ['Value', '$'+products.reduce((s,p)=>{const q=getQty(p);return s+q*getAvgCost(p)},0).toFixed(0), 'text-[#00B23B]'],
             ].map(([l,v,c]) => (
               <div key={l}>
-                <div className="text-[9px] font-mono text-[#3d5068] uppercase">{l}</div>
+                <div className="text-[9px] font-mono text-[#999999] uppercase">{l}</div>
                 <div className={`text-[17px] font-bold ${c}`} style={{}}>{v}</div>
               </div>
             ))}
           </div>
           <div className="flex items-center gap-2 rounded-[9px] px-3 flex-1 transition-colors" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
-            <span className="text-[#3d5068]">🔍</span>
+            <span className="text-[#999999]">🔍</span>
             <input value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="Search name, SKU, UPC, tag..."
-              className="bg-transparent border-none outline-none text-[12px] py-2 flex-1" style={{color:'#1e293b'}} placeholder-slate-400/>
+              className="bg-transparent border-none outline-none text-[12px] py-2 flex-1" style={{color:'#1F1F1F'}} placeholder-slate-400/>
           </div>
           {/* Category filter */}
           <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
-            className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] text-[#e8edf5] outline-none focus:border-blue-500/40 flex-shrink-0">
+            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2 text-[12px] text-[#1F1F1F] outline-none focus:border-[#006AFF] flex-shrink-0">
             <option value="">All Categories</option>
             {allCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
           {/* Tag filter */}
           <select value={filterTag} onChange={e=>setFilterTag(e.target.value)}
-            className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2 text-[12px] text-[#e8edf5] outline-none focus:border-blue-500/40 flex-shrink-0">
+            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2 text-[12px] text-[#1F1F1F] outline-none focus:border-[#006AFF] flex-shrink-0">
             <option value="">All Tags</option>
             {allTags.map(t => <option key={t} value={t}>🏷️ {t}</option>)}
           </select>
@@ -156,13 +156,13 @@ export default function ProductsPage() {
           {/* Clear filters */}
           {(filterCat || filterTag || search) && (
             <button onClick={()=>{setFilterCat('');setFilterTag('');setSearch('')}}
-              className="bg-[#111827] border border-red-500/20 rounded-[9px] px-2.5 py-2 text-[10px] text-red-400 cursor-pointer hover:border-red-500/40 flex-shrink-0 whitespace-nowrap">
+              className="bg-[#F5F5F5] border border-red-500/20 rounded-[9px] px-2.5 py-2 text-[10px] text-[#CF1322] cursor-pointer hover:border-red-500/40 flex-shrink-0 whitespace-nowrap">
               ✕ Clear
             </button>
           )}
 
           <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-            className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-blue-600 transition-colors flex-shrink-0">
+            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-[#0055CC] transition-colors flex-shrink-0">
             + Add Product
           </button>
         </div>
@@ -172,15 +172,15 @@ export default function ProductsPage() {
           {isLoading ? (
             <div className="p-4 flex flex-col gap-2">
               {Array(6).fill(0).map((_,i) => (
-                <div key={i} className="h-[72px] bg-[#0d1117] border border-[#1e2d42] rounded-[11px] animate-pulse"/>
+                <div key={i} className="h-[72px] bg-[#FFFFFF] border border-[#E5E5E5] rounded-[11px] animate-pulse"/>
               ))}
             </div>
           ) : displayed.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-[#3d5068]">
+            <div className="flex flex-col items-center justify-center h-full text-[#999999]">
               <div className="text-5xl mb-3 opacity-15">📦</div>
               <div className="text-[14px] font-semibold mb-2">No products yet</div>
               <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-                className="bg-blue-500 border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
+                className="bg-[#006AFF] border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
                 + Add your first product
               </button>
             </div>
@@ -189,7 +189,7 @@ export default function ProductsPage() {
               <thead className="sticky top-0 z-10">
                 <tr style={{background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0'}}>
                   {['','Product','SKU','UPC','Price','Avg Cost','Stock','Stock Value','Margin','🤖 AI','Actions'].map((h,i) => (
-                    <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#3d5068] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    <th key={i} className="px-3 py-2.5 text-left font-mono text-[10px] text-[#999999] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -683,7 +683,7 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
             {[
               ['In Stock', p.type==='service'?'—':`${qty} ${p.unit||'ea'}`, isLow?'#dc2626':'#16a34a'],
               ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`, '#006AFF'],
-              ['Stock Value', p.type==='service'?'—':`$${stockVal.toFixed(2)}`, '#1e293b'],
+              ['Stock Value', p.type==='service'?'—':`$${stockVal.toFixed(2)}`, '#1F1F1F'],
             ].map(([l,v,c]) => (
               <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
                 <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{l}</div>
@@ -912,7 +912,7 @@ function SalesHistoryInline({ product: p }) {
                     {/* Qty */}
                     <td className="px-3 py-2.5">
                       <span className="text-[12px] font-bold font-mono"
-                        style={{color: String(r.qty).startsWith('-')?'#dc2626':String(r.qty).startsWith('+')?'#16a34a':'#1e293b'}}>
+                        style={{color: String(r.qty).startsWith('-')?'#dc2626':String(r.qty).startsWith('+')?'#16a34a':'#1F1F1F'}}>
                         {r.qty} {r.unit}
                       </span>
                     </td>

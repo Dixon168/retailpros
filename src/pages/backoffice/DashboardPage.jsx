@@ -17,7 +17,7 @@ const MENU = [
   { to:'/cardcenter',    icon:'💳', label:'Card Center',    desc:'Payment & card transactions',  color:'#0284c7' },
   { to:'/reports',       icon:'📊', label:'Reports',        desc:'Sales & inventory reports',    color:'#006AFF' },
   { to:'/smart-receive', icon:'🤖', label:'Smart Receive',  desc:'AI-powered inventory intake',  color:'#16a34a' },
-  { to:'/settings',      icon:'⚙️', label:'Settings',       desc:'Store & system settings',      color:'#475569' },
+  { to:'/settings',      icon:'⚙️', label:'Settings',       desc:'Store & system settings',      color:'#666666' },
 ]
 
 const QUICK_QUESTIONS = [
@@ -257,10 +257,10 @@ export default function DashboardPage() {
 
           {/* Right: AI Sales Assistant */}
           <div className="rounded-2xl overflow-hidden shadow-sm flex flex-col"
-            style={{background:'#0f172a', border:'1.5px solid #1e2d42', height:'fit-content', maxHeight:'680px'}}>
+            style={{background:'#FAFAFA', border:'1.5px solid #E5E5E5', height:'fit-content', maxHeight:'680px'}}>
 
             {/* Header */}
-            <div className="px-4 py-3.5 flex items-center gap-3 border-b" style={{borderColor:'#1e2d42'}}>
+            <div className="px-4 py-3.5 flex items-center gap-3 border-b" style={{borderColor:'#E5E5E5'}}>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[16px]"
                 style={{background:'#000000'}}>
                 🤖
@@ -271,7 +271,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-auto flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400"/>
-                <span className="text-[10px] text-green-400">Online</span>
+                <span className="text-[10px] text-[#00B23B]">Online</span>
               </div>
             </div>
 
@@ -282,7 +282,7 @@ export default function DashboardPage() {
                   <div className="rounded-2xl px-3.5 py-2.5 max-w-[85%]"
                     style={msg.role==='user'
                       ? {background:'#000000', color:'#fff'}
-                      : {background:'#1e2d42', color:'#e2e8f0'}}>
+                      : {background:'#E5E5E5', color:'#e2e8f0'}}>
                     {msg.role==='ai' && (
                       <div className="text-[10px] text-indigo-400 font-semibold mb-1">🤖 AI Analyst</div>
                     )}
@@ -292,7 +292,7 @@ export default function DashboardPage() {
               ))}
               {thinking && (
                 <div className="flex justify-start">
-                  <div className="rounded-2xl px-4 py-3" style={{background:'#1e2d42'}}>
+                  <div className="rounded-2xl px-4 py-3" style={{background:'#E5E5E5'}}>
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1">
                         {[0,1,2].map(i=>(
@@ -309,7 +309,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick questions */}
-            <div className="px-4 pb-2 grid gap-1.5 border-t pt-3" style={{borderColor:'#1e2d42', gridTemplateColumns:'1fr 1fr'}}>
+            <div className="px-4 pb-2 grid gap-1.5 border-t pt-3" style={{borderColor:'#E5E5E5', gridTemplateColumns:'1fr 1fr'}}>
               {QUICK_QUESTIONS.map((q,i) => (
                 <button key={i} onClick={() => handleAsk(q)}
                   disabled={thinking}
@@ -321,7 +321,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t" style={{borderColor:'#1e2d42'}}>
+            <div className="p-3 border-t" style={{borderColor:'#E5E5E5'}}>
               <div className="flex gap-2">
                 <input
                   value={input}
@@ -330,7 +330,7 @@ export default function DashboardPage() {
                   placeholder="Ask about sales, inventory, trends..."
                   disabled={thinking}
                   className="flex-1 rounded-xl px-3 py-2.5 text-[12px] outline-none border-none"
-                  style={{background:'#1e2d42', color:'#e2e8f0'}}
+                  style={{background:'#E5E5E5', color:'#e2e8f0'}}
                 />
                 <button onClick={() => handleAsk()} disabled={!input.trim() || thinking}
                   className="rounded-xl w-10 h-10 flex items-center justify-center cursor-pointer border-none disabled:opacity-40 flex-shrink-0"

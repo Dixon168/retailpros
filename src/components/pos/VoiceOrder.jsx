@@ -176,7 +176,7 @@ export function VoiceOrderButton({ products }) {
         <div className="fixed inset-0 z-[90] flex items-end justify-center"
           style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(4px)'}}>
           <div className="w-full rounded-t-3xl overflow-hidden shadow-md"
-            style={{background:'#1e293b', maxWidth:'480px'}}>
+            style={{background:'#1F1F1F', maxWidth:'480px'}}>
 
             {/* Listening state */}
             {isListening && (
@@ -229,7 +229,7 @@ export function VoiceOrderButton({ products }) {
                   {matches.length === 0 ? (
                     <div className="rounded-xl p-4 text-center"
                       style={{background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)'}}>
-                      <div className="text-[13px] text-red-400">No matching products found</div>
+                      <div className="text-[13px] text-[#CF1322]">No matching products found</div>
                       <div className="text-[11px] text-slate-400 mt-1">Try again or search manually</div>
                     </div>
                   ) : matches.map((item, i) => {

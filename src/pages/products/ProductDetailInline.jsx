@@ -22,7 +22,7 @@ function Th({ children }) {
 }
 function Td({ children, mono, bold, color }) {
   return <td className={`px-3 py-2.5 text-[12px] border-b ${mono?'font-mono':''} ${bold?'font-bold':''}`}
-    style={{color:color||'#374151', borderColor:'#f1f5f9'}}>{children}</td>
+    style={{color:color||'#E5E5E5', borderColor:'#f1f5f9'}}>{children}</td>
 }
 function Empty({ msg }) {
   return (
@@ -52,7 +52,7 @@ function FieldLabel({ children, required }) {
 function FieldInput({ value, onChange, placeholder, type='text', mono, disabled }) {
   return <input type={type} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
     className={`w-full rounded-xl px-3 py-2 text-[13px] outline-none transition-all ${mono?'font-mono':''} disabled:opacity-50`}
-    style={{border:'1.5px solid #e2e8f0', background: disabled?'#f8fafc':'#fff', color:'#1e293b'}}
+    style={{border:'1.5px solid #e2e8f0', background: disabled?'#f8fafc':'#fff', color:'#1F1F1F'}}
     onFocus={e=>{if(!disabled){e.target.style.borderColor='#006AFF'}}}
     onBlur={e=>{e.target.style.borderColor='#e2e8f0'}}/>
 }
@@ -471,7 +471,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                   <select value={selCatId}
                     onChange={e=>{if(e.target.value==='__add__'){setShowAddCat(true);return};setSelCatId(e.target.value);setF('subcategory_id','')}}
                     className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-                    style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1e293b'}}>
+                    style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}>
                     <option value="">— No category —</option>
                     <option value="__add__">✚ Add new...</option>
                     {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
@@ -482,7 +482,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                   <select value={form.subcategory_id}
                     onChange={e=>{if(e.target.value==='__add__'){setShowAddSub(true);setNewSubCatId(selCatId);return};setF('subcategory_id',e.target.value);const pc=categories.find(c=>c.subcategories?.some(s=>s.id===e.target.value));if(pc)setSelCatId(pc.id)}}
                     className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-                    style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1e293b'}}>
+                    style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}>
                     <option value="">— No subcategory —</option>
                     <option value="__add__">✚ Add new...</option>
                     {categories.map(c=>c.subcategories?.length>0&&(
@@ -541,7 +541,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                   <FieldLabel>Cost Price</FieldLabel>
                   <button onClick={()=>setNumpadField('cost')}
                     className="w-full rounded-xl px-3 py-2.5 text-left text-[14px] font-mono cursor-pointer"
-                    style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#374151'}}>
+                    style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#E5E5E5'}}>
                     ${parseFloat(form.cost||0).toFixed(2)}
                   </button>
                 </div>
@@ -549,7 +549,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                   <FieldLabel>Unit</FieldLabel>
                   <select value={form.unit} onChange={e=>setF('unit',e.target.value)}
                     className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
-                    style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1e293b'}}>
+                    style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}>
                     {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
                   </select>
                 </div>
@@ -673,7 +673,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
           <>
             <div className="grid grid-cols-3 gap-3 mb-3">
               {[['Total Received',`${receives.reduce((s,r)=>s+(r.qty||0),0)} ${p.unit}`,'#16a34a'],
-                ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1e293b'],
+                ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1F1F1F'],
                 ['Avg Cost',`$${parseFloat(avgCost).toFixed(2)}`,'#006AFF']
               ].map(([l,v,c])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#fff',border:'1px solid #e2e8f0'}}>
@@ -705,7 +705,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
           <>
             <div className="grid grid-cols-3 gap-3 mb-3">
               {[['Net Change',`${adjustments.reduce((s,r)=>s+(r.qty_change||0),0)>=0?'+':''}${adjustments.reduce((s,r)=>s+(r.qty_change||0),0)}`,adjustments.reduce((s,r)=>s+(r.qty_change||0),0)>=0?'#16a34a':'#dc2626'],
-                ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1e293b'],
+                ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1F1F1F'],
                 ['Count',adjustments.length,'#006AFF']
               ].map(([l,v,c])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#fff',border:'1px solid #e2e8f0'}}>
@@ -741,8 +741,8 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
             <div className="grid grid-cols-4 gap-3 mb-3">
               {[['Units Sold',`${sales.reduce((s,r)=>s+(r.quantity||0),0)} ${p.unit}`,'#006AFF'],
                 ['Revenue',`$${sales.reduce((s,r)=>s+(r.line_total||0),0).toFixed(2)}`,'#16a34a'],
-                ['Transactions',sales.length,'#1e293b'],
-                ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1e293b']
+                ['Transactions',sales.length,'#1F1F1F'],
+                ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1F1F1F']
               ].map(([l,v,c])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#fff',border:'1px solid #e2e8f0'}}>
                   <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{l}</div>
@@ -807,7 +807,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                       ? {background:bg, borderColor:color}
                       : {background:'#fff', borderColor:'#e2e8f0'} )}}>
                     <div className="text-[20px] mb-1">{icon}</div>
-                    <div className="text-[12px] font-bold" style={{color: promoAdding&&promoType===t?color:'#1e293b'}}>{title}</div>
+                    <div className="text-[12px] font-bold" style={{color: promoAdding&&promoType===t?color:'#1F1F1F'}}>{title}</div>
                     <div className="text-[10px] text-slate-400 mt-0.5">{desc}</div>
                   </button>
                 ))}

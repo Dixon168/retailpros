@@ -14,7 +14,7 @@ export function LockBadge({ lockStatus, lockedByName, onForceRelease, compact = 
   if (lockStatus === 'mine') {
     return (
       <span className={`inline-flex items-center gap-1 font-mono font-bold rounded
-        bg-green-500/10 border border-green-500/20 text-green-400
+        bg-green-500/10 border border-green-500/20 text-[#00B23B]
         ${compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
         <span className="w-1.5 h-1.5 rounded-full bg-green-400
           animate-pulse inline-block" />
@@ -26,7 +26,7 @@ export function LockBadge({ lockStatus, lockedByName, onForceRelease, compact = 
   // lockStatus === 'others'
   return (
     <span className={`inline-flex items-center gap-1.5 font-mono font-bold rounded
-      bg-red-500/10 border border-red-500/20 text-red-400
+      bg-red-500/10 border border-red-500/20 text-[#CF1322]
       ${compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
       🔒
       {compact
@@ -46,23 +46,23 @@ export function LockBlocker({ lockStatus, lockedByName, onDismiss }) {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center
       bg-[rgba(0,0,0,0.4)] backdrop-blur-[2px] rounded-xl">
-      <div className="bg-[#0d1117] border border-red-500/30 rounded-[14px]
+      <div className="bg-[#FFFFFF] border border-red-500/30 rounded-[14px]
         p-6 text-center max-w-[300px] shadow-md">
         <div className="text-3xl mb-3">🔒</div>
         <div className="text-[14px] font-bold mb-2">Record Locked</div>
-        <div className="text-[12px] text-[#8899b0] mb-4">
-          <span className="text-red-400 font-semibold">
+        <div className="text-[12px] text-[#666666] mb-4">
+          <span className="text-[#CF1322] font-semibold">
             {lockedByName || 'Another terminal'}
           </span>
           {' '}is currently editing this record.
         </div>
-        <div className="text-[10px] font-mono text-[#3d5068]">
+        <div className="text-[10px] font-mono text-[#999999]">
           The lock will expire automatically if inactive.
         </div>
         {onDismiss && (
           <button onClick={onDismiss}
-            className="mt-4 bg-[#111827] border border-[#1e2d42] rounded-lg
-              px-4 py-2 text-[11px] text-[#8899b0] hover:text-white transition-colors w-full">
+            className="mt-4 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg
+              px-4 py-2 text-[11px] text-[#666666] hover:text-[#1F1F1F] transition-colors w-full">
             View Only (Read-only mode)
           </button>
         )}
@@ -79,20 +79,20 @@ export function ConflictToast({ show, onRefresh, onDismiss }) {
 
   return (
     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50
-      bg-[#0d1117] border border-yellow-500/40 rounded-[12px]
+      bg-[#FFFFFF] border border-yellow-500/40 rounded-[12px]
       px-5 py-4 flex items-center gap-4 shadow-md
       animate-[fadeUp_0.3s_ease_both] min-w-[380px]">
       <div className="text-2xl">⚠️</div>
       <div className="flex-1">
-        <div className="text-[13px] font-bold text-yellow-400">Record Changed</div>
-        <div className="text-[11px] text-[#8899b0] mt-0.5">
+        <div className="text-[13px] font-bold text-[#FA8C16]">Record Changed</div>
+        <div className="text-[11px] text-[#666666] mt-0.5">
           Another terminal modified this record while you were editing.
         </div>
       </div>
       <div className="flex gap-2">
         <button onClick={onDismiss}
-          className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-            text-[11px] text-[#8899b0] hover:text-white transition-colors">
+          className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
+            text-[11px] text-[#666666] hover:text-[#1F1F1F] transition-colors">
           Discard
         </button>
         <button onClick={onRefresh}

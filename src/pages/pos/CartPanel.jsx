@@ -168,7 +168,7 @@ export default function CartPanel({ onRefund, onHold }) {
             >
               <span style={{
                 fontSize: '15px',
-                color: isActive ? '#fff' : btn.danger ? '#ef4444' : '#475569',
+                color: isActive ? '#fff' : btn.danger ? '#ef4444' : '#666666',
                 lineHeight: 1,
                 marginBottom: '2px',
               }}>{btn.icon}</span>
@@ -261,7 +261,7 @@ export default function CartPanel({ onRefund, onHold }) {
                   placeholder="Type here using any keyboard..."
                   rows={3}
                   className="w-full rounded-2xl px-4 py-3 text-[15px] outline-none resize-none"
-                  style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1e293b'}}/>
+                  style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1F1F1F'}}/>
               </div>
               <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
                 {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild'].map(w => (
@@ -287,7 +287,7 @@ export default function CartPanel({ onRefund, onHold }) {
                         setTimeout(() => { el?.focus(); el?.setSelectionRange(s+1,s+1) }, 0)
                       }}
                         className="rounded-xl text-[14px] font-medium cursor-pointer border"
-                        style={{width:'32px',height:'36px',background:'#fff',borderColor:'#e2e8f0',color:'#1e293b',boxShadow:'0 2px 0 #d1d5db'}}>
+                        style={{width:'32px',height:'36px',background:'#fff',borderColor:'#e2e8f0',color:'#1F1F1F',boxShadow:'0 2px 0 #d1d5db'}}>
                         {k}
                       </button>
                     ))}
@@ -332,7 +332,7 @@ export default function CartPanel({ onRefund, onHold }) {
                   className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-left border transition-all"
                   style={selectedItem.employee?.id===s.id
                     ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
-                    : {background:'#fff', borderColor:'#e2e8f0', color:'#1e293b'}}>
+                    : {background:'#fff', borderColor:'#e2e8f0', color:'#1F1F1F'}}>
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                     style={{background:'#E6F0FF', color:'#006AFF'}}>
                     {s.name.charAt(0)}
@@ -394,11 +394,11 @@ export default function CartPanel({ onRefund, onHold }) {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-1">
-                        <div className="text-[13px] font-semibold leading-tight" style={{color: isSelected ? '#4338ca' : '#1e293b'}}>
+                        <div className="text-[13px] font-semibold leading-tight" style={{color: isSelected ? '#4338ca' : '#1F1F1F'}}>
                           {item.name}
                         </div>
                         <div className="text-[13px] font-bold font-mono flex-shrink-0"
-                          style={{color: item.qty < 0 ? '#dc2626' : isSelected ? '#4338ca' : '#1e293b'}}>
+                          style={{color: item.qty < 0 ? '#dc2626' : isSelected ? '#4338ca' : '#1F1F1F'}}>
                           {item.qty < 0 ? '-' : ''}${Math.abs(lineTotal).toFixed(2)}
                         </div>
                       </div>
@@ -446,9 +446,9 @@ export default function CartPanel({ onRefund, onHold }) {
         <div className="flex-shrink-0" style={{borderTop:'1.5px solid #e2e8f0'}}>
           <div className="px-3 py-2.5 space-y-1">
             {[
-              ['Subtotal',       `$${subtotal.toFixed(2)}`,         '#374151'],
+              ['Subtotal',       `$${subtotal.toFixed(2)}`,         '#E5E5E5'],
               ...(orderDiscountAmt > 0 ? [['Discount', `-$${orderDiscountAmt.toFixed(2)}`, '#16a34a']] : []),
-              ['Tax',            `$${taxAmount.toFixed(2)}`,        '#374151'],
+              ['Tax',            `$${taxAmount.toFixed(2)}`,        '#E5E5E5'],
               ['Tip',            '$0.00',                           '#94a3b8'],
             ].map(([l,v,c]) => (
               <div key={l} className="flex justify-between">

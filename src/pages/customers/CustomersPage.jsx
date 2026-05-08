@@ -7,7 +7,7 @@ import NumPad from '@/components/ui/NumPad'
 import toast from 'react-hot-toast'
 
 const TIER_STYLE = {
-  regular:   { bg:'#f1f5f9', color:'#475569', label:'Regular' },
+  regular:   { bg:'#f1f5f9', color:'#666666', label:'Regular' },
   vip:       { bg:'#fef9c3', color:'#ca8a04', label:'VIP' },
   silver:    { bg:'#f1f5f9', color:'#64748b', label:'Silver' },
   gold:      { bg:'#fffbeb', color:'#d97706', label:'Gold' },

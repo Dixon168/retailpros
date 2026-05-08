@@ -42,14 +42,14 @@ export default function PricePanel() {
 
   return (
     <Overlay onClose={close}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl p-6 w-[320px]">
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-6 w-[320px]">
 
         {/* Header */}
         <div className="text-[15px] font-bold mb-1">💲 Enter Price</div>
-        <div className="text-[11px] font-mono text-[#3d5068] mb-4">
+        <div className="text-[11px] font-mono text-[#999999] mb-4">
           {pendingProduct?.name?.toUpperCase()}
           {pendingWeight && (
-            <span className="ml-2 text-green-400">
+            <span className="ml-2 text-[#00B23B]">
               · {pendingWeight} {pendingProduct?.unit || 'lb'}
             </span>
           )}
@@ -57,28 +57,28 @@ export default function PricePanel() {
 
         {/* Step indicator if both weight + price */}
         {pendingWeight && (
-          <div className="flex items-center gap-2 mb-4 bg-[#111827] border border-[#1e2d42]
+          <div className="flex items-center gap-2 mb-4 bg-[#F5F5F5] border border-[#E5E5E5]
             rounded-[9px] px-3 py-2">
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-black">✓</span>
-              <span className="text-[11px] text-green-400">Weight: {pendingWeight} {pendingProduct?.unit||'lb'}</span>
+              <span className="text-[11px] text-[#00B23B]">Weight: {pendingWeight} {pendingProduct?.unit||'lb'}</span>
             </div>
-            <span className="text-[#3d5068] mx-1">→</span>
+            <span className="text-[#999999] mx-1">→</span>
             <div className="flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">2</span>
-              <span className="text-[11px] text-blue-400">Enter Price</span>
+              <span className="w-5 h-5 rounded-full bg-[#006AFF] flex items-center justify-center text-[10px] font-bold text-white">2</span>
+              <span className="text-[11px] text-[#006AFF]">Enter Price</span>
             </div>
           </div>
         )}
 
         {/* Price display */}
-        <div className="bg-[#111827] border border-[#1e2d42] rounded-[10px] p-4 mb-4 text-center">
-          <div className="text-[11px] font-mono text-[#3d5068] mb-1">PRICE PER {pendingProduct?.unit?.toUpperCase() || 'EA'}</div>
-          <div className="text-[36px] font-bold font-mono text-blue-400 min-h-[44px]">
-            {input ? `$${input}` : <span className="text-[#3d5068]">$0.00</span>}
+        <div className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[10px] p-4 mb-4 text-center">
+          <div className="text-[11px] font-mono text-[#999999] mb-1">PRICE PER {pendingProduct?.unit?.toUpperCase() || 'EA'}</div>
+          <div className="text-[36px] font-bold font-mono text-[#006AFF] min-h-[44px]">
+            {input ? `$${input}` : <span className="text-[#999999]">$0.00</span>}
           </div>
           {pendingWeight && price > 0 && (
-            <div className="text-[13px] font-mono text-green-400 mt-1.5 border-t border-[#1e2d42] pt-1.5">
+            <div className="text-[13px] font-mono text-[#00B23B] mt-1.5 border-t border-[#E5E5E5] pt-1.5">
               Total: ${(pendingWeight * price).toFixed(2)}
             </div>
           )}
@@ -93,10 +93,10 @@ export default function PricePanel() {
               className={`py-3.5 rounded-[10px] text-[16px] font-bold font-mono
                 border transition-all cursor-pointer active:scale-95 ${
                 k === '⌫'
-                  ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15'
+                  ? 'bg-red-500/10 border-red-500/20 text-[#CF1322] hover:bg-red-500/15'
                   : k === '-'
-                  ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/15'
-                  : 'bg-[#111827] border-[#1e2d42] text-[#e8edf5] hover:bg-[#1a2236] hover:border-[#243347]'
+                  ? 'bg-yellow-500/10 border-yellow-500/20 text-[#FA8C16] hover:bg-yellow-500/15'
+                  : 'bg-[#F5F5F5] border-[#E5E5E5] text-[#1F1F1F] hover:bg-[#F5F5F5] hover:border-[#E5E5E5]'
               }`}>
               {k}
             </button>
@@ -106,14 +106,14 @@ export default function PricePanel() {
         {/* Buttons */}
         <div className="flex gap-2">
           <button onClick={close}
-            className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[10px] py-3
-              text-[13px] text-[#8899b0] cursor-pointer hover:text-white transition-colors">
+            className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[10px] py-3
+              text-[13px] text-[#666666] cursor-pointer hover:text-[#1F1F1F] transition-colors">
             Cancel
           </button>
           <button
             onClick={confirm}
             disabled={price <= 0}
-            className="flex-[2] bg-gradient-to-r from-blue-600 to-blue-700 border-none
+            className="flex-[2] bg-[#006AFF] border-none
               rounded-[10px] py-3 text-[13px] font-bold text-white cursor-pointer
               disabled:opacity-40 disabled:cursor-not-allowed
               hover:from-blue-500 hover:to-blue-600 transition-all">

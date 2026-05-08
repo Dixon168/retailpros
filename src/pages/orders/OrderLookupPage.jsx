@@ -458,7 +458,7 @@ export default function OrderLookupPage() {
               <div className="rounded-2xl overflow-hidden shadow-sm" style={{border:'1px solid #e2e8f0', background:'#fff'}}>
 
                 {/* Store header */}
-                <div className="px-4 py-4 text-center" style={{background:'linear-gradient(135deg,#1e293b,#334155)'}}>
+                <div className="px-4 py-4 text-center" style={{background:'linear-gradient(135deg,#1F1F1F,#666666)'}}>
                   <div className="text-[14px] font-black tracking-widest text-white">RETAILPOS</div>
                   <div className="text-[10px] text-slate-400 mt-0.5">Official Receipt</div>
                 </div>
@@ -536,7 +536,7 @@ export default function OrderLookupPage() {
                     </div>
                   )}
                   <div className="flex justify-between items-center text-[15px] font-black pt-2 mt-1"
-                    style={{borderTop:'2px solid #1e293b'}}>
+                    style={{borderTop:'2px solid #1F1F1F'}}>
                     <span className="text-slate-800">TOTAL</span>
                     <span className="font-mono" style={{color:'#006AFF'}}>
                       ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
@@ -646,7 +646,7 @@ export default function OrderLookupPage() {
               return (
                 <button key={f.id} onClick={()=>setStatusF(f.id)}
                   className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                  style={statusF===f.id?{background:'#1e293b',borderColor:'#1e293b',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                  style={statusF===f.id?{background:'#1F1F1F',borderColor:'#1F1F1F',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                   {f.label}
                   <span className="text-[9px] px-1 rounded-full"
                     style={{background:statusF===f.id?'rgba(255,255,255,0.2)':'#e2e8f0'}}>{count}</span>

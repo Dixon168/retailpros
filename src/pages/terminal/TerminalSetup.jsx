@@ -87,14 +87,14 @@ export default function TerminalSetup({ onComplete }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090f] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
       <div className="w-full max-w-[480px]">
 
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-[32px] font-extrabold bg-gradient-to-r from-white to-cyan-400
             bg-clip-text text-transparent mb-2">RetailPOS</div>
-          <div className="text-[13px] text-[#3d5068]">Terminal Setup</div>
+          <div className="text-[13px] text-[#999999]">Terminal Setup</div>
         </div>
 
         {/* Step indicator */}
@@ -109,23 +109,23 @@ export default function TerminalSetup({ onComplete }) {
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center
                   text-[11px] font-bold transition-all ${
                   step >= n
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-[#111827] border border-[#1e2d42] text-[#3d5068]'
+                    ? 'bg-[#006AFF] text-white'
+                    : 'bg-[#F5F5F5] border border-[#E5E5E5] text-[#999999]'
                 }`}>{n}</div>
                 <div className={`text-[9px] mt-1 font-mono uppercase tracking-wider ${
-                  step >= n ? 'text-blue-400' : 'text-[#3d5068]'
+                  step >= n ? 'text-[#006AFF]' : 'text-[#999999]'
                 }`}>{label}</div>
               </div>
               {i < 2 && (
                 <div className={`h-px flex-1 mb-4 transition-all ${
-                  step > n ? 'bg-blue-500' : 'bg-[#1e2d42]'
+                  step > n ? 'bg-[#006AFF]' : 'bg-[#E5E5E5]'
                 }`}/>
               )}
             </div>
           ))}
         </div>
 
-        <div className="bg-[#0d1117] border border-[#1e2d42] rounded-2xl p-6">
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-6">
 
           {/* ── Step 1: 基本信息 ── */}
           {step === 1 && (
@@ -139,11 +139,11 @@ export default function TerminalSetup({ onComplete }) {
                   value={form.name}
                   onChange={e => update('name', e.target.value)}
                   placeholder="e.g. Front Counter, Terminal 1, Warehouse"
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3.5 py-2.5 text-[13px] outline-none focus:border-blue-500/40
-                    transition-colors placeholder-[#3d5068]"
+                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    px-3.5 py-2.5 text-[13px] outline-none focus:border-[#006AFF]
+                    transition-colors placeholder-[#999999]"
                 />
-                <div className="text-[10px] text-[#3d5068] mt-1.5">
+                <div className="text-[10px] text-[#999999] mt-1.5">
                   This name appears in reports and shift summaries
                 </div>
               </div>
@@ -153,9 +153,9 @@ export default function TerminalSetup({ onComplete }) {
                 <select
                   value={form.storeId}
                   onChange={e => update('storeId', e.target.value)}
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3.5 py-2.5 text-[13px] outline-none focus:border-blue-500/40
-                    text-[#e8edf5]"
+                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    px-3.5 py-2.5 text-[13px] outline-none focus:border-[#006AFF]
+                    text-[#1F1F1F]"
                 >
                   <option value="">Select store...</option>
                   {stores.map(s => (
@@ -167,7 +167,7 @@ export default function TerminalSetup({ onComplete }) {
               <button
                 onClick={() => setStep(2)}
                 disabled={!form.name.trim() || !form.storeId}
-                className="w-full bg-blue-500 border-none rounded-[10px] py-3
+                className="w-full bg-[#006AFF] border-none rounded-[10px] py-3
                   text-[13px] font-bold text-white disabled:opacity-40
                   disabled:cursor-not-allowed"
               >
@@ -180,23 +180,23 @@ export default function TerminalSetup({ onComplete }) {
           {step === 2 && (
             <div>
               <div className="text-[15px] font-bold mb-1">💳 Card Reader (PAX)</div>
-              <div className="text-[11px] text-[#3d5068] mb-4">
+              <div className="text-[11px] text-[#999999] mb-4">
                 Configure the PAX terminal connected to this machine
               </div>
 
               {/* Enable toggle */}
-              <div className="flex items-center justify-between bg-[#111827]
-                border border-[#1e2d42] rounded-[10px] px-4 py-3 mb-4">
+              <div className="flex items-center justify-between bg-[#F5F5F5]
+                border border-[#E5E5E5] rounded-[10px] px-4 py-3 mb-4">
                 <div>
                   <div className="text-[13px] font-semibold">Enable PAX Card Reader</div>
-                  <div className="text-[10px] text-[#3d5068] mt-0.5">
+                  <div className="text-[10px] text-[#999999] mt-0.5">
                     This terminal accepts credit/debit cards via PAX
                   </div>
                 </div>
                 <button
                   onClick={() => update('paxEnabled', !form.paxEnabled)}
                   className="w-[42px] h-[24px] rounded-full relative transition-colors flex-shrink-0"
-                  style={{ background: form.paxEnabled ? '#3b82f6' : '#3d5068' }}
+                  style={{ background: form.paxEnabled ? '#3b82f6' : '#999999' }}
                 >
                   <div className="absolute top-[3px] w-[18px] h-[18px] rounded-full
                     bg-white transition-all"
@@ -213,11 +213,11 @@ export default function TerminalSetup({ onComplete }) {
                       value={form.paxIp}
                       onChange={e => { update('paxIp', e.target.value); setPaxTestResult(null) }}
                       placeholder="192.168.1.50"
-                      className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
+                      className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
                         px-3.5 py-2.5 text-[13px] font-mono outline-none
-                        focus:border-blue-500/40 transition-colors placeholder-[#3d5068]"
+                        focus:border-[#006AFF] transition-colors placeholder-[#999999]"
                     />
-                    <div className="text-[10px] text-[#3d5068] mt-1.5">
+                    <div className="text-[10px] text-[#999999] mt-1.5">
                       Find PAX IP: Settings → Network → IP Address on the PAX screen
                     </div>
                   </div>
@@ -228,8 +228,8 @@ export default function TerminalSetup({ onComplete }) {
                       <input
                         value={form.paxPort}
                         onChange={e => update('paxPort', e.target.value)}
-                        className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                          px-3.5 py-2.5 text-[13px] font-mono outline-none focus:border-blue-500/40"
+                        className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                          px-3.5 py-2.5 text-[13px] font-mono outline-none focus:border-[#006AFF]"
                       />
                     </div>
                     <div>
@@ -237,8 +237,8 @@ export default function TerminalSetup({ onComplete }) {
                       <select
                         value={form.paxModel}
                         onChange={e => update('paxModel', e.target.value)}
-                        className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                          px-3.5 py-2.5 text-[12px] outline-none text-[#e8edf5]"
+                        className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                          px-3.5 py-2.5 text-[12px] outline-none text-[#1F1F1F]"
                       >
                         {PAX_MODELS.map(m => (
                           <option key={m.id} value={m.id}>{m.label}</option>
@@ -251,24 +251,24 @@ export default function TerminalSetup({ onComplete }) {
                   <button
                     onClick={testPax}
                     disabled={!form.paxIp || paxTestResult === 'testing'}
-                    className="w-full bg-[#111827] border border-[#243347] rounded-[9px]
-                      py-2.5 text-[12px] text-[#8899b0] disabled:opacity-40
-                      hover:border-blue-500/30 hover:text-blue-400 transition-all mb-2"
+                    className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                      py-2.5 text-[12px] text-[#666666] disabled:opacity-40
+                      hover:border-blue-500/30 hover:text-[#006AFF] transition-all mb-2"
                   >
                     {paxTestResult === 'testing' ? '⏳ Testing connection...' : '🔌 Test Connection'}
                   </button>
 
                   {paxTestResult === 'ok' && (
                     <div className="bg-green-500/8 border border-green-500/20 rounded-[8px]
-                      px-3 py-2 text-[11px] text-green-400 flex items-center gap-2">
+                      px-3 py-2 text-[11px] text-[#00B23B] flex items-center gap-2">
                       <span>✓</span> PAX is online and responding
                     </div>
                   )}
                   {paxTestResult === 'fail' && (
                     <div className="bg-red-500/8 border border-red-500/20 rounded-[8px]
-                      px-3 py-2 text-[11px] text-red-400">
+                      px-3 py-2 text-[11px] text-[#CF1322]">
                       ✗ Cannot reach PAX at {form.paxIp}:{form.paxPort}
-                      <div className="text-[10px] text-red-400/60 mt-1">
+                      <div className="text-[10px] text-[#CF1322]/60 mt-1">
                         Check: same WiFi/LAN? PAX powered on? IP correct?
                       </div>
                     </div>
@@ -278,14 +278,14 @@ export default function TerminalSetup({ onComplete }) {
 
               <div className="flex gap-2 mt-5">
                 <button onClick={() => setStep(1)}
-                  className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    py-2.5 text-[13px] text-[#8899b0]">
+                  className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    py-2.5 text-[13px] text-[#666666]">
                   ← Back
                 </button>
                 <button
                   onClick={() => setStep(3)}
                   disabled={form.paxEnabled && !form.paxIp}
-                  className="flex-[2] bg-blue-500 border-none rounded-[9px] py-2.5
+                  className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5
                     text-[13px] font-bold text-white disabled:opacity-40"
                 >
                   Next: Confirm →
@@ -299,13 +299,13 @@ export default function TerminalSetup({ onComplete }) {
             <div>
               <div className="text-[15px] font-bold mb-4">✅ Confirm Setup</div>
 
-              <div className="bg-[#111827] border border-[#1e2d42] rounded-[10px] p-4 mb-4">
+              <div className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[10px] p-4 mb-4">
                 <Row label="Terminal Name" value={form.name} />
                 <Row label="Store" value={stores.find(s => s.id === form.storeId)?.name || '—'} />
-                <div className="h-px bg-[#1e2d42] my-2.5" />
+                <div className="h-px bg-[#E5E5E5] my-2.5" />
                 <Row label="Card Reader"
                   value={form.paxEnabled ? `PAX ${form.paxModel}` : 'Not configured'}
-                  valueColor={form.paxEnabled ? '#10b981' : '#8899b0'}
+                  valueColor={form.paxEnabled ? '#10b981' : '#666666'}
                 />
                 {form.paxEnabled && <>
                   <Row label="PAX IP" value={`${form.paxIp}:${form.paxPort}`} mono />
@@ -316,22 +316,22 @@ export default function TerminalSetup({ onComplete }) {
                 </>}
               </div>
 
-              <div className="bg-blue-500/6 border border-blue-500/15 rounded-[9px]
-                px-3.5 py-3 text-[11px] text-[#8899b0] mb-5">
+              <div className="bg-[#006AFF]/6 border border-blue-500/15 rounded-[9px]
+                px-3.5 py-3 text-[11px] text-[#666666] mb-5">
                 💡 This device will be remembered as <strong className="text-white">{form.name}</strong>.
                 You can update PAX settings anytime in Settings → Terminal.
               </div>
 
               <div className="flex gap-2">
                 <button onClick={() => setStep(2)}
-                  className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    py-2.5 text-[13px] text-[#8899b0]">
+                  className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    py-2.5 text-[13px] text-[#666666]">
                   ← Back
                 </button>
                 <button
                   onClick={handleFinish}
                   disabled={saving}
-                  className="flex-[2] bg-gradient-to-r from-blue-600 to-blue-700
+                  className="flex-[2] bg-[#006AFF]
                     border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white
                     disabled:opacity-50"
                 >
@@ -342,7 +342,7 @@ export default function TerminalSetup({ onComplete }) {
           )}
         </div>
 
-        <div className="text-center text-[10px] text-[#3d5068] mt-4">
+        <div className="text-center text-[10px] text-[#999999] mt-4">
           This is a one-time setup. Terminal info is stored on this device.
         </div>
       </div>
@@ -353,7 +353,7 @@ export default function TerminalSetup({ onComplete }) {
 // ── Small helpers ──
 function Label({ children }) {
   return (
-    <div className="text-[10px] font-bold font-mono text-[#3d5068] uppercase
+    <div className="text-[10px] font-bold font-mono text-[#999999] uppercase
       tracking-wider mb-1.5">
       {children}
     </div>
@@ -362,7 +362,7 @@ function Label({ children }) {
 function Row({ label, value, mono, valueColor }) {
   return (
     <div className="flex justify-between items-center mb-2 last:mb-0">
-      <span className="text-[11px] text-[#3d5068]">{label}</span>
+      <span className="text-[11px] text-[#999999]">{label}</span>
       <span className={`text-[12px] font-semibold ${mono ? 'font-mono' : ''}`}
         style={{ color: valueColor }}>
         {value}

@@ -65,7 +65,7 @@ export default function SerialPanel() {
   }
 
   const statusConfig = {
-    checking: { color: '#8899b0', text: '⏳ Checking...' },
+    checking: { color: '#666666', text: '⏳ Checking...' },
     valid:    { color: '#10b981', text: '✓ Serial number verified — in stock' },
     invalid:  { color: '#ef4444', text: '✗ Serial number not found in inventory' },
     sold:     { color: '#ef4444', text: '✗ This unit has already been sold' },
@@ -73,20 +73,20 @@ export default function SerialPanel() {
 
   return (
     <Overlay onClose={close}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl p-6 w-[380px]">
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-6 w-[380px]">
 
         <div className="text-[15px] font-bold mb-1">🔢 Enter Serial Number</div>
-        <div className="text-[11px] font-mono text-[#3d5068] mb-5">
+        <div className="text-[11px] font-mono text-[#999999] mb-5">
           SERIALIZED PRODUCT · REQUIRED
         </div>
 
         {/* 商品信息 */}
-        <div className="flex items-center gap-2.5 bg-[#111827] border border-[#1e2d42]
+        <div className="flex items-center gap-2.5 bg-[#F5F5F5] border border-[#E5E5E5]
           rounded-[9px] p-3 mb-4">
           <span className="text-[24px]">{pendingProduct?.emoji || '📱'}</span>
           <div>
             <div className="text-[13px] font-semibold">{pendingProduct?.name}</div>
-            <div className="text-[10px] font-mono text-[#3d5068] mt-0.5">
+            <div className="text-[10px] font-mono text-[#999999] mt-0.5">
               SKU: {pendingProduct?.sku}
             </div>
           </div>
@@ -99,12 +99,12 @@ export default function SerialPanel() {
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           placeholder="Scan or type serial number..."
-          className={`w-full bg-[#111827] border rounded-[9px] px-3.5 py-3
-            text-[14px] font-mono text-[#e8edf5] outline-none tracking-wider
+          className={`w-full bg-[#F5F5F5] border rounded-[9px] px-3.5 py-3
+            text-[14px] font-mono text-[#1F1F1F] outline-none tracking-wider
             transition-colors mb-2 ${
               status === 'valid' ? 'border-green-500/50' :
               status === 'invalid' || status === 'sold' ? 'border-red-500/50' :
-              'border-[#1e2d42] focus:border-yellow-500/40'
+              'border-[#E5E5E5] focus:border-yellow-500/40'
             }`}
         />
 
@@ -122,8 +122,8 @@ export default function SerialPanel() {
         {/* 按钮 */}
         <div className="flex gap-2 mt-4">
           <button onClick={close}
-            className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-              py-2.5 text-[13px] text-[#8899b0] hover:text-white transition-colors font-sans">
+            className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+              py-2.5 text-[13px] text-[#666666] hover:text-[#1F1F1F] transition-colors font-sans">
             Cancel
           </button>
           <button

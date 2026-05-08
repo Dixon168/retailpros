@@ -9,13 +9,13 @@ import { LockBadge, LockBlocker, ConflictToast } from '@/components/ui/LockBadge
 import toast from 'react-hot-toast'
 
 const STATUS_STYLE = {
-  draft:   { bg:'rgba(61,80,104,0.2)',   color:'#8899b0', label:'DRAFT' },
+  draft:   { bg:'rgba(61,80,104,0.2)',   color:'#666666', label:'DRAFT' },
   sent:    { bg:'rgba(59,130,246,0.12)', color:'#3b82f6', label:'SENT' },
   viewed:  { bg:'rgba(6,182,212,0.12)',  color:'#06b6d4', label:'VIEWED' },
   partial: { bg:'rgba(245,158,11,0.12)', color:'#f59e0b', label:'PARTIAL' },
   paid:    { bg:'rgba(16,185,129,0.12)', color:'#10b981', label:'PAID' },
   overdue: { bg:'rgba(239,68,68,0.12)',  color:'#ef4444', label:'OVERDUE' },
-  void:    { bg:'rgba(61,80,104,0.2)',   color:'#3d5068', label:'VOID' },
+  void:    { bg:'rgba(61,80,104,0.2)',   color:'#999999', label:'VOID' },
 }
 
 export default function InvoicesPage() {
@@ -80,15 +80,15 @@ export default function InvoicesPage() {
     .reduce((s,i) => s+(i.balance_due||0), 0)
 
   return (
-    <div className="flex h-full bg-[#07090f]">
+    <div className="flex h-full bg-[#FAFAFA]">
       {/* Invoice list */}
-      <div className="w-[320px] bg-[#0d1117] border-r border-[#1e2d42] flex flex-col flex-shrink-0">
-        <div className="p-3.5 border-b border-[#1e2d42]">
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 mb-2.5 focus-within:border-cyan-500/30 transition-colors">
-            <span className="text-[#3d5068]">🔍</span>
+      <div className="w-[320px] bg-[#FFFFFF] border-r border-[#E5E5E5] flex flex-col flex-shrink-0">
+        <div className="p-3.5 border-b border-[#E5E5E5]">
+          <div className="flex items-center gap-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 mb-2.5 focus-within:border-cyan-500/30 transition-colors">
+            <span className="text-[#999999]">🔍</span>
             <input value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="Search invoices..."
-              className="bg-transparent border-none outline-none py-2 text-[12px] text-[#e8edf5] flex-1 font-sans placeholder-[#3d5068]"/>
+              className="bg-transparent border-none outline-none py-2 text-[12px] text-[#1F1F1F] flex-1 font-sans placeholder-[#999999]"/>
           </div>
           <div className="flex gap-1 flex-wrap">
             {['all','draft','sent','partial','paid','overdue'].map(s => (
@@ -96,7 +96,7 @@ export default function InvoicesPage() {
                 className={`px-2 py-0.5 rounded text-[9px] font-mono border transition-all capitalize ${
                   statusFilter===s
                     ? `border-current` + (STATUS_STYLE[s] ? '' : ' border-cyan-500/40 bg-cyan-500/8 text-cyan-400')
-                    : 'border-[#1e2d42] bg-[#111827] text-[#8899b0]'
+                    : 'border-[#E5E5E5] bg-[#F5F5F5] text-[#666666]'
                 }`}
                 style={statusFilter===s && STATUS_STYLE[s] ? {
                   borderColor: STATUS_STYLE[s].color + '60',
@@ -110,20 +110,20 @@ export default function InvoicesPage() {
         </div>
 
         {/* Outstanding */}
-        <div className="px-4 py-2.5 border-b border-[#1e2d42] flex justify-between items-center">
-          <span className="text-[10px] text-[#3d5068] font-mono uppercase">Outstanding</span>
-          <span className="text-[14px] font-bold font-mono text-red-400">${totalOutstanding.toFixed(2)}</span>
+        <div className="px-4 py-2.5 border-b border-[#E5E5E5] flex justify-between items-center">
+          <span className="text-[10px] text-[#999999] font-mono uppercase">Outstanding</span>
+          <span className="text-[14px] font-bold font-mono text-[#CF1322]">${totalOutstanding.toFixed(2)}</span>
         </div>
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading ? Array(5).fill(0).map((_,i) => (
-            <div key={i} className="h-[72px] bg-[#111827] rounded-[10px] mb-1.5 animate-pulse"/>
+            <div key={i} className="h-[72px] bg-[#F5F5F5] rounded-[10px] mb-1.5 animate-pulse"/>
           )) : invoices.map(inv => {
             const ss = STATUS_STYLE[inv.status] || STATUS_STYLE.draft
             return (
               <div key={inv.id} onClick={()=>handleSelect(inv)}
-                className={`px-3 py-3 rounded-[10px] cursor-pointer border mb-1 transition-all ${selected?.id===inv.id?'bg-[#111827] border-cyan-500/40':'border-transparent hover:bg-[#111827]'}`}>
+                className={`px-3 py-3 rounded-[10px] cursor-pointer border mb-1 transition-all ${selected?.id===inv.id?'bg-[#F5F5F5] border-cyan-500/40':'border-transparent hover:bg-[#F5F5F5]'}`}>
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-mono text-[12px] font-bold text-cyan-400">{inv.invoice_number}</span>
                   <span className="font-mono text-[13px] font-bold"
@@ -135,7 +135,7 @@ export default function InvoicesPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
                     style={{background:ss.bg, color:ss.color}}>{ss.label}</span>
-                  <span className="text-[10px] text-[#3d5068] ml-auto">
+                  <span className="text-[10px] text-[#999999] ml-auto">
                     {inv.due_date ? `Due ${new Date(inv.due_date).toLocaleDateString()}` : new Date(inv.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -144,7 +144,7 @@ export default function InvoicesPage() {
           })}
         </div>
 
-        <div className="p-3 border-t border-[#1e2d42]">
+        <div className="p-3 border-t border-[#E5E5E5]">
           <button className="w-full bg-cyan-500 border-none rounded-[9px] py-2.5 text-[12px] font-bold text-white">+ New Invoice</button>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function InvoicesPage() {
       {selected ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
-          <div className="flex items-center gap-2.5 px-5 py-3 bg-[#0d1117] border-b border-[#1e2d42] flex-shrink-0">
+          <div className="flex items-center gap-2.5 px-5 py-3 bg-[#FFFFFF] border-b border-[#E5E5E5] flex-shrink-0">
             <span className="font-mono text-[14px] font-bold text-cyan-400">{selected.invoice_number}</span>
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
               style={{background:STATUS_STYLE[selected.status]?.bg, color:STATUS_STYLE[selected.status]?.color}}>
@@ -163,21 +163,21 @@ export default function InvoicesPage() {
             <LockBadge lockStatus={lockStatus} lockedByName={lockedByName} />
             <div className="flex-1"/>
             {/* View toggle */}
-            <div className="flex bg-[#111827] border border-[#1e2d42] rounded-[7px] overflow-hidden">
+            <div className="flex bg-[#F5F5F5] border border-[#E5E5E5] rounded-[7px] overflow-hidden">
               {[['invoice','Invoice'],['packing','Packing Slip']].map(([id,label]) => (
                 <button key={id} onClick={()=>setDocView(id)}
-                  className={`px-3 py-1.5 text-[11px] transition-all ${docView===id?'bg-[#1a2236] text-white':'text-[#8899b0] hover:text-white'}`}>
+                  className={`px-3 py-1.5 text-[11px] transition-all ${docView===id?'bg-[#F5F5F5] text-white':'text-[#666666] hover:text-[#1F1F1F]'}`}>
                   {label}
                 </button>
               ))}
             </div>
-            <button onClick={()=>toast.success('Email sent!')} className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5 text-[11px] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400 transition-all flex items-center gap-1.5">
+            <button onClick={()=>toast.success('Email sent!')} className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all flex items-center gap-1.5">
               📧 Email
             </button>
-            <button onClick={handlePrint} className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5 text-[11px] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400 transition-all">
+            <button onClick={handlePrint} className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all">
               🖨 Print
             </button>
-            <button onClick={()=>toast.success('PDF downloaded')} className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5 text-[11px] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400 transition-all">
+            <button onClick={()=>toast.success('PDF downloaded')} className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all">
               ⬇ PDF
             </button>
             <button onClick={handleRecordPayment}
@@ -188,7 +188,7 @@ export default function InvoicesPage() {
           </div>
 
           {/* A4 Preview */}
-          <div className="flex-1 overflow-auto bg-[#1a2236] p-6 flex justify-center">
+          <div className="flex-1 overflow-auto bg-[#F5F5F5] p-6 flex justify-center">
             <div ref={printRef} style={{fontFamily:'sans-serif'}}>
               {docView === 'invoice'
                 ? <InvoiceA4 invoice={selected} />
@@ -198,8 +198,8 @@ export default function InvoicesPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-[#07090f]">
-          <div className="text-center text-[#3d5068]">
+        <div className="flex-1 flex items-center justify-center bg-[#FAFAFA]">
+          <div className="text-center text-[#999999]">
             <div className="text-5xl mb-4 opacity-20">📄</div>
             <div className="text-[14px]">Select an invoice to preview</div>
           </div>
@@ -337,7 +337,7 @@ function InvoiceA4({ invoice: inv }) {
         </div>
       )}
       <div style={{borderTop:'1px solid #e5e7eb', paddingTop:'14px', display:'flex', justifyContent:'space-between', fontSize:'11px', color:'#9ca3af'}}>
-        <div><strong style={{color:'#374151'}}>Payment Methods:</strong> Cash · Card · Check · Bank Transfer</div>
+        <div><strong style={{color:'#E5E5E5'}}>Payment Methods:</strong> Cash · Card · Check · Bank Transfer</div>
         <div style={{textAlign:'right'}}>Thank you for your business!</div>
       </div>
     </div>

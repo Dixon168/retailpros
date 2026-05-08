@@ -344,7 +344,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                     ? {background: ti.bg, borderColor: ti.color}
                     : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
                   <div className="text-[22px] mb-1">{ti.icon}</div>
-                  <div className="text-[12px] font-bold" style={{color: form.type===id ? ti.color : '#374151'}}>{ti.label}</div>
+                  <div className="text-[12px] font-bold" style={{color: form.type===id ? ti.color : '#E5E5E5'}}>{ti.label}</div>
                   <div className="text-[10px] text-slate-400 mt-0.5">{ti.desc}</div>
                 </button>
               ))}
@@ -358,7 +358,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
             </label>
             <select value={form.product_id} onChange={e=>set('product_id',e.target.value)}
               className="w-full rounded-xl px-4 py-2.5 text-[13px] outline-none"
-              style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#374151'}}>
+              style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#E5E5E5'}}>
               <option value="">All Products (Global)</option>
               {products.map(p => (
                 <option key={p.id} value={p.id}>{p.name} — ${p.price?.toFixed(2)}</option>
@@ -454,7 +454,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                         </span>
                       )}
                       <button onClick={() => set('bulk_tiers', form.bulk_tiers.filter((_,j)=>j!==i))}
-                        className="ml-auto text-red-400 hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
+                        className="ml-auto text-[#CF1322] hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
                     </div>
                   ))}
                 </div>
@@ -513,7 +513,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                         {r.type==='fixed' ? `$${r.value}` : `${r.value}% off`}
                       </span>
                       <button onClick={() => set('time_rules', form.time_rules.filter((_,j)=>j!==i))}
-                        className="ml-auto text-red-400 hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
+                        className="ml-auto text-[#CF1322] hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
                     </div>
                   ))}
                 </div>

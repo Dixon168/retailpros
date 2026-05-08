@@ -98,7 +98,7 @@ export default function CustomerPanel() {
             <div className="text-[16px] font-bold text-white">
               {mode === 'search' ? 'Select Customer' : 'Add New Customer'}
             </div>
-            <div className="text-[11px] text-indigo-200">
+            <div className="text-[11px] text-white/80">
               {mode === 'search' ? 'Search or add new' : 'Fill in customer details'}
             </div>
           </div>
@@ -132,7 +132,7 @@ export default function CustomerPanel() {
                   value={search} onChange={e=>setSearch(e.target.value)}
                   placeholder="Search name, phone, email, code..."
                   className="flex-1 border-none outline-none py-2.5 text-[13px] bg-transparent"
-                  style={{color:'#1e293b'}}/>
+                  style={{color:'#1F1F1F'}}/>
                 {search && <button onClick={()=>setSearch('')}
                   className="text-slate-400 bg-transparent border-none cursor-pointer">✕</button>}
               </div>
@@ -270,7 +270,7 @@ export default function CustomerPanel() {
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Customer Type</div>
                 <div className="flex gap-2 flex-wrap">
                   {[
-                    ['regular','👤 Regular','#f1f5f9','#475569'],
+                    ['regular','👤 Regular','#f1f5f9','#666666'],
                     ['vip','⭐ VIP','#fef9c3','#ca8a04'],
                     ['wholesale','🏢 Wholesale','#eff6ff','#2563eb'],
                     ['staff','👔 Staff','#f0fdf4','#16a34a'],

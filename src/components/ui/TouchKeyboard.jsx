@@ -62,7 +62,7 @@ export function TouchKeyboard({ value, onChange, onDone, onClose, title, placeho
       color:      isAction  ? '#fff'
                 : isDelete  ? '#ef4444'
                 : isShift && layout === 'upper' ? '#006AFF'
-                : '#1e293b',
+                : '#1F1F1F',
       fontWeight: isSpecial ? 600 : 500,
       fontSize:   key === 'space' ? '11px'
                 : isSpecial ? '12px'
@@ -85,7 +85,7 @@ export function TouchKeyboard({ value, onChange, onDone, onClose, title, placeho
 
       {/* Display */}
       <div className="px-4 py-3 border-b flex items-center gap-3"
-        style={{background:'#1e293b', borderColor:'#334155'}}>
+        style={{background:'#1F1F1F', borderColor:'#666666'}}>
         {title && <div className="text-[11px] text-slate-400 flex-shrink-0">{title}:</div>}
         <div className="flex-1 rounded-xl px-3 py-2 min-h-[40px] flex items-center"
           style={{background:'rgba(255,255,255,0.1)'}}>

@@ -119,14 +119,14 @@ function StoreSection({ store, tenant }) {
           <textarea value={form.receipt_header} onChange={e => u('receipt_header', e.target.value)}
             rows={2} placeholder="Store name, address, phone..."
             className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5
-              text-[12px] outline-none focus:border-blue-500/40 resize-none"/>
+              text-[12px] outline-none focus:border-[#006AFF] resize-none"/>
         </div>
         <div>
           <FieldLabel>Footer Text</FieldLabel>
           <textarea value={form.receipt_footer} onChange={e => u('receipt_footer', e.target.value)}
             rows={2}
             className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5
-              text-[12px] outline-none focus:border-blue-500/40 resize-none"/>
+              text-[12px] outline-none focus:border-[#006AFF] resize-none"/>
         </div>
       </Card>
       <SaveBtn onClick={save}/>
@@ -172,7 +172,7 @@ function TerminalsSection({ tenantId, storeId }) {
       <div className="flex justify-between items-center mb-5">
         <SectionTitle className="mb-0">🖥️ Terminals & PAX Configuration</SectionTitle>
         <button onClick={() => setEditTerm({})}
-          className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
+          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
           + Add Terminal
         </button>
       </div>
@@ -188,7 +188,7 @@ function TerminalsSection({ tenantId, storeId }) {
                   <div className="text-[14px] font-bold">{term.name}</div>
                   <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
                     term.is_active
-                      ? 'bg-green-500/10 text-green-400'
+                      ? 'bg-green-500/10 text-[#00B23B]'
                       : 'bg-[#F5F5F5] text-[#999999]'
                   }`}>{term.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
                 </div>
@@ -199,8 +199,8 @@ function TerminalsSection({ tenantId, storeId }) {
                     <div className="text-[11px] font-mono text-[#666666]">
                       PAX {term.pax_model} · {term.pax_ip}:{term.pax_port}
                     </div>
-                    {ts === 'online'  && <span className="text-[9px] text-green-400">● Online</span>}
-                    {ts === 'offline' && <span className="text-[9px] text-red-400">● Offline</span>}
+                    {ts === 'online'  && <span className="text-[9px] text-[#00B23B]">● Online</span>}
+                    {ts === 'offline' && <span className="text-[9px] text-[#CF1322]">● Offline</span>}
                     {ts === 'testing' && <span className="text-[9px] text-[#666666] animate-pulse">Testing...</span>}
                   </div>
                 ) : (
@@ -226,13 +226,13 @@ function TerminalsSection({ tenantId, storeId }) {
                 {term.pax_enabled && (
                   <button onClick={() => testPax(term)}
                     className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
-                      text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-blue-400 transition-all">
+                      text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all">
                     Test PAX
                   </button>
                 )}
                 <button onClick={() => setEditTerm(term)}
                   className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
-                    text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-blue-400 transition-all">
+                    text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all">
                   Edit
                 </button>
               </div>
@@ -280,7 +280,7 @@ function TerminalEditForm({ initial, onSave, onClose }) {
           <div className="text-[15px] font-bold">
             {form.id ? '✏️ Edit Terminal' : '🖥️ New Terminal'}
           </div>
-          <button onClick={onClose} className="text-[#999999] hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-[#999999] hover:text-[#1F1F1F] text-xl">✕</button>
         </div>
         <div className="p-5">
           <FieldInput label="Terminal Name" value={form.name} onChange={v => u('name',v)} className="mb-4"/>
@@ -345,7 +345,7 @@ function TerminalEditForm({ initial, onSave, onClose }) {
               className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
                 py-2.5 text-[13px] text-[#666666]">Cancel</button>
             <button onClick={() => onSave(form)}
-              className="flex-[2] bg-blue-500 border-none rounded-[9px] py-2.5
+              className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5
                 text-[13px] font-bold text-white">Save Terminal</button>
           </div>
         </div>
@@ -372,7 +372,7 @@ function TaxSection({ tenantId }) {
       <div className="flex justify-between items-center mb-5">
         <SectionTitle className="mb-0">🧾 Tax Rates</SectionTitle>
         <button onClick={() => toast.success('Add tax group')}
-          className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
+          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
           + Add Tax Group
         </button>
       </div>
@@ -385,7 +385,7 @@ function TaxSection({ tenantId }) {
                 {group.name}
                 {group.is_default && (
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                    bg-blue-500/10 text-blue-400">DEFAULT</span>
+                    bg-[#006AFF]/10 text-[#006AFF]">DEFAULT</span>
                 )}
               </div>
               <div className="text-[10px] font-mono text-[#999999] mt-0.5">
@@ -393,7 +393,7 @@ function TaxSection({ tenantId }) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[16px] font-bold font-mono text-yellow-400">
+              <div className="text-[16px] font-bold font-mono text-[#FA8C16]">
                 {((group.tax_rates || []).reduce((s,r) => s + r.rate, 0) * 100).toFixed(2)}%
               </div>
               <div className="text-[10px] text-[#999999]">total rate</div>
@@ -403,13 +403,13 @@ function TaxSection({ tenantId }) {
             <div key={rate.id} className="flex items-center justify-between
               bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 mb-1.5 last:mb-0">
               <span className="text-[12px]">{rate.name}</span>
-              <span className="font-mono text-[12px] font-bold text-yellow-400">
+              <span className="font-mono text-[12px] font-bold text-[#FA8C16]">
                 {(rate.rate * 100).toFixed(2)}%
               </span>
             </div>
           ))}
           <button onClick={() => toast.success('Add rate layer')}
-            className="mt-2 text-[10px] text-blue-400 hover:underline">
+            className="mt-2 text-[10px] text-[#006AFF] hover:underline">
             + Add Rate Layer
           </button>
         </Card>
@@ -501,7 +501,7 @@ function DiscountsSection({ tenantId }) {
                       </div>
                     ) : (
                       <div>
-                        <span className="font-mono text-[12px] font-bold text-yellow-400">
+                        <span className="font-mono text-[12px] font-bold text-[#FA8C16]">
                           {(tier.discount_rate * 100).toFixed(0)}%
                         </span>
                         <span className="text-[10px] text-[#999999] ml-2">
@@ -522,7 +522,7 @@ function DiscountsSection({ tenantId }) {
                       <div className="flex gap-1.5">
                         <button onClick={() => saveTier(editing)}
                           className="text-[10px] px-2 py-1 bg-green-500/10 border
-                            border-green-500/20 rounded text-green-400">Save</button>
+                            border-green-500/20 rounded text-[#00B23B]">Save</button>
                         <button onClick={() => setEditing(null)}
                           className="text-[10px] px-2 py-1 bg-[#F5F5F5] border
                             border-[#E5E5E5] rounded text-[#666666]">✕</button>
@@ -530,7 +530,7 @@ function DiscountsSection({ tenantId }) {
                     ) : (
                       <button onClick={() => setEditing(tier)}
                         className="text-[10px] px-2 py-1 bg-[#F5F5F5] border border-[#E5E5E5]
-                          rounded text-[#666666] hover:border-blue-500/30 hover:text-blue-400
+                          rounded text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
                           transition-all">Edit</button>
                     )}
                   </td>
@@ -622,7 +622,7 @@ function UsersSection({ tenantId }) {
             }
             setShowForm(true)
           }}
-          className="bg-blue-500 border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
+          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
           + Invite User
         </button>
       </div>
@@ -632,7 +632,7 @@ function UsersSection({ tenantId }) {
         <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[10px] px-4 py-2.5 mb-5
           flex items-center gap-3">
           <div className="flex-1 h-1.5 bg-[#F5F5F5] rounded overflow-hidden">
-            <div className="h-full rounded transition-all bg-blue-500"
+            <div className="h-full rounded transition-all bg-[#006AFF]"
               style={{ width: `${Math.min(100, quota.current / quota.max * 100)}%` }}/>
           </div>
           <span className="text-[11px] font-mono text-[#666666]">
@@ -662,11 +662,11 @@ function UsersSection({ tenantId }) {
               <div className="flex gap-2">
                 <button onClick={() => toast.success('Edit user')}
                   className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md
-                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-blue-400
+                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
                     transition-all">Edit</button>
                 <button onClick={() => toast.success('Set PIN')}
                   className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md
-                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-blue-400
+                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
                     transition-all">PIN</button>
               </div>
             </div>
@@ -713,7 +713,7 @@ function PaymentSection({ tenantId }) {
     <div className="max-w-[560px]">
       <SectionTitle>💳 Card Payment Configuration</SectionTitle>
 
-      <div className="bg-blue-500/8 border border-blue-500/20 rounded-[10px] px-4 py-3 mb-5
+      <div className="bg-[#006AFF]/8 border border-blue-500/20 rounded-[10px] px-4 py-3 mb-5
         text-[12px] text-[#666666]">
         💡 CardPointe credentials are provided by RetailPOS support. Contact us to get your merchant account set up.
       </div>
@@ -733,7 +733,7 @@ function PaymentSection({ tenantId }) {
         <div className="mt-3 flex items-center gap-2">
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
             form.cp_merchant_id && form.cp_username
-              ? 'bg-green-500/10 text-green-400'
+              ? 'bg-green-500/10 text-[#00B23B]'
               : 'bg-[#F5F5F5] text-[#999999]'
           }`}>
             {form.cp_merchant_id && form.cp_username ? '✓ Configured' : 'Not configured'}
@@ -781,7 +781,7 @@ function PaymentSection({ tenantId }) {
             <input type="time" value={form.auto_batch_close_time}
               onChange={e => u('auto_batch_close_time', e.target.value)}
               className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2
-                text-[13px] font-mono text-[#1F1F1F] outline-none focus:border-blue-500/40"/>
+                text-[13px] font-mono text-[#1F1F1F] outline-none focus:border-[#006AFF]"/>
           </div>
         )}
       </Card>
@@ -810,7 +810,7 @@ function BillingSection({ tenant }) {
             <div className="text-[12px] text-[#666666] mt-1">Billed monthly</div>
           </div>
           <span className="text-[10px] font-mono px-3 py-1.5 rounded bg-green-500/10
-            text-green-400 self-start">
+            text-[#00B23B] self-start">
             {tenant?.plan_status?.toUpperCase() || 'ACTIVE'}
           </span>
         </div>
@@ -820,11 +820,11 @@ function BillingSection({ tenant }) {
               onClick={() => toast.success(`Contact support to upgrade to ${plan.name}`)}
               className={`border rounded-[10px] p-3 cursor-pointer transition-all ${
                 plan.id === (tenant?.plan_id || 'solo')
-                  ? 'border-blue-500/40 bg-blue-500/5'
+                  ? 'border-blue-500/40 bg-[#006AFF]/5'
                   : 'border-[#E5E5E5] bg-[#F5F5F5] hover:border-[#E5E5E5]'
               }`}>
               <div className="text-[13px] font-bold mb-1">{plan.name}</div>
-              <div className="text-[15px] font-bold font-mono text-blue-400 mb-2">{plan.price}</div>
+              <div className="text-[15px] font-bold font-mono text-[#006AFF] mb-2">{plan.price}</div>
               <div className="text-[10px] text-[#999999]">
                 {plan.users} user{plan.users>1?'s':''}<br/>
                 {plan.terminals} terminal{plan.terminals>1?'s':''}
@@ -852,7 +852,7 @@ function LanguageSection() {
           <div key={label} className="mb-4 last:mb-0">
             <FieldLabel>{label}</FieldLabel>
             <select className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
-              px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none focus:border-blue-500/40">
+              px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none focus:border-[#006AFF]">
               {options.map(o => <option key={o}>{o}</option>)}
             </select>
           </div>
@@ -1206,7 +1206,7 @@ function PrinterSection() {
           <div>
             <FieldLabel>Printer Model</FieldLabel>
             <select value={s.model} onChange={e => setS({ ...s, model:e.target.value })}
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40">
+              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-[#006AFF]">
               <option value="thermal_80mm">Thermal 80mm (most common)</option>
               <option value="thermal_58mm">Thermal 58mm</option>
               <option value="laser">Laser / Inkjet (full page A4/Letter)</option>

@@ -41,9 +41,9 @@ export default function DiscountPanel() {
 
   return (
     <Overlay onClose={close}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl p-6 w-[360px]">
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-6 w-[360px]">
         <div className="text-[15px] font-bold mb-1">✂️ Order Discount</div>
-        <div className="text-[11px] font-mono text-[#3d5068] mb-4">
+        <div className="text-[11px] font-mono text-[#999999] mb-4">
           APPLY TO ENTIRE ORDER
           {!canDiscount && ' · NO PERMISSION'}
         </div>
@@ -58,7 +58,7 @@ export default function DiscountPanel() {
               className={`flex-1 py-2 rounded-lg text-[11px] border transition-all cursor-pointer
                 font-sans ${mode === tab.id
                   ? 'border-pink-500/40 bg-pink-500/8 text-pink-400'
-                  : 'border-[#1e2d42] bg-[#111827] text-[#8899b0]'
+                  : 'border-[#E5E5E5] bg-[#F5F5F5] text-[#666666]'
                 }`}>
               {tab.label}
             </button>
@@ -69,11 +69,11 @@ export default function DiscountPanel() {
         <div className="flex gap-2 items-center mb-3">
           <button onClick={() => setShowPad(true)} disabled={!canDiscount}
             className="flex-1 rounded-lg px-3 py-3 text-[20px] font-mono text-right cursor-pointer border disabled:opacity-40"
-            style={{background:'#111827', borderColor:'#1e2d42', color: value ? '#f472b6' : '#3d5068'}}>
+            style={{background:'#F5F5F5', borderColor:'#E5E5E5', color: value ? '#f472b6' : '#999999'}}>
             {value || '0'}
           </button>
           <div className="rounded-lg px-3 py-3 text-[14px] font-bold"
-            style={{background:'#111827', border:'1px solid #1e2d42', color:'#8899b0'}}>
+            style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666666'}}>
             {mode === 'pct' ? '%' : '$'}
           </div>
         </div>
@@ -87,22 +87,22 @@ export default function DiscountPanel() {
         )}
 
         {/* 折扣预览 */}
-        <div className="bg-[#111827] border border-[#1e2d42] rounded-[9px]
+        <div className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
           px-3 py-2.5 flex justify-between mb-4">
           <div className="text-center">
-            <div className="text-[10px] text-[#3d5068]">Subtotal</div>
-            <div className="text-[13px] font-bold text-green-400 font-mono">
+            <div className="text-[10px] text-[#999999]">Subtotal</div>
+            <div className="text-[13px] font-bold text-[#00B23B] font-mono">
               ${subtotal.toFixed(2)}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-[10px] text-[#3d5068]">Discount</div>
-            <div className="text-[13px] font-bold text-red-400 font-mono">
+            <div className="text-[10px] text-[#999999]">Discount</div>
+            <div className="text-[13px] font-bold text-[#CF1322] font-mono">
               -${discAmt.toFixed(2)}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-[10px] text-[#3d5068]">After</div>
+            <div className="text-[10px] text-[#999999]">After</div>
             <div className="text-[13px] font-bold font-mono">
               ${(subtotal - discAmt).toFixed(2)}
             </div>
@@ -110,15 +110,15 @@ export default function DiscountPanel() {
         </div>
 
         {maxPct < 100 && canDiscount && (
-          <div className="text-[10px] font-mono text-[#3d5068] mb-4 text-center">
+          <div className="text-[10px] font-mono text-[#999999] mb-4 text-center">
             Max discount: {maxPct}%
           </div>
         )}
 
         <div className="flex gap-2">
           <button onClick={close}
-            className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-              py-2.5 text-[13px] text-[#8899b0] font-sans">
+            className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+              py-2.5 text-[13px] text-[#666666] font-sans">
             Cancel
           </button>
           <button onClick={apply} disabled={!canDiscount}

@@ -39,14 +39,14 @@ export default function LoginPage() {
   // ── Session conflict modal ──
   if (sessionConflict) {
     return (
-      <div className="min-h-screen bg-[#07090f] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4">
         <div className="w-full max-w-[380px]">
-          <div className="bg-[#0d1117] border border-yellow-500/30 rounded-2xl p-7">
+          <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-7 shadow-sm">
             <div className="text-3xl text-center mb-4">⚠️</div>
-            <div className="text-[15px] font-bold text-center mb-2">Already Signed In</div>
-            <div className="text-[12px] text-[#8899b0] text-center mb-5">
+            <div className="text-[16px] font-bold text-center mb-2 text-[#1F1F1F]">Already Signed In</div>
+            <div className="text-[13px] text-[#666666] text-center mb-5 leading-relaxed">
               This account is currently active on{' '}
-              <span className="text-yellow-400 font-bold">
+              <span className="text-[#FA8C16] font-bold">
                 {sessionConflict.existing_terminal}
               </span>
               <br/>
@@ -60,17 +60,17 @@ export default function LoginPage() {
               <button
                 onClick={() => handleKick(true)}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500
-                  border-none rounded-[10px] py-3 text-[13px] font-bold text-black
-                  disabled:opacity-50"
+                className="w-full bg-[#FA8C16] hover:bg-[#D97706]
+                  border-none rounded-[8px] py-3 text-[14px] font-semibold text-white
+                  disabled:opacity-50 transition-colors"
               >
                 {loading ? '⏳ Signing in...' : '⚡ Sign in here (sign out other device)'}
               </button>
               <button
                 onClick={() => handleKick(false)}
                 disabled={loading}
-                className="w-full bg-[#111827] border border-[#1e2d42] rounded-[10px]
-                  py-3 text-[13px] text-[#8899b0] disabled:opacity-50"
+                className="w-full bg-[#FFFFFF] border border-[#E5E5E5] hover:bg-[#F5F5F5] rounded-[8px]
+                  py-3 text-[14px] text-[#666666] disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -83,44 +83,42 @@ export default function LoginPage() {
 
   // ── Normal login ──
   return (
-    <div className="min-h-screen bg-[#07090f] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4">
       <div className="w-full max-w-[360px]">
         <div className="text-center mb-8">
-          <div className="text-[32px] font-extrabold bg-gradient-to-r from-white to-cyan-400
-            bg-clip-text text-transparent tracking-tight mb-2">RetailPOS</div>
-          <div className="text-[13px] text-[#3d5068]">Sign in to your account</div>
+          <div className="text-[32px] font-extrabold text-[#1F1F1F] tracking-tight mb-2">RetailPOS</div>
+          <div className="text-[13px] text-[#666666]">Sign in to your account</div>
           {terminal?.name && (
-            <div className="text-[10px] font-mono text-[#3d5068] mt-2">
+            <div className="text-[10px] font-mono text-[#999999] mt-2">
               🖥️ {terminal.name}
             </div>
           )}
         </div>
 
         <form onSubmit={handleLogin}
-          className="bg-[#0d1117] border border-[#1e2d42] rounded-2xl p-7">
+          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-7 shadow-sm">
           <div className="mb-4">
-            <label className="block text-[11px] font-bold text-[#8899b0] mb-2
+            <label className="block text-[11px] font-semibold text-[#666666] mb-2
               uppercase tracking-wider">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="you@store.com" autoFocus
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                px-3.5 py-2.5 text-[13px] outline-none focus:border-blue-500/40
-                transition-colors placeholder-[#3d5068]"/>
+              className="w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-[8px]
+                px-3.5 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF]
+                focus:ring-2 focus:ring-[#E6F0FF] transition-all placeholder-[#999999]"/>
           </div>
           <div className="mb-6">
-            <label className="block text-[11px] font-bold text-[#8899b0] mb-2
+            <label className="block text-[11px] font-semibold text-[#666666] mb-2
               uppercase tracking-wider">Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                px-3.5 py-2.5 text-[13px] outline-none focus:border-blue-500/40
-                transition-colors placeholder-[#3d5068]"/>
+              className="w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-[8px]
+                px-3.5 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF]
+                focus:ring-2 focus:ring-[#E6F0FF] transition-all placeholder-[#999999]"/>
           </div>
           <button type="submit" disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 border-none
-              rounded-[11px] py-3 text-[14px] font-bold text-white
-              hover:shadow-[0_4px_20px_rgba(59,130,246,0.3)]
-              disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            className="w-full bg-[#000000] hover:bg-[#1F1F1F] border-none
+              rounded-[8px] py-3 text-[14px] font-semibold text-white
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
             {loading ? 'Signing in...' : 'Sign In →'}
           </button>
         </form>

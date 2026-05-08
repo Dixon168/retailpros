@@ -111,7 +111,7 @@ export default function POSPage() {
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-4 py-0 flex-shrink-0"
-        style={{height:'44px', background:'#1e293b', borderBottom:'1px solid #334155'}}>
+        style={{height:'44px', background:'#1F1F1F', borderBottom:'1px solid #2A2A2A'}}>
         <div className="flex items-center gap-3">
           <div className="text-[15px] font-black tracking-tight text-white">RetailPOS</div>
           <div className="w-px h-4 bg-slate-600"/>
@@ -164,7 +164,7 @@ export default function POSPage() {
             <button onClick={() => setActiveCategory('all')}
               className="px-3 py-1 rounded-lg text-[12px] font-semibold border transition-all cursor-pointer whitespace-nowrap"
               style={activeCategory==='all'
-                ? {background:'#1e293b', color:'#fff', border:'1.5px solid #1e293b'}
+                ? {background:'#1F1F1F', color:'#fff', border:'1.5px solid #1F1F1F'}
                 : {background:'#fff', color:'#64748b', border:'1.5px solid #e2e8f0'}}>
               All
             </button>
@@ -191,7 +191,7 @@ export default function POSPage() {
       </div>
 
       {/* ── BOTTOM QUICK BUTTONS ── */}
-      <div className="flex-shrink-0 px-3 py-1.5" style={{background:'#1e293b', borderTop:'1px solid #334155'}}>
+      <div className="flex-shrink-0 px-3 py-1.5" style={{background:'#1F1F1F', borderTop:'1px solid #2A2A2A'}}>
         <div className="flex gap-2">
           {QUICK_BTNS.map(btn => (
             <button key={btn.id} onClick={btn.action}

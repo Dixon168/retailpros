@@ -275,7 +275,7 @@ export default function SmartReceivePage() {
                   onKeyDown={e => e.key === 'Enter' && handleScan()}
                   placeholder="Scan barcode or type UPC..."
                   className="flex-1 border-none outline-none py-3 text-[16px] font-mono bg-transparent"
-                  style={{color:'#1e293b'}}
+                  style={{color:'#1F1F1F'}}
                   autoFocus
                 />
                 {barcode && (
@@ -454,7 +454,7 @@ export default function SmartReceivePage() {
                     <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Cost Price</div>
                     <button onClick={()=>setShowCostPad(true)}
                       className="w-full rounded-xl px-3 py-2.5 text-left text-[13px] font-mono cursor-pointer"
-                      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#374151'}}>
+                      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#E5E5E5'}}>
                       ${parseFloat(form.cost||0).toFixed(2)}
                     </button>
                   </div>
@@ -552,7 +552,7 @@ function ReceiveForm({ form, setF, vendors, onQtyPad, onCostPad, qty }) {
           <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Cost per Unit</div>
           <button onClick={onCostPad}
             className="w-full rounded-xl px-3 py-3 text-[16px] font-bold font-mono text-center cursor-pointer"
-            style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color: form.cost?'#374151':'#94a3b8'}}>
+            style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color: form.cost?'#E5E5E5':'#94a3b8'}}>
             ${parseFloat(form.cost||0).toFixed(2)}
           </button>
         </div>
@@ -573,7 +573,7 @@ function ReceiveForm({ form, setF, vendors, onQtyPad, onCostPad, qty }) {
           <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Vendor</div>
           <select value={form.vendor_id} onChange={e=>setF('vendor_id',e.target.value)}
             className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
-            style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1e293b'}}>
+            style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}>
             <option value="">Select vendor...</option>
             {vendors.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
           </select>

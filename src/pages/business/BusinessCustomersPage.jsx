@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 
 const TIER_STYLE = {
-  standard:  { bg: 'rgba(136,153,176,0.12)', color: '#8899b0', label: 'Standard' },
+  standard:  { bg: 'rgba(136,153,176,0.12)', color: '#666666', label: 'Standard' },
   wholesale: { bg: 'rgba(6,182,212,0.12)',   color: '#06b6d4', label: 'Wholesale' },
   preferred: { bg: 'rgba(16,185,129,0.12)',  color: '#10b981', label: 'Preferred' },
   contract:  { bg: 'rgba(59,130,246,0.12)',  color: '#3b82f6', label: 'Contract'  },
@@ -42,20 +42,20 @@ export default function BusinessCustomersPage() {
   const overdue   = customers.filter(c => c.overdue_amount > 0).length
 
   return (
-    <div className="flex h-full bg-[#07090f]">
+    <div className="flex h-full bg-[#FAFAFA]">
 
       {/* ── Customer list ── */}
-      <div className="w-[300px] bg-[#0d1117] border-r border-[#1e2d42] flex flex-col flex-shrink-0">
+      <div className="w-[300px] bg-[#FFFFFF] border-r border-[#E5E5E5] flex flex-col flex-shrink-0">
 
         {/* Search */}
-        <div className="p-3.5 border-b border-[#1e2d42]">
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#1e2d42]
+        <div className="p-3.5 border-b border-[#E5E5E5]">
+          <div className="flex items-center gap-2 bg-[#F5F5F5] border border-[#E5E5E5]
             rounded-[9px] px-3 mb-2.5 focus-within:border-cyan-500/30 transition-colors">
-            <span className="text-[#3d5068]">🔍</span>
+            <span className="text-[#999999]">🔍</span>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Company, contact, code..."
               className="bg-transparent border-none outline-none py-2 text-[12px]
-                text-[#e8edf5] flex-1 font-sans placeholder-[#3d5068]"/>
+                text-[#1F1F1F] flex-1 font-sans placeholder-[#999999]"/>
           </div>
 
           {/* Stats */}
@@ -63,11 +63,11 @@ export default function BusinessCustomersPage() {
             {[
               ['Accounts',  customers.length,       undefined],
               ['Owed',      `$${totalOwed.toFixed(0)}`, '#ef4444'],
-              ['Overdue',   overdue,                 overdue > 0 ? '#f59e0b' : '#3d5068'],
+              ['Overdue',   overdue,                 overdue > 0 ? '#f59e0b' : '#999999'],
             ].map(([l,v,c]) => (
-              <div key={l} className="bg-[#111827] border border-[#1e2d42] rounded-lg
+              <div key={l} className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg
                 p-2 text-center">
-                <div className="text-[9px] font-mono text-[#3d5068] uppercase">{l}</div>
+                <div className="text-[9px] font-mono text-[#999999] uppercase">{l}</div>
                 <div className="text-[13px] font-bold mt-0.5" style={{ color: c }}>{v}</div>
               </div>
             ))}
@@ -78,7 +78,7 @@ export default function BusinessCustomersPage() {
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading
             ? Array(5).fill(0).map((_,i) => (
-                <div key={i} className="h-[72px] bg-[#111827] rounded-[10px] mb-1.5 animate-pulse"/>
+                <div key={i} className="h-[72px] bg-[#F5F5F5] rounded-[10px] mb-1.5 animate-pulse"/>
               ))
             : customers.map(c => {
                 const ts = TIER_STYLE[c.tier] || TIER_STYLE.standard
@@ -86,13 +86,13 @@ export default function BusinessCustomersPage() {
                   <div key={c.id} onClick={() => setSelected(c)}
                     className={`px-3 py-2.5 rounded-[10px] cursor-pointer border mb-1
                       transition-all ${selected?.id === c.id
-                        ? 'bg-[#111827] border-cyan-500/40'
-                        : 'border-transparent hover:bg-[#111827]'
+                        ? 'bg-[#F5F5F5] border-cyan-500/40'
+                        : 'border-transparent hover:bg-[#F5F5F5]'
                       }`}>
                     <div className="flex items-start justify-between mb-1">
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] font-bold truncate">{c.company_name}</div>
-                        <div className="text-[10px] text-[#3d5068] mt-0.5 font-mono">
+                        <div className="text-[10px] text-[#999999] mt-0.5 font-mono">
                           {c.code} · {c.contact_name}
                         </div>
                       </div>
@@ -104,16 +104,16 @@ export default function BusinessCustomersPage() {
                     </div>
                     <div className="flex gap-1.5">
                       <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                        bg-[#1a2236] text-[#8899b0] uppercase">{c.payment_terms}</span>
+                        bg-[#F5F5F5] text-[#666666] uppercase">{c.payment_terms}</span>
                       {c.credit_balance > 0 && (
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                          bg-red-500/10 text-red-400">
+                          bg-red-500/10 text-[#CF1322]">
                           Owes ${c.credit_balance.toFixed(0)}
                         </span>
                       )}
                       {c.overdue_amount > 0 && (
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                          bg-yellow-500/10 text-yellow-400">OVERDUE</span>
+                          bg-yellow-500/10 text-[#FA8C16]">OVERDUE</span>
                       )}
                     </div>
                   </div>
@@ -122,7 +122,7 @@ export default function BusinessCustomersPage() {
           }
         </div>
 
-        <div className="p-3 border-t border-[#1e2d42]">
+        <div className="p-3 border-t border-[#E5E5E5]">
           <button onClick={() => { setEditForm({}); setShowForm(true) }}
             className="w-full bg-cyan-500 border-none rounded-[9px] py-2.5
               text-[12px] font-bold text-white">
@@ -140,8 +140,8 @@ export default function BusinessCustomersPage() {
             tenantId={tenant?.id}
           />
         : (
-          <div className="flex-1 flex items-center justify-center bg-[#07090f]">
-            <div className="text-center text-[#3d5068]">
+          <div className="flex-1 flex items-center justify-center bg-[#FAFAFA]">
+            <div className="text-center text-[#999999]">
               <div className="text-5xl mb-4 opacity-20">🏢</div>
               <div className="text-[14px]">Select a business account</div>
             </div>
@@ -197,10 +197,10 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
   const TABS = ['overview','contacts','addresses','invoices']
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#07090f]">
+    <div className="flex-1 flex flex-col overflow-hidden bg-[#FAFAFA]">
 
       {/* Header */}
-      <div className="bg-[#0d1117] border-b border-[#1e2d42] px-6 py-4
+      <div className="bg-[#FFFFFF] border-b border-[#E5E5E5] px-6 py-4
         flex gap-4 items-start flex-shrink-0">
         <div className="w-[52px] h-[52px] rounded-[13px] bg-gradient-to-br
           from-cyan-500 to-blue-600 flex items-center justify-center
@@ -210,23 +210,23 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
         <div className="flex-1">
           <div className="text-[20px] font-bold">{c.company_name}</div>
           {c.trade_name && (
-            <div className="text-[11px] text-[#3d5068] mt-0.5">DBA: {c.trade_name}</div>
+            <div className="text-[11px] text-[#999999] mt-0.5">DBA: {c.trade_name}</div>
           )}
           <div className="flex gap-2 mt-2 flex-wrap">
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
               style={{ background: ts.bg, color: ts.color }}>{ts.label}</span>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded
-              bg-[#1a2236] text-[#8899b0] uppercase">{c.payment_terms}</span>
+              bg-[#F5F5F5] text-[#666666] uppercase">{c.payment_terms}</span>
             {c.tax_id && (
               <span className="text-[10px] font-mono px-2 py-0.5 rounded
-                bg-[#1a2236] text-[#8899b0]">EIN: {c.tax_id}</span>
+                bg-[#F5F5F5] text-[#666666]">EIN: {c.tax_id}</span>
             )}
           </div>
         </div>
         <div className="flex gap-2">
           <button onClick={onEdit}
-            className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-              text-[11px] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400
+            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
+              text-[11px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
               transition-all">Edit</button>
           <button onClick={() => toast.success('Creating invoice...')}
             className="bg-cyan-500 border-none rounded-lg px-3 py-1.5
@@ -240,29 +240,29 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-5 border-b border-[#1e2d42] bg-[#0d1117] flex-shrink-0">
+      <div className="grid grid-cols-5 border-b border-[#E5E5E5] bg-[#FFFFFF] flex-shrink-0">
         {[
           ['Total Spent', `$${(c.total_spent||0).toFixed(0)}`,    '#3b82f6'],
           ['Invoices',    c.invoice_count || 0,                   undefined],
           ['Outstanding', `$${(c.credit_balance||0).toFixed(2)}`, c.credit_balance > 0 ? '#ef4444' : '#10b981'],
-          ['Credit Limit', c.credit_limit > 0 ? `$${c.credit_limit.toFixed(0)}` : 'Unlimited', '#8899b0'],
-          ['Overdue',     `$${(c.overdue_amount||0).toFixed(2)}`, c.overdue_amount > 0 ? '#f59e0b' : '#3d5068'],
+          ['Credit Limit', c.credit_limit > 0 ? `$${c.credit_limit.toFixed(0)}` : 'Unlimited', '#666666'],
+          ['Overdue',     `$${(c.overdue_amount||0).toFixed(2)}`, c.overdue_amount > 0 ? '#f59e0b' : '#999999'],
         ].map(([l,v,color]) => (
-          <div key={l} className="px-4 py-3 border-r border-[#1e2d42] last:border-0">
-            <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-wider mb-1">{l}</div>
+          <div key={l} className="px-4 py-3 border-r border-[#E5E5E5] last:border-0">
+            <div className="text-[9px] font-mono text-[#999999] uppercase tracking-wider mb-1">{l}</div>
             <div className="text-[16px] font-bold" style={{ color }}>{v}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-[#0d1117] border-b border-[#1e2d42] px-6 flex-shrink-0">
+      <div className="flex bg-[#FFFFFF] border-b border-[#E5E5E5] px-6 flex-shrink-0">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`py-3 px-4 text-[12px] capitalize border-b-2 transition-all ${
               tab === t
                 ? 'text-cyan-400 border-cyan-400'
-                : 'text-[#8899b0] border-transparent hover:text-white'
+                : 'text-[#666666] border-transparent hover:text-[#1F1F1F]'
             }`}>{t}
           </button>
         ))}
@@ -289,11 +289,11 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
             </InfoCard>
             <InfoCard title="Billing Address" className="col-span-2">
               {c.billing_address
-                ? <div className="text-[12px] text-[#8899b0] leading-7">
+                ? <div className="text-[12px] text-[#666666] leading-7">
                     {c.billing_address}<br/>
                     {c.billing_city}, {c.billing_state} {c.billing_zip}
                   </div>
-                : <div className="text-[12px] text-[#3d5068]">No billing address</div>
+                : <div className="text-[12px] text-[#999999]">No billing address</div>
               }
             </InfoCard>
           </div>
@@ -304,15 +304,15 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
             <div className="flex justify-between mb-4">
               <div className="text-[14px] font-bold">Contacts</div>
               <button onClick={() => toast.success('Add contact')}
-                className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-                  text-[11px] text-[#8899b0] hover:border-cyan-500/30 hover:text-cyan-400 transition-all">
+                className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
+                  text-[11px] text-[#666666] hover:border-cyan-500/30 hover:text-cyan-400 transition-all">
                 + Add Contact
               </button>
             </div>
             {(c.business_contacts || []).length === 0
-              ? <div className="text-center py-8 text-[#3d5068] text-sm">No contacts added</div>
+              ? <div className="text-center py-8 text-[#999999] text-sm">No contacts added</div>
               : (c.business_contacts || []).map(contact => (
-                  <div key={contact.id} className="bg-[#0d1117] border border-[#1e2d42]
+                  <div key={contact.id} className="bg-[#FFFFFF] border border-[#E5E5E5]
                     rounded-[10px] px-4 py-3.5 mb-2.5 flex items-center gap-4">
                     <div className="w-9 h-9 rounded-[9px] bg-gradient-to-br from-blue-500
                       to-purple-600 flex items-center justify-center text-[13px] font-bold
@@ -321,7 +321,7 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
                     </div>
                     <div className="flex-1">
                       <div className="text-[13px] font-bold">{contact.name}</div>
-                      <div className="text-[11px] text-[#3d5068] mt-0.5">
+                      <div className="text-[11px] text-[#999999] mt-0.5">
                         {contact.title && `${contact.title} · `}
                         {contact.email || contact.phone || '—'}
                       </div>
@@ -329,15 +329,15 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
                     <div className="flex gap-1.5">
                       {contact.receive_invoice && (
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                          bg-blue-500/10 text-blue-400">Invoices</span>
+                          bg-[#006AFF]/10 text-[#006AFF]">Invoices</span>
                       )}
                       {contact.receive_reminder && (
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                          bg-yellow-500/10 text-yellow-400">Reminders</span>
+                          bg-yellow-500/10 text-[#FA8C16]">Reminders</span>
                       )}
                       {contact.is_primary && (
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                          bg-green-500/10 text-green-400">Primary</span>
+                          bg-green-500/10 text-[#00B23B]">Primary</span>
                       )}
                     </div>
                   </div>
@@ -351,15 +351,15 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
             <div className="flex justify-between mb-4">
               <div className="text-[14px] font-bold">Ship-to Addresses</div>
               <button onClick={() => toast.success('Add address')}
-                className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-                  text-[11px] text-[#8899b0] hover:border-cyan-500/30 hover:text-cyan-400 transition-all">
+                className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
+                  text-[11px] text-[#666666] hover:border-cyan-500/30 hover:text-cyan-400 transition-all">
                 + Add Address
               </button>
             </div>
             {(c.business_addresses || []).length === 0
-              ? <div className="text-center py-8 text-[#3d5068] text-sm">No addresses added</div>
+              ? <div className="text-center py-8 text-[#999999] text-sm">No addresses added</div>
               : (c.business_addresses || []).map(addr => (
-                  <div key={addr.id} className="bg-[#0d1117] border border-[#1e2d42]
+                  <div key={addr.id} className="bg-[#FFFFFF] border border-[#E5E5E5]
                     rounded-[10px] px-4 py-3.5 mb-2.5 flex items-center gap-4">
                     <span className="text-2xl">📦</span>
                     <div className="flex-1">
@@ -367,14 +367,14 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
                         {addr.label || 'Shipping Address'}
                         {addr.is_default && (
                           <span className="ml-2 text-[9px] font-mono px-1.5 py-0.5 rounded
-                            bg-blue-500/10 text-blue-400">DEFAULT</span>
+                            bg-[#006AFF]/10 text-[#006AFF]">DEFAULT</span>
                         )}
                       </div>
-                      <div className="text-[11px] text-[#3d5068] mt-0.5">
+                      <div className="text-[11px] text-[#999999] mt-0.5">
                         {addr.address}, {addr.city}, {addr.state} {addr.zip}
                       </div>
                       {addr.contact_name && (
-                        <div className="text-[10px] text-[#3d5068] mt-0.5">
+                        <div className="text-[10px] text-[#999999] mt-0.5">
                           Attn: {addr.contact_name} {addr.contact_phone && `· ${addr.contact_phone}`}
                         </div>
                       )}
@@ -388,21 +388,21 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
         {tab === 'invoices' && (
           <div>
             {invoices.length === 0
-              ? <div className="text-center py-12 text-[#3d5068]">No invoices yet</div>
+              ? <div className="text-center py-12 text-[#999999]">No invoices yet</div>
               : invoices.map(inv => {
                   const statusColor = {
                     paid:'#10b981', partial:'#f59e0b',
-                    overdue:'#ef4444', sent:'#06b6d4', draft:'#8899b0'
-                  }[inv.status] || '#8899b0'
+                    overdue:'#ef4444', sent:'#06b6d4', draft:'#666666'
+                  }[inv.status] || '#666666'
                   return (
-                    <div key={inv.id} className="flex items-center gap-3 bg-[#0d1117]
-                      border border-[#1e2d42] rounded-[10px] px-4 py-3 mb-2
-                      hover:border-[#243347] cursor-pointer transition-colors">
+                    <div key={inv.id} className="flex items-center gap-3 bg-[#FFFFFF]
+                      border border-[#E5E5E5] rounded-[10px] px-4 py-3 mb-2
+                      hover:border-[#E5E5E5] cursor-pointer transition-colors">
                       <div className="flex-1">
                         <div className="font-mono text-[12px] font-bold text-cyan-400">
                           {inv.invoice_number}
                         </div>
-                        <div className="text-[10px] text-[#3d5068] mt-0.5">
+                        <div className="text-[10px] text-[#999999] mt-0.5">
                           {new Date(inv.created_at).toLocaleDateString()}
                           {inv.due_date && ` · Due ${new Date(inv.due_date).toLocaleDateString()}`}
                         </div>
@@ -414,7 +414,7 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
                       <div className="text-right">
                         <div className="font-mono text-[13px] font-bold">${inv.total?.toFixed(2)}</div>
                         {inv.balance_due > 0 && (
-                          <div className="text-[10px] font-mono text-red-400">
+                          <div className="text-[10px] font-mono text-[#CF1322]">
                             Due ${inv.balance_due.toFixed(2)}
                           </div>
                         )}
@@ -486,14 +486,14 @@ function BusinessForm({ initial = {}, tenantId, onSave, onClose }) {
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50
       flex items-center justify-center" onClick={onClose}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[560px]
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl w-[560px]
         max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
-        <div className="px-5 py-4 border-b border-[#1e2d42] flex justify-between">
+        <div className="px-5 py-4 border-b border-[#E5E5E5] flex justify-between">
           <div className="text-[15px] font-bold">
             {form.id ? '✏️ Edit Account' : '🏢 New Business Account'}
           </div>
-          <button onClick={onClose} className="text-[#3d5068] hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-[#999999] hover:text-[#1F1F1F] text-xl">✕</button>
         </div>
 
         <div className="p-5">
@@ -526,9 +526,9 @@ function BusinessForm({ initial = {}, tenantId, onSave, onClose }) {
               <div>
                 <FLabel>Payment Terms</FLabel>
                 <select value={form.payment_terms} onChange={e => u('payment_terms', e.target.value)}
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none
-                    focus:border-blue-500/40">
+                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none
+                    focus:border-[#006AFF]">
                   {TERMS.map(t => (
                     <option key={t} value={t}>{t.toUpperCase()}</option>
                   ))}
@@ -539,9 +539,9 @@ function BusinessForm({ initial = {}, tenantId, onSave, onClose }) {
               <div>
                 <FLabel>Discount Tier</FLabel>
                 <select value={form.tier} onChange={e => u('tier', e.target.value)}
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none
-                    focus:border-blue-500/40">
+                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none
+                    focus:border-[#006AFF]">
                   {tiers.length > 0
                     ? tiers.map(t => (
                         <option key={t.tier_key} value={t.tier_key}>
@@ -575,15 +575,15 @@ function BusinessForm({ initial = {}, tenantId, onSave, onClose }) {
           <div>
             <FLabel>Notes</FLabel>
             <textarea value={form.notes} onChange={e => u('notes', e.target.value)} rows={2}
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                px-3 py-2.5 text-[12px] outline-none focus:border-blue-500/40 resize-none"/>
+              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                px-3 py-2.5 text-[12px] outline-none focus:border-[#006AFF] resize-none"/>
           </div>
         </div>
 
-        <div className="px-5 pb-5 flex gap-2 border-t border-[#1e2d42] pt-4">
+        <div className="px-5 pb-5 flex gap-2 border-t border-[#E5E5E5] pt-4">
           <button onClick={onClose}
-            className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-              py-3 text-[13px] text-[#8899b0]">Cancel</button>
+            className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+              py-3 text-[13px] text-[#666666]">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="flex-[2] bg-gradient-to-r from-cyan-500 to-blue-600 border-none
               rounded-[9px] py-3 text-[13px] font-bold text-white disabled:opacity-50">
@@ -598,8 +598,8 @@ function BusinessForm({ initial = {}, tenantId, onSave, onClose }) {
 // ── Helpers ──
 function InfoCard({ title, children, className='' }) {
   return (
-    <div className={`bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4 ${className}`}>
-      <div className="text-[11px] font-bold text-[#8899b0] uppercase tracking-wider mb-3">{title}</div>
+    <div className={`bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4 ${className}`}>
+      <div className="text-[11px] font-bold text-[#666666] uppercase tracking-wider mb-3">{title}</div>
       {children}
     </div>
   )
@@ -607,7 +607,7 @@ function InfoCard({ title, children, className='' }) {
 function IRow({ label, value, valueColor }) {
   return (
     <div className="flex justify-between items-start mb-2 last:mb-0">
-      <span className="text-[11px] text-[#3d5068]">{label}</span>
+      <span className="text-[11px] text-[#999999]">{label}</span>
       <span className="text-[12px] font-semibold text-right max-w-[60%]"
         style={{ color: valueColor }}>{value}</span>
     </div>
@@ -616,7 +616,7 @@ function IRow({ label, value, valueColor }) {
 function Section({ title, children }) {
   return (
     <div className="mb-5">
-      <div className="text-[10px] font-bold text-[#8899b0] uppercase tracking-wider mb-3">
+      <div className="text-[10px] font-bold text-[#666666] uppercase tracking-wider mb-3">
         {title}
       </div>
       {children}
@@ -624,15 +624,15 @@ function Section({ title, children }) {
   )
 }
 function FLabel({ children }) {
-  return <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">{children}</div>
+  return <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{children}</div>
 }
 function Field({ label, value, onChange, colSpan, mono, type='text' }) {
   return (
     <div className={colSpan ? 'col-span-2' : ''}>
       <FLabel>{label}</FLabel>
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
-        className={`w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-          px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40
+        className={`w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+          px-3 py-2.5 text-[13px] outline-none focus:border-[#006AFF]
           transition-colors ${mono ? 'font-mono' : ''}`}/>
     </div>
   )

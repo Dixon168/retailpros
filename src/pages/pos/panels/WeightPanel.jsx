@@ -32,19 +32,19 @@ export default function WeightPanel() {
 
   return (
     <Overlay onClose={close}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl p-6 w-[320px]">
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl p-6 w-[320px]">
         <div className="text-[15px] font-bold mb-1">⚖️ Enter Weight</div>
-        <div className="text-[11px] font-mono text-[#3d5068] mb-4">
+        <div className="text-[11px] font-mono text-[#999999] mb-4">
           {pendingProduct?.name?.toUpperCase()} · ${pendingProduct?.price?.toFixed(2)}/lb
         </div>
 
         {/* 重量显示 */}
-        <div className="bg-[#111827] border border-[#1e2d42] rounded-[10px] p-4 text-center mb-4">
-          <div className="text-[40px] font-bold font-mono text-green-400 leading-none">
+        <div className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[10px] p-4 text-center mb-4">
+          <div className="text-[40px] font-bold font-mono text-[#00B23B] leading-none">
             {input || '0.00'}
           </div>
-          <div className="text-[14px] text-[#8899b0] mt-1">pounds (lb)</div>
-          <div className="text-[12px] font-mono text-[#3d5068] mt-1.5">
+          <div className="text-[14px] text-[#666666] mt-1">pounds (lb)</div>
+          <div className="text-[12px] font-mono text-[#999999] mt-1.5">
             = ${lineTotal.toFixed(2)}
           </div>
         </div>
@@ -55,10 +55,10 @@ export default function WeightPanel() {
             <button
               key={k}
               onClick={() => k === '⌫' ? del() : press(k)}
-              className={`bg-[#111827] border border-[#1e2d42] rounded-[9px] py-3.5
+              className={`bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-3.5
                 text-[16px] font-semibold font-mono text-center transition-all
-                hover:bg-[#1a2236] hover:border-[#243347] active:scale-95
-                ${k === '⌫' ? 'text-red-400' : k === '.' ? 'text-cyan-400' : 'text-[#e8edf5]'}`}>
+                hover:bg-[#F5F5F5] hover:border-[#E5E5E5] active:scale-95
+                ${k === '⌫' ? 'text-[#CF1322]' : k === '.' ? 'text-cyan-400' : 'text-[#1F1F1F]'}`}>
               {k}
             </button>
           ))}
@@ -67,8 +67,8 @@ export default function WeightPanel() {
         {/* 按钮 */}
         <div className="flex gap-2">
           <button onClick={close}
-            className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-              py-2.5 text-[13px] text-[#8899b0] font-sans">
+            className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+              py-2.5 text-[13px] text-[#666666] font-sans">
             Cancel
           </button>
           <button

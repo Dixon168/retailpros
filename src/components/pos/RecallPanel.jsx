@@ -223,7 +223,7 @@ export function RecallPanel({ onClose }) {
                         {order.customers?.name && <span className="ml-1.5">· {order.customers.name}</span>}
                       </div>
                     </div>
-                    <div className="text-[15px] font-black font-mono flex-shrink-0" style={{color:'#1e293b'}}>
+                    <div className="text-[15px] font-black font-mono flex-shrink-0" style={{color:'#1F1F1F'}}>
                       ${parseFloat(order.grand_total||0).toFixed(2)}
                     </div>
                   </div>

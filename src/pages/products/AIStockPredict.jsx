@@ -84,7 +84,7 @@ export function AIStockBadge({ product, onExpand, isExpanded }) {
       <button onClick={onExpand}
         className="flex items-center gap-1.5 rounded-lg px-2 py-1 cursor-pointer border transition-all"
         style={isExpanded
-          ? { background:'#1e293b', borderColor:'#334155', color:'#fff' }
+          ? { background:'#1F1F1F', borderColor:'#666666', color:'#fff' }
           : { background: s?.bg||'#f8fafc', borderColor:'transparent', color: s?.color||'#94a3b8' }
         }>
         {isLoading ? (
@@ -165,17 +165,17 @@ export function AIStockPanel({ product, onClose }) {
   return (
     <tr>
       <td colSpan={11} className="p-0" style={{borderBottom:'2px solid #006AFF'}}>
-        <div style={{background:'#0f172a'}}>
+        <div style={{background:'#FAFAFA'}}>
 
           {/* Header */}
-          <div className="flex items-center gap-3 px-5 py-3 border-b" style={{borderColor:'#1e2d42'}}>
+          <div className="flex items-center gap-3 px-5 py-3 border-b" style={{borderColor:'#E5E5E5'}}>
             <span className="text-[18px]">🤖</span>
             <div>
               <div className="text-[13px] font-bold text-white">AI Inventory Prediction</div>
               <div className="text-[11px] text-slate-400">{product.name} · Based on last 30 days sales</div>
             </div>
             <button onClick={onClose}
-              className="ml-auto text-slate-500 hover:text-white bg-transparent border-none cursor-pointer text-[16px]">✕</button>
+              className="ml-auto text-slate-500 hover:text-[#1F1F1F] bg-transparent border-none cursor-pointer text-[16px]">✕</button>
           </div>
 
           {isLoading ? (
@@ -201,7 +201,7 @@ export function AIStockPanel({ product, onClose }) {
                 {/* Key metrics */}
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    ['Current Stock',   `${qty} ${product.unit||'ea'}`,                        '#f8fafc', '#1e293b'],
+                    ['Current Stock',   `${qty} ${product.unit||'ea'}`,                        '#f8fafc', '#1F1F1F'],
                     ['Days Until Empty', prediction.days_until_stockout != null ? `${Math.round(Math.max(0,prediction.days_until_stockout))} days` : '—', '#fef9c3', '#ca8a04'],
                     ['Daily Avg Sales',  `${(prediction.daily_avg||0).toFixed(1)} ${product.unit||'ea'}/day`, '#E6F0FF', '#006AFF'],
                     ['Stock Value',      `$${(qty*avgCost).toFixed(2)}`,                        '#f0fdf4', '#16a34a'],
@@ -215,7 +215,7 @@ export function AIStockPanel({ product, onClose }) {
 
                 {/* Reorder suggestion */}
                 {(prediction.action === 'reorder_now' || prediction.action === 'reorder_soon') && (
-                  <div className="rounded-xl p-3" style={{background:'#1e2d42', border:'1px solid #334155'}}>
+                  <div className="rounded-xl p-3" style={{background:'#E5E5E5', border:'1px solid #666666'}}>
                     <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">💡 AI Recommendation</div>
                     <div className="text-[13px] font-semibold text-white">
                       Reorder <span style={{color:'#86efac'}}>{prediction.reorder_qty} {product.unit||'ea'}</span>
@@ -229,7 +229,7 @@ export function AIStockPanel({ product, onClose }) {
               </div>
 
               {/* Right: 7-day sales chart */}
-              <div className="rounded-xl p-4" style={{background:'#1e2d42', border:'1px solid #334155'}}>
+              <div className="rounded-xl p-4" style={{background:'#E5E5E5', border:'1px solid #666666'}}>
                 <div className="text-[11px] font-semibold text-slate-400 mb-4">Sales — Last 7 Days</div>
                 <div className="flex items-end gap-1.5 h-28">
                   {last7.map((d,i) => (
@@ -240,14 +240,14 @@ export function AIStockPanel({ product, onClose }) {
                           height: `${Math.max(4, (d.qty/maxBar)*80)}px`,
                           background: d.qty > 0
                             ? 'linear-gradient(180deg,#006AFF,#006AFF)'
-                            : '#334155',
+                            : '#666666',
                           minHeight: '4px',
                         }}/>
                       <div className="text-[9px] text-slate-500">{d.day}</div>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between mt-3 pt-3 border-t" style={{borderColor:'#334155'}}>
+                <div className="flex justify-between mt-3 pt-3 border-t" style={{borderColor:'#666666'}}>
                   <div className="text-[10px] text-slate-400">
                     Total: <span className="text-white font-semibold">{last7.reduce((s,d)=>s+d.qty,0)} {product.unit}</span>
                   </div>

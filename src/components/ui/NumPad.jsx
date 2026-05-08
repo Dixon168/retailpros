@@ -57,22 +57,22 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)'}}
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}
       onClick={onClose}>
-      <div className="w-full max-w-[320px] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-xl"
+      <div className="w-full max-w-[320px] rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-xl"
         style={{background:'#fff'}} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="px-5 pt-5 pb-3 text-center"
           style={{background:'#000000'}}>
-          <div className="text-[13px] font-semibold text-indigo-200 mb-1">{title}</div>
-          {subtitle && <div className="text-[11px] text-indigo-300">{subtitle}</div>}
+          <div className="text-[13px] font-semibold text-white/80 mb-1">{title}</div>
+          {subtitle && <div className="text-[11px] text-white/60">{subtitle}</div>}
 
           {/* Display */}
-          <div className="mt-3 bg-white/15 rounded-2xl px-4 py-3 min-h-[56px] flex items-center justify-end">
+          <div className="mt-3 bg-white/10 rounded-xl px-4 py-3 min-h-[56px] flex items-center justify-end">
             <span className="text-[13px] text-white/60 mr-1">{prefix}</span>
             <span className="text-[32px] font-bold text-white font-mono tracking-tight">
-              <span style={{color: parseFloat(display) < 0 ? '#ef4444' : 'inherit'}}>{display}</span>
+              <span style={{color: parseFloat(display) < 0 ? '#FCA5A5' : 'inherit'}}>{display}</span>
             </span>
             <span className="text-[13px] text-white/60 ml-1">{suffix}</span>
           </div>
@@ -86,7 +86,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
                 className="rounded-2xl py-4 text-[22px] font-bold cursor-pointer border-none transition-all active:scale-95"
                 style={{
                   background: key === '-' ? '#fef2f2' : key === '.' ? '#E6F0FF' : '#f8fafc',
-                  color: key === '-' ? '#ef4444' : key === '.' ? '#006AFF' : '#1e293b',
+                  color: key === '-' ? '#ef4444' : key === '.' ? '#006AFF' : '#1F1F1F',
                   boxShadow: key === '-' ? '0 2px 0 #fecdd3' : key === '.' ? '0 2px 0 #B3D1FF' : '0 2px 0 #e2e8f0',
                   fontSize: '18px',
                 }}>

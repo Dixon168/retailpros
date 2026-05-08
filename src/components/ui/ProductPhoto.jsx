@@ -16,10 +16,10 @@ export function ProductPhoto({ imageUrl, name, size = 'md', className = '', onCl
   return (
     <div
       onClick={onClick}
-      className={`${sz} rounded-[8px] bg-[#1a2236] border border-[#1e2d42] flex items-center justify-center overflow-hidden flex-shrink-0 ${onClick ? 'cursor-pointer hover:border-blue-500/40 transition-colors' : ''} ${className}`}>
+      className={`${sz} rounded-[8px] bg-[#F5F5F5] border border-[#E5E5E5] flex items-center justify-center overflow-hidden flex-shrink-0 ${onClick ? 'cursor-pointer hover:border-blue-500/40 transition-colors' : ''} ${className}`}>
       {imageUrl
         ? <img src={imageUrl} alt={name} className="w-full h-full object-cover"/>
-        : <span className="font-bold text-[#3d5068]">{initials}</span>
+        : <span className="font-bold text-[#999999]">{initials}</span>
       }
     </div>
   )
@@ -35,22 +35,22 @@ export function PhotoViewer({ product, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6"
       onClick={onClose}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl overflow-hidden max-w-[480px] w-full"
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl overflow-hidden max-w-[480px] w-full"
         onClick={e => e.stopPropagation()}>
 
         {/* Photo */}
-        <div className="w-full aspect-square bg-[#111827] flex items-center justify-center overflow-hidden relative">
+        <div className="w-full aspect-square bg-[#F5F5F5] flex items-center justify-center overflow-hidden relative">
           {product.image_url
             ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain"/>
             : (
-              <div className="flex flex-col items-center justify-center text-[#3d5068]">
+              <div className="flex flex-col items-center justify-center text-[#999999]">
                 <div className="text-[64px] font-bold opacity-20">{product.name?.substring(0,2).toUpperCase()}</div>
                 <div className="text-[12px] mt-2">No photo</div>
               </div>
             )
           }
           <button onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 bg-black/40 border border-[#243347] rounded-full flex items-center justify-center text-[#8899b0] hover:text-white cursor-pointer border-none">
+            className="absolute top-3 right-3 w-8 h-8 bg-black/40 border border-[#E5E5E5] rounded-full flex items-center justify-center text-[#666666] hover:text-[#1F1F1F] cursor-pointer border-none">
             ✕
           </button>
         </div>
@@ -59,19 +59,19 @@ export function PhotoViewer({ product, onClose }) {
         <div className="p-4">
           <div className="text-[17px] font-bold mb-1">{product.name}</div>
           {product.description && (
-            <div className="text-[12px] text-[#8899b0] mb-3">{product.description}</div>
+            <div className="text-[12px] text-[#666666] mb-3">{product.description}</div>
           )}
           <div className="grid grid-cols-3 gap-2">
             {[
-              ['Price',    `$${parseFloat(product.price||0).toFixed(2)}`, 'text-blue-400'],
-              ['Cost',     `$${parseFloat(avgCost).toFixed(2)}`,          'text-[#8899b0]'],
-              ['Margin',   `${margin}%`,                                   parseFloat(margin)>=30?'text-green-400':parseFloat(margin)>=10?'text-yellow-400':'text-red-400'],
-              ['On Hand',  product.type==='service' ? '—' : `${qty} ${product.unit||'ea'}`, qty<=5&&product.type!=='service'?'text-red-400':'text-[#e8edf5]'],
-              ['SKU',      product.sku||'—',                               'text-[#8899b0]'],
-              ['Type',     product.type?.toUpperCase(),                    'text-[#8899b0]'],
+              ['Price',    `$${parseFloat(product.price||0).toFixed(2)}`, 'text-[#006AFF]'],
+              ['Cost',     `$${parseFloat(avgCost).toFixed(2)}`,          'text-[#666666]'],
+              ['Margin',   `${margin}%`,                                   parseFloat(margin)>=30?'text-[#00B23B]':parseFloat(margin)>=10?'text-[#FA8C16]':'text-[#CF1322]'],
+              ['On Hand',  product.type==='service' ? '—' : `${qty} ${product.unit||'ea'}`, qty<=5&&product.type!=='service'?'text-[#CF1322]':'text-[#1F1F1F]'],
+              ['SKU',      product.sku||'—',                               'text-[#666666]'],
+              ['Type',     product.type?.toUpperCase(),                    'text-[#666666]'],
             ].map(([l,v,c]) => (
-              <div key={l} className="bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2">
-                <div className="text-[9px] font-mono text-[#3d5068] uppercase mb-0.5">{l}</div>
+              <div key={l} className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2">
+                <div className="text-[9px] font-mono text-[#999999] uppercase mb-0.5">{l}</div>
                 <div className={`text-[13px] font-bold ${c}`}>{v}</div>
               </div>
             ))}

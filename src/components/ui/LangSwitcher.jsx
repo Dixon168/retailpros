@@ -14,7 +14,7 @@ export function LangSwitcher({ dark = false }) {
         style={{
           background: dark ? 'rgba(255,255,255,0.08)' : open ? '#E6F0FF' : '#f8fafc',
           borderColor: dark ? 'rgba(255,255,255,0.15)' : open ? '#80B2FF' : '#e2e8f0',
-          color: dark ? '#e2e8f0' : '#475569',
+          color: dark ? '#e2e8f0' : '#666666',
         }}>
         <span className="text-[14px]">{current.flag}</span>
         <span className="text-[11px] font-bold">{current.label}</span>
@@ -36,7 +36,7 @@ export function LangSwitcher({ dark = false }) {
                 }}>
                 <span className="text-[16px]">{l.flag}</span>
                 <div>
-                  <div className="text-[12px] font-semibold" style={{color: lang===l.code ? '#006AFF' : '#1e293b'}}>
+                  <div className="text-[12px] font-semibold" style={{color: lang===l.code ? '#006AFF' : '#1F1F1F'}}>
                     {l.name}
                   </div>
                 </div>
