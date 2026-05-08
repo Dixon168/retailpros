@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { NumericKeypad } from '@/components/ui/TouchKeyboards'
 import StockDetailPanel from './StockDetailPanel'
+import CreatePOModal from '@/pages/purchase-orders/CreatePOModal'
 
 const ATTENTION_THRESHOLD = 5  // <= this counts as "low" in addition to product's own low_stock_qty
 const PAGE_LIMIT = 500         // search/category cap — Supabase server-side max anyway is 1000
@@ -22,6 +23,8 @@ export default function StockLevelsPage() {
   const [adjusting, setAdjusting]   = useState(null)
   const [historyFor, setHistoryFor] = useState(null)
   const [detailFor, setDetailFor]   = useState(null)  // product currently shown in side panel
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [showCreatePO, setShowCreatePO] = useState(false)
 
   // ── Auto-open detail panel if URL has ?focus=PRODUCT_ID ──
   useEffect(() => {
@@ -291,6 +294,31 @@ export default function StockLevelsPage() {
         </div>
       )}
 
+      {/* Selection action bar (shows when items selected) */}
+      {selectedIds.size > 0 && (
+        <div className="mb-3 rounded-xl px-4 py-3 flex items-center gap-3"
+          style={{background:'#E6F0FF', border:'1px solid #006AFF'}}>
+          <div className="flex-1">
+            <div className="text-[13px] font-bold text-[#006AFF]">
+              {selectedIds.size} item{selectedIds.size === 1 ? '' : 's'} selected
+            </div>
+            <div className="text-[11px] text-[#666]">
+              Create purchase orders to restock these items
+            </div>
+          </div>
+          <button onClick={() => setSelectedIds(new Set())}
+            className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
+            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+            Clear
+          </button>
+          <button onClick={() => setShowCreatePO(true)}
+            className="rounded-lg px-4 py-2 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
+            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            📋 Create Purchase Order →
+          </button>
+        </div>
+      )}
+
       {/* List / Empty / Loading */}
       {queryMode === 'idle' ? (
         <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center">
@@ -336,7 +364,16 @@ export default function StockLevelsPage() {
             onQuickAdjust={quickAdjust}
             onSet={(p) => setAdjusting({ product: p, currentQty: p.qty })}
             onHistory={(p) => setHistoryFor(p)}
-            onOpen={(p) => setDetailFor(p)}/>
+            onOpen={(p) => setDetailFor(p)}
+            selectedIds={selectedIds}
+            onToggleSelect={(id) => {
+              setSelectedIds(prev => {
+                const next = new Set(prev)
+                if (next.has(id)) next.delete(id)
+                else next.add(id)
+                return next
+              })
+            }}/>
         </>
       )}
 
@@ -370,6 +407,30 @@ export default function StockLevelsPage() {
       {historyFor && (
         <HistoryModal product={historyFor} tenantId={tenant.id} onClose={() => setHistoryFor(null)}/>
       )}
+
+      {/* Create PO from selection */}
+      {showCreatePO && (
+        <CreatePOModal
+          initialItems={
+            sorted
+              .filter(p => selectedIds.has(p.id))
+              .map(p => ({
+                product_id:   p.id,
+                product_name: p.name,
+                product_sku:  p.sku,
+                quantity:     '1',
+                unit_cost:    String(p.cost || 0),
+              }))
+          }
+          onClose={() => setShowCreatePO(false)}
+          onCreated={() => {
+            setShowCreatePO(false)
+            setSelectedIds(new Set())
+            toast.success('Purchase order created — view it under Purchase Orders')
+            qc.invalidateQueries({ queryKey: ['stock-rows'] })
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -392,7 +453,7 @@ function TabBtn({ active, onClick, count, alert, children }) {
 // VirtualList — incremental rendering for large lists.
 // Renders first 100, then loads 100 more on demand. Keeps DOM small
 // and scroll smooth even when there are thousands of rows.
-function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen }) {
+function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen, selectedIds, onToggleSelect }) {
   const [visibleCount, setVisibleCount] = useState(100)
 
   // Reset visible count whenever filter changes (different list arrives)
@@ -410,6 +471,8 @@ function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen }
           onSet={() => onSet(p)}
           onHistory={() => onHistory(p)}
           onOpen={() => onOpen(p)}
+          isSelected={selectedIds?.has(p.id)}
+          onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : null}
           isLast={i === visible.length - 1 && !hasMore}
         />
       ))}
@@ -425,7 +488,7 @@ function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen }
 }
 
 // ────────────────────────────────────────────────
-function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, onOpen, isLast }) {
+function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, onOpen, isLast, isSelected, onToggleSelect }) {
   const badge = {
     negative: { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: `${product.qty}` },
     oos:      { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: 'Out' },
@@ -434,7 +497,19 @@ function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, onOpen, isLas
   }[cls]
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors ${!isLast ? 'border-b border-[#E5E5E5]' : ''}`}>
+    <div className={`flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors ${!isLast ? 'border-b border-[#E5E5E5]' : ''}`}
+      style={isSelected ? { background:'#E6F0FF' } : {}}>
+      {/* Checkbox for batch PO selection */}
+      {onToggleSelect && (
+        <button onClick={(e) => { e.stopPropagation(); onToggleSelect() }}
+          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer flex-shrink-0 transition-all"
+          style={isSelected
+            ? { background:'#006AFF', border:'2px solid #006AFF', color:'#FFFFFF' }
+            : { background:'#FFFFFF', border:'2px solid #E5E5E5', color:'transparent' }}>
+          <span className="text-[11px] font-bold leading-none">✓</span>
+        </button>
+      )}
+
       {/* Clickable area: image + info opens detail panel */}
       <div onClick={onOpen} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
