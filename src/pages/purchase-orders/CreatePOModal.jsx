@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { NumericKeypad, QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
+import ProductPicker from '@/components/inventory/ProductPicker'
 
 export default function CreatePOModal({ initialItems = [], initialVendorId = null, onClose, onCreated }) {
   const { tenant, store, user } = useAuthStore()
@@ -12,7 +13,6 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
   const [expectedDate, setExpectedDate] = useState('')
   const [notes, setNotes]               = useState('')
   const [items, setItems]               = useState(initialItems)  // [{product_id, product_name, quantity, unit_cost}]
-  const [productSearch, setProductSearch] = useState('')
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [editingField, setEditingField] = useState(null)  // {idx, field, kind:'num'|'text'}
   const [showNotesKB, setShowNotesKB]   = useState(false)
@@ -32,38 +32,6 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
   })
 
   // Product search (debounced)
-  const { data: searchResults = [] } = useQuery({
-    queryKey: ['po-product-search', tenant?.id, productSearch],
-    queryFn: async () => {
-      const q = productSearch.trim()
-      if (q.length < 2) return []
-      // Get matching products + last cost from this vendor for suggested price
-      const { data: products } = await supabase.from('products')
-        .select('id, name, sku, cost')
-        .eq('tenant_id', tenant.id)
-        .neq('type', 'service')
-        .or(`name.ilike.%${q}%,sku.ilike.%${q}%`)
-        .limit(20)
-
-      // If a vendor is selected, fetch their pricing for these products
-      if (vendorId && products?.length > 0) {
-        const { data: vp } = await supabase.from('vendor_product_pricing')
-          .select('product_id, last_cost, avg_cost')
-          .eq('vendor_id', vendorId)
-          .in('product_id', products.map(p => p.id))
-        const priceMap = {}
-        ;(vp || []).forEach(p => { priceMap[p.product_id] = p })
-        return products.map(p => ({
-          ...p,
-          vendor_last_cost: priceMap[p.id]?.last_cost,
-          vendor_avg_cost: priceMap[p.id]?.avg_cost,
-        }))
-      }
-      return products || []
-    },
-    enabled: !!tenant?.id && productSearch.trim().length >= 2,
-  })
-
   const totalAmount = useMemo(() =>
     items.reduce((s, i) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.unit_cost) || 0), 0),
     [items]
@@ -83,7 +51,6 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
       quantity:     '1',
       unit_cost:    String(suggestedCost),
     }])
-    setProductSearch('')
     setShowProductPicker(false)
   }
 
@@ -288,61 +255,13 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
 
       {/* Product picker modal */}
       {showProductPicker && (
-        <div className="fixed inset-0 z-[450] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
-          <div className="rounded-2xl overflow-hidden flex flex-col" style={{
-            width:'520px', maxWidth:'100%', maxHeight:'80vh', background:'#FFFFFF',
-            boxShadow:'0 20px 50px rgba(0,0,0,0.3)'
-          }}>
-            <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
-              <div className="text-[15px] font-bold text-[#1F1F1F]">Add Product to PO</div>
-              <button onClick={() => { setShowProductPicker(false); setProductSearch('') }}
-                className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-                style={{background:'#F5F5F5', border:'none'}}>✕</button>
-            </div>
-            <div className="px-5 py-3 flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
-              <input value={productSearch} onChange={e => setProductSearch(e.target.value)} autoFocus
-                placeholder="🔍 Type product name or SKU (2+ chars)..."
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"/>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3">
-              {productSearch.trim().length < 2 ? (
-                <div className="p-8 text-center text-[12px] text-[#999]">
-                  Type at least 2 characters to search
-                </div>
-              ) : searchResults.length === 0 ? (
-                <div className="p-8 text-center text-[12px] text-[#999]">No products found</div>
-              ) : (
-                <div className="space-y-1">
-                  {searchResults.map(p => (
-                    <button key={p.id} onClick={() => addProduct(p)}
-                      className="w-full text-left px-3 py-2 rounded-lg cursor-pointer hover:bg-[#FAFAFA] flex items-center gap-3"
-                      style={{border:'1px solid #E5E5E5', background:'#FFFFFF'}}>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{p.name}</div>
-                        <div className="text-[10px] text-[#999] font-mono">{p.sku || '—'}</div>
-                      </div>
-                      <div className="text-right">
-                        {p.vendor_last_cost ? (
-                          <>
-                            <div className="text-[10px] text-[#666]">Last from this vendor</div>
-                            <div className="text-[13px] font-bold font-mono text-[#006AFF]">${p.vendor_last_cost.toFixed(2)}</div>
-                          </>
-                        ) : p.cost ? (
-                          <>
-                            <div className="text-[10px] text-[#999]">Avg cost</div>
-                            <div className="text-[13px] font-bold font-mono text-[#666]">${p.cost.toFixed(2)}</div>
-                          </>
-                        ) : (
-                          <div className="text-[10px] text-[#999]">No price yet</div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ProductPicker
+          title="Add Product to PO"
+          vendorId={vendorId}
+          excludeIds={items.map(i => i.product_id)}
+          onPick={addProduct}
+          onClose={() => setShowProductPicker(false)}
+        />
       )}
 
       {/* Field editors */}

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { NumericKeypad, QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
+import ProductPicker from '@/components/inventory/ProductPicker'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666', label:'Draft' },
@@ -22,7 +23,6 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
   const [extraItems, setExtraItems]     = useState([])  // [{product_id, product_name, quantity, unit_cost}] — added at receiving
   const [editingField, setEditingField] = useState(null)
   const [showProductPicker, setShowProductPicker] = useState(false)
-  const [productSearch, setProductSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
   // Fetch PO details
@@ -61,21 +61,6 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
     })
     setReceiveLines(lines)
   }, [poDetail])
-
-  // Search products for adding extras
-  const { data: searchResults = [] } = useQuery({
-    queryKey: ['po-extra-search', tenant?.id, productSearch],
-    queryFn: async () => {
-      const q = productSearch.trim()
-      if (q.length < 2) return []
-      const { data } = await supabase.from('products')
-        .select('id, name, sku, cost')
-        .eq('tenant_id', tenant.id).neq('type', 'service')
-        .or(`name.ilike.%${q}%,sku.ilike.%${q}%`).limit(20)
-      return data || []
-    },
-    enabled: productSearch.trim().length >= 2,
-  })
 
   if (isLoading || !poDetail) {
     return (
@@ -121,7 +106,6 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
       quantity: '1',
       unit_cost: String(product.cost || 0),
     }])
-    setProductSearch('')
     setShowProductPicker(false)
   }
 
@@ -393,47 +377,16 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
 
       {/* Product picker for extras */}
       {showProductPicker && (
-        <div className="fixed inset-0 z-[450] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
-          <div className="rounded-2xl overflow-hidden flex flex-col" style={{
-            width:'520px', maxWidth:'100%', maxHeight:'80vh', background:'#FFFFFF',
-            boxShadow:'0 20px 50px rgba(0,0,0,0.3)'
-          }}>
-            <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
-              <div className="text-[15px] font-bold text-[#1F1F1F]">Add Extra Product</div>
-              <button onClick={() => { setShowProductPicker(false); setProductSearch('') }}
-                className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-                style={{background:'#F5F5F5', border:'none'}}>✕</button>
-            </div>
-            <div className="px-5 py-3 flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
-              <input value={productSearch} onChange={e => setProductSearch(e.target.value)} autoFocus
-                placeholder="🔍 Search product..."
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"/>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3">
-              {productSearch.trim().length < 2 ? (
-                <div className="p-8 text-center text-[12px] text-[#999]">Type at least 2 chars</div>
-              ) : searchResults.length === 0 ? (
-                <div className="p-8 text-center text-[12px] text-[#999]">No products found</div>
-              ) : (
-                <div className="space-y-1">
-                  {searchResults.map(p => (
-                    <button key={p.id} onClick={() => addExtraProduct(p)}
-                      className="w-full text-left px-3 py-2 rounded-lg cursor-pointer hover:bg-[#FAFAFA] flex items-center gap-3"
-                      style={{border:'1px solid #E5E5E5', background:'#FFFFFF'}}>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{p.name}</div>
-                        <div className="text-[10px] text-[#999] font-mono">{p.sku || '—'}</div>
-                      </div>
-                      {p.cost > 0 && (
-                        <div className="text-[12px] font-bold font-mono text-[#666]">${p.cost.toFixed(2)}</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ProductPicker
+          title="Add Extra Product"
+          vendorId={poDetail?.supplier_id}
+          excludeIds={[
+            ...receiveLines.map(l => l.product_id),
+            ...extraItems.map(e => e.product_id),
+          ]}
+          onPick={addExtraProduct}
+          onClose={() => setShowProductPicker(false)}
+        />
       )}
     </>
   )
