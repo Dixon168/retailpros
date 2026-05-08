@@ -41,9 +41,9 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
   }
 
   return (
-    <div className="fixed inset-0 z-[500] flex flex-col items-center justify-end"
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4"
       style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
-      <div className="w-full max-w-[760px] bg-white rounded-t-3xl shadow-md">
+      <div className="w-full max-w-[760px] bg-white rounded-3xl shadow-md max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
@@ -159,9 +159,9 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
   }
 
   return (
-    <div className="fixed inset-0 z-[500] flex flex-col items-center justify-end"
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4"
       style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
-      <div className="w-full max-w-[440px] bg-white rounded-t-3xl shadow-md">
+      <div className="w-full max-w-[440px] bg-white rounded-3xl shadow-md max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
