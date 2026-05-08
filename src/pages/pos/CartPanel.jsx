@@ -407,40 +407,38 @@ export default function CartPanel({ onRefund, onHold }) {
                         <span className={`text-[11px] font-mono ${item.qty < 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
                           {item.qty < 0 ? '↩ RETURN ' : ''}{item.qty} × ${item.unitPrice.toFixed(2)}
                         </span>
-                        {/* Stock badge — show when over stock or low */}
+                        {/* Stock badge — always show for tracked items */}
                         {(() => {
                           if (item.qty < 0) return null  // returns don't need stock check
                           if (item.type === 'service' || item.type === 'weight') return null
                           const stock = item.inventory?.reduce((a,i)=>a+(i.quantity||0),0)
                           if (stock === undefined || stock === null) return null
+
+                          // Determine color state
+                          let bg, color, dot, label
                           if (stock < 0) {
-                            return (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
-                                style={{background:'#FEE2E2', color:'#CF1322'}}>
-                                <span className="w-1 h-1 rounded-full" style={{background:'#CF1322'}}/>
-                                Stock: {stock} (oversold)
-                              </span>
-                            )
+                            bg = '#FEE2E2'; color = '#CF1322'; dot = '#CF1322'
+                            label = `Stock: ${stock} (oversold)`
+                          } else if (item.qty > stock) {
+                            bg = '#FEE2E2'; color = '#CF1322'; dot = '#CF1322'
+                            label = `Over stock (${stock} left)`
+                          } else if (stock === 0) {
+                            bg = '#FEE2E2'; color = '#CF1322'; dot = '#CF1322'
+                            label = 'Out of stock'
+                          } else if (stock <= 5) {
+                            bg = '#FEF3C7'; color = '#B45309'; dot = '#F59E0B'
+                            label = `Stock: ${stock}`
+                          } else {
+                            bg = '#DCFCE7'; color = '#15803D'; dot = '#15803D'
+                            label = `Stock: ${stock}`
                           }
-                          if (item.qty > stock) {
-                            return (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
-                                style={{background:'#FEE2E2', color:'#CF1322'}}>
-                                <span className="w-1 h-1 rounded-full" style={{background:'#CF1322'}}/>
-                                Over stock ({stock} left)
-                              </span>
-                            )
-                          }
-                          if (stock <= 5) {
-                            return (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
-                                style={{background:'#FEF3C7', color:'#B45309'}}>
-                                <span className="w-1 h-1 rounded-full" style={{background:'#F59E0B'}}/>
-                                Stock: {stock}
-                              </span>
-                            )
-                          }
-                          return null  // Plenty of stock — no need to show
+                          return (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
+                              style={{background: bg, color}}>
+                              <span className="w-1 h-1 rounded-full" style={{background: dot}}/>
+                              {label}
+                            </span>
+                          )
                         })()}
                         {item.itemDiscount && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
