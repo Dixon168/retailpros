@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
-import { NumericKeypad } from '@/components/ui/TouchKeyboards'
+import DualInput from '@/components/ui/DualInput'
 import StockDetailPanel from './StockDetailPanel'
 import CreatePOModal from '@/pages/purchase-orders/CreatePOModal'
 
@@ -549,7 +549,6 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
   const [newQty, setNewQty]     = useState(String(currentQty))
   const [reason, setReason]     = useState('')
   const [notes, setNotes]       = useState('')
-  const [showPad, setShowPad]   = useState(false)
   const [saving, setSaving]     = useState(false)
 
   const change = (parseFloat(newQty) || 0) - currentQty
@@ -596,23 +595,17 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
               <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">{currentQty}</span>
             </div>
 
-            {/* New qty (tap to open keypad) */}
+            {/* New qty (DualInput — type or tap ⌨️) */}
             <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">New quantity</div>
-              <button onClick={() => setShowPad(true)}
-                className="w-full text-left px-4 py-3 rounded-lg cursor-pointer"
-                style={{background:'#F5F5F5', border:'2px solid #006AFF'}}>
-                <div className="text-[10px] text-[#006AFF] font-bold uppercase">Tap to edit</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[26px] font-bold font-mono text-[#1F1F1F]">{newQty || '0'}</span>
-                  {change !== 0 && (
-                    <span className="text-[13px] font-bold font-mono"
-                      style={{color: change > 0 ? '#15803D' : '#CF1322'}}>
-                      ({change > 0 ? '+' : ''}{change})
-                    </span>
-                  )}
+              <DualInput label="New quantity" mode="decimal" autoFocus
+                value={newQty} onChange={setNewQty}
+                kbTitle="New Stock Quantity" placeholder="0"/>
+              {change !== 0 && (
+                <div className="mt-1.5 text-[12px] font-bold font-mono"
+                  style={{color: change > 0 ? '#15803D' : '#CF1322'}}>
+                  Difference: {change > 0 ? '+' : ''}{change}
                 </div>
-              </button>
+              )}
             </div>
 
             {/* Reason (optional) */}
@@ -620,7 +613,7 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
               <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Reason <span className="font-normal text-[#999]">(optional)</span></div>
               <div className="grid grid-cols-2 gap-1.5">
                 {REASONS.map(r => (
-                  <button key={r} onClick={() => setReason(reason === r ? '' : r)}
+                  <button key={r} type="button" onClick={() => setReason(reason === r ? '' : r)}
                     className="px-2 py-2 rounded-lg text-[11px] font-semibold cursor-pointer active:scale-[0.96]"
                     style={reason === r
                       ? {background:'#E6F0FF', border:'1px solid #006AFF', color:'#006AFF'}
@@ -632,12 +625,10 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
             </div>
 
             {/* Notes */}
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Notes <span className="font-normal text-[#999]">(optional)</span></div>
-              <input value={notes} onChange={e => setNotes(e.target.value)}
-                placeholder="Anything to remember about this adjustment..."
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none focus:border-[#006AFF]"/>
-            </div>
+            <DualInput
+              label={<>Notes <span className="font-normal text-[#999]">(optional)</span></>}
+              value={notes} onChange={setNotes}
+              placeholder="Anything to remember about this adjustment..."/>
           </div>
 
           {/* Footer */}
@@ -655,18 +646,6 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
           </div>
         </div>
       </div>
-
-      {showPad && (
-        <NumericKeypad
-          value={newQty}
-          onChange={setNewQty}
-          onClose={() => setShowPad(false)}
-          title="New Stock Quantity"
-          placeholder="0"
-          formatPhone={false}
-          allowPlus={false}
-        />
-      )}
     </>
   )
 }

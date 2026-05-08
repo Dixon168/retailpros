@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
-import { NumericKeypad, QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
+import DualInput from '@/components/ui/DualInput'
 
 const COUNT_REASONS    = ['Stocktake', 'Found stock', 'Manual correction', 'Other']
 const WRITEOFF_REASONS = ['Damage', 'Expired', 'Theft / shrinkage', 'Sample / gift', 'Other']
@@ -22,8 +22,6 @@ export function CountModal({ product, currentQty, onClose, onSaved }) {
   const [newQty, setNewQty]     = useState(String(currentQty))
   const [reason, setReason]     = useState('Stocktake')
   const [notes, setNotes]       = useState('')
-  const [showPad, setShowPad]   = useState(false)
-  const [showNotesKB, setShowNotesKB] = useState(false)
   const [saving, setSaving]     = useState(false)
 
   const change = (parseFloat(newQty) || 0) - currentQty
@@ -46,92 +44,74 @@ export function CountModal({ product, currentQty, onClose, onSaved }) {
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-[450] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.45)'}}>
-        <div className="rounded-2xl overflow-hidden" style={{
-          width:'440px', maxWidth:'100%', background:'#FFFFFF', boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
-        }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{borderBottom:'1px solid #E5E5E5'}}>
-            <div>
-              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">🔢 Count Stock</div>
-              <div className="text-[15px] font-bold text-[#1F1F1F] truncate" style={{maxWidth:'320px'}}>{product.name}</div>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]" style={{background:'#F5F5F5', border:'none'}}>✕</button>
+    <div className="fixed inset-0 z-[450] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="rounded-2xl overflow-hidden" style={{
+        width:'440px', maxWidth:'100%', background:'#FFFFFF', boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
+      }}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div>
+            <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">🔢 Count Stock</div>
+            <div className="text-[15px] font-bold text-[#1F1F1F] truncate" style={{maxWidth:'320px'}}>{product.name}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]" style={{background:'#F5F5F5', border:'none'}}>✕</button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="text-[12px] text-[#666]">
+            Got a real-life count? Enter the actual number you have on hand. The system stock will be updated to match.
           </div>
 
-          <div className="p-5 space-y-4">
-            <div className="text-[12px] text-[#666]">
-              Got a real-life count? Enter the actual number you have on hand. The system stock will be updated to match.
-            </div>
+          <div className="flex items-center justify-between bg-[#F5F5F5] rounded-lg px-4 py-3">
+            <span className="text-[12px] text-[#666] font-bold">System currently has</span>
+            <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">{currentQty}</span>
+          </div>
 
-            <div className="flex items-center justify-between bg-[#F5F5F5] rounded-lg px-4 py-3">
-              <span className="text-[12px] text-[#666] font-bold">System currently has</span>
-              <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">{currentQty}</span>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Actual count (real-life)</div>
-              <button onClick={() => setShowPad(true)} className="w-full text-left px-4 py-3 rounded-lg cursor-pointer"
-                style={{background:'#F5F5F5', border:'2px solid #006AFF'}}>
-                <div className="text-[10px] text-[#006AFF] font-bold uppercase">Tap to edit</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[26px] font-bold font-mono text-[#1F1F1F]">{newQty || '0'}</span>
-                  {change !== 0 && (
-                    <span className="text-[13px] font-bold font-mono" style={{color: change > 0 ? '#15803D' : '#CF1322'}}>
-                      ({change > 0 ? '+' : ''}{change})
-                    </span>
-                  )}
-                </div>
-              </button>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Reason</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {COUNT_REASONS.map(r => (
-                  <button key={r} onClick={() => setReason(r)}
-                    className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={reason === r
-                      ? {background:'#E6F0FF', border:'1px solid #006AFF', color:'#006AFF'}
-                      : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
-                    {r}
-                  </button>
-                ))}
+          <div>
+            <DualInput label="Actual count (real-life)" mode="decimal" autoFocus
+              value={newQty} onChange={setNewQty}
+              kbTitle="Actual Stock Count" placeholder="0"/>
+            {change !== 0 && (
+              <div className="mt-1.5 text-[12px] font-bold font-mono"
+                style={{color: change > 0 ? '#15803D' : '#CF1322'}}>
+                Difference: {change > 0 ? '+' : ''}{change}
               </div>
-            </div>
+            )}
+          </div>
 
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Notes <span className="font-normal text-[#999]">(optional)</span></div>
-              <button onClick={() => setShowNotesKB(true)}
-                className="w-full text-left bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] cursor-pointer"
-                style={{color: notes ? '#1F1F1F' : '#999'}}>
-                {notes || 'Tap to add notes...'}
-              </button>
+          <div>
+            <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Reason</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {COUNT_REASONS.map(r => (
+                <button key={r} type="button" onClick={() => setReason(r)}
+                  className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                  style={reason === r
+                    ? {background:'#E6F0FF', border:'1px solid #006AFF', color:'#006AFF'}
+                    : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
+                  {r}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="px-5 py-4 flex gap-2" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
-            <button onClick={onClose}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
-              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
-            <button onClick={save} disabled={saving || newQty === String(currentQty)}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-              {saving ? 'Saving...' : 'Save Count'}
-            </button>
-          </div>
+          <DualInput
+            label={<>Notes <span className="font-normal text-[#999]">(optional)</span></>}
+            value={notes} onChange={setNotes}
+            placeholder="Anything to remember..."
+            kbTitle="Count Notes"/>
+        </div>
+
+        <div className="px-5 py-4 flex gap-2" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
+          <button onClick={onClose}
+            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
+            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
+          <button onClick={save} disabled={saving || newQty === String(currentQty)}
+            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            {saving ? 'Saving...' : 'Save Count'}
+          </button>
         </div>
       </div>
-
-      {showPad && (
-        <NumericKeypad value={newQty} onChange={setNewQty} onClose={() => setShowPad(false)}
-          title="Actual Stock Count" placeholder="0" formatPhone={false} allowPlus={false}/>
-      )}
-      {showNotesKB && (
-        <QWERTYKeyboard value={notes} onChange={setNotes} onClose={() => setShowNotesKB(false)}
-          title="Count Notes" placeholder="Anything to remember..."/>
-      )}
-    </>
+    </div>
   )
 }
 
@@ -143,8 +123,6 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
   const [qty, setQty]           = useState('1')
   const [reason, setReason]     = useState('Damage')
   const [notes, setNotes]       = useState('')
-  const [showPad, setShowPad]   = useState(false)
-  const [showNotesKB, setShowNotesKB] = useState(false)
   const [saving, setSaving]     = useState(false)
 
   const writeOffQty = parseFloat(qty) || 0
@@ -169,88 +147,71 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-[450] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.45)'}}>
-        <div className="rounded-2xl overflow-hidden" style={{
-          width:'440px', maxWidth:'100%', background:'#FFFFFF', boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
-        }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{borderBottom:'1px solid #E5E5E5'}}>
-            <div>
-              <div className="text-[11px] font-bold text-[#CF1322] uppercase tracking-wider">💔 Write Off</div>
-              <div className="text-[15px] font-bold text-[#1F1F1F] truncate" style={{maxWidth:'320px'}}>{product.name}</div>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]" style={{background:'#F5F5F5', border:'none'}}>✕</button>
+    <div className="fixed inset-0 z-[450] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="rounded-2xl overflow-hidden" style={{
+        width:'440px', maxWidth:'100%', background:'#FFFFFF', boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
+      }}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div>
+            <div className="text-[11px] font-bold text-[#CF1322] uppercase tracking-wider">💔 Write Off</div>
+            <div className="text-[15px] font-bold text-[#1F1F1F] truncate" style={{maxWidth:'320px'}}>{product.name}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]" style={{background:'#F5F5F5', border:'none'}}>✕</button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="text-[12px] text-[#666]">
+            Remove damaged, expired, lost, or stolen items from stock. This is recorded in the activity log.
           </div>
 
-          <div className="p-5 space-y-4">
-            <div className="text-[12px] text-[#666]">
-              Remove damaged, expired, lost, or stolen items from stock. This is recorded in the activity log.
-            </div>
+          <div className="flex items-center justify-between bg-[#F5F5F5] rounded-lg px-4 py-3">
+            <span className="text-[12px] text-[#666] font-bold">Current stock</span>
+            <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">{currentQty}</span>
+          </div>
 
-            <div className="flex items-center justify-between bg-[#F5F5F5] rounded-lg px-4 py-3">
-              <span className="text-[12px] text-[#666] font-bold">Current stock</span>
-              <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">{currentQty}</span>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">How many to write off?</div>
-              <button onClick={() => setShowPad(true)} className="w-full text-left px-4 py-3 rounded-lg cursor-pointer"
-                style={{background:'#FEE2E2', border:'2px solid #CF1322'}}>
-                <div className="text-[10px] text-[#CF1322] font-bold uppercase">Tap to edit</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[26px] font-bold font-mono text-[#CF1322]">−{qty || '0'}</span>
-                  <span className="text-[12px] text-[#666] font-mono">→ stock will be {newStock}</span>
-                </div>
-              </button>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Reason</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {WRITEOFF_REASONS.map(r => (
-                  <button key={r} onClick={() => setReason(r)}
-                    className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={reason === r
-                      ? {background:'#FEE2E2', border:'1px solid #CF1322', color:'#CF1322'}
-                      : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Notes <span className="font-normal text-[#999]">(optional)</span></div>
-              <button onClick={() => setShowNotesKB(true)}
-                className="w-full text-left bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] cursor-pointer"
-                style={{color: notes ? '#1F1F1F' : '#999'}}>
-                {notes || 'What happened? (e.g. dropped on floor, expired)'}
-              </button>
+          <div>
+            <DualInput label="How many to write off?" mode="decimal" autoFocus
+              value={qty} onChange={setQty}
+              kbTitle="Quantity to Write Off" placeholder="1"/>
+            <div className="mt-1.5 text-[12px] font-mono text-[#666]">
+              → New stock will be: <span className="font-bold text-[#CF1322]">{newStock}</span>
             </div>
           </div>
 
-          <div className="px-5 py-4 flex gap-2" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
-            <button onClick={onClose}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
-              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
-            <button onClick={save} disabled={saving || writeOffQty <= 0}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{background:'#CF1322', color:'#FFFFFF', border:'none'}}>
-              {saving ? 'Saving...' : 'Confirm Write Off'}
-            </button>
+          <div>
+            <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Reason</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {WRITEOFF_REASONS.map(r => (
+                <button key={r} type="button" onClick={() => setReason(r)}
+                  className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                  style={reason === r
+                    ? {background:'#FEE2E2', border:'1px solid #CF1322', color:'#CF1322'}
+                    : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <DualInput
+            label={<>Notes <span className="font-normal text-[#999]">(optional)</span></>}
+            value={notes} onChange={setNotes}
+            placeholder="What happened? (e.g. dropped on floor, expired)"
+            kbTitle="Write Off Notes"/>
+        </div>
+
+        <div className="px-5 py-4 flex gap-2" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
+          <button onClick={onClose}
+            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
+            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
+          <button onClick={save} disabled={saving || writeOffQty <= 0}
+            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+            style={{background:'#CF1322', color:'#FFFFFF', border:'none'}}>
+            {saving ? 'Saving...' : 'Confirm Write Off'}
+          </button>
         </div>
       </div>
-
-      {showPad && (
-        <NumericKeypad value={qty} onChange={setQty} onClose={() => setShowPad(false)}
-          title="Quantity to Write Off" placeholder="1" formatPhone={false} allowPlus={false}/>
-      )}
-      {showNotesKB && (
-        <QWERTYKeyboard value={notes} onChange={setNotes} onClose={() => setShowNotesKB(false)}
-          title="Write Off Notes" placeholder="Why was this written off?"/>
-      )}
-    </>
+    </div>
   )
 }
 

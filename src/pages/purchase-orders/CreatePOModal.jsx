@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
-import { NumericKeypad, QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
+import DualInput from '@/components/ui/DualInput'
 import ProductPicker from '@/components/inventory/ProductPicker'
 
 export default function CreatePOModal({ initialItems = [], initialVendorId = null, onClose, onCreated }) {
@@ -14,8 +14,6 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
   const [notes, setNotes]               = useState('')
   const [items, setItems]               = useState(initialItems)  // [{product_id, product_name, quantity, unit_cost}]
   const [showProductPicker, setShowProductPicker] = useState(false)
-  const [editingField, setEditingField] = useState(null)  // {idx, field, kind:'num'|'text'}
-  const [showNotesKB, setShowNotesKB]   = useState(false)
   const [saving, setSaving]             = useState(false)
 
   // Vendors list
@@ -187,18 +185,16 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
                           )}
                         </div>
                         <div className="px-2 py-2.5">
-                          <button onClick={() => setEditingField({ idx, field:'quantity', kind:'num', title:'Quantity' })}
-                            className="w-full px-2 py-1.5 rounded text-right font-mono text-[13px] cursor-pointer hover:border-[#006AFF]"
-                            style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
-                            {item.quantity || '0'}
-                          </button>
+                          <DualInput compact mode="decimal"
+                            value={item.quantity}
+                            onChange={(v) => updateItem(idx, 'quantity', v)}
+                            kbTitle={`Qty: ${item.product_name}`}/>
                         </div>
                         <div className="px-2 py-2.5">
-                          <button onClick={() => setEditingField({ idx, field:'unit_cost', kind:'num', title:'Unit Cost' })}
-                            className="w-full px-2 py-1.5 rounded text-right font-mono text-[13px] cursor-pointer hover:border-[#006AFF]"
-                            style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
-                            ${item.unit_cost || '0'}
-                          </button>
+                          <DualInput compact mode="decimal" prefix="$"
+                            value={item.unit_cost}
+                            onChange={(v) => updateItem(idx, 'unit_cost', v)}
+                            kbTitle={`Unit Cost: ${item.product_name}`}/>
                         </div>
                         <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#1F1F1F]">
                           ${sub.toFixed(2)}
@@ -227,14 +223,10 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
             </div>
 
             {/* Notes */}
-            <div>
-              <FieldLabel>Notes (optional)</FieldLabel>
-              <button onClick={() => setShowNotesKB(true)}
-                className="w-full text-left bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] cursor-pointer"
-                style={{color: notes ? '#1F1F1F' : '#999'}}>
-                {notes || 'Tap to add notes...'}
-              </button>
-            </div>
+            <DualInput label="Notes (optional)" multiline
+              value={notes} onChange={setNotes}
+              placeholder="e.g. Hold for pickup Friday"
+              kbTitle="PO Notes"/>
           </div>
 
           {/* Footer */}
@@ -262,21 +254,6 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
           onPick={addProduct}
           onClose={() => setShowProductPicker(false)}
         />
-      )}
-
-      {/* Field editors */}
-      {editingField && (
-        <NumericKeypad
-          value={items[editingField.idx][editingField.field]}
-          onChange={(v) => updateItem(editingField.idx, editingField.field, v)}
-          onClose={() => setEditingField(null)}
-          title={editingField.title} placeholder="0"
-          formatPhone={false} allowPlus={false} allowDecimal/>
-      )}
-      {showNotesKB && (
-        <QWERTYKeyboard value={notes} onChange={setNotes}
-          onClose={() => setShowNotesKB(false)} title="PO Notes"
-          placeholder="e.g. Hold for pickup Friday"/>
       )}
     </>
   )

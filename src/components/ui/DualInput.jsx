@@ -19,9 +19,11 @@ import { QWERTYKeyboard, NumericKeypad } from './TouchKeyboards'
  *                    text/email/phone open QWERTY (with email shortcuts when 'email')
  *                    numeric/decimal open NumericKeypad
  *                    phone opens NumericKeypad with phone-format
+ *   prefix        — optional, like '$' (rendered inside the input box, before the input)
  *   kbTitle       — title shown on the touch keyboard (defaults to label)
  *   className     — extra classes for the input
  *   autoFocus     — focus on mount
+ *   compact       — bool, smaller padding (for inline use in tables)
  */
 export default function DualInput({
   value,
@@ -31,9 +33,11 @@ export default function DualInput({
   required,
   multiline,
   mode = 'text',
+  prefix,
   kbTitle,
   className = '',
   autoFocus,
+  compact,
   inputProps = {},
 }) {
   const [showKB, setShowKB] = useState(false)
@@ -49,7 +53,9 @@ export default function DualInput({
                    : mode === 'email'   ? 'email'
                    : 'text'
 
-  const baseInputCls = `flex-1 bg-transparent border-none outline-none px-3 py-2.5 text-[13px] ${
+  const baseInputCls = `flex-1 bg-transparent border-none outline-none ${
+    compact ? 'px-2 py-1.5 text-[12px]' : 'px-3 py-2.5 text-[13px]'
+  } ${
     mode === 'numeric' || mode === 'decimal' || mode === 'phone' ? 'font-mono' : ''
   }`
 
@@ -64,6 +70,11 @@ export default function DualInput({
           </div>
         )}
         <div className={containerCls} style={{ minHeight: multiline ? '70px' : 'auto' }}>
+          {prefix && !multiline && (
+            <div className={`flex items-center font-bold text-[#666] pl-3 ${compact ? 'text-[12px]' : 'text-[13px]'}`}>
+              {prefix}
+            </div>
+          )}
           {multiline ? (
             <textarea value={value || ''} onChange={e => onChange(e.target.value)}
               placeholder={placeholder} autoFocus={autoFocus}
@@ -79,8 +90,8 @@ export default function DualInput({
           )}
           <button type="button" onClick={() => setShowKB(true)}
             tabIndex={-1}
-            className="px-3 flex items-center justify-center cursor-pointer hover:bg-[#E5E5E5] transition-colors"
-            style={{ borderLeft:'1px solid #E5E5E5', background:'#FAFAFA', color:'#666', fontSize:'14px' }}
+            className={`flex items-center justify-center cursor-pointer hover:bg-[#E5E5E5] transition-colors ${compact ? 'px-2' : 'px-3'}`}
+            style={{ borderLeft:'1px solid #E5E5E5', background:'#FAFAFA', color:'#666', fontSize: compact ? '12px' : '14px' }}
             title="Open on-screen keyboard">
             ⌨️
           </button>

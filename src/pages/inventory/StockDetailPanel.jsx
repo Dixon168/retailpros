@@ -441,9 +441,19 @@ function EditableText({ value: initial, onSave, onCancel, setShowKB, small }) {
   const [v, setV] = useState(initial)
   return (
     <div className="flex items-center gap-1">
-      <input value={v} onChange={e => setV(e.target.value)} autoFocus
-        onClick={() => setShowKB?.({ value: v, onChange: setV, title: 'Edit' })}
-        className={`flex-1 bg-[#FFFFFF] border border-[#006AFF] rounded px-2 py-1 outline-none ${small ? 'text-[11px]' : 'text-[14px] font-bold'}`}/>
+      <div className={`flex-1 flex items-stretch bg-[#FFFFFF] border border-[#006AFF] rounded overflow-hidden`}>
+        <input value={v} onChange={e => setV(e.target.value)} autoFocus
+          className={`flex-1 bg-transparent border-none outline-none px-2 py-1 ${small ? 'text-[11px]' : 'text-[14px] font-bold'}`}
+          onKeyDown={e => {
+            if (e.key === 'Enter') onSave(v)
+            if (e.key === 'Escape') onCancel()
+          }}/>
+        <button type="button" tabIndex={-1}
+          onClick={() => setShowKB?.({ value: v, onChange: setV, title: 'Edit' })}
+          className="px-1.5 text-[11px] cursor-pointer"
+          style={{borderLeft:'1px solid #E5E5E5', background:'#FAFAFA'}}
+          title="Open on-screen keyboard">⌨️</button>
+      </div>
       <button onClick={() => onSave(v)} className="px-2 py-1 rounded text-[11px] font-bold cursor-pointer"
         style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>✓</button>
       <button onClick={onCancel} className="px-2 py-1 rounded text-[11px] cursor-pointer"
@@ -456,9 +466,15 @@ function EditableNum({ value: initial, onSave, onCancel, prefix }) {
   const [v, setV] = useState(String(initial))
   return (
     <div className="flex items-center gap-1">
-      {prefix && <span className="text-[14px] font-bold text-[#666]">{prefix}</span>}
-      <input type="number" inputMode="decimal" value={v} onChange={e => setV(e.target.value)} autoFocus
-        className="flex-1 bg-[#FFFFFF] border border-[#006AFF] rounded px-2 py-1 text-[14px] font-bold font-mono outline-none"/>
+      <div className="flex-1 flex items-stretch bg-[#FFFFFF] border border-[#006AFF] rounded overflow-hidden">
+        {prefix && <span className="flex items-center text-[14px] font-bold text-[#666] pl-2">{prefix}</span>}
+        <input type="text" inputMode="decimal" value={v} onChange={e => setV(e.target.value)} autoFocus
+          className="flex-1 bg-transparent border-none outline-none px-2 py-1 text-[14px] font-bold font-mono"
+          onKeyDown={e => {
+            if (e.key === 'Enter') onSave(v)
+            if (e.key === 'Escape') onCancel()
+          }}/>
+      </div>
       <button onClick={() => onSave(v)} className="px-2 py-1 rounded text-[11px] font-bold cursor-pointer"
         style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>✓</button>
       <button onClick={onCancel} className="px-2 py-1 rounded text-[11px] cursor-pointer"

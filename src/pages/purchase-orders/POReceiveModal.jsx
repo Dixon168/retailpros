@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { NumericKeypad, QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
+import DualInput from '@/components/ui/DualInput'
 import ProductPicker from '@/components/inventory/ProductPicker'
 
 const STATUS_BADGE = {
@@ -21,7 +22,6 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
   const { tenant, store, user } = useAuthStore()
   const [receiveLines, setReceiveLines] = useState([])  // [{po_item_id, product_id, product_name, ordered, already_received, qty_to_receive, unit_cost}]
   const [extraItems, setExtraItems]     = useState([])  // [{product_id, product_name, quantity, unit_cost}] — added at receiving
-  const [editingField, setEditingField] = useState(null)
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -256,28 +256,30 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                         {line.already_received || 0}
                       </div>
                       <div className="px-2 py-2.5">
-                        <button onClick={() => !isReadOnly && setEditingField({
-                          kind:'main', idx, field:'qty_to_receive', title:`Receive: ${line.product_name}`
-                        })}
-                          disabled={isReadOnly}
-                          className="w-full px-2 py-1.5 rounded text-right font-mono text-[12px] cursor-pointer disabled:cursor-default"
-                          style={{
-                            background: isReadOnly ? '#F5F5F5' : '#FFFFFF',
-                            border: `1px solid ${overReceiving ? '#F59E0B' : qty > 0 ? '#006AFF' : '#E5E5E5'}`,
-                            color: qty > 0 ? '#1F1F1F' : '#999'
-                          }}>
-                          {line.qty_to_receive || '0'}
-                        </button>
+                        {isReadOnly ? (
+                          <div className="px-2 py-1.5 rounded text-right font-mono text-[12px]"
+                            style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666'}}>
+                            {line.qty_to_receive || '0'}
+                          </div>
+                        ) : (
+                          <DualInput compact mode="decimal"
+                            value={line.qty_to_receive}
+                            onChange={(v) => updateLine(idx, 'qty_to_receive', v)}
+                            kbTitle={`Receive: ${line.product_name}`}/>
+                        )}
                       </div>
                       <div className="px-2 py-2.5">
-                        <button onClick={() => !isReadOnly && setEditingField({
-                          kind:'main', idx, field:'unit_cost', title:`Cost: ${line.product_name}`
-                        })}
-                          disabled={isReadOnly}
-                          className="w-full px-2 py-1.5 rounded text-right font-mono text-[12px] cursor-pointer disabled:cursor-default"
-                          style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
-                          ${line.unit_cost || '0'}
-                        </button>
+                        {isReadOnly ? (
+                          <div className="px-2 py-1.5 rounded text-right font-mono text-[12px]"
+                            style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666'}}>
+                            ${line.unit_cost || '0'}
+                          </div>
+                        ) : (
+                          <DualInput compact mode="decimal" prefix="$"
+                            value={line.unit_cost}
+                            onChange={(v) => updateLine(idx, 'unit_cost', v)}
+                            kbTitle={`Cost: ${line.product_name}`}/>
+                        )}
                       </div>
                       <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#1F1F1F]">
                         ${sub.toFixed(2)}
@@ -306,22 +308,16 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                       <div className="px-2.5 py-2.5 text-right font-mono text-[12px] text-[#999]">—</div>
                       <div className="px-2.5 py-2.5 text-right font-mono text-[12px] text-[#999]">—</div>
                       <div className="px-2 py-2.5">
-                        <button onClick={() => setEditingField({
-                          kind:'extra', idx, field:'quantity', title:`Qty: ${item.product_name}`
-                        })}
-                          className="w-full px-2 py-1.5 rounded text-right font-mono text-[12px] cursor-pointer"
-                          style={{background:'#FFFFFF', border:'1px solid #006AFF'}}>
-                          {item.quantity || '0'}
-                        </button>
+                        <DualInput compact mode="decimal"
+                          value={item.quantity}
+                          onChange={(v) => updateExtra(idx, 'quantity', v)}
+                          kbTitle={`Qty: ${item.product_name}`}/>
                       </div>
                       <div className="px-2 py-2.5">
-                        <button onClick={() => setEditingField({
-                          kind:'extra', idx, field:'unit_cost', title:`Cost: ${item.product_name}`
-                        })}
-                          className="w-full px-2 py-1.5 rounded text-right font-mono text-[12px] cursor-pointer"
-                          style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
-                          ${item.unit_cost || '0'}
-                        </button>
+                        <DualInput compact mode="decimal" prefix="$"
+                          value={item.unit_cost}
+                          onChange={(v) => updateExtra(idx, 'unit_cost', v)}
+                          kbTitle={`Cost: ${item.product_name}`}/>
                       </div>
                       <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#006AFF]">
                         ${sub.toFixed(2)}
@@ -360,20 +356,6 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
           </div>
         </div>
       </div>
-
-      {/* Field number editor */}
-      {editingField && (
-        <NumericKeypad
-          value={editingField.kind === 'main'
-            ? receiveLines[editingField.idx][editingField.field]
-            : extraItems[editingField.idx][editingField.field]}
-          onChange={(v) => editingField.kind === 'main'
-            ? updateLine(editingField.idx, editingField.field, v)
-            : updateExtra(editingField.idx, editingField.field, v)}
-          onClose={() => setEditingField(null)}
-          title={editingField.title} placeholder="0"
-          formatPhone={false} allowPlus={false} allowDecimal/>
-      )}
 
       {/* Product picker for extras */}
       {showProductPicker && (
