@@ -38,6 +38,7 @@ const NAV_GROUPS = [
     items: [
       { to:'/estimates',  icon:'📝', label:'Estimates' },
       { to:'/invoices',   icon:'📄', label:'Invoices' },
+      { to:'/payments',   icon:'💰', label:'Payments' },
       { to:'/cardcenter', icon:'💳', label:'Card Center' },
     ]
   },

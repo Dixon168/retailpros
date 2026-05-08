@@ -12,6 +12,7 @@ import ProductsPage from '@/pages/products/ProductsPage'
 import CustomersPage from '@/pages/customers/CustomersPage'
 import InvoicesPage from '@/pages/invoices/InvoicesPage'
 import EstimatesPage from '@/pages/estimates/EstimatesPage'
+import PaymentsPage from '@/pages/payments/PaymentsPage'
 import MarketingPage from '@/pages/marketing/MarketingPage'
 import LoyaltyPage from '@/pages/loyalty/LoyaltyPage'
 import VendorsPage from '@/pages/vendors/VendorsPage'
@@ -97,6 +98,7 @@ export default function App() {
             <Route path="/customers"  element={<CustomersPage />} />
             <Route path="/invoices"   element={<InvoicesPage />} />
             <Route path="/estimates"  element={<EstimatesPage />} />
+            <Route path="/payments"   element={<PaymentsPage />} />
             <Route path="/marketing"  element={<MarketingPage />} />
             <Route path="/loyalty"    element={<LoyaltyPage />} />
             <Route path="/vendors"    element={<VendorsPage />} />
