@@ -19,7 +19,7 @@ SELECT
 FROM order_items oi
 JOIN orders o ON o.id = oi.order_id
 WHERE o.created_at >= NOW() - INTERVAL '7 days'
-  AND o.status NOT IN ('cancelled', 'voided')
+  AND o.status NOT IN ('voided', 'refunded')
 GROUP BY oi.product_id, o.tenant_id, o.store_id;
 
 -- 3. 视图：每天卖多少（用于绘 sparkline）
@@ -33,7 +33,7 @@ SELECT
 FROM order_items oi
 JOIN orders o ON o.id = oi.order_id
 WHERE o.created_at >= NOW() - INTERVAL '7 days'
-  AND o.status NOT IN ('cancelled', 'voided')
+  AND o.status NOT IN ('voided', 'refunded')
 GROUP BY oi.product_id, o.tenant_id, o.store_id, DATE(o.created_at);
 
 -- ✅ 跑完看到 "Success"
