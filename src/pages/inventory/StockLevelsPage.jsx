@@ -17,26 +17,47 @@ export default function StockLevelsPage() {
   const [adjusting, setAdjusting] = useState(null)   // { product, mode: 'set'|'add'|'sub', currentQty }
   const [historyFor, setHistoryFor] = useState(null) // product object
 
-  // Fetch all products with inventory
+  // Fetch all products + their inventory (separately, so products without
+  // an inventory row still show up — they'll appear with qty = 0)
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['stock-levels', tenant?.id, store?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, sku, type, low_stock_qty, image_url, category_id, categories(name), inventory!inner(quantity, store_id)')
-        .eq('tenant_id', tenant.id)
-        .eq('inventory.store_id', store.id)
-        .neq('type', 'service')
-        .order('name')
-      if (error) throw error
-      return (data || []).map(p => ({
+      // Two queries in parallel — much faster than nested join
+      const [productsRes, inventoryRes, categoriesRes] = await Promise.all([
+        supabase.from('products')
+          .select('id, name, sku, type, low_stock_qty, image_url, category_id')
+          .eq('tenant_id', tenant.id)
+          .neq('type', 'service')
+          .order('name'),
+        supabase.from('inventory')
+          .select('product_id, quantity')
+          .eq('tenant_id', tenant.id)
+          .eq('store_id', store.id),
+        supabase.from('categories')
+          .select('id, name')
+          .eq('tenant_id', tenant.id),
+      ])
+
+      if (productsRes.error) throw productsRes.error
+      if (inventoryRes.error) throw inventoryRes.error
+
+      // Build lookup maps
+      const stockMap = {}
+      ;(inventoryRes.data || []).forEach(i => { stockMap[i.product_id] = i.quantity })
+
+      const catMap = {}
+      ;(categoriesRes.data || []).forEach(c => { catMap[c.id] = c.name })
+
+      return (productsRes.data || []).map(p => ({
         ...p,
-        qty: p.inventory?.[0]?.quantity ?? 0,
-        category_name: p.categories?.name || '',
+        qty: stockMap[p.id] ?? 0,
+        category_name: catMap[p.category_id] || '',
+        hasInventoryRecord: stockMap[p.id] !== undefined,
       }))
     },
     enabled: !!tenant?.id && !!store?.id,
-    refetchInterval: 30000,
+    refetchInterval: 60000,
+    staleTime: 30000,
   })
 
   // Categorize each row
