@@ -47,7 +47,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center"
       style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
-      <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'360px', background:'#fff'}}>
+      <div className="rounded-lg overflow-hidden shadow-xl" style={{width:'360px', background:'#fff'}}>
         <div className="px-5 py-4 flex items-center justify-between"
           style={{background:'#000000'}}>
           <div className="text-[18px] font-bold text-white">{ICONS[adjTab]} {TITLES[adjTab]}</div>
@@ -57,7 +57,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           <div className="flex gap-2 px-5 pt-4">
             {[['pct','% Percent','#006AFF','#E6F0FF'],['amt','$ Amount','#16a34a','#dcfce7']].map(([m,l,c,b])=>(
               <button key={m} onClick={()=>setDiscMode(m)}
-                className="flex-1 py-3 rounded-2xl text-[14px] font-bold cursor-pointer border-2 transition-all"
+                className="flex-1 py-3 rounded-lg text-[14px] font-bold cursor-pointer border-2 transition-all"
                 style={discMode===m?{background:b,borderColor:c,color:c}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#94a3b8'}}>
                 {l}
               </button>
@@ -65,7 +65,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           </div>
         )}
         <div className="px-5 py-3">
-          <div className="rounded-2xl py-4 flex items-center justify-center gap-2"
+          <div className="rounded-lg py-4 flex items-center justify-center gap-2"
             style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
             {(!isDisc||discMode==='amt') && <span className="text-[26px] font-bold text-indigo-400">$</span>}
             <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>{input||'0'}</span>
@@ -88,7 +88,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           </button>
           <button onClick={()=>{ const v=parseFloat(input)||0; if(v>0) onConfirm(v) }}
             disabled={!input||parseFloat(input)<=0}
-            className="col-span-3 rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+            className="col-span-3 rounded-lg py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#000000'}}>
             ✓ Apply {isDisc&&input?(discMode==='pct'?`${input}%`:`$${parseFloat(input).toFixed(2)}`):input?`$${parseFloat(input).toFixed(2)}`:''}
           </button>
@@ -231,7 +231,7 @@ export default function PaymentPanel() {
   return (
     <Overlay onClose={paxState!=='idle'?undefined:close}>
       {/* Full screen no-scroll container */}
-      <div className="rounded-2xl overflow-hidden shadow-xl"
+      <div className="rounded-lg overflow-hidden shadow-xl"
         style={{width:'min(1080px, 96vw)', height:'min(88vh, 800px)', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
 
         {/* ══ HEADER - full width ══ */}
@@ -240,7 +240,7 @@ export default function PaymentPanel() {
           <div className="flex items-center gap-4">
             {customer ? (
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[16px] font-bold text-white"
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[16px] font-bold text-white"
                   style={{background:'rgba(255,255,255,0.2)'}}>
                   {customer.name.charAt(0)}
                 </div>
@@ -301,7 +301,7 @@ export default function PaymentPanel() {
 
           {/* Totals - always visible, compact */}
           <div className="flex-shrink-0 px-3 pb-3">
-            <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
+            <div className="rounded-lg overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
               {[
                 ['Subtotal',   subtotal,         '#64748b', '#fff',     true],
                 ['✂️ Disc',    -orderDiscountAmt, '#16a34a', orderDiscountAmt>0?'#f0fdf4':'#fff', true],
@@ -332,7 +332,7 @@ export default function PaymentPanel() {
           style={{gridRow:'2', gridColumn:'2', minHeight:0}}>
 
           {/* Adjustments - compact row */}
-          <div className="rounded-2xl overflow-hidden flex-shrink-0" style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
+          <div className="rounded-lg overflow-hidden flex-shrink-0" style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
             <div className="px-4 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest"
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Invoice Adjustments
@@ -369,7 +369,7 @@ export default function PaymentPanel() {
           </div>
 
           {/* Payment method + input - fills remaining space */}
-          <div className="rounded-2xl overflow-hidden flex-1 flex flex-col" style={{background:'#fff', border:'1.5px solid #e2e8f0', minHeight:0}}>
+          <div className="rounded-lg overflow-hidden flex-1 flex flex-col" style={{background:'#fff', border:'1.5px solid #e2e8f0', minHeight:0}}>
             <div className="px-4 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest flex-shrink-0"
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Payment Method
@@ -406,7 +406,7 @@ export default function PaymentPanel() {
               {paxState==='idle' && remaining>0 && (
                 <>
                   <button onClick={()=>setShowPayPad(true)}
-                    className="flex-shrink-0 w-full rounded-2xl px-4 py-4 text-left cursor-pointer border-2 transition-all"
+                    className="flex-shrink-0 w-full rounded-lg px-4 py-4 text-left cursor-pointer border-2 transition-all"
                     style={{borderColor:'#80B2FF', background:'#E6F0FF'}}>
                     <div className="text-[10px] text-indigo-400 mb-0.5">Payment {payments.length+1} Amount</div>
                     <div className="text-[38px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>
@@ -426,7 +426,7 @@ export default function PaymentPanel() {
                     }
                   </div>
                   <button onClick={handleAddPayment}
-                    className="flex-shrink-0 w-full rounded-2xl py-4 text-[16px] font-bold text-white cursor-pointer border-none"
+                    className="flex-shrink-0 w-full rounded-lg py-4 text-[16px] font-bold text-white cursor-pointer border-none"
                     style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
                     {METHODS.find(m=>m.id===selMethod)?.icon} Add {METHODS.find(m=>m.id===selMethod)?.label} — ${payInput||remaining.toFixed(2)}
                   </button>
@@ -465,7 +465,7 @@ export default function PaymentPanel() {
             ) : payments.map((p,i)=>{
               const m = METHODS.find(x=>x.id===p.method)
               return (
-                <div key={i} className="rounded-2xl p-3 flex-shrink-0"
+                <div key={i} className="rounded-lg p-3 flex-shrink-0"
                   style={{background:m?.bg||'#f8fafc', border:`1.5px solid ${m?.border||'#e2e8f0'}`}}>
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider" style={{color:m?.color}}>#{i+1} {m?.label}</span>
@@ -501,13 +501,13 @@ export default function PaymentPanel() {
         <div className="col-span-3 px-6 py-4 flex items-center gap-4"
           style={{gridRow:'3', gridColumn:'1 / -1', background:'#fff', borderTop:'1px solid #e2e8f0'}}>
           <button onClick={close}
-            className="rounded-2xl px-6 py-3.5 text-[14px] font-bold cursor-pointer border-2"
+            className="rounded-lg px-6 py-3.5 text-[14px] font-bold cursor-pointer border-2"
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
             ← Back
           </button>
           <button onClick={()=>handleComplete()}
             disabled={processing||(paid<liveTotal&&!payments.some(p=>p.method==='on_account'))}
-            className="flex-1 rounded-2xl py-4 text-[18px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+            className="flex-1 rounded-lg py-4 text-[18px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#00B23B', boxShadow:'0 4px 20px rgba(22,163,74,0.35)'}}>
             {processing?'⏳ Processing...': remaining<=0 ? `✓ Complete Order — $${liveTotal.toFixed(2)}` : `Complete ($${paid.toFixed(2)} of $${liveTotal.toFixed(2)})`}
           </button>
@@ -519,7 +519,7 @@ export default function PaymentPanel() {
       {showPayPad && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center"
           style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
-          <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'360px',background:'#fff'}}>
+          <div className="rounded-lg overflow-hidden shadow-xl" style={{width:'360px',background:'#fff'}}>
             <div className="px-5 py-4 flex items-center justify-between"
               style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'}}>
               <div>
@@ -530,7 +530,7 @@ export default function PaymentPanel() {
             </div>
             <div className="px-5 py-3">
               <div className="text-[11px] text-slate-400 mb-1">Remaining: ${remaining.toFixed(2)}</div>
-              <div className="rounded-2xl py-4 flex items-center justify-center gap-1"
+              <div className="rounded-lg py-4 flex items-center justify-center gap-1"
                 style={{background:'#E6F0FF',border:'2px solid #80B2FF'}}>
                 <span className="text-[26px] font-bold text-indigo-400">$</span>
                 <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>{payInput||'0'}</span>
@@ -561,7 +561,7 @@ export default function PaymentPanel() {
               </button>
               <button onClick={()=>{if(parseFloat(payInput)>0){setShowPayPad(false);setTimeout(()=>handleAddPayment(),50)}}}
                 disabled={!payInput||parseFloat(payInput)<=0}
-                className="col-span-3 rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                className="col-span-3 rounded-lg py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
                 style={{background:'#00B23B'}}>
                 ✓ Pay ${payInput?parseFloat(payInput).toFixed(2):'0.00'}
               </button>
@@ -638,7 +638,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
     <>
       <div className="fixed inset-0 z-[400] flex items-center justify-center p-4"
         style={{background:'rgba(0,0,0,0.45)'}}>
-        <div className="rounded-2xl overflow-hidden" style={{
+        <div className="rounded-lg overflow-hidden" style={{
           width:'520px', maxWidth:'100%', background:'#FFFFFF', maxHeight:'94vh', overflowY:'auto',
           boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
         }}>
