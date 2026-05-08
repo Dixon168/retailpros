@@ -29,10 +29,10 @@ export default function SettingsPage() {
   const visibleSections = SECTIONS.filter(s => canAccessSettings(s.id) || s.role === 'manager')
 
   return (
-    <div className="flex h-full bg-[#07090f]">
+    <div className="flex h-full bg-[#FAFAFA]">
       {/* Sidebar */}
-      <div className="w-[220px] bg-[#0d1117] border-r border-[#1e2d42] p-3 flex-shrink-0">
-        <div className="text-[9px] font-mono text-[#3d5068] uppercase tracking-widest px-2 mb-3">
+      <div className="w-[220px] bg-[#FFFFFF] border-r border-[#E5E5E5] p-3 flex-shrink-0">
+        <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest px-2 mb-3">
           Settings
         </div>
         {visibleSections.map(s => (
@@ -40,8 +40,8 @@ export default function SettingsPage() {
             className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer
               text-[12px] mb-0.5 transition-all ${
               active === s.id
-                ? 'bg-[#111827] text-white'
-                : 'text-[#8899b0] hover:bg-[#111827] hover:text-white'
+                ? 'bg-[#000000] text-white font-semibold'
+                : 'text-[#1F1F1F] hover:bg-[#F5F5F5]'
             }`}>
             <span>{s.icon}</span>{s.label}
           </div>
@@ -49,7 +49,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 bg-[#07090f]">
+      <div className="flex-1 overflow-y-auto p-6 bg-[#FAFAFA]">
         {active === 'store'     && <StoreSection store={store} tenant={tenant}/>}
         {active === 'terminals' && <TerminalsSection tenantId={tenant?.id} storeId={store?.id}/>}
         {active === 'printer'   && <PrinterSection/>}
@@ -118,14 +118,14 @@ function StoreSection({ store, tenant }) {
           <FieldLabel>Header Text</FieldLabel>
           <textarea value={form.receipt_header} onChange={e => u('receipt_header', e.target.value)}
             rows={2} placeholder="Store name, address, phone..."
-            className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5
               text-[12px] outline-none focus:border-blue-500/40 resize-none"/>
         </div>
         <div>
           <FieldLabel>Footer Text</FieldLabel>
           <textarea value={form.receipt_footer} onChange={e => u('receipt_footer', e.target.value)}
             rows={2}
-            className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5
               text-[12px] outline-none focus:border-blue-500/40 resize-none"/>
         </div>
       </Card>
@@ -189,22 +189,22 @@ function TerminalsSection({ tenantId, storeId }) {
                   <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
                     term.is_active
                       ? 'bg-green-500/10 text-green-400'
-                      : 'bg-[#1a2236] text-[#3d5068]'
+                      : 'bg-[#F5F5F5] text-[#999999]'
                   }`}>{term.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
                 </div>
 
                 {/* PAX config summary */}
                 {term.pax_enabled ? (
                   <div className="flex items-center gap-2">
-                    <div className="text-[11px] font-mono text-[#8899b0]">
+                    <div className="text-[11px] font-mono text-[#666666]">
                       PAX {term.pax_model} · {term.pax_ip}:{term.pax_port}
                     </div>
                     {ts === 'online'  && <span className="text-[9px] text-green-400">● Online</span>}
                     {ts === 'offline' && <span className="text-[9px] text-red-400">● Offline</span>}
-                    {ts === 'testing' && <span className="text-[9px] text-[#8899b0] animate-pulse">Testing...</span>}
+                    {ts === 'testing' && <span className="text-[9px] text-[#666666] animate-pulse">Testing...</span>}
                   </div>
                 ) : (
-                  <div className="text-[11px] text-[#3d5068]">No PAX card reader</div>
+                  <div className="text-[11px] text-[#999999]">No PAX card reader</div>
                 )}
 
                 {/* Payment methods */}
@@ -217,7 +217,7 @@ function TerminalsSection({ tenantId, storeId }) {
                     [term.accept_on_account,  '📋 Account'],
                   ].filter(([en]) => en !== false).map(([, label]) => (
                     <span key={label} className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                      bg-[#1a2236] text-[#8899b0]">{label}</span>
+                      bg-[#F5F5F5] text-[#666666]">{label}</span>
                   ))}
                 </div>
               </div>
@@ -225,14 +225,14 @@ function TerminalsSection({ tenantId, storeId }) {
               <div className="flex gap-2 flex-shrink-0">
                 {term.pax_enabled && (
                   <button onClick={() => testPax(term)}
-                    className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-                      text-[10px] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400 transition-all">
+                    className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
+                      text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-blue-400 transition-all">
                     Test PAX
                   </button>
                 )}
                 <button onClick={() => setEditTerm(term)}
-                  className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-1.5
-                    text-[10px] text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400 transition-all">
+                  className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
+                    text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-blue-400 transition-all">
                   Edit
                 </button>
               </div>
@@ -274,23 +274,23 @@ function TerminalEditForm({ initial, onSave, onClose }) {
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50
       flex items-center justify-center" onClick={onClose}>
-      <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[480px]"
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-2xl w-[480px]"
         onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-[#1e2d42] flex justify-between">
+        <div className="px-5 py-4 border-b border-[#E5E5E5] flex justify-between">
           <div className="text-[15px] font-bold">
             {form.id ? '✏️ Edit Terminal' : '🖥️ New Terminal'}
           </div>
-          <button onClick={onClose} className="text-[#3d5068] hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-[#999999] hover:text-white text-xl">✕</button>
         </div>
         <div className="p-5">
           <FieldInput label="Terminal Name" value={form.name} onChange={v => u('name',v)} className="mb-4"/>
 
           {/* PAX toggle */}
-          <div className="flex items-center justify-between bg-[#111827] border border-[#1e2d42]
+          <div className="flex items-center justify-between bg-[#F5F5F5] border border-[#E5E5E5]
             rounded-[10px] px-4 py-3 mb-4">
             <div>
               <div className="text-[13px] font-semibold">Enable PAX Card Reader</div>
-              <div className="text-[10px] text-[#3d5068] mt-0.5">Connect a PAX terminal to this machine</div>
+              <div className="text-[10px] text-[#999999] mt-0.5">Connect a PAX terminal to this machine</div>
             </div>
             <Toggle value={form.pax_enabled} onChange={v => u('pax_enabled', v)} color="#3b82f6"/>
           </div>
@@ -304,8 +304,8 @@ function TerminalEditForm({ initial, onSave, onClose }) {
               <div>
                 <FieldLabel>PAX Model</FieldLabel>
                 <select value={form.pax_model} onChange={e => u('pax_model',e.target.value)}
-                  className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                    px-3 py-2.5 text-[12px] text-[#e8edf5] outline-none">
+                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                    px-3 py-2.5 text-[12px] text-[#1F1F1F] outline-none">
                   {PAX_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
@@ -323,9 +323,9 @@ function TerminalEditForm({ initial, onSave, onClose }) {
                 ['accept_member_card', '🏷️ Member Card'],
                 ['accept_on_account',  '📋 On Account'],
               ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2.5 bg-[#111827]
-                  border border-[#1e2d42] rounded-lg px-3 py-2.5 cursor-pointer
-                  hover:border-[#243347] transition-colors">
+                <label key={key} className="flex items-center gap-2.5 bg-[#F5F5F5]
+                  border border-[#E5E5E5] rounded-lg px-3 py-2.5 cursor-pointer
+                  hover:border-[#E5E5E5] transition-colors">
                   <input type="checkbox" checked={form[key]}
                     onChange={e => u(key, e.target.checked)}
                     className="accent-blue-500 w-3.5 h-3.5"/>
@@ -336,14 +336,14 @@ function TerminalEditForm({ initial, onSave, onClose }) {
           </div>
 
           <div className="flex items-center justify-between mb-5">
-            <span className="text-[13px] text-[#8899b0]">Terminal Active</span>
+            <span className="text-[13px] text-[#666666]">Terminal Active</span>
             <Toggle value={form.is_active} onChange={v => u('is_active',v)} color="#10b981"/>
           </div>
 
           <div className="flex gap-2">
             <button onClick={onClose}
-              className="flex-1 bg-[#111827] border border-[#1e2d42] rounded-[9px]
-                py-2.5 text-[13px] text-[#8899b0]">Cancel</button>
+              className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+                py-2.5 text-[13px] text-[#666666]">Cancel</button>
             <button onClick={() => onSave(form)}
               className="flex-[2] bg-blue-500 border-none rounded-[9px] py-2.5
                 text-[13px] font-bold text-white">Save Terminal</button>
@@ -388,7 +388,7 @@ function TaxSection({ tenantId }) {
                     bg-blue-500/10 text-blue-400">DEFAULT</span>
                 )}
               </div>
-              <div className="text-[10px] font-mono text-[#3d5068] mt-0.5">
+              <div className="text-[10px] font-mono text-[#999999] mt-0.5">
                 State: {group.state || '—'}
               </div>
             </div>
@@ -396,12 +396,12 @@ function TaxSection({ tenantId }) {
               <div className="text-[16px] font-bold font-mono text-yellow-400">
                 {((group.tax_rates || []).reduce((s,r) => s + r.rate, 0) * 100).toFixed(2)}%
               </div>
-              <div className="text-[10px] text-[#3d5068]">total rate</div>
+              <div className="text-[10px] text-[#999999]">total rate</div>
             </div>
           </div>
           {(group.tax_rates || []).map(rate => (
             <div key={rate.id} className="flex items-center justify-between
-              bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-2 mb-1.5 last:mb-0">
+              bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 mb-1.5 last:mb-0">
               <span className="text-[12px]">{rate.name}</span>
               <span className="font-mono text-[12px] font-bold text-yellow-400">
                 {(rate.rate * 100).toFixed(2)}%
@@ -448,7 +448,7 @@ function DiscountsSection({ tenantId }) {
   return (
     <div className="max-w-[600px]">
       <SectionTitle>🏷️ Discount Tiers</SectionTitle>
-      <p className="text-[12px] text-[#8899b0] mb-5">
+      <p className="text-[12px] text-[#666666] mb-5">
         Set discount rates for each customer tier. Changes take effect immediately on all new transactions.
       </p>
 
@@ -457,16 +457,16 @@ function DiscountsSection({ tenantId }) {
           <CardTitle>{title}</CardTitle>
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#1e2d42]">
+              <tr className="border-b border-[#E5E5E5]">
                 {['Tier', 'Display Name', 'Discount Rate', 'Example Price', ''].map(h => (
                   <th key={h} className="pb-2 text-left font-mono text-[10px]
-                    text-[#3d5068] uppercase tracking-wider pr-4">{h}</th>
+                    text-[#999999] uppercase tracking-wider pr-4">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {list.map(tier => (
-                <tr key={tier.id} className="border-b border-[#1e2d42] last:border-0">
+                <tr key={tier.id} className="border-b border-[#E5E5E5] last:border-0">
                   <td className="py-2.5 pr-4">
                     <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded"
                       style={{ background: `${tier.color}18`, color: tier.color }}>
@@ -478,7 +478,7 @@ function DiscountsSection({ tenantId }) {
                       <input
                         value={editing.tier_name}
                         onChange={e => setEditing(p => ({...p, tier_name: e.target.value}))}
-                        className="bg-[#111827] border border-blue-500/40 rounded px-2 py-1
+                        className="bg-[#F5F5F5] border border-blue-500/40 rounded px-2 py-1
                           text-[12px] outline-none w-24"
                       />
                     ) : (
@@ -492,10 +492,10 @@ function DiscountsSection({ tenantId }) {
                           type="number" step="0.01" min="0" max="1"
                           value={editing.discount_rate}
                           onChange={e => setEditing(p => ({...p, discount_rate: e.target.value}))}
-                          className="bg-[#111827] border border-blue-500/40 rounded px-2 py-1
+                          className="bg-[#F5F5F5] border border-blue-500/40 rounded px-2 py-1
                             text-[12px] font-mono outline-none w-16"
                         />
-                        <span className="text-[11px] text-[#3d5068]">
+                        <span className="text-[11px] text-[#999999]">
                           = {Math.round((1 - editing.discount_rate) * 100)}% off
                         </span>
                       </div>
@@ -504,7 +504,7 @@ function DiscountsSection({ tenantId }) {
                         <span className="font-mono text-[12px] font-bold text-yellow-400">
                           {(tier.discount_rate * 100).toFixed(0)}%
                         </span>
-                        <span className="text-[10px] text-[#3d5068] ml-2">
+                        <span className="text-[10px] text-[#999999] ml-2">
                           ({tier.discount_rate < 1
                             ? `${Math.round((1-tier.discount_rate)*100)}% off`
                             : 'original price'
@@ -513,9 +513,9 @@ function DiscountsSection({ tenantId }) {
                       </div>
                     )}
                   </td>
-                  <td className="py-2.5 pr-4 font-mono text-[11px] text-[#8899b0]">
+                  <td className="py-2.5 pr-4 font-mono text-[11px] text-[#666666]">
                     ${(100 * tier.discount_rate).toFixed(2)}
-                    <span className="text-[#3d5068]"> on $100</span>
+                    <span className="text-[#999999]"> on $100</span>
                   </td>
                   <td className="py-2.5">
                     {editing?.id === tier.id ? (
@@ -524,13 +524,13 @@ function DiscountsSection({ tenantId }) {
                           className="text-[10px] px-2 py-1 bg-green-500/10 border
                             border-green-500/20 rounded text-green-400">Save</button>
                         <button onClick={() => setEditing(null)}
-                          className="text-[10px] px-2 py-1 bg-[#111827] border
-                            border-[#1e2d42] rounded text-[#8899b0]">✕</button>
+                          className="text-[10px] px-2 py-1 bg-[#F5F5F5] border
+                            border-[#E5E5E5] rounded text-[#666666]">✕</button>
                       </div>
                     ) : (
                       <button onClick={() => setEditing(tier)}
-                        className="text-[10px] px-2 py-1 bg-[#111827] border border-[#1e2d42]
-                          rounded text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400
+                        className="text-[10px] px-2 py-1 bg-[#F5F5F5] border border-[#E5E5E5]
+                          rounded text-[#666666] hover:border-blue-500/30 hover:text-blue-400
                           transition-all">Edit</button>
                     )}
                   </td>
@@ -543,7 +543,7 @@ function DiscountsSection({ tenantId }) {
 
       <Card>
         <CardTitle>Promo + Tier Stacking Rules</CardTitle>
-        <div className="text-[12px] text-[#8899b0] mb-4">
+        <div className="text-[12px] text-[#666666] mb-4">
           When a customer has a tier discount AND a promotion is active, how should they interact?
         </div>
         <div className="flex flex-col gap-2">
@@ -552,8 +552,8 @@ function DiscountsSection({ tenantId }) {
             ['stackable',   'Stack both — apply tier × promo',        '#10b981'],
             ['tier_first',  'Tier first — customer discount takes priority', '#3b82f6'],
           ].map(([id, label, color]) => (
-            <label key={id} className="flex items-center gap-3 bg-[#111827] border
-              border-[#1e2d42] rounded-[9px] px-4 py-3 cursor-pointer hover:border-[#243347]
+            <label key={id} className="flex items-center gap-3 bg-[#F5F5F5] border
+              border-[#E5E5E5] rounded-[9px] px-4 py-3 cursor-pointer hover:border-[#E5E5E5]
               transition-colors">
               <input type="radio" name="stack_rule" defaultChecked={id==='promo_first'}
                 className="accent-yellow-500"/>
@@ -629,13 +629,13 @@ function UsersSection({ tenantId }) {
 
       {/* Quota bar */}
       {quota && (
-        <div className="bg-[#0d1117] border border-[#1e2d42] rounded-[10px] px-4 py-2.5 mb-5
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[10px] px-4 py-2.5 mb-5
           flex items-center gap-3">
-          <div className="flex-1 h-1.5 bg-[#1a2236] rounded overflow-hidden">
+          <div className="flex-1 h-1.5 bg-[#F5F5F5] rounded overflow-hidden">
             <div className="h-full rounded transition-all bg-blue-500"
               style={{ width: `${Math.min(100, quota.current / quota.max * 100)}%` }}/>
           </div>
-          <span className="text-[11px] font-mono text-[#8899b0]">
+          <span className="text-[11px] font-mono text-[#666666]">
             {quota.current} / {quota.max} users
           </span>
         </div>
@@ -653,7 +653,7 @@ function UsersSection({ tenantId }) {
               </div>
               <div className="flex-1">
                 <div className="text-[13px] font-bold">{u.name}</div>
-                <div className="text-[10px] font-mono text-[#3d5068] mt-0.5">
+                <div className="text-[10px] font-mono text-[#999999] mt-0.5">
                   {u.email}
                 </div>
               </div>
@@ -661,12 +661,12 @@ function UsersSection({ tenantId }) {
                 style={{ background: rs.bg, color: rs.color }}>{u.role}</span>
               <div className="flex gap-2">
                 <button onClick={() => toast.success('Edit user')}
-                  className="text-[10px] bg-[#111827] border border-[#1e2d42] rounded-md
-                    px-2.5 py-1 text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400
+                  className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md
+                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-blue-400
                     transition-all">Edit</button>
                 <button onClick={() => toast.success('Set PIN')}
-                  className="text-[10px] bg-[#111827] border border-[#1e2d42] rounded-md
-                    px-2.5 py-1 text-[#8899b0] hover:border-blue-500/30 hover:text-blue-400
+                  className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md
+                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-blue-400
                     transition-all">PIN</button>
               </div>
             </div>
@@ -714,7 +714,7 @@ function PaymentSection({ tenantId }) {
       <SectionTitle>💳 Card Payment Configuration</SectionTitle>
 
       <div className="bg-blue-500/8 border border-blue-500/20 rounded-[10px] px-4 py-3 mb-5
-        text-[12px] text-[#8899b0]">
+        text-[12px] text-[#666666]">
         💡 CardPointe credentials are provided by RetailPOS support. Contact us to get your merchant account set up.
       </div>
 
@@ -734,7 +734,7 @@ function PaymentSection({ tenantId }) {
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
             form.cp_merchant_id && form.cp_username
               ? 'bg-green-500/10 text-green-400'
-              : 'bg-[#1a2236] text-[#3d5068]'
+              : 'bg-[#F5F5F5] text-[#999999]'
           }`}>
             {form.cp_merchant_id && form.cp_username ? '✓ Configured' : 'Not configured'}
           </span>
@@ -753,12 +753,12 @@ function PaymentSection({ tenantId }) {
             ['require_pin_for_refund', 'Require PIN authorization for refunds'],
             ['require_pin_for_void',   'Require PIN authorization for voids'],
           ].map(([key, label]) => (
-            <label key={key} className="flex items-center gap-3 bg-[#111827] border
-              border-[#1e2d42] rounded-lg px-3 py-2.5 cursor-pointer">
+            <label key={key} className="flex items-center gap-3 bg-[#F5F5F5] border
+              border-[#E5E5E5] rounded-lg px-3 py-2.5 cursor-pointer">
               <input type="checkbox" checked={form[key]}
                 onChange={e => u(key, e.target.checked)}
                 className="accent-blue-500 w-3.5 h-3.5"/>
-              <span className="text-[12px] text-[#8899b0]">{label}</span>
+              <span className="text-[12px] text-[#666666]">{label}</span>
             </label>
           ))}
         </div>
@@ -766,12 +766,12 @@ function PaymentSection({ tenantId }) {
 
       <Card className="mb-4">
         <CardTitle>Batch Close Schedule</CardTitle>
-        <label className="flex items-center gap-3 bg-[#111827] border border-[#1e2d42]
+        <label className="flex items-center gap-3 bg-[#F5F5F5] border border-[#E5E5E5]
           rounded-lg px-3 py-2.5 cursor-pointer mb-3">
           <input type="checkbox" checked={form.auto_batch_close}
             onChange={e => u('auto_batch_close', e.target.checked)}
             className="accent-blue-500 w-3.5 h-3.5"/>
-          <span className="text-[12px] text-[#8899b0]">
+          <span className="text-[12px] text-[#666666]">
             Auto batch close daily (server-triggered, no machine required)
           </span>
         </label>
@@ -780,8 +780,8 @@ function PaymentSection({ tenantId }) {
             <FieldLabel>Close at (UTC)</FieldLabel>
             <input type="time" value={form.auto_batch_close_time}
               onChange={e => u('auto_batch_close_time', e.target.value)}
-              className="bg-[#111827] border border-[#1e2d42] rounded-lg px-3 py-2
-                text-[13px] font-mono text-[#e8edf5] outline-none focus:border-blue-500/40"/>
+              className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2
+                text-[13px] font-mono text-[#1F1F1F] outline-none focus:border-blue-500/40"/>
           </div>
         )}
       </Card>
@@ -807,7 +807,7 @@ function BillingSection({ tenant }) {
             <div className="text-[16px] font-bold">
               {tenant?.plan_id?.toUpperCase() || 'SOLO'} Plan
             </div>
-            <div className="text-[12px] text-[#8899b0] mt-1">Billed monthly</div>
+            <div className="text-[12px] text-[#666666] mt-1">Billed monthly</div>
           </div>
           <span className="text-[10px] font-mono px-3 py-1.5 rounded bg-green-500/10
             text-green-400 self-start">
@@ -821,11 +821,11 @@ function BillingSection({ tenant }) {
               className={`border rounded-[10px] p-3 cursor-pointer transition-all ${
                 plan.id === (tenant?.plan_id || 'solo')
                   ? 'border-blue-500/40 bg-blue-500/5'
-                  : 'border-[#1e2d42] bg-[#111827] hover:border-[#243347]'
+                  : 'border-[#E5E5E5] bg-[#F5F5F5] hover:border-[#E5E5E5]'
               }`}>
               <div className="text-[13px] font-bold mb-1">{plan.name}</div>
               <div className="text-[15px] font-bold font-mono text-blue-400 mb-2">{plan.price}</div>
-              <div className="text-[10px] text-[#3d5068]">
+              <div className="text-[10px] text-[#999999]">
                 {plan.users} user{plan.users>1?'s':''}<br/>
                 {plan.terminals} terminal{plan.terminals>1?'s':''}
               </div>
@@ -851,8 +851,8 @@ function LanguageSection() {
         ].map(([label, options]) => (
           <div key={label} className="mb-4 last:mb-0">
             <FieldLabel>{label}</FieldLabel>
-            <select className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px]
-              px-3 py-2.5 text-[13px] text-[#e8edf5] outline-none focus:border-blue-500/40">
+            <select className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
+              px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none focus:border-blue-500/40">
               {options.map(o => <option key={o}>{o}</option>)}
             </select>
           </div>
@@ -865,20 +865,20 @@ function LanguageSection() {
 
 // ── Shared UI helpers ──
 function SectionTitle({ children, className='' }) {
-  return <div className={`text-[18px] font-bold mb-5 ${className}`}>{children}</div>
+  return <div className={`text-[20px] font-bold mb-5 text-[#1F1F1F] ${className}`}>{children}</div>
 }
 function Card({ children, className='' }) {
   return (
-    <div className={`bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-5 ${className}`}>
+    <div className={`bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5 mb-5 ${className}`}>
       {children}
     </div>
   )
 }
 function CardTitle({ children }) {
-  return <div className="text-[11px] font-bold text-[#8899b0] uppercase tracking-wider mb-4">{children}</div>
+  return <div className="text-[11px] font-bold text-[#999999] uppercase tracking-wider mb-3">{children}</div>
 }
 function FieldLabel({ children }) {
-  return <div className="text-[10px] font-mono text-[#3d5068] uppercase tracking-wider mb-1.5">{children}</div>
+  return <div className="text-[11px] font-semibold text-[#666666] mb-1.5">{children}</div>
 }
 function FieldInput({ label, value, onChange, mono, type='text', colSpan, placeholder, className='' }) {
   return (
@@ -886,8 +886,8 @@ function FieldInput({ label, value, onChange, mono, type='text', colSpan, placeh
       {label && <FieldLabel>{label}</FieldLabel>}
       <input type={type} value={value||''} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5
-          text-[13px] outline-none focus:border-blue-500/40 transition-colors
+        className={`w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5
+          text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF] focus:ring-2 focus:ring-[#E6F0FF] transition-all
           ${mono ? 'font-mono' : ''}`}/>
     </div>
   )
@@ -895,19 +895,18 @@ function FieldInput({ label, value, onChange, mono, type='text', colSpan, placeh
 function SaveBtn({ onClick, className='' }) {
   return (
     <button onClick={onClick}
-      className={`bg-gradient-to-r from-blue-600 to-blue-700 border-none rounded-[10px]
-        px-6 py-3 text-[13px] font-bold text-white hover:-translate-y-px transition-all
-        shadow-[0_4px_15px_rgba(59,130,246,0.2)] ${className}`}>
+      className={`bg-[#000000] hover:bg-[#1F1F1F] border-none rounded-[8px]
+        px-6 py-3 text-[14px] font-semibold text-white transition-colors ${className}`}>
       Save Changes
     </button>
   )
 }
-function Toggle({ value, onChange, color='#3b82f6' }) {
+function Toggle({ value, onChange, color='#006AFF' }) {
   return (
     <button onClick={() => onChange(!value)}
-      className="w-[42px] h-[24px] rounded-full relative transition-colors flex-shrink-0"
-      style={{ background: value ? color : '#3d5068' }}>
-      <div className="absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-all"
+      className="w-[42px] h-[24px] rounded-full relative transition-colors flex-shrink-0 border-none cursor-pointer"
+      style={{ background: value ? color : '#D1D1D1' }}>
+      <div className="absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-all shadow-sm"
         style={{ left: value ? '21px' : '3px' }}/>
     </button>
   )
@@ -1207,7 +1206,7 @@ function PrinterSection() {
           <div>
             <FieldLabel>Printer Model</FieldLabel>
             <select value={s.model} onChange={e => setS({ ...s, model:e.target.value })}
-              className="w-full bg-[#111827] border border-[#1e2d42] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40">
+              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-blue-500/40">
               <option value="thermal_80mm">Thermal 80mm (most common)</option>
               <option value="thermal_58mm">Thermal 58mm</option>
               <option value="laser">Laser / Inkjet (full page A4/Letter)</option>
@@ -1219,27 +1218,27 @@ function PrinterSection() {
             onChange={v => setS({ ...s, port:v })} placeholder="9100" mono/>
         </div>
 
-        <div className="rounded-lg p-3 mb-4" style={{background:'#0c1420', border:'1px solid #1e2d42'}}>
-          <div className="text-[11px] text-[#8899b0] leading-relaxed">
-            💡 <span className="text-white font-semibold">How to find your printer's IP:</span><br/>
-            Most thermal printers print a status sheet when you hold the FEED button while powering on. The IP shows on that sheet. Default port for ESC/POS thermal printers is <span className="font-mono text-blue-400">9100</span>.
+        <div className="rounded-lg p-3 mb-4" style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+          <div className="text-[11px] text-[#666666] leading-relaxed">
+            💡 <span className="text-[#1F1F1F] font-semibold">How to find your printer's IP:</span><br/>
+            Most thermal printers print a status sheet when you hold the FEED button while powering on. The IP shows on that sheet. Default port for ESC/POS thermal printers is <span className="font-mono text-[#006AFF]">9100</span>.
           </div>
         </div>
 
         <div className="flex gap-3">
           <button onClick={test} disabled={testing}
-            className="flex-1 px-4 py-3 rounded-[10px] text-[13px] font-bold disabled:opacity-50"
-            style={{background:'#1f2937', color:'#fff', border:'1px solid #374151'}}>
+            className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold disabled:opacity-50 transition-colors"
+            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
             {testing ? '⏳ Sending test...' : '🖨️ Test Print'}
           </button>
           <SaveBtn onClick={save} className="flex-1"/>
         </div>
 
         {testResult && (
-          <div className="mt-3 rounded-lg px-4 py-3 text-[12px]"
-            style={{background: testResult.ok ? '#0a2818' : '#2a0e0e',
-                    border: `1px solid ${testResult.ok ? '#16a34a' : '#dc2626'}`,
-                    color: testResult.ok ? '#86efac' : '#fca5a5'}}>
+          <div className="mt-3 rounded-lg px-4 py-3 text-[13px] font-medium"
+            style={{background: testResult.ok ? '#E6F7EC' : '#FFF1F0',
+                    border: `1px solid ${testResult.ok ? '#00B23B' : '#CF1322'}`,
+                    color: testResult.ok ? '#00B23B' : '#CF1322'}}>
             {testResult.ok ? '✅ ' : '❌ '}{testResult.msg}
           </div>
         )}
@@ -1328,8 +1327,8 @@ function PrintingSection() {
                 <button key={size} onClick={() => setS({ ...s, fontSize:size })}
                   className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold transition-all"
                   style={s.fontSize===size
-                    ? {background:'linear-gradient(135deg,#3b82f6,#1d4ed8)', color:'#fff'}
-                    : {background:'#111827', color:'#8899b0', border:'1px solid #1e2d42'}}>
+                    ? {background:'#000000', color:'#FFFFFF'}
+                    : {background:'#F5F5F5', color:'#666666', border:'1px solid #E5E5E5'}}>
                   {size==='small'?'A':size==='medium'?'A':'A'} <span className="ml-1">{size.charAt(0).toUpperCase()+size.slice(1)}</span>
                 </button>
               ))}
@@ -1344,9 +1343,9 @@ function PrintingSection() {
                 <label key={key}
                   className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
                   style={s.show[key]
-                    ? {background:'#0a1f3a', border:'1px solid #2563eb'}
-                    : {background:'#0c1420', border:'1px solid #1e2d42'}}>
-                  <span className="text-[12px]" style={{color: s.show[key] ? '#fff' : '#8899b0'}}>{label}</span>
+                    ? {background:'#E6F0FF', border:'1px solid #2563eb'}
+                    : {background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+                  <span className="text-[12px]" style={{color: s.show[key] ? '#006AFF' : '#666666'}}>{label}</span>
                   <Toggle value={s.show[key]} onChange={() => toggleShow(key)}/>
                 </label>
               ))}
@@ -1382,15 +1381,15 @@ function PrintingSection() {
                 <label key={val}
                   className="block p-3 rounded-[10px] cursor-pointer transition-all"
                   style={s.autoMode===val
-                    ? {background:'#0a1f3a', border:'2px solid #2563eb'}
-                    : {background:'#0c1420', border:'2px solid #1e2d42'}}>
+                    ? {background:'#E6F0FF', border:'2px solid #2563eb'}
+                    : {background:'#FAFAFA', border:'2px solid #E5E5E5'}}>
                   <div className="flex items-start gap-3">
                     <input type="radio" checked={s.autoMode===val}
                       onChange={() => setS({ ...s, autoMode:val })}
                       className="mt-1 cursor-pointer accent-blue-500"/>
                     <div>
-                      <div className="text-[13px] font-bold" style={{color:s.autoMode===val?'#fff':'#cbd5e1'}}>{label}</div>
-                      <div className="text-[11px] text-[#5d728f] mt-0.5">{desc}</div>
+                      <div className="text-[13px] font-bold" style={{color:s.autoMode===val?'#006AFF':'#666666'}}>{label}</div>
+                      <div className="text-[11px] text-[#999999] mt-0.5">{desc}</div>
                     </div>
                   </div>
                 </label>
@@ -1406,13 +1405,13 @@ function PrintingSection() {
                 <button key={n} onClick={() => setS({ ...s, copies:n })}
                   className="flex-1 py-3 rounded-[10px] text-[18px] font-black transition-all"
                   style={s.copies===n
-                    ? {background:'linear-gradient(135deg,#3b82f6,#1d4ed8)', color:'#fff'}
-                    : {background:'#111827', color:'#8899b0', border:'1px solid #1e2d42'}}>
+                    ? {background:'#000000', color:'#FFFFFF'}
+                    : {background:'#F5F5F5', color:'#666666', border:'1px solid #E5E5E5'}}>
                   {n}
                 </button>
               ))}
             </div>
-            <div className="text-[11px] text-[#5d728f]">
+            <div className="text-[11px] text-[#999999]">
               {s.copies===1 ? '1 copy → customer only' : `${s.copies} copies → e.g. customer + merchant${s.copies>2?' + record':''}`}
             </div>
           </Card>
@@ -1423,13 +1422,13 @@ function PrintingSection() {
 
             <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] cursor-pointer mb-2"
               style={s.enableEmail
-                ? {background:'#0a1f3a', border:'1px solid #2563eb'}
-                : {background:'#0c1420', border:'1px solid #1e2d42'}}>
+                ? {background:'#E6F0FF', border:'1px solid #2563eb'}
+                : {background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-[20px]">📧</span>
                 <div>
-                  <div className="text-[13px] font-bold" style={{color: s.enableEmail ? '#fff' : '#cbd5e1'}}>Email Receipt</div>
-                  <div className="text-[11px] text-[#5d728f]">Send HTML receipt to customer's email</div>
+                  <div className="text-[13px] font-bold" style={{color: s.enableEmail ? '#006AFF' : '#666666'}}>Email Receipt</div>
+                  <div className="text-[11px] text-[#999999]">Send HTML receipt to customer's email</div>
                 </div>
               </div>
               <Toggle value={s.enableEmail} onChange={v => setS({ ...s, enableEmail:v })}/>
@@ -1437,13 +1436,13 @@ function PrintingSection() {
 
             <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] cursor-pointer"
               style={s.enableSms
-                ? {background:'#0a1f3a', border:'1px solid #2563eb'}
-                : {background:'#0c1420', border:'1px solid #1e2d42'}}>
+                ? {background:'#E6F0FF', border:'1px solid #2563eb'}
+                : {background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-[20px]">💬</span>
                 <div>
-                  <div className="text-[13px] font-bold" style={{color: s.enableSms ? '#fff' : '#cbd5e1'}}>SMS Receipt</div>
-                  <div className="text-[11px] text-[#5d728f]">Send a text message with receipt link</div>
+                  <div className="text-[13px] font-bold" style={{color: s.enableSms ? '#006AFF' : '#666666'}}>SMS Receipt</div>
+                  <div className="text-[11px] text-[#999999]">Send a text message with receipt link</div>
                 </div>
               </div>
               <Toggle value={s.enableSms} onChange={v => setS({ ...s, enableSms:v })}/>
@@ -1451,14 +1450,14 @@ function PrintingSection() {
 
             {(s.enableEmail || s.enableSms) && s.autoMode === 'ask' && (
               <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
-                style={{background:'#0a2818', border:'1px solid #16a34a', color:'#86efac'}}>
+                style={{background:'#E6F7EC', border:'1px solid #00B23B', color:'#00B23B'}}>
                 ✅ <span className="font-bold">Ask popup will include</span> Email{s.enableSms?' + SMS':''} input field{s.enableSms?'s':''} alongside Print/Skip options.
               </div>
             )}
 
             {(s.enableEmail || s.enableSms) && s.autoMode !== 'ask' && (
-              <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
-                style={{background:'#2a1f0a', border:'1px solid #ca8a04', color:'#fde047'}}>
+              <div className="mt-3 rounded-lg px-3 py-2.5 text-[12px]"
+                style={{background:'#FFF7E6', border:'1px solid #FA8C16', color:'#FA8C16'}}>
                 ⚠️ <span className="font-bold">Note:</span> Digital receipts only ask the customer when "Ask first" mode is selected above. Switch "When to Print" to "Ask first" to use this.
               </div>
             )}
@@ -1548,7 +1547,7 @@ function PrintingSection() {
           </div>
 
           <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
-            style={{background:'#0c1420', border:'1px solid #1e2d42', color:'#8899b0'}}>
+            style={{background:'#FAFAFA', border:'1px solid #E5E5E5', color:'#666666'}}>
             💡 Preview updates as you change settings on the left.
           </div>
         </div>
