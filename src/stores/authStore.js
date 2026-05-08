@@ -43,6 +43,16 @@ export const useAuthStore = create(
           .eq('tenant_id', up.tenant_id).eq('is_active', true).order('name')
         const currentStore = storeList?.find(s => s.id === up.store_id) || storeList?.[0]
         set({ user: up, tenant: up.tenants, store: currentStore, stores: storeList || [] })
+
+        // Start offline cache sync (Phase 1+2)
+        // Lazy import to keep bundle slim and avoid issues on logout/cleanup
+        if (currentStore && up.tenants?.id) {
+          import('@/lib/offline/cacheSync').then(({ syncNow, startBackgroundSync }) => {
+            syncNow({ tenantId: up.tenants.id, storeId: currentStore.id })
+              .catch(e => console.warn('[OfflineCache] Initial sync failed:', e?.message))
+            startBackgroundSync({ tenantId: up.tenants.id, storeId: currentStore.id })
+          }).catch(() => {})
+        }
       },
 
       signIn: async (email, password, terminalName = null) => {
@@ -83,6 +93,12 @@ export const useAuthStore = create(
           await supabase.rpc('fn_end_session', { p_session_token: currentSessionToken })
           currentSessionToken = null
         }
+        // Stop background sync + clear offline cache
+        try {
+          const { stopBackgroundSync, clearCache } = await import('@/lib/offline/cacheSync')
+          stopBackgroundSync()
+          await clearCache()
+        } catch {}
         await supabase.auth.signOut()
         set({ user: null, tenant: null, store: null, stores: [], sessionConflict: null })
       },

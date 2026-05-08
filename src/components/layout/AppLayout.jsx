@@ -2,6 +2,8 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import NetworkStatusBanner from '@/components/NetworkStatusBanner'
+import NetworkStatusDot from '@/components/NetworkStatusDot'
 import { LangSwitcher } from '@/components/ui/LangSwitcher'
 import { OpenShiftModal, CloseShiftModal } from '@/components/pos/ShiftModal'
 
@@ -126,6 +128,12 @@ export default function AppLayout() {
 
         {/* Bottom: POS button + User */}
         <div className="border-t p-2" style={{borderColor:'#2A2A2A'}}>
+          {/* Network status — visible when expanded */}
+          {!collapsed && (
+            <div className="mb-2 px-1">
+              <NetworkStatusDot />
+            </div>
+          )}
           {/* Back to POS */}
           {!collapsed && (
             <div className="mb-2 px-1">
@@ -167,6 +175,7 @@ export default function AppLayout() {
 
       {/* ── Main Content ── */}
       <div className="flex-1 overflow-hidden flex flex-col">
+        <NetworkStatusBanner />
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
