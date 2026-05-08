@@ -58,10 +58,10 @@ export default function POSPage() {
   })
 
   const { data: products = [] } = useQuery({
-    queryKey: ['pos-products', tenant?.id, searchQuery, activeCategory],
+    queryKey: ['pos-products', tenant?.id, store?.id, searchQuery, activeCategory],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity), promotions(type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules)')
+        .select('*, inventory(quantity, store_id), promotions(type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules)')
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
         .neq('is_enabled', false)
@@ -70,7 +70,13 @@ export default function POSPage() {
       if (activeCategory !== 'all')
         q = q.eq('category_id', activeCategory)
       const { data } = await q.order('sort_order').order('name').limit(80)
-      return data || []
+      // Filter inventory[] to only the current store so qty shows per-store
+      return (data || []).map(p => ({
+        ...p,
+        inventory: store?.id
+          ? (p.inventory || []).filter(i => i.store_id === store.id)
+          : (p.inventory || []),
+      }))
     },
     enabled: !!tenant?.id,
   })

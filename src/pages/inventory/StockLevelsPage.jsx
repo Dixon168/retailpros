@@ -8,7 +8,8 @@ import { NumericKeypad } from '@/components/ui/TouchKeyboards'
 import StockDetailPanel from './StockDetailPanel'
 
 const ATTENTION_THRESHOLD = 5  // <= this counts as "low" in addition to product's own low_stock_qty
-const PAGE_LIMIT = 200         // max rows to render at once
+const PAGE_LIMIT = 500         // search/category cap — Supabase server-side max anyway is 1000
+const ALL_TAB_LIMIT = 5000     // 'All' tab: high cap, virtualized for perf
 
 export default function StockLevelsPage() {
   const { tenant, store, user } = useAuthStore()
@@ -117,8 +118,8 @@ export default function StockLevelsPage() {
         if (ids.length === 0) return []
         pq = pq.in('id', ids).limit(PAGE_LIMIT)
       } else {
-        // 'all' mode — limit + sort by name
-        pq = pq.order('name').limit(PAGE_LIMIT)
+        // 'all' mode — uses ALL_TAB_LIMIT (virtualized in render)
+        pq = pq.order('name').limit(ALL_TAB_LIMIT)
       }
 
       const [productsRes, inventoryRes] = await Promise.all([
@@ -223,7 +224,7 @@ export default function StockLevelsPage() {
         </TabBtn>
         <TabBtn active={tab==='all' && !search && !categoryId}
           onClick={() => { setTab('all'); setCategoryId(''); setSearchInput(''); setSearch('') }}>
-          All (first {PAGE_LIMIT})
+          All ({summary.total})
         </TabBtn>
 
         <select value={categoryId}
@@ -299,24 +300,23 @@ export default function StockLevelsPage() {
         </div>
       ) : (
         <>
-          {sorted.length >= PAGE_LIMIT && (
+          {sorted.length >= PAGE_LIMIT && queryMode !== 'all' && (
             <div className="mb-3 rounded-lg px-4 py-3 text-[12px]"
               style={{background:'#FEF3C7', border:'1px solid #FCD34D', color:'#B45309'}}>
               ⚠️ Showing first {PAGE_LIMIT} results. Refine search or category to narrow down.
             </div>
           )}
-          <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
-            {sorted.map((p, i) => (
-              <StockRow
-                key={p.id} product={p} cls={classify(p)}
-                onQuickAdjust={(delta) => quickAdjust(p, delta)}
-                onSet={() => setAdjusting({ product: p, currentQty: p.qty })}
-                onHistory={() => setHistoryFor(p)}
-                onOpen={() => setDetailFor(p)}
-                isLast={i === sorted.length - 1}
-              />
-            ))}
-          </div>
+          {sorted.length >= ALL_TAB_LIMIT && queryMode === 'all' && (
+            <div className="mb-3 rounded-lg px-4 py-3 text-[12px]"
+              style={{background:'#FEF3C7', border:'1px solid #FCD34D', color:'#B45309'}}>
+              ⚠️ Hit the {ALL_TAB_LIMIT}-row cap. If you have more, use search or category.
+            </div>
+          )}
+          <VirtualList rows={sorted} classify={classify}
+            onQuickAdjust={quickAdjust}
+            onSet={(p) => setAdjusting({ product: p, currentQty: p.qty })}
+            onHistory={(p) => setHistoryFor(p)}
+            onOpen={(p) => setDetailFor(p)}/>
         </>
       )}
 
@@ -364,6 +364,43 @@ function TabBtn({ active, onClick, count, alert, children }) {
         : { background:'#FFFFFF', color: alert ? '#CF1322' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
       {children} <span className="ml-1 opacity-75">({count})</span>
     </button>
+  )
+}
+
+// ────────────────────────────────────────────────
+// ────────────────────────────────────────────────
+// VirtualList — incremental rendering for large lists.
+// Renders first 100, then loads 100 more on demand. Keeps DOM small
+// and scroll smooth even when there are thousands of rows.
+function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen }) {
+  const [visibleCount, setVisibleCount] = useState(100)
+
+  // Reset visible count whenever filter changes (different list arrives)
+  useEffect(() => { setVisibleCount(100) }, [rows.length, rows[0]?.id])
+
+  const visible = rows.slice(0, visibleCount)
+  const hasMore = visibleCount < rows.length
+
+  return (
+    <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
+      {visible.map((p, i) => (
+        <StockRow
+          key={p.id} product={p} cls={classify(p)}
+          onQuickAdjust={(delta) => onQuickAdjust(p, delta)}
+          onSet={() => onSet(p)}
+          onHistory={() => onHistory(p)}
+          onOpen={() => onOpen(p)}
+          isLast={i === visible.length - 1 && !hasMore}
+        />
+      ))}
+      {hasMore && (
+        <button onClick={() => setVisibleCount(c => c + 100)}
+          className="w-full px-4 py-3 text-[13px] font-bold cursor-pointer active:scale-[0.99]"
+          style={{background:'#F5F5F5', color:'#006AFF', border:'none', borderTop:'1px solid #E5E5E5'}}>
+          Show 100 more · {rows.length - visibleCount} remaining
+        </button>
+      )}
+    </div>
   )
 }
 
