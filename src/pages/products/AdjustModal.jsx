@@ -39,7 +39,7 @@ export function AdjustModal({ product: p, tenantId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
+      style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(2px)'}} onClick={onClose}>
       <div className="rounded-2xl w-[400px] shadow-md"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
 

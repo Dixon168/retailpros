@@ -32,9 +32,9 @@ export function HoldModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(6px)'}}
+      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(2px)'}}
       onClick={onClose}>
-      <div className="w-full rounded-t-3xl sm:rounded-xl overflow-hidden shadow-md"
+      <div className="w-full rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-xl"
         style={{background:'#fff', maxWidth:'380px'}}
         onClick={e => e.stopPropagation()}>
 

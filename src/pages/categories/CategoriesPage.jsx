@@ -315,7 +315,7 @@ function CategoryForm({ initial, onSave, onClose }) {
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[420px]" onClick={e=>e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-[#1e2d42] flex justify-between items-center">
           <div className="text-[15px] font-bold">{form.id ? '✏️ Edit Category' : '📁 New Category'}</div>
@@ -386,7 +386,7 @@ function SubcategoryForm({ initial, categoryName, onSave, onClose }) {
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[380px]" onClick={e=>e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-[#1e2d42] flex justify-between items-center">
           <div>

@@ -33,7 +33,7 @@ export function PhotoViewer({ product, onClose }) {
   const margin = product.price > 0 ? ((product.price - avgCost) / product.price * 100).toFixed(1) : 0
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[200] flex items-center justify-center p-6"
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6"
       onClick={onClose}>
       <div className="bg-[#0d1117] border border-[#243347] rounded-2xl overflow-hidden max-w-[480px] w-full"
         onClick={e => e.stopPropagation()}>
@@ -50,7 +50,7 @@ export function PhotoViewer({ product, onClose }) {
             )
           }
           <button onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 bg-black/60 border border-[#243347] rounded-full flex items-center justify-center text-[#8899b0] hover:text-white cursor-pointer border-none">
+            className="absolute top-3 right-3 w-8 h-8 bg-black/40 border border-[#243347] rounded-full flex items-center justify-center text-[#8899b0] hover:text-white cursor-pointer border-none">
             ✕
           </button>
         </div>

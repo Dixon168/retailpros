@@ -174,7 +174,7 @@ export function VoiceOrderButton({ products }) {
       {/* Panel overlay */}
       {showPanel && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center"
-          style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(4px)'}}>
+          style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(4px)'}}>
           <div className="w-full rounded-t-3xl overflow-hidden shadow-md"
             style={{background:'#1e293b', maxWidth:'480px'}}>
 

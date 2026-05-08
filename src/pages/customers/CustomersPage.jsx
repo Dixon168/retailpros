@@ -523,7 +523,7 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(2px)'}}>
       <div className="rounded-2xl overflow-hidden shadow-md w-[400px]"
         style={{background:'#fff'}}>
 
@@ -680,7 +680,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(2px)'}}>
       <div className="rounded-2xl overflow-hidden shadow-md w-[560px] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}}>
 
@@ -840,7 +840,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(2px)'}}>
       <div className="rounded-2xl overflow-hidden shadow-md w-[560px] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}}>
         <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"

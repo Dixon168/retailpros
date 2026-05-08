@@ -412,7 +412,7 @@ export default function CardCenterPage() {
 
       {/* ── Void confirm modal ── */}
       {voidConfirm && (
-        <div className="fixed inset-0 bg-[rgba(7,9,15,0.85)] backdrop-blur-sm z-50
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50
           flex items-center justify-center">
           <div className="bg-[#0d1117] border border-red-500/30 rounded-2xl w-[380px] p-6">
             {!pinFor || !needsVoidAuth ? (
@@ -455,7 +455,7 @@ export default function CardCenterPage() {
 
       {/* ── Batch close confirm ── */}
       {batchConfirm && (
-        <div className="fixed inset-0 bg-[rgba(7,9,15,0.85)] backdrop-blur-sm z-50
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50
           flex items-center justify-center">
           <div className="bg-[#0d1117] border border-blue-500/30 rounded-2xl w-[400px] p-6">
             {!needsBatchAuth ? (

@@ -49,8 +49,8 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
     <>
     {/* Backdrop - no close on click */}
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-xl overflow-hidden shadow-md"
+      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(2px)'}}>
+      <div className="rounded-2xl overflow-hidden shadow-xl"
         style={{background:'#fff', width:'420px', maxHeight:'90vh', overflowY:'auto'}}>
 
         {/* Header */}

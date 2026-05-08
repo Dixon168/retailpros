@@ -42,7 +42,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
 
   return (
     <div className="fixed inset-0 z-[500] flex flex-col items-center justify-end"
-      style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
       <div className="w-full max-w-[760px] bg-white rounded-t-3xl shadow-md">
 
         {/* Header */}
@@ -160,7 +160,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
 
   return (
     <div className="fixed inset-0 z-[500] flex flex-col items-center justify-end"
-      style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
       <div className="w-full max-w-[440px] bg-white rounded-t-3xl shadow-md">
 
         {/* Header */}

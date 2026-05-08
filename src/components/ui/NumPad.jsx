@@ -59,7 +59,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)'}}
       onClick={onClose}>
-      <div className="w-full max-w-[320px] rounded-t-3xl sm:rounded-xl overflow-hidden shadow-md"
+      <div className="w-full max-w-[320px] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-xl"
         style={{background:'#fff'}} onClick={e => e.stopPropagation()}>
 
         {/* Header */}

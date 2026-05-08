@@ -95,7 +95,7 @@ export function RecallPanel({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex"
-      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(6px)'}}
+      style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(2px)'}}
       onClick={e => e.target === e.currentTarget && onClose()}>
 
       {/* Left: Order List */}

@@ -1131,7 +1131,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
       {/* Add Category modal */}
       {showAddCat && (
-        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" onClick={()=>setShowAddCat(false)}>
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center" onClick={()=>setShowAddCat(false)}>
           <div className="bg-white rounded-2xl w-[300px] p-5 shadow-md" onClick={e=>e.stopPropagation()}>
             <div className="text-[14px] font-bold mb-3">✚ Add Category</div>
             <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} autoFocus placeholder="Category name..."
@@ -1149,7 +1149,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
       {/* Add Subcategory modal */}
       {showAddSub && (
-        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" onClick={()=>setShowAddSub(false)}>
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center" onClick={()=>setShowAddSub(false)}>
           <div className="bg-white rounded-2xl w-[340px] p-5 shadow-md" onClick={e=>e.stopPropagation()}>
             <div className="text-[14px] font-bold mb-4">✚ Add Subcategory</div>
             <div className="mb-3">

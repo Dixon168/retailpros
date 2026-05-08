@@ -46,8 +46,8 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
   }
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-xl overflow-hidden shadow-md" style={{width:'360px', background:'#fff'}}>
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
+      <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'360px', background:'#fff'}}>
         <div className="px-5 py-4 flex items-center justify-between"
           style={{background:'#000000'}}>
           <div className="text-[18px] font-bold text-white">{ICONS[adjTab]} {TITLES[adjTab]}</div>
@@ -231,7 +231,7 @@ export default function PaymentPanel() {
   return (
     <Overlay onClose={paxState!=='idle'?undefined:close}>
       {/* Full screen no-scroll container */}
-      <div className="rounded-xl overflow-hidden shadow-md"
+      <div className="rounded-2xl overflow-hidden shadow-xl"
         style={{width:'min(1080px, 96vw)', height:'min(88vh, 800px)', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
 
         {/* ══ HEADER - full width ══ */}
@@ -518,8 +518,8 @@ export default function PaymentPanel() {
 
       {showPayPad && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center"
-          style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}>
-          <div className="rounded-xl overflow-hidden shadow-md" style={{width:'360px',background:'#fff'}}>
+          style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
+          <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'360px',background:'#fff'}}>
             <div className="px-5 py-4 flex items-center justify-between"
               style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1e293b)`}}>
               <div>
@@ -640,8 +640,8 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
   return (
     <>
       <div className="fixed inset-0 z-[400] flex items-center justify-center"
-        style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
-        <div className="rounded-xl overflow-hidden shadow-md" style={{width:'520px', background:'#fff', maxHeight:'94vh', overflowY:'auto'}}>
+        style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
+        <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'520px', background:'#fff', maxHeight:'94vh', overflowY:'auto'}}>
 
           {/* Header */}
           <div className="px-6 py-5 text-center"

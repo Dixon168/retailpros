@@ -244,7 +244,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
   // ─────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-stretch"
-      style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="ml-auto flex flex-col shadow-md overflow-hidden"
         style={{width:'520px', background:'#fff'}}>

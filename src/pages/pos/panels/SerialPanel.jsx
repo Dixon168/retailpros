@@ -145,7 +145,7 @@ export default function SerialPanel() {
 export function Overlay({ children, onClose }) {
   return (
     <div
-      className="fixed inset-0 bg-[rgba(7,9,15,0.75)] backdrop-blur-sm z-50
+      className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50
         flex items-center justify-center animate-fade-up"
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >

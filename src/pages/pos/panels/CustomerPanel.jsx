@@ -85,7 +85,7 @@ export default function CustomerPanel() {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}
+      style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(2px)'}}
       onClick={close}>
       <div className="rounded-2xl overflow-hidden shadow-md w-[480px] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>

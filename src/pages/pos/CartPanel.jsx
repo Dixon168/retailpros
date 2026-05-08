@@ -245,7 +245,7 @@ export default function CartPanel({ onRefund, onHold }) {
 
         {/* Remark Popup */}
         {activeAction === 'remark' && (
-          <div className="fixed inset-0 z-[200] flex items-end justify-center"
+          <div className="fixed inset-0 z-[200] flex items-center justify-center"
             style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(3px)'}}>
             <div className="w-full shadow-md" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
               <div className="flex items-center justify-between px-4 pt-4 pb-2">

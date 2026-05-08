@@ -45,7 +45,7 @@ export function LockBlocker({ lockStatus, lockedByName, onDismiss }) {
 
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center
-      bg-[rgba(7,9,15,0.75)] backdrop-blur-[2px] rounded-xl">
+      bg-[rgba(0,0,0,0.4)] backdrop-blur-[2px] rounded-xl">
       <div className="bg-[#0d1117] border border-red-500/30 rounded-[14px]
         p-6 text-center max-w-[300px] shadow-md">
         <div className="text-3xl mb-3">🔒</div>

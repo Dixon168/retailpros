@@ -225,7 +225,7 @@ export default function LoyaltyPage() {
 
       {/* Recharge overlay */}
       {showRecharge && selectedCard && (
-        <div className="fixed inset-0 bg-[rgba(7,9,15,0.8)] backdrop-blur-sm z-50 flex items-center justify-center" onClick={()=>setShowRecharge(false)}>
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50 flex items-center justify-center" onClick={()=>setShowRecharge(false)}>
           <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[400px]" onClick={e=>e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-[#1e2d42]">
               <div className="text-[15px] font-bold">💳 Recharge Card</div>

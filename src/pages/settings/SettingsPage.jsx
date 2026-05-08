@@ -272,7 +272,7 @@ function TerminalEditForm({ initial, onSave, onClose }) {
   const PAX_MODELS = ['A920','A920Pro','A80','A35','S300','E600','IM30']
 
   return (
-    <div className="fixed inset-0 bg-[rgba(7,9,15,0.8)] backdrop-blur-sm z-50
+    <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50
       flex items-center justify-center" onClick={onClose}>
       <div className="bg-[#0d1117] border border-[#243347] rounded-2xl w-[480px]"
         onClick={e => e.stopPropagation()}>
