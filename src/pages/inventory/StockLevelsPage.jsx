@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { NumericKeypad } from '@/components/ui/TouchKeyboards'
+import StockDetailPanel from './StockDetailPanel'
 
 const ATTENTION_THRESHOLD = 5  // <= this counts as "low" in addition to product's own low_stock_qty
 const PAGE_LIMIT = 200         // max rows to render at once
@@ -19,6 +20,7 @@ export default function StockLevelsPage() {
   const [sort, setSort]             = useState('low_first')
   const [adjusting, setAdjusting]   = useState(null)
   const [historyFor, setHistoryFor] = useState(null)
+  const [detailFor, setDetailFor]   = useState(null)  // product currently shown in side panel
 
   // Debounce search input (only fire query 400ms after typing stops, min 2 chars)
   useEffect(() => {
@@ -188,7 +190,7 @@ export default function StockLevelsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <div className="text-[22px] font-bold text-[#1F1F1F]">📦 Stock Levels</div>
+          <div className="text-[22px] font-bold text-[#1F1F1F]">📦 Stock Center</div>
           <div className="text-[12px] text-[#666] mt-1">
             Total {summary.total} · Need attention <span className="text-[#CF1322] font-bold">{summary.attention}</span> · Normal <span className="text-[#15803D] font-bold">{summary.normal}</span>
           </div>
@@ -305,11 +307,24 @@ export default function StockLevelsPage() {
                 onQuickAdjust={(delta) => quickAdjust(p, delta)}
                 onSet={() => setAdjusting({ product: p, currentQty: p.qty })}
                 onHistory={() => setHistoryFor(p)}
+                onOpen={() => setDetailFor(p)}
                 isLast={i === sorted.length - 1}
               />
             ))}
           </div>
         </>
+      )}
+
+      {/* Side panel — Stock detail */}
+      {detailFor && (
+        <StockDetailPanel
+          product={detailFor}
+          onClose={() => setDetailFor(null)}
+          onChanged={() => {
+            qc.invalidateQueries({ queryKey: ['stock-rows'] })
+            qc.invalidateQueries({ queryKey: ['stock-summary'] })
+          }}
+        />
       )}
 
       {/* Adjust modal */}
@@ -348,7 +363,7 @@ function TabBtn({ active, onClick, count, alert, children }) {
 }
 
 // ────────────────────────────────────────────────
-function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, isLast }) {
+function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, onOpen, isLast }) {
   const badge = {
     negative: { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: `${product.qty}` },
     oos:      { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: 'Out' },
@@ -357,25 +372,25 @@ function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, isLast }) {
   }[cls]
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 ${!isLast ? 'border-b border-[#E5E5E5]' : ''}`}>
-      {/* Image */}
-      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
-        style={{ background:'#F5F5F5', border:'1px solid #E5E5E5' }}>
-        {product.image_url
-          ? <img src={product.image_url} alt="" className="w-full h-full object-cover"/>
-          : <span className="text-[14px] font-bold text-[#999]">{product.name?.substring(0,2).toUpperCase()}</span>}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-semibold text-[#1F1F1F] truncate">{product.name}</div>
-        <div className="text-[11px] text-[#666] mt-0.5 truncate">
-          {product.sku || '—'}{product.category_name ? ` · ${product.category_name}` : ''}
+    <div className={`flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors ${!isLast ? 'border-b border-[#E5E5E5]' : ''}`}>
+      {/* Clickable area: image + info opens detail panel */}
+      <div onClick={onOpen} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
+          style={{ background:'#F5F5F5', border:'1px solid #E5E5E5' }}>
+          {product.image_url
+            ? <img src={product.image_url} alt="" className="w-full h-full object-cover"/>
+            : <span className="text-[14px] font-bold text-[#999]">{product.name?.substring(0,2).toUpperCase()}</span>}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] font-semibold text-[#1F1F1F] truncate">{product.name}</div>
+          <div className="text-[11px] text-[#666] mt-0.5 truncate">
+            {product.sku || '—'}{product.category_name ? ` · ${product.category_name}` : ''}
+          </div>
         </div>
       </div>
 
-      {/* Stock badge */}
-      <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg flex-shrink-0"
+      {/* Stock badge — also clickable */}
+      <div onClick={onOpen} className="flex items-center gap-1 px-2.5 py-1 rounded-lg flex-shrink-0 cursor-pointer"
         style={{ background: badge.bg, color: badge.color }}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: badge.dot }}/>
         <span className="text-[13px] font-bold font-mono">{badge.label}</span>
