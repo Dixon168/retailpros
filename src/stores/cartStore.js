@@ -375,18 +375,22 @@ export const useCartStore = create((set, get) => ({
 
     const orderItems = items.map(item => {
       const { taxAmount: itemTax } = get().calcTaxForItem(item)
+      // Convert item discount to a percentage for storage
+      const d = item.itemDiscount
+      const discountPct = !d ? 0
+        : d.type === 'pct' ? d.value
+        : (item.unitPrice > 0 ? Math.min(100, (d.value / item.unitPrice) * 100) : 0)
       return {
-        product_id:      item.productId,
-        product_name:    item.name,
-        product_sku:     item.sku || '',
-        product_type:    item.type,
-        serial_number:   item.serialNumber || '',
-        quantity:        item.qty,
-        unit:            item.unit || 'ea',
-        unit_price:      item.unitPrice,
-        discount_amount: 0,
-        tax_amount:      itemTax,
-        line_total:      item.unitPrice * item.qty + itemTax,
+        product_id:    item.productId,
+        product_name:  item.name,
+        product_sku:   item.sku || '',
+        product_type:  item.type,
+        serial_number: item.serialNumber || '',
+        quantity:      item.qty,
+        unit:          item.unit || 'ea',
+        unit_price:    item.unitPrice,
+        discount_pct:  discountPct,
+        line_total:    item.unitPrice * item.qty + itemTax,
       }
     })
 
