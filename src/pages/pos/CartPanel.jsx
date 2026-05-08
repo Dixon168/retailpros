@@ -407,6 +407,32 @@ export default function CartPanel({ onRefund, onHold }) {
                         <span className={`text-[11px] font-mono ${item.qty < 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
                           {item.qty < 0 ? '↩ RETURN ' : ''}{item.qty} × ${item.unitPrice.toFixed(2)}
                         </span>
+                        {/* Stock badge — show when over stock or low */}
+                        {(() => {
+                          if (item.qty < 0) return null  // returns don't need stock check
+                          if (item.type === 'service' || item.type === 'weight') return null
+                          const stock = item.inventory?.reduce((a,i)=>a+(i.quantity||0),0)
+                          if (stock === undefined || stock === null) return null
+                          if (item.qty > stock) {
+                            return (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
+                                style={{background:'#FEE2E2', color:'#CF1322'}}>
+                                <span className="w-1 h-1 rounded-full" style={{background:'#CF1322'}}/>
+                                Over stock ({stock} left)
+                              </span>
+                            )
+                          }
+                          if (stock <= 5) {
+                            return (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
+                                style={{background:'#FEF3C7', color:'#B45309'}}>
+                                <span className="w-1 h-1 rounded-full" style={{background:'#F59E0B'}}/>
+                                Stock: {stock}
+                              </span>
+                            )
+                          }
+                          return null  // Plenty of stock — no need to show
+                        })()}
                         {item.itemDiscount && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
                             style={{background:'#fdf2f8', color:'#db2777'}}>

@@ -49,7 +49,23 @@ export default function ProductGrid({ products }) {
 function ProductCard({ product, onAdd, onPhotoClick }) {
   const badge  = TYPE_BADGE[product.type]
   const qty    = product.inventory?.reduce((a,i) => a+(i.quantity||0), 0) ?? null
-  const isLow  = qty !== null && qty <= (product.low_stock_qty || 5) && product.type !== 'service'
+  const lowThreshold = product.low_stock_qty || 5
+  const isService = product.type === 'service'
+  const isWeight  = product.type === 'weight'
+  const tracksStock = !isService && !isWeight && qty !== null
+
+  // Stock state: 'out' / 'low' / 'ok' / 'untracked'
+  const stockState = !tracksStock ? 'untracked'
+                   : qty <= 0 ? 'out'
+                   : qty <= lowThreshold ? 'low'
+                   : 'ok'
+
+  const stockBadge = {
+    out:  { bg:'#FEE2E2', color:'#CF1322', label:'OUT', dot:'#CF1322' },
+    low:  { bg:'#FEF3C7', color:'#B45309', label:`Only ${qty}`, dot:'#F59E0B' },
+    ok:   { bg:'#DCFCE7', color:'#15803D', label:String(qty), dot:'#15803D' },
+    untracked: null,
+  }[stockState]
 
   // Check active promotion (client-side, using local time)
   const getActivePrice = () => {
@@ -109,10 +125,12 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
             {badge.label}
           </div>
         )}
-        {isLow && (
-          <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[8px] font-bold"
-            style={{background:'#fee2e2', color:'#dc2626'}}>
-            LOW
+        {/* Stock badge — top-left of photo */}
+        {stockBadge && (
+          <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1"
+            style={{background: stockBadge.bg, color: stockBadge.color}}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{background: stockBadge.dot}}/>
+            {stockBadge.label}
           </div>
         )}
         {product.image_url
@@ -140,17 +158,11 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
             </div>
           )}
           <div className="text-[13px] font-bold"
-            style={{color: onPromo ? '#dc2626' : product.type==='weight' ? '#16a34a' : '#4f46e5'}}>
+            style={{color: onPromo ? '#dc2626' : isWeight ? '#16a34a' : '#4f46e5'}}>
             {formatPrice()}
             {onPromo && <span className="ml-1 text-[9px] px-1 py-0.5 rounded" style={{background:'#fee2e2',color:'#dc2626'}}>SALE</span>}
           </div>
         </div>
-        {product.type !== 'service' && qty !== null && (
-          <div className="text-[10px] mt-0.5 font-medium"
-            style={{color: isLow ? '#dc2626' : '#94a3b8'}}>
-            {isLow ? '⚠ ' : ''}{qty} {product.unit||'ea'}
-          </div>
-        )}
       </div>
     </div>
   )

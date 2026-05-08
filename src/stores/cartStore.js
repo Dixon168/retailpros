@@ -61,6 +61,27 @@ export const useCartStore = create((set, get) => ({
       return
     }
 
+    // ── Stock check (warning only, not blocking) ──
+    const stock = product.inventory?.reduce((a,i)=>a+(i.quantity||0), 0)
+    const isService = product.type === 'service'
+    if (!isService && stock !== undefined && stock !== null) {
+      const existing = items.find(i =>
+        i.productId === product.id && i.type !== 'serialized' && i.type !== 'weight'
+      )
+      const newQty = (existing?.qty || 0) + 1
+      if (stock <= 0) {
+        toast(`🚫 ${product.name} is out of stock — added anyway`, {
+          icon: '⚠️',
+          style: { background:'#FEE2E2', color:'#CF1322', fontWeight:600 }
+        })
+      } else if (newQty > stock) {
+        toast(`⚠️ ${product.name} — only ${stock} in stock, you have ${newQty}`, {
+          icon: '⚠️',
+          style: { background:'#FEF3C7', color:'#B45309', fontWeight:600 }
+        })
+      }
+    }
+
     // 普通件装/服务 → 检查是否已在购物车
     const existing = items.find(i =>
       i.productId === product.id &&
@@ -84,6 +105,7 @@ export const useCartStore = create((set, get) => ({
         taxGroupId: product.tax_group_id,
         isTaxable: product.is_taxable,
         imageUrl: product.image_url || null,
+        inventory: product.inventory || null,  // carry stock data into cart
       })
     }
   },
