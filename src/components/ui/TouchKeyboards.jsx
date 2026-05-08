@@ -1,11 +1,8 @@
 // src/components/ui/TouchKeyboards.jsx
-// Touchscreen-friendly QWERTY keyboard and numeric keypad
+// Square-style touchscreen keyboards: white background, 8px radius, black/blue accents
 
 import { useState } from 'react'
 
-// ────────────────────────────────────────────────
-// QWERTY Keyboard — for email / text input
-// ────────────────────────────────────────────────
 export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', mode='text', placeholder='' }) {
   const [shift, setShift] = useState(false)
 
@@ -23,17 +20,15 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
 
   const numberRow = ['1','2','3','4','5','6','7','8','9','0']
 
-  const Key = ({ label, onClick, color='slate', wide, danger, primary, warn }) => {
-    const styles = primary
-      ? { background:'#00B23B', color:'#fff', boxShadow:'0 3px 0 #14532d' }
-      : danger
-      ? { background:'#fee2e2', color:'#dc2626', boxShadow:'0 3px 0 #fca5a5' }
-      : warn
-      ? { background:'#fef3c7', color:'#854d0e', boxShadow:'0 3px 0 #fcd34d' }
-      : { background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 3px 0 #cbd5e1' }
+  const Key = ({ label, onClick, wide, danger, accent }) => {
+    const styles = danger
+      ? { background:'#FFFFFF', color:'#CF1322', border:'1px solid #E5E5E5' }
+      : accent
+      ? { background:'#FFFFFF', color:'#006AFF', border:'1px solid #E5E5E5', fontWeight:700 }
+      : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }
     return (
       <button onClick={onClick}
-        className={`${wide ? 'flex-[2]' : 'flex-1'} h-14 rounded-xl text-[18px] font-bold cursor-pointer border-none active:scale-95 transition-transform select-none`}
+        className={`${wide ? 'flex-[2]' : 'flex-1'} h-14 rounded-lg text-[18px] font-semibold cursor-pointer active:scale-[0.96] transition-transform select-none`}
         style={styles}>
         {label}
       </button>
@@ -42,88 +37,82 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4"
-      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
-      <div className="w-full max-w-[760px] bg-white rounded-3xl shadow-md max-h-[92vh] overflow-y-auto">
+      style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="w-full max-w-[760px] rounded-2xl max-h-[92vh] overflow-y-auto"
+        style={{background:'#FFFFFF', boxShadow:'0 20px 50px rgba(0,0,0,0.25)'}}>
 
-        {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+        <div className="px-6 py-4 flex items-center justify-between"
+          style={{borderBottom:'1px solid #E5E5E5'}}>
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{title}</div>
-            <div className="text-[22px] font-mono text-slate-900 truncate min-h-[30px]">
-              {value || <span className="text-slate-300">{placeholder}</span>}
-              <span className="text-blue-500 animate-pulse">|</span>
+            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{color:'#666666'}}>{title}</div>
+            <div className="text-[22px] font-mono truncate min-h-[30px]" style={{color:'#1F1F1F'}}>
+              {value || <span style={{color:'#999999'}}>{placeholder}</span>}
+              <span style={{color:'#006AFF'}} className="animate-pulse">|</span>
             </div>
           </div>
           <button onClick={onClose}
-            className="w-10 h-10 rounded-full bg-gray-100 border-none cursor-pointer text-[18px] flex items-center justify-center flex-shrink-0">
+            className="w-10 h-10 rounded-lg cursor-pointer text-[18px] flex items-center justify-center flex-shrink-0"
+            style={{background:'#F5F5F5', color:'#666666', border:'none'}}>
             ✕
           </button>
         </div>
 
-        {/* Quick email domains */}
         {mode === 'email' && (
           <div className="px-3 pt-3 flex gap-1.5 flex-wrap">
             {['@gmail.com','@yahoo.com','@outlook.com','@icloud.com','@hotmail.com'].map(d => (
               <button key={d} onClick={() => onChange((value || '') + d)}
-                className="px-3 py-2 rounded-lg text-[12px] font-bold cursor-pointer border-2 active:scale-95"
-                style={{background:'#eff6ff', borderColor:'#bfdbfe', color:'#1d4ed8'}}>
+                className="px-3 py-2 rounded-lg text-[12px] font-semibold cursor-pointer active:scale-[0.96]"
+                style={{background:'#E6F0FF', color:'#006AFF', border:'1px solid #006AFF'}}>
                 {d}
               </button>
             ))}
           </div>
         )}
 
-        {/* Keys */}
         <div className="p-3 space-y-1.5">
-          {/* Number row */}
           <div className="flex gap-1.5">
             {numberRow.map(k => <Key key={k} label={k} onClick={() => press(k)}/>)}
           </div>
 
-          {/* Letter rows */}
           {letterRows.map((row, i) => (
             <div key={i} className="flex gap-1.5 px-1">
-              {/* Shift on row 2 (index 2) */}
               {i === 2 && (
                 <button onClick={() => setShift(s => !s)}
-                  className="px-3 h-14 rounded-xl text-[16px] font-bold cursor-pointer border-none active:scale-95"
+                  className="px-3 h-14 rounded-lg text-[16px] font-semibold cursor-pointer active:scale-[0.96]"
                   style={shift
-                    ? { background:'#3b82f6', color:'#fff', boxShadow:'0 3px 0 #1d4ed8' }
-                    : { background:'#e2e8f0', color:'#1F1F1F', boxShadow:'0 3px 0 #94a3b8' }}>
+                    ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                    : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                   ⇧
                 </button>
               )}
               {row.map(k => <Key key={k} label={k} onClick={() => press(k)}/>)}
-              {/* Backspace on row 2 */}
               {i === 2 && <Key label="⌫" onClick={back} danger/>}
             </div>
           ))}
 
-          {/* Symbols + space */}
           <div className="flex gap-1.5">
-            <Key label="@" onClick={() => press('@')} warn/>
-            <Key label="." onClick={() => press('.')} warn/>
-            <Key label="_" onClick={() => press('_')} warn/>
-            <Key label="-" onClick={() => press('-')} warn/>
+            <Key label="@" onClick={() => press('@')} accent/>
+            <Key label="." onClick={() => press('.')} accent/>
+            <Key label="_" onClick={() => press('_')} accent/>
+            <Key label="-" onClick={() => press('-')} accent/>
             <button onClick={space}
-              className="flex-[4] h-14 rounded-xl text-[14px] font-bold cursor-pointer border-none active:scale-95 select-none"
-              style={{background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 3px 0 #cbd5e1'}}>
+              className="flex-[4] h-14 rounded-lg text-[14px] font-semibold cursor-pointer active:scale-[0.96] select-none"
+              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
               space
             </button>
           </div>
 
-          {/* Action row */}
           <div className="grid grid-cols-2 gap-2 pt-2">
             <button onClick={() => onChange('')}
               disabled={!value}
-              className="h-12 rounded-xl text-[14px] font-bold cursor-pointer border-2 disabled:opacity-40"
-              style={{background:'#fff7ed', borderColor:'#fed7aa', color:'#ea580c'}}>
-              ✕ Clear
+              className="h-12 rounded-lg text-[14px] font-semibold cursor-pointer disabled:opacity-40"
+              style={{background:'#FFFFFF', color:'#666666', border:'1px solid #E5E5E5'}}>
+              Clear
             </button>
             <button onClick={onClose}
-              className="h-12 rounded-xl text-[15px] font-black text-white cursor-pointer border-none"
-              style={{background:'#00B23B', boxShadow:'0 3px 0 #14532d'}}>
-              ✓ Done
+              className="h-12 rounded-lg text-[15px] font-semibold cursor-pointer"
+              style={{background:'#000000', color:'#FFFFFF', border:'none'}}>
+              Done
             </button>
           </div>
         </div>
@@ -133,21 +122,16 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
   )
 }
 
-// ────────────────────────────────────────────────
-// Numeric Keypad — for phone / number input
-// ────────────────────────────────────────────────
 export function NumericKeypad({ value, onChange, onClose, title='Enter Number', placeholder='', allowPlus=true, formatPhone=true }) {
 
   const press = (k) => {
-    let next = (value || '') + k
-    // Strip non-digits except leading + for length check
+    const next = (value || '') + k
     const digits = next.replace(/[^\d]/g,'')
     if (digits.length > 15) return
     onChange(next)
   }
   const back = () => onChange((value || '').slice(0, -1))
 
-  // Format US phone for display: (555) 123-4567
   const display = (v) => {
     if (!v || !formatPhone) return v
     if (v.startsWith('+')) return v
@@ -158,66 +142,62 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
     return `+${d.slice(0, d.length-10)} (${d.slice(-10,-7)}) ${d.slice(-7,-4)}-${d.slice(-4)}`
   }
 
+  const Key = ({ label, onClick, danger }) => {
+    const styles = danger
+      ? { background:'#FFFFFF', color:'#CF1322', border:'1px solid #E5E5E5' }
+      : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }
+    return (
+      <button onClick={onClick}
+        className="h-16 rounded-lg text-[26px] font-semibold cursor-pointer active:scale-[0.96] transition-transform select-none"
+        style={styles}>
+        {label}
+      </button>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4"
-      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
-      <div className="w-full max-w-[440px] bg-white rounded-3xl shadow-md max-h-[92vh] overflow-y-auto">
+      style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="w-full max-w-[440px] rounded-2xl max-h-[92vh] overflow-y-auto"
+        style={{background:'#FFFFFF', boxShadow:'0 20px 50px rgba(0,0,0,0.25)'}}>
 
-        {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+        <div className="px-6 py-4 flex items-center justify-between"
+          style={{borderBottom:'1px solid #E5E5E5'}}>
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{title}</div>
-            <div className="text-[26px] font-mono font-bold text-slate-900 min-h-[34px]">
-              {value ? display(value) : <span className="text-slate-300 font-normal">{placeholder}</span>}
-              <span className="text-blue-500 animate-pulse">|</span>
+            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{color:'#666666'}}>{title}</div>
+            <div className="text-[26px] font-mono font-semibold min-h-[34px]" style={{color:'#1F1F1F'}}>
+              {value ? display(value) : <span style={{color:'#999999', fontWeight:'normal'}}>{placeholder}</span>}
+              <span style={{color:'#006AFF'}} className="animate-pulse">|</span>
             </div>
           </div>
           <button onClick={onClose}
-            className="w-10 h-10 rounded-full bg-gray-100 border-none cursor-pointer text-[18px] flex items-center justify-center flex-shrink-0">
+            className="w-10 h-10 rounded-lg cursor-pointer text-[18px] flex items-center justify-center flex-shrink-0"
+            style={{background:'#F5F5F5', color:'#666666', border:'none'}}>
             ✕
           </button>
         </div>
 
-        {/* Keypad */}
         <div className="p-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             {['1','2','3','4','5','6','7','8','9'].map(k => (
-              <button key={k} onClick={() => press(k)}
-                className="h-16 rounded-2xl text-[28px] font-bold cursor-pointer border-none active:scale-95 transition-transform select-none"
-                style={{background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 4px 0 #cbd5e1'}}>
-                {k}
-              </button>
+              <Key key={k} label={k} onClick={() => press(k)}/>
             ))}
-            <button onClick={() => allowPlus && press('+')}
-              className="h-16 rounded-2xl text-[28px] font-bold cursor-pointer border-none active:scale-95"
-              style={allowPlus
-                ? { background:'#fef3c7', color:'#854d0e', boxShadow:'0 4px 0 #fcd34d' }
-                : { background:'#e5e7eb', color:'#9ca3af', boxShadow:'0 4px 0 #9ca3af' }}>
-              +
-            </button>
-            <button onClick={() => press('0')}
-              className="h-16 rounded-2xl text-[28px] font-bold cursor-pointer border-none active:scale-95"
-              style={{background:'#f1f5f9', color:'#1F1F1F', boxShadow:'0 4px 0 #cbd5e1'}}>
-              0
-            </button>
-            <button onClick={back}
-              className="h-16 rounded-2xl text-[22px] font-bold cursor-pointer border-none active:scale-95"
-              style={{background:'#fee2e2', color:'#dc2626', boxShadow:'0 4px 0 #fca5a5'}}>
-              ⌫
-            </button>
+            {allowPlus ? <Key label="+" onClick={() => press('+')}/> : <div/>}
+            <Key label="0" onClick={() => press('0')}/>
+            <Key label="⌫" onClick={back} danger/>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-2 gap-2.5 mt-3">
             <button onClick={() => onChange('')}
               disabled={!value}
-              className="h-12 rounded-2xl text-[14px] font-bold cursor-pointer border-2 disabled:opacity-40"
-              style={{background:'#fff7ed', borderColor:'#fed7aa', color:'#ea580c'}}>
-              ✕ Clear
+              className="h-12 rounded-lg text-[14px] font-semibold cursor-pointer disabled:opacity-40"
+              style={{background:'#FFFFFF', color:'#666666', border:'1px solid #E5E5E5'}}>
+              Clear
             </button>
             <button onClick={onClose}
-              className="h-12 rounded-2xl text-[15px] font-black text-white cursor-pointer border-none"
-              style={{background:'#00B23B', boxShadow:'0 4px 0 #14532d'}}>
-              ✓ Done
+              className="h-12 rounded-lg text-[15px] font-semibold cursor-pointer"
+              style={{background:'#000000', color:'#FFFFFF', border:'none'}}>
+              Done
             </button>
           </div>
         </div>

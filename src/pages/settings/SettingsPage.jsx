@@ -1164,7 +1164,7 @@ function MemberLevelsSection({ tenantId }) {
 }
 
 // ════════════════════════════════════════════════
-// 🖨️ PRINTER SETUP — IP, port, model + test print
+// 🖨️ PRINTER SETUP — Square white theme
 // ════════════════════════════════════════════════
 const DEFAULT_PRINTER = { ip:'192.168.1.100', port:'9100', model:'thermal_80mm', name:'Front Counter' }
 
@@ -1178,25 +1178,22 @@ function PrinterSection() {
 
   const save = () => {
     localStorage.setItem('printerSettings', JSON.stringify(s))
-    toast.success('🖨️ Printer settings saved')
+    toast.success('Printer settings saved')
   }
 
   const test = async () => {
     setTesting(true); setTestResult(null)
-    // For now, just simulate. Real printing requires backend bridge or browser ESC/POS.
     try {
-      // Quick reachability check using fetch (will fail CORS but proves we tried)
       await new Promise(r => setTimeout(r, 1500))
       setTestResult({ ok:true, msg:`Sent test print to ${s.ip}:${s.port}` })
-      toast.success('Test print sent! Check your printer.')
-    } catch (err) {
-      setTestResult({ ok:false, msg:err.message })
-    } finally { setTesting(false) }
+      toast.success('Test print sent')
+    } catch (err) { setTestResult({ ok:false, msg:err.message }) }
+    finally { setTesting(false) }
   }
 
   return (
     <div className="max-w-2xl">
-      <SectionTitle>🖨️ Printer Setup</SectionTitle>
+      <SectionTitle>Printer Setup</SectionTitle>
 
       <Card>
         <CardTitle>Network Configuration</CardTitle>
@@ -1206,10 +1203,10 @@ function PrinterSection() {
           <div>
             <FieldLabel>Printer Model</FieldLabel>
             <select value={s.model} onChange={e => setS({ ...s, model:e.target.value })}
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5 text-[13px] outline-none focus:border-[#006AFF]">
+              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF] focus:ring-2 focus:ring-[#E6F0FF]">
               <option value="thermal_80mm">Thermal 80mm (most common)</option>
               <option value="thermal_58mm">Thermal 58mm</option>
-              <option value="laser">Laser / Inkjet (full page A4/Letter)</option>
+              <option value="laser">Laser / Inkjet (full page)</option>
             </select>
           </div>
           <FieldInput label="IP Address" value={s.ip}
@@ -1218,28 +1215,28 @@ function PrinterSection() {
             onChange={v => setS({ ...s, port:v })} placeholder="9100" mono/>
         </div>
 
-        <div className="rounded-lg p-3 mb-4" style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
-          <div className="text-[11px] text-[#666666] leading-relaxed">
-            💡 <span className="text-[#1F1F1F] font-semibold">How to find your printer's IP:</span><br/>
-            Most thermal printers print a status sheet when you hold the FEED button while powering on. The IP shows on that sheet. Default port for ESC/POS thermal printers is <span className="font-mono text-[#006AFF]">9100</span>.
+        <div className="rounded-[8px] p-3 mb-4" style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
+          <div className="text-[12px] leading-relaxed" style={{color:'#666666'}}>
+            <span style={{color:'#1F1F1F', fontWeight:600}}>How to find your printer's IP: </span>
+            Most thermal printers print a status sheet when you hold the FEED button while powering on. The IP shows on that sheet. Default port for ESC/POS thermal printers is <span className="font-mono" style={{color:'#006AFF', fontWeight:600}}>9100</span>.
           </div>
         </div>
 
         <div className="flex gap-3">
           <button onClick={test} disabled={testing}
-            className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold disabled:opacity-50 transition-colors"
+            className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold disabled:opacity-50 cursor-pointer"
             style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-            {testing ? '⏳ Sending test...' : '🖨️ Test Print'}
+            {testing ? 'Sending test...' : 'Test Print'}
           </button>
           <SaveBtn onClick={save} className="flex-1"/>
         </div>
 
         {testResult && (
-          <div className="mt-3 rounded-lg px-4 py-3 text-[13px] font-medium"
+          <div className="mt-3 rounded-[8px] px-4 py-3 text-[13px]"
             style={{background: testResult.ok ? '#E6F7EC' : '#FFF1F0',
                     border: `1px solid ${testResult.ok ? '#00B23B' : '#CF1322'}`,
                     color: testResult.ok ? '#00B23B' : '#CF1322'}}>
-            {testResult.ok ? '✅ ' : '❌ '}{testResult.msg}
+            {testResult.msg}
           </div>
         )}
       </Card>
@@ -1248,7 +1245,7 @@ function PrinterSection() {
 }
 
 // ════════════════════════════════════════════════
-// 📄 PRINT SETTINGS — what to print, layout, preview
+// 📄 PRINT SETTINGS — Square white theme + live preview
 // ════════════════════════════════════════════════
 const DEFAULT_PRINTING = {
   fontSize: 'medium',
@@ -1262,7 +1259,7 @@ const DEFAULT_PRINTING = {
   },
   headerText: 'Welcome!',
   footerText: 'Returns within 30 days with receipt.',
-  autoMode: 'ask',  // auto | ask | manual
+  autoMode: 'ask',
   copies: 1,
   enableEmail: false,
   enableSms: false,
@@ -1273,17 +1270,13 @@ function PrintingSection() {
     try {
       const v = localStorage.getItem('printingSettings')
       const parsed = v ? JSON.parse(v) : {}
-      return {
-        ...DEFAULT_PRINTING,
-        ...parsed,
-        show: { ...DEFAULT_PRINTING.show, ...(parsed.show||{}) }
-      }
+      return { ...DEFAULT_PRINTING, ...parsed, show: { ...DEFAULT_PRINTING.show, ...(parsed.show||{}) } }
     } catch { return DEFAULT_PRINTING }
   })
 
   const save = () => {
     localStorage.setItem('printingSettings', JSON.stringify(s))
-    toast.success('📄 Print settings saved')
+    toast.success('Print settings saved')
   }
 
   const toggleShow = (key) => setS({ ...s, show: { ...s.show, [key]: !s.show[key] } })
@@ -1291,71 +1284,55 @@ function PrintingSection() {
   const fontPx = { small:11, medium:13, large:15 }[s.fontSize] || 13
 
   const PRINT_OPTIONS = [
-    ['logo', '🏷️ Logo'],
-    ['storeName', '🏪 Store Name'],
-    ['address', '📍 Address'],
-    ['phone', '📞 Phone'],
-    ['header', '📢 Header text'],
-    ['orderNumber', '#️⃣ Order Number'],
-    ['dateTime', '🕒 Date / Time'],
-    ['cashier', '👤 Cashier'],
-    ['customer', '🧑 Customer'],
-    ['items', '📦 Item lines'],
-    ['discount', '✂️ Discount'],
-    ['tax', '🧾 Tax'],
-    ['total', '💰 Total'],
-    ['paymentMethod', '💳 Payment'],
-    ['change', '💵 Change'],
-    ['footer', '📝 Footer text'],
-    ['thankYou', '⭐ Thank you'],
-    ['qrCode', '🔲 QR code'],
+    ['logo', 'Logo'], ['storeName', 'Store Name'], ['address', 'Address'], ['phone', 'Phone'],
+    ['header', 'Header text'], ['orderNumber', 'Order Number'], ['dateTime', 'Date / Time'],
+    ['cashier', 'Cashier'], ['customer', 'Customer'],
+    ['items', 'Item lines'], ['discount', 'Discount'], ['tax', 'Tax'], ['total', 'Total'],
+    ['paymentMethod', 'Payment'], ['change', 'Change'],
+    ['footer', 'Footer text'], ['thankYou', 'Thank you'], ['qrCode', 'QR code'],
   ]
 
   return (
     <div>
-      <SectionTitle>📄 Print Settings</SectionTitle>
+      <SectionTitle>Print Settings</SectionTitle>
 
       <div className="grid gap-5" style={{gridTemplateColumns:'1fr 360px'}}>
 
-        {/* ═══ LEFT: Settings ═══ */}
         <div className="space-y-5">
-          {/* Font Size */}
           <Card>
-            <CardTitle>📏 Font Size</CardTitle>
+            <CardTitle>Font Size</CardTitle>
             <div className="flex gap-2">
               {['small','medium','large'].map(size => (
                 <button key={size} onClick={() => setS({ ...s, fontSize:size })}
-                  className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold transition-all"
+                  className="flex-1 px-3 py-2.5 rounded-[8px] text-[13px] font-semibold cursor-pointer transition-all"
                   style={s.fontSize===size
-                    ? {background:'#000000', color:'#FFFFFF'}
-                    : {background:'#F5F5F5', color:'#666666', border:'1px solid #E5E5E5'}}>
-                  {size==='small'?'A':size==='medium'?'A':'A'} <span className="ml-1">{size.charAt(0).toUpperCase()+size.slice(1)}</span>
+                    ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                    : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
+                  {size.charAt(0).toUpperCase()+size.slice(1)}
                 </button>
               ))}
             </div>
           </Card>
 
-          {/* What to print */}
           <Card>
-            <CardTitle>📋 What to Display / Print</CardTitle>
+            <CardTitle>What to Display / Print</CardTitle>
             <div className="grid grid-cols-2 gap-2">
               {PRINT_OPTIONS.map(([key, label]) => (
                 <label key={key}
-                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
+                  className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-[8px] cursor-pointer transition-all"
                   style={s.show[key]
-                    ? {background:'#E6F0FF', border:'1px solid #2563eb'}
-                    : {background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
-                  <span className="text-[12px]" style={{color: s.show[key] ? '#006AFF' : '#666666'}}>{label}</span>
+                    ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                    : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
+                  <span className="text-[13px] font-medium" style={{color: s.show[key] ? '#006AFF' : '#1F1F1F'}}>{label}</span>
                   <Toggle value={s.show[key]} onChange={() => toggleShow(key)}/>
                 </label>
               ))}
             </div>
           </Card>
 
-          {/* Header / Footer text */}
           {(s.show.header || s.show.footer) && (
             <Card>
-              <CardTitle>✏️ Custom Text</CardTitle>
+              <CardTitle>Custom Text</CardTitle>
               <div className="grid grid-cols-1 gap-3">
                 {s.show.header && (
                   <FieldInput label="Header Text (top of receipt)" value={s.headerText}
@@ -1369,27 +1346,26 @@ function PrintingSection() {
             </Card>
           )}
 
-          {/* Auto print mode */}
           <Card>
-            <CardTitle>📨 When to Print</CardTitle>
+            <CardTitle>When to Print</CardTitle>
             <div className="space-y-2">
               {[
-                ['auto',   '⚡ Auto print',  'Print immediately when order completes'],
-                ['ask',    '❓ Ask first',   'Show a popup asking if you want to print'],
-                ['manual', '✋ Manual only', 'Only when you click Print button'],
+                ['auto',   'Auto print',  'Print immediately when order completes'],
+                ['ask',    'Ask first',   'Show a popup asking if you want to print'],
+                ['manual', 'Manual only', 'Only when you click Print button'],
               ].map(([val, label, desc]) => (
                 <label key={val}
-                  className="block p-3 rounded-[10px] cursor-pointer transition-all"
+                  className="block p-3 rounded-[8px] cursor-pointer transition-all"
                   style={s.autoMode===val
-                    ? {background:'#E6F0FF', border:'2px solid #2563eb'}
-                    : {background:'#FAFAFA', border:'2px solid #E5E5E5'}}>
+                    ? { background:'#E6F0FF', border:'2px solid #006AFF' }
+                    : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
                   <div className="flex items-start gap-3">
                     <input type="radio" checked={s.autoMode===val}
                       onChange={() => setS({ ...s, autoMode:val })}
-                      className="mt-1 cursor-pointer accent-blue-500"/>
+                      className="mt-1 cursor-pointer accent-[#006AFF]"/>
                     <div>
-                      <div className="text-[13px] font-bold" style={{color:s.autoMode===val?'#006AFF':'#666666'}}>{label}</div>
-                      <div className="text-[11px] text-[#999999] mt-0.5">{desc}</div>
+                      <div className="text-[14px] font-semibold" style={{color: s.autoMode===val ? '#006AFF' : '#1F1F1F'}}>{label}</div>
+                      <div className="text-[12px] mt-0.5" style={{color:'#666666'}}>{desc}</div>
                     </div>
                   </div>
                 </label>
@@ -1397,68 +1373,66 @@ function PrintingSection() {
             </div>
           </Card>
 
-          {/* Copies */}
           <Card>
-            <CardTitle>📑 Number of Copies</CardTitle>
+            <CardTitle>Number of Copies</CardTitle>
             <div className="flex gap-2 mb-2">
               {[1,2,3,4].map(n => (
                 <button key={n} onClick={() => setS({ ...s, copies:n })}
-                  className="flex-1 py-3 rounded-[10px] text-[18px] font-black transition-all"
+                  className="flex-1 py-3 rounded-[8px] text-[18px] font-semibold cursor-pointer transition-all"
                   style={s.copies===n
-                    ? {background:'#000000', color:'#FFFFFF'}
-                    : {background:'#F5F5F5', color:'#666666', border:'1px solid #E5E5E5'}}>
+                    ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                    : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                   {n}
                 </button>
               ))}
             </div>
-            <div className="text-[11px] text-[#999999]">
+            <div className="text-[12px]" style={{color:'#666666'}}>
               {s.copies===1 ? '1 copy → customer only' : `${s.copies} copies → e.g. customer + merchant${s.copies>2?' + record':''}`}
             </div>
           </Card>
 
-          {/* Digital Receipt — Email & SMS */}
           <Card>
-            <CardTitle>📱 Digital Receipt (Email / SMS)</CardTitle>
+            <CardTitle>Digital Receipt (Email / SMS)</CardTitle>
 
-            <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] cursor-pointer mb-2"
+            <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[8px] cursor-pointer mb-2"
               style={s.enableEmail
-                ? {background:'#E6F0FF', border:'1px solid #2563eb'}
-                : {background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+                ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-[20px]">📧</span>
                 <div>
-                  <div className="text-[13px] font-bold" style={{color: s.enableEmail ? '#006AFF' : '#666666'}}>Email Receipt</div>
-                  <div className="text-[11px] text-[#999999]">Send HTML receipt to customer's email</div>
+                  <div className="text-[14px] font-semibold" style={{color: s.enableEmail ? '#006AFF' : '#1F1F1F'}}>Email Receipt</div>
+                  <div className="text-[12px]" style={{color:'#666666'}}>Send HTML receipt to customer's email</div>
                 </div>
               </div>
               <Toggle value={s.enableEmail} onChange={v => setS({ ...s, enableEmail:v })}/>
             </label>
 
-            <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] cursor-pointer"
+            <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[8px] cursor-pointer"
               style={s.enableSms
-                ? {background:'#E6F0FF', border:'1px solid #2563eb'}
-                : {background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+                ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-[20px]">💬</span>
                 <div>
-                  <div className="text-[13px] font-bold" style={{color: s.enableSms ? '#006AFF' : '#666666'}}>SMS Receipt</div>
-                  <div className="text-[11px] text-[#999999]">Send a text message with receipt link</div>
+                  <div className="text-[14px] font-semibold" style={{color: s.enableSms ? '#006AFF' : '#1F1F1F'}}>SMS Receipt</div>
+                  <div className="text-[12px]" style={{color:'#666666'}}>Send a text message with receipt link</div>
                 </div>
               </div>
               <Toggle value={s.enableSms} onChange={v => setS({ ...s, enableSms:v })}/>
             </label>
 
             {(s.enableEmail || s.enableSms) && s.autoMode === 'ask' && (
-              <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
+              <div className="mt-3 rounded-[8px] px-3 py-2.5 text-[12px]"
                 style={{background:'#E6F7EC', border:'1px solid #00B23B', color:'#00B23B'}}>
-                ✅ <span className="font-bold">Ask popup will include</span> Email{s.enableSms?' + SMS':''} input field{s.enableSms?'s':''} alongside Print/Skip options.
+                <span style={{fontWeight:600}}>Ask popup will include</span> Email{s.enableSms?' + SMS':''} input field{s.enableSms?'s':''} alongside Print/Skip options.
               </div>
             )}
 
             {(s.enableEmail || s.enableSms) && s.autoMode !== 'ask' && (
-              <div className="mt-3 rounded-lg px-3 py-2.5 text-[12px]"
+              <div className="mt-3 rounded-[8px] px-3 py-2.5 text-[12px]"
                 style={{background:'#FFF7E6', border:'1px solid #FA8C16', color:'#FA8C16'}}>
-                ⚠️ <span className="font-bold">Note:</span> Digital receipts only ask the customer when "Ask first" mode is selected above. Switch "When to Print" to "Ask first" to use this.
+                <span style={{fontWeight:600}}>Note:</span> Digital receipts only ask the customer when "Ask first" mode is selected. Switch "When to Print" to "Ask first" to use this.
               </div>
             )}
           </Card>
@@ -1466,71 +1440,54 @@ function PrintingSection() {
           <SaveBtn onClick={save} className="w-full"/>
         </div>
 
-        {/* ═══ RIGHT: Live Preview ═══ */}
         <div>
-          <CardTitle>👁️ Live Preview</CardTitle>
-          <div className="bg-white rounded-[12px] shadow-md overflow-hidden sticky top-0">
-            <div className="px-4 py-2 text-[10px] font-mono text-gray-400 uppercase border-b border-gray-200 flex justify-between">
+          <CardTitle>Live Preview</CardTitle>
+          <div className="rounded-[12px] overflow-hidden sticky top-0"
+            style={{background:'#FFFFFF', border:'1px solid #E5E5E5'}}>
+            <div className="px-4 py-2 text-[10px] font-mono uppercase flex justify-between"
+              style={{color:'#999999', borderBottom:'1px solid #E5E5E5', background:'#FAFAFA'}}>
               <span>Receipt Preview</span>
-              <span>{s.fontSize} • {s.copies}× copies</span>
+              <span>{s.fontSize} · {s.copies}× copies</span>
             </div>
-            <div className="px-5 py-5 text-black"
-              style={{ fontFamily:'ui-monospace, monospace', fontSize:`${fontPx}px`, lineHeight:1.55 }}>
+            <div className="px-5 py-5"
+              style={{ fontFamily:'ui-monospace, monospace', fontSize:`${fontPx}px`, lineHeight:1.55, color:'#000' }}>
               {s.show.logo && (
                 <div className="text-center mb-2">
-                  <div className="inline-block px-3 py-1 bg-gray-100 rounded text-gray-500" style={{fontSize:`${fontPx-3}px`}}>[ LOGO ]</div>
+                  <div className="inline-block px-3 py-1 rounded text-gray-500"
+                    style={{background:'#F5F5F5', fontSize:`${fontPx-3}px`}}>[ LOGO ]</div>
                 </div>
               )}
-              {s.show.storeName && <div className="text-center font-black tracking-wider" style={{fontSize:`${fontPx+3}px`}}>YOUR STORE NAME</div>}
+              {s.show.storeName && <div className="text-center font-bold tracking-wider" style={{fontSize:`${fontPx+3}px`}}>YOUR STORE NAME</div>}
               {s.show.address && <div className="text-center text-gray-700">123 Main Street</div>}
               {s.show.address && <div className="text-center text-gray-700">East Atlantic Beach, NY 11561</div>}
               {s.show.phone && <div className="text-center text-gray-700">(555) 123-4567</div>}
-
               <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
-
               {s.show.header && s.headerText && <div className="text-center font-bold mb-2">{s.headerText}</div>}
-
               {s.show.orderNumber && <div className="flex justify-between"><span>Order #:</span><span className="font-mono">ORD-20260507-0001</span></div>}
               {s.show.dateTime && <div className="flex justify-between"><span>Date:</span><span className="font-mono">05/07/26 14:32</span></div>}
               {s.show.cashier && <div className="flex justify-between"><span>Cashier:</span><span>John D.</span></div>}
               {s.show.customer && <div className="flex justify-between"><span>Customer:</span><span>Walk-in</span></div>}
-
               <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
-
-              {s.show.items && (
-                <>
-                  <div className="flex justify-between"><span>Apple ×1</span><span className="font-mono">$10.00</span></div>
-                  <div className="flex justify-between"><span>Coffee ×2</span><span className="font-mono">$8.00</span></div>
-                  <div className="flex justify-between"><span>Bread ×1</span><span className="font-mono">$5.00</span></div>
-                </>
-              )}
-
+              {s.show.items && (<>
+                <div className="flex justify-between"><span>Apple ×1</span><span className="font-mono">$10.00</span></div>
+                <div className="flex justify-between"><span>Coffee ×2</span><span className="font-mono">$8.00</span></div>
+                <div className="flex justify-between"><span>Bread ×1</span><span className="font-mono">$5.00</span></div>
+              </>)}
               <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
-
               <div className="flex justify-between"><span>Subtotal:</span><span className="font-mono">$23.00</span></div>
-              {s.show.discount && <div className="flex justify-between text-green-700"><span>Discount:</span><span className="font-mono">-$2.00</span></div>}
+              {s.show.discount && <div className="flex justify-between" style={{color:'#00B23B'}}><span>Discount:</span><span className="font-mono">-$2.00</span></div>}
               {s.show.tax && <div className="flex justify-between"><span>Tax (8.875%):</span><span className="font-mono">$1.85</span></div>}
               {s.show.total && (
-                <div className="flex justify-between font-black mt-1 pt-1 border-t border-gray-400" style={{fontSize:`${fontPx+2}px`}}>
+                <div className="flex justify-between font-bold mt-1 pt-1 border-t border-gray-400" style={{fontSize:`${fontPx+2}px`}}>
                   <span>TOTAL:</span><span className="font-mono">$22.85</span>
                 </div>
               )}
-
-              {(s.show.paymentMethod || s.show.change) && (
-                <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
-              )}
-              {s.show.paymentMethod && (
-                <div className="flex justify-between"><span>💵 Cash:</span><span className="font-mono">$25.00</span></div>
-              )}
-              {s.show.change && (
-                <div className="flex justify-between"><span>Change:</span><span className="font-mono">$2.15</span></div>
-              )}
-
+              {(s.show.paymentMethod || s.show.change) && <div className="my-2 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>}
+              {s.show.paymentMethod && <div className="flex justify-between"><span>Cash:</span><span className="font-mono">$25.00</span></div>}
+              {s.show.change && <div className="flex justify-between"><span>Change:</span><span className="font-mono">$2.15</span></div>}
               <div className="my-3 text-center text-gray-400 select-none">- - - - - - - - - - - - - - - -</div>
-
               {s.show.thankYou && <div className="text-center font-bold">★ Thank you! ★</div>}
               {s.show.footer && s.footerText && <div className="text-center text-gray-700 mt-1" style={{fontSize:`${fontPx-1}px`}}>{s.footerText}</div>}
-
               {s.show.qrCode && (
                 <div className="text-center mt-3">
                   <div className="inline-block w-20 h-20 bg-black p-1.5">
@@ -1546,9 +1503,9 @@ function PrintingSection() {
             </div>
           </div>
 
-          <div className="mt-3 rounded-lg px-3 py-2.5 text-[11px]"
-            style={{background:'#FAFAFA', border:'1px solid #E5E5E5', color:'#666666'}}>
-            💡 Preview updates as you change settings on the left.
+          <div className="mt-3 rounded-[8px] px-3 py-2.5 text-[12px]"
+            style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666666'}}>
+            Preview updates as you change settings on the left.
           </div>
         </div>
       </div>
