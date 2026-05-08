@@ -641,7 +641,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 
           <button onClick={savePromo} disabled={saving}
             className="w-full mt-4 rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-            style={{background:'linear-gradient(135deg,#006AFF,#006AFF)'}}>
+            style={{background:'#006aff'}}>
             {saving ? '⏳ Saving...' : '✓ Add Promotion'}
           </button>
         </div>
@@ -708,7 +708,7 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
             </button>
             <button onClick={() => setShowAdjust(true)}
               className="rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none transition-all"
-              style={{background:'linear-gradient(135deg,#ca8a04,#a16207)', color:'#fff'}}>
+              style={{background:'#006AFF', color:'#fff'}}>
               ⚖️ Adjust
             </button>
           </div>

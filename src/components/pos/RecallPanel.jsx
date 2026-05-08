@@ -107,7 +107,7 @@ export function RecallPanel({ onClose }) {
 
           {/* Header */}
           <div className="px-4 py-4 flex-shrink-0"
-            style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+            style={{background:'#006AFF'}}>
             <div className="flex items-center justify-between mb-3">
               <div className="text-[16px] font-bold text-white">📋 Orders</div>
               <button onClick={onClose}
@@ -183,7 +183,7 @@ export function RecallPanel({ onClose }) {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <div className="text-[16px] font-black font-mono" style={{color:'#d97706'}}>
+                    <div className="text-[16px] font-bold font-mono" style={{color:'#d97706'}}>
                       ${parseFloat(order.total||0).toFixed(2)}
                     </div>
                     <span className="text-[14px]" style={{color: selected?.id===order.id ? '#f59e0b':'#cbd5e1'}}>👁️</span>
@@ -223,7 +223,7 @@ export function RecallPanel({ onClose }) {
                         {order.customers?.name && <span className="ml-1.5">· {order.customers.name}</span>}
                       </div>
                     </div>
-                    <div className="text-[15px] font-black font-mono flex-shrink-0" style={{color:'#1F1F1F'}}>
+                    <div className="text-[15px] font-bold font-mono flex-shrink-0" style={{color:'#1F1F1F'}}>
                       ${parseFloat(order.grand_total||0).toFixed(2)}
                     </div>
                   </div>
@@ -300,7 +300,7 @@ export function RecallPanel({ onClose }) {
 
               {/* Total */}
               <div className="mt-3 rounded-xl p-4" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
-                <div className="flex justify-between text-[15px] font-black">
+                <div className="flex justify-between text-[15px] font-bold">
                   <span>Total</span>
                   <span className="font-mono" style={{color:'#006AFF'}}>
                     ${parseFloat(selected.total || selected.grand_total || 0).toFixed(2)}
@@ -316,7 +316,7 @@ export function RecallPanel({ onClose }) {
                 <>
                   <button onClick={() => handleResume(selected)}
                     className="w-full rounded-2xl py-4 text-[14px] font-bold text-white cursor-pointer border-none"
-                    style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+                    style={{background:'#006AFF'}}>
                     ↩ Resume Order
                   </button>
                   <button onClick={() => handleCancelHeld(selected)}

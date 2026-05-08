@@ -394,7 +394,7 @@ export default function ReportsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 mb-5">
                 {(empData||[]).map((emp,i) => {
-                  const COLORS = ['linear-gradient(135deg,#3b82f6,#006AFF)','linear-gradient(135deg,#10b981,#14b8a6)','linear-gradient(135deg,#f59e0b,#f97316)','linear-gradient(135deg,#ec4899,#006AFF)']
+                  const COLORS = ['#3b82f6','#10b981','#006AFF','#ec4899']
                   return (
                     <div key={i} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
                       <div className="flex items-center gap-3 mb-3">

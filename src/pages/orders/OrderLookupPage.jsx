@@ -99,7 +99,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
         </div>
         <button onClick={() => onResume(order)}
           className="w-full rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
-          style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+          style={{background:'#006AFF'}}>
           ↩ Resume & Go to POS
         </button>
         <button onClick={onCancelHeld}
@@ -458,8 +458,8 @@ export default function OrderLookupPage() {
               <div className="rounded-2xl overflow-hidden shadow-sm" style={{border:'1px solid #e2e8f0', background:'#fff'}}>
 
                 {/* Store header */}
-                <div className="px-4 py-4 text-center" style={{background:'linear-gradient(135deg,#1F1F1F,#666666)'}}>
-                  <div className="text-[14px] font-black tracking-widest text-white">RETAILPOS</div>
+                <div className="px-4 py-4 text-center" style={{background:'#1f1f1f'}}>
+                  <div className="text-[14px] font-bold tracking-widest text-white">RETAILPOS</div>
                   <div className="text-[10px] text-slate-400 mt-0.5">Official Receipt</div>
                 </div>
 
@@ -535,7 +535,7 @@ export default function OrderLookupPage() {
                       <span className="font-mono text-slate-700">${parseFloat(selected.tip_amount).toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center text-[15px] font-black pt-2 mt-1"
+                  <div className="flex justify-between items-center text-[15px] font-bold pt-2 mt-1"
                     style={{borderTop:'2px solid #1F1F1F'}}>
                     <span className="text-slate-800">TOTAL</span>
                     <span className="font-mono" style={{color:'#006AFF'}}>
@@ -609,7 +609,7 @@ export default function OrderLookupPage() {
             </div>
             <div className="text-right flex-shrink-0">
               <div className="text-[11px] text-slate-400">{filtered.length} orders</div>
-              <div className="text-[15px] font-black" style={{color:'#006AFF'}}>${totalAmt.toFixed(2)}</div>
+              <div className="text-[15px] font-bold" style={{color:'#006AFF'}}>${totalAmt.toFixed(2)}</div>
             </div>
           </div>
 
@@ -718,7 +718,7 @@ export default function OrderLookupPage() {
                   {o.users?.name && <div className="text-[10px] text-slate-400 truncate">{o.users.name}</div>}
                 </div>
                 <div className="text-right">
-                  <div className="text-[14px] font-black font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
+                  <div className="text-[14px] font-bold font-mono">${parseFloat(o.grand_total||o.total||0).toFixed(2)}</div>
                   <div className="text-[10px] text-slate-400">{(o.order_items||o.cart_snapshot?.items||[]).length} items</div>
                 </div>
                 <div className="flex justify-center">

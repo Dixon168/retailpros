@@ -114,7 +114,7 @@ export function PointsRedeemModal({ onClose }) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[11px] text-purple-200">{customer.name}</div>
-                <div className="text-[24px] font-black text-white">{customerPts.toLocaleString()} pts</div>
+                <div className="text-[24px] font-bold text-white">{customerPts.toLocaleString()} pts</div>
               </div>
               <div className="text-right">
                 <div className="text-[11px] text-purple-200">Cash value</div>
@@ -193,7 +193,7 @@ export function PointsRedeemModal({ onClose }) {
                   border: ptsNum > 0 ? '2px solid #006AFF' : '2px dashed #e2e8f0',
                   background: ptsNum > 0 ? '#faf5ff' : '#f8fafc',
                 }}>
-                <div className="text-[32px] font-black font-mono" style={{color: ptsNum > 0 ? '#006AFF' : '#94a3b8'}}>
+                <div className="text-[32px] font-bold font-mono" style={{color: ptsNum > 0 ? '#006AFF' : '#94a3b8'}}>
                   {ptsNum > 0 ? ptsNum.toLocaleString() : '0'}
                 </div>
                 <div className="text-[11px] text-slate-400">points</div>
@@ -307,7 +307,7 @@ export function PointsRedeemModal({ onClose }) {
               <button onClick={applyPtsProduct}
                 disabled={totalPtsForProducts===0 || totalPtsForProducts>customerPts}
                 className="w-full rounded-2xl py-4 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+                style={{background:'#006AFF'}}>
                 🎁 Redeem {totalPtsForProducts>0 ? `${totalPtsForProducts.toLocaleString()} pts` : 'Points'}
               </button>
             </div>

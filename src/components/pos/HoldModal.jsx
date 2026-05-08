@@ -40,7 +40,7 @@ export function HoldModal({ onClose }) {
 
         {/* Header */}
         <div className="px-5 py-4 flex items-center gap-3"
-          style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+          style={{background:'#006AFF'}}>
           <span className="text-[24px]">📌</span>
           <div>
             <div className="text-[16px] font-bold text-white">Hold Order</div>
@@ -99,7 +99,7 @@ export function HoldModal({ onClose }) {
             </button>
             <button onClick={handleHold} disabled={saving}
               className="flex-[2] rounded-xl py-3.5 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-              style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+              style={{background:'#006AFF'}}>
               {saving ? '⏳ Holding...' : '📌 Hold Order'}
             </button>
           </div>

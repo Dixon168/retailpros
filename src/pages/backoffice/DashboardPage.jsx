@@ -224,8 +224,8 @@ export default function DashboardPage() {
                         style={{
                           height:`${Math.max(4,(d.rev/maxRev)*56)}px`,
                           background: i===weekData.length-1
-                            ? 'linear-gradient(180deg,#006AFF,#006AFF)'
-                            : 'linear-gradient(180deg,#93c5fd,#bfdbfe)',
+                            ? '#006aff'
+                            : '#93c5fd',
                         }}/>
                       <div className="text-[9px] text-slate-400">
                         {new Date(d.day).toLocaleDateString([],{weekday:'short'})}

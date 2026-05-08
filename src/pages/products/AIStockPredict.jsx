@@ -239,7 +239,7 @@ export function AIStockPanel({ product, onClose }) {
                         style={{
                           height: `${Math.max(4, (d.qty/maxBar)*80)}px`,
                           background: d.qty > 0
-                            ? 'linear-gradient(180deg,#006AFF,#006AFF)'
+                            ? '#006aff'
                             : '#666666',
                           minHeight: '4px',
                         }}/>

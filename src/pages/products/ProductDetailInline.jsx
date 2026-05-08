@@ -953,7 +953,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                     </button>
                     <button onClick={savePromo} disabled={promoSaving}
                       className="flex-[2] rounded-xl py-2.5 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-                      style={{background:`linear-gradient(135deg,${TYPE_COLOR[promoType]},${TYPE_COLOR[promoType]}cc)`}}>
+                      style={{background:`${TYPE_COLOR[promoType]}`}}>
                       {promoSaving ? '⏳ Saving...' : `✓ Add ${TYPE_NAME[promoType]}`}
                     </button>
                   </div>
@@ -1024,7 +1024,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                                 <div className="flex items-center gap-2 ml-auto">
                                   <span className="text-[14px] line-through text-slate-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</span>
                                   <span className="text-[11px] text-slate-400">→</span>
-                                  <span className="text-[20px] font-black font-mono" style={{color:'#16a34a'}}>
+                                  <span className="text-[20px] font-bold font-mono" style={{color:'#16a34a'}}>
                                     ${promo.sale_type==='pct'?(parseFloat(p.price||0)*(1-promo.sale_value/100)).toFixed(2):parseFloat(promo.sale_value).toFixed(2)}
                                   </span>
                                   <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{background:'#dcfce7', color:'#16a34a'}}>
@@ -1053,7 +1053,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                                   <div className="ml-auto flex items-center gap-2">
                                     <span className="text-[14px] line-through text-slate-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</span>
                                     <span className="text-[11px] text-slate-400">→</span>
-                                    <span className="text-[20px] font-black font-mono" style={{color:'#16a34a'}}>
+                                    <span className="text-[20px] font-bold font-mono" style={{color:'#16a34a'}}>
                                       ${tier.type==='fixed'?parseFloat(tier.value).toFixed(2):(parseFloat(p.price||0)*(1-tier.value/100)).toFixed(2)}
                                       <span className="text-[12px] font-normal text-slate-400">/ea</span>
                                     </span>
@@ -1072,7 +1072,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
                                     <div className="ml-auto flex items-center gap-2">
                                       <span className="text-[14px] line-through text-slate-400 font-mono">${parseFloat(p.price||0).toFixed(2)}</span>
                                       <span className="text-[11px] text-slate-400">→</span>
-                                      <span className="text-[20px] font-black font-mono" style={{color:'#d97706'}}>
+                                      <span className="text-[20px] font-bold font-mono" style={{color:'#d97706'}}>
                                         ${rule.type==='fixed'?parseFloat(rule.value).toFixed(2):(parseFloat(p.price||0)*(1-rule.value/100)).toFixed(2)}
                                       </span>
                                     </div>

@@ -260,14 +260,14 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
       <div className="p-5 flex-shrink-0" style={{background:'#fff', borderBottom:'1px solid #e2e8f0'}}>
         <div className="flex items-start gap-4">
           {/* Avatar */}
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-[24px] font-black text-white flex-shrink-0"
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-[24px] font-bold text-white flex-shrink-0"
             style={{background:'#000000'}}>
             {c.name.charAt(0)}
           </div>
           {/* Info */}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <div className="text-[20px] font-black text-slate-800">{c.name}</div>
+              <div className="text-[20px] font-bold text-slate-800">{c.name}</div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={ts}>{ts.label}</span>
             </div>
             <div className="flex flex-wrap gap-3 text-[12px] text-slate-500">
@@ -306,7 +306,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
             <div key={label} className="rounded-xl p-3 text-center"
               style={{background:bg, border:`1.5px solid ${border}`}}>
               <div className="text-[10px] text-slate-400 mb-1">{label}</div>
-              <div className="text-[16px] font-black" style={{color}}>{value}</div>
+              <div className="text-[16px] font-bold" style={{color}}>{value}</div>
             </div>
           ))}
         </div>
@@ -381,7 +381,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
                   <div className="text-[10px] text-slate-400 mb-1">{l}</div>
-                  <div className="text-[18px] font-black" style={{color:c2}}>{v}</div>
+                  <div className="text-[18px] font-bold" style={{color:c2}}>{v}</div>
                 </div>
               ))}
             </div>
@@ -421,7 +421,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
                   <div className="text-[10px] text-slate-400 mb-1">{l}</div>
-                  <div className="text-[18px] font-black" style={{color:c2}}>{v}</div>
+                  <div className="text-[18px] font-bold" style={{color:c2}}>{v}</div>
                 </div>
               ))}
             </div>
@@ -465,7 +465,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
                   <div className="text-[10px] text-slate-400 mb-1">{l}</div>
-                  <div className="text-[18px] font-black" style={{color:c2}}>{v}</div>
+                  <div className="text-[18px] font-bold" style={{color:c2}}>{v}</div>
                 </div>
               ))}
             </div>
@@ -480,7 +480,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                 <tbody>{topups.map((t,i)=>(
                   <tr key={i} className="hover:bg-green-50/30" style={{borderBottom:'1px solid #f1f5f9'}}>
                     <td className="px-3 py-2.5 text-[11px] text-slate-500">{new Date(t.created_at).toLocaleDateString()} {new Date(t.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                    <td className="px-3 py-2.5 text-[14px] font-black font-mono text-green-600">+${(t.amount||0).toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-[14px] font-bold font-mono text-green-600">+${(t.amount||0).toFixed(2)}</td>
                     <td className="px-3 py-2.5"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize" style={{background:'#eff6ff',color:'#2563eb'}}>{t.method||'cash'}</span></td>
                     <td className="px-3 py-2.5 text-[11px] text-slate-500">{t.staff_name||'—'}</td>
                     <td className="px-3 py-2.5 text-[11px] text-slate-400">{t.note||'—'}</td>
@@ -542,7 +542,7 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
             className="w-full rounded-2xl py-4 text-center cursor-pointer border-2 transition-all"
             style={{border: amount?'2px solid #86efac':'2px dashed #e2e8f0', background: amount?'#f0fdf4':'#f8fafc'}}>
             <div className="text-[11px] text-slate-400 mb-1">Top Up Amount</div>
-            <div className="text-[36px] font-black font-mono" style={{color: amount?'#16a34a':'#94a3b8'}}>
+            <div className="text-[36px] font-bold font-mono" style={{color: amount?'#16a34a':'#94a3b8'}}>
               ${amount ? parseFloat(amount).toFixed(2) : '0.00'}
             </div>
           </button>

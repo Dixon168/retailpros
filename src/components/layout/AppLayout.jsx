@@ -74,7 +74,7 @@ export default function AppLayout() {
         <div className="flex items-center gap-2 px-3 py-3.5 border-b" style={{borderColor:'#2A2A2A', minHeight:'52px'}}>
           {!collapsed && (
             <>
-              <div className="text-[15px] font-black text-white">RetailPOS</div>
+              <div className="text-[15px] font-bold text-white">RetailPOS</div>
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded ml-1 flex-shrink-0"
                 style={{background:'rgba(0,106,255,0.2)', color:'#80B2FF'}}>
                 BACK OFFICE

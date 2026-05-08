@@ -97,7 +97,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
               {price ? (
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] text-indigo-400 font-semibold">$</span>
-                  <span className="text-[28px] font-black font-mono" style={{color:'#006AFF'}}>
+                  <span className="text-[28px] font-bold font-mono" style={{color:'#006AFF'}}>
                     {parseFloat(price).toFixed(2)}
                   </span>
                 </div>

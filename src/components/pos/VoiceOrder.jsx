@@ -157,7 +157,7 @@ export function VoiceOrderButton({ products }) {
         style={{
           width: '40px', height: '40px',
           background: isListening
-            ? 'linear-gradient(135deg,#dc2626,#ef4444)'
+            ? '#dc2626'
             : '#000000',
           boxShadow: isListening ? '0 0 0 4px rgba(239,68,68,0.25)' : 'none',
         }}
@@ -183,7 +183,7 @@ export function VoiceOrderButton({ products }) {
               <div className="p-6 text-center">
                 <div className="flex justify-center mb-4">
                   <div className="w-20 h-20 rounded-full flex items-center justify-center"
-                    style={{background:'linear-gradient(135deg,#dc2626,#ef4444)', boxShadow:'0 0 0 12px rgba(239,68,68,0.15), 0 0 0 24px rgba(239,68,68,0.08)'}}>
+                    style={{background:'#dc2626', boxShadow:'0 0 0 12px rgba(239,68,68,0.15), 0 0 0 24px rgba(239,68,68,0.08)'}}>
                     <span className="text-[32px]">🎤</span>
                   </div>
                 </div>

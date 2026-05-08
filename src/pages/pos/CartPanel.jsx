@@ -467,9 +467,9 @@ export default function CartPanel({ onRefund, onHold }) {
           <div className="px-3 pb-3">
             <button onClick={() => useCartStore.setState({ showPayPanel: true })}
               disabled={items.length === 0}
-              className="w-full rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none disabled:opacity-30 transition-all"
+              className="w-full rounded-2xl py-4 text-[16px] font-bold text-white cursor-pointer border-none disabled:opacity-30 transition-all"
               style={{
-                background: items.length > 0 ? 'linear-gradient(135deg,#4f46e5,#006AFF)' : '#e2e8f0',
+                background: items.length > 0 ? '#4f46e5' : '#e2e8f0',
                 letterSpacing: '1px',
                 boxShadow: items.length > 0 ? '0 4px 20px rgba(99,102,241,0.4)' : 'none',
               }}>

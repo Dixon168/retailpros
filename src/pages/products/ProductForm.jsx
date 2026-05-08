@@ -345,7 +345,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
         <div className="px-6 py-5 flex flex-col gap-4">
 
           {/* ── UPC LOOKUP - TOP ── */}
-          <div className="rounded-2xl p-4" style={{background:'linear-gradient(135deg,#E6F0FF,#f5f3ff)', border:'2px solid #80B2FF'}}>
+          <div className="rounded-2xl p-4" style={{background:'#e6f0ff', border:'2px solid #80B2FF'}}>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[18px]">🤖</span>
               <div>

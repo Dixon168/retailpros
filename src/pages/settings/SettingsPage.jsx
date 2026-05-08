@@ -602,11 +602,11 @@ function UsersSection({ tenantId }) {
     cashier: { bg:'rgba(16,185,129,0.1)', color:'#10b981' },
   }
   const AVATAR_COLORS = [
-    'linear-gradient(135deg,#3b82f6,#006AFF)',
-    'linear-gradient(135deg,#10b981,#14b8a6)',
-    'linear-gradient(135deg,#f59e0b,#f97316)',
-    'linear-gradient(135deg,#ec4899,#006AFF)',
-    'linear-gradient(135deg,#06b6d4,#3b82f6)',
+    '#3b82f6',
+    '#10b981',
+    '#006AFF',
+    '#ec4899',
+    '#06b6d4',
   ]
 
   return (
@@ -1074,7 +1074,7 @@ function MemberLevelsSection({ tenantId }) {
                 <div className="grid items-center px-5 py-3.5 gap-3"
                   style={{gridTemplateColumns:'36px 1fr 140px 100px',
                     background: level.is_default ? '#f0fdf4' : '#fff'}}>
-                  <div className="text-[13px] font-black text-slate-400">{i+1}</div>
+                  <div className="text-[13px] font-bold text-slate-400">{i+1}</div>
                   <div className="flex items-center gap-2">
                     <span className="text-[16px]">{level.is_default ? '👤' : '⭐'}</span>
                     <span className="text-[14px] font-semibold text-slate-800">{level.name}</span>
@@ -1144,7 +1144,7 @@ function MemberLevelsSection({ tenantId }) {
                     </button>
                     <button onClick={saveEdit} disabled={saving}
                       className="px-5 py-2 rounded-xl text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                      style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+                      style={{background:'#006AFF'}}>
                       {saving ? '⏳' : '✓ Save Changes'}
                     </button>
                   </div>

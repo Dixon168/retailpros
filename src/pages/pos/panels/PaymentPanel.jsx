@@ -57,7 +57,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           <div className="flex gap-2 px-5 pt-4">
             {[['pct','% Percent','#006AFF','#E6F0FF'],['amt','$ Amount','#16a34a','#dcfce7']].map(([m,l,c,b])=>(
               <button key={m} onClick={()=>setDiscMode(m)}
-                className="flex-1 py-3 rounded-2xl text-[14px] font-black cursor-pointer border-2 transition-all"
+                className="flex-1 py-3 rounded-2xl text-[14px] font-bold cursor-pointer border-2 transition-all"
                 style={discMode===m?{background:b,borderColor:c,color:c}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#94a3b8'}}>
                 {l}
               </button>
@@ -67,9 +67,9 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
         <div className="px-5 py-3">
           <div className="rounded-2xl py-4 flex items-center justify-center gap-2"
             style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
-            {(!isDisc||discMode==='amt') && <span className="text-[26px] font-black text-indigo-400">$</span>}
-            <span className="text-[44px] font-black font-mono leading-none" style={{color:'#006AFF'}}>{input||'0'}</span>
-            {isDisc&&discMode==='pct' && <span className="text-[26px] font-black text-indigo-400">%</span>}
+            {(!isDisc||discMode==='amt') && <span className="text-[26px] font-bold text-indigo-400">$</span>}
+            <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>{input||'0'}</span>
+            {isDisc&&discMode==='pct' && <span className="text-[26px] font-bold text-indigo-400">%</span>}
           </div>
         </div>
         <div className="px-4 pb-4 grid grid-cols-3 gap-2">
@@ -88,7 +88,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           </button>
           <button onClick={()=>{ const v=parseFloat(input)||0; if(v>0) onConfirm(v) }}
             disabled={!input||parseFloat(input)<=0}
-            className="col-span-3 rounded-2xl py-4 text-[15px] font-black text-white cursor-pointer border-none disabled:opacity-40"
+            className="col-span-3 rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#000000'}}>
             ✓ Apply {isDisc&&input?(discMode==='pct'?`${input}%`:`$${parseFloat(input).toFixed(2)}`):input?`$${parseFloat(input).toFixed(2)}`:''}
           </button>
@@ -240,12 +240,12 @@ export default function PaymentPanel() {
           <div className="flex items-center gap-4">
             {customer ? (
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[16px] font-black text-white"
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[16px] font-bold text-white"
                   style={{background:'rgba(255,255,255,0.2)'}}>
                   {customer.name.charAt(0)}
                 </div>
                 <div>
-                  <div className="text-[14px] font-black text-white">{customer.name}</div>
+                  <div className="text-[14px] font-bold text-white">{customer.name}</div>
                   {customer.loyalty_points>0 && <div className="text-[10px] text-white/80">💎 {customer.loyalty_points} pts</div>}
                 </div>
               </div>
@@ -253,13 +253,13 @@ export default function PaymentPanel() {
             <div className="w-px h-8 bg-white/20"/>
             <div>
               <div className="text-[11px] text-white/80 uppercase tracking-wider">Due Now</div>
-              <div className="text-[36px] font-black text-white font-mono leading-none">${remaining.toFixed(2)}</div>
+              <div className="text-[36px] font-bold text-white font-mono leading-none">${remaining.toFixed(2)}</div>
             </div>
             {paid > 0 && <>
               <div className="w-px h-8 bg-white/20"/>
               <div>
                 <div className="text-[11px] text-white/80">Paid</div>
-                <div className="text-[20px] font-black text-green-300 font-mono">${paid.toFixed(2)}</div>
+                <div className="text-[20px] font-bold text-green-300 font-mono">${paid.toFixed(2)}</div>
               </div>
             </>}
           </div>
@@ -320,8 +320,8 @@ export default function PaymentPanel() {
               ))}
               <div className="flex justify-between px-3 py-3"
                 style={{background:'#000000'}}>
-                <span className="text-[15px] font-black text-white">TOTAL</span>
-                <span className="text-[17px] font-black font-mono text-white">${liveTotal.toFixed(2)}</span>
+                <span className="text-[15px] font-bold text-white">TOTAL</span>
+                <span className="text-[17px] font-bold font-mono text-white">${liveTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function PaymentPanel() {
 
           {/* Adjustments - compact row */}
           <div className="rounded-2xl overflow-hidden flex-shrink-0" style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
-            <div className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest"
+            <div className="px-4 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest"
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Invoice Adjustments
             </div>
@@ -350,7 +350,7 @@ export default function PaymentPanel() {
                   <span className="text-[20px]">{icon}</span>
                   <span className="text-[10px] font-bold mt-1" style={{color:applied?col:'#64748b'}}>{label}</span>
                   {applied
-                    ? <span className="text-[11px] font-black" style={{color:col}}>{applied}
+                    ? <span className="text-[11px] font-bold" style={{color:col}}>{applied}
                         <button onClick={e=>{e.stopPropagation(); if(id==='disc')setOrderDiscount(null); else if(id==='tip')setTip(0); else setFeeAmt(0)}}
                           className="ml-1 bg-transparent border-none cursor-pointer font-bold" style={{color:col}}>✕</button>
                       </span>
@@ -370,7 +370,7 @@ export default function PaymentPanel() {
 
           {/* Payment method + input - fills remaining space */}
           <div className="rounded-2xl overflow-hidden flex-1 flex flex-col" style={{background:'#fff', border:'1.5px solid #e2e8f0', minHeight:0}}>
-            <div className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0"
+            <div className="px-4 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest flex-shrink-0"
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Payment Method
             </div>
@@ -409,7 +409,7 @@ export default function PaymentPanel() {
                     className="flex-shrink-0 w-full rounded-2xl px-4 py-4 text-left cursor-pointer border-2 transition-all"
                     style={{borderColor:'#80B2FF', background:'#E6F0FF'}}>
                     <div className="text-[10px] text-indigo-400 mb-0.5">Payment {payments.length+1} Amount</div>
-                    <div className="text-[38px] font-black font-mono leading-none" style={{color:'#006AFF'}}>
+                    <div className="text-[38px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>
                       ${payInput||remaining.toFixed(2)}
                     </div>
                   </button>
@@ -426,8 +426,8 @@ export default function PaymentPanel() {
                     }
                   </div>
                   <button onClick={handleAddPayment}
-                    className="flex-shrink-0 w-full rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none"
-                    style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1F1F1F)`, boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+                    className="flex-shrink-0 w-full rounded-2xl py-4 text-[16px] font-bold text-white cursor-pointer border-none"
+                    style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
                     {METHODS.find(m=>m.id===selMethod)?.icon} Add {METHODS.find(m=>m.id===selMethod)?.label} — ${payInput||remaining.toFixed(2)}
                   </button>
                 </>
@@ -437,7 +437,7 @@ export default function PaymentPanel() {
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-[48px] mb-2">✅</div>
-                    <div className="text-[16px] font-black text-green-600">Fully Paid!</div>
+                    <div className="text-[16px] font-bold text-green-600">Fully Paid!</div>
                     {change>0 && <div className="text-[14px] font-bold text-blue-600 mt-1">Change: ${change.toFixed(2)}</div>}
                   </div>
                 </div>
@@ -451,8 +451,8 @@ export default function PaymentPanel() {
           style={{gridRow:'2', gridColumn:'3', background:'#fff', borderLeft:'1px solid #e2e8f0', minHeight:0}}>
           <div className="px-3 py-2.5 flex-shrink-0"
             style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
-            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payments</div>
-            <div className="text-[12px] font-black mt-0.5" style={{color:paid>=liveTotal?'#16a34a':'#006AFF'}}>
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Payments</div>
+            <div className="text-[12px] font-bold mt-0.5" style={{color:paid>=liveTotal?'#16a34a':'#006AFF'}}>
               {paid>=liveTotal?'✓ Paid':payments.length===0?'None yet':`$${paid.toFixed(2)} paid`}
             </div>
           </div>
@@ -468,12 +468,12 @@ export default function PaymentPanel() {
                 <div key={i} className="rounded-2xl p-3 flex-shrink-0"
                   style={{background:m?.bg||'#f8fafc', border:`1.5px solid ${m?.border||'#e2e8f0'}`}}>
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider" style={{color:m?.color}}>#{i+1} {m?.label}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{color:m?.color}}>#{i+1} {m?.label}</span>
                     <button onClick={()=>removePayment(i)}
                       className="w-5 h-5 rounded-full border-none cursor-pointer text-[10px] font-bold flex items-center justify-center"
                       style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>✕</button>
                   </div>
-                  <div className="text-[20px] font-black font-mono" style={{color:m?.color}}>${p.amount.toFixed(2)}</div>
+                  <div className="text-[20px] font-bold font-mono" style={{color:m?.color}}>${p.amount.toFixed(2)}</div>
                   {p.maskedPan&&<div className="text-[9px] text-slate-400 mt-0.5">•••• {p.maskedPan.slice(-4)}</div>}
                 </div>
               )
@@ -483,7 +483,7 @@ export default function PaymentPanel() {
             <div className="p-2.5 flex-shrink-0">
               <div className="rounded-xl px-3 py-2" style={{background:'#fef2f2',border:'1.5px solid #fca5a5'}}>
                 <div className="text-[9px] font-bold text-red-500">Still Owing</div>
-                <div className="text-[18px] font-black font-mono text-red-600">${remaining.toFixed(2)}</div>
+                <div className="text-[18px] font-bold font-mono text-red-600">${remaining.toFixed(2)}</div>
               </div>
             </div>
           )}
@@ -491,7 +491,7 @@ export default function PaymentPanel() {
             <div className="p-2.5 flex-shrink-0">
               <div className="rounded-xl px-3 py-2" style={{background:'#eff6ff',border:'1.5px solid #93c5fd'}}>
                 <div className="text-[9px] font-bold text-blue-500">Change</div>
-                <div className="text-[18px] font-black font-mono text-blue-600">${change.toFixed(2)}</div>
+                <div className="text-[18px] font-bold font-mono text-blue-600">${change.toFixed(2)}</div>
               </div>
             </div>
           )}
@@ -507,7 +507,7 @@ export default function PaymentPanel() {
           </button>
           <button onClick={()=>handleComplete()}
             disabled={processing||(paid<liveTotal&&!payments.some(p=>p.method==='on_account'))}
-            className="flex-1 rounded-2xl py-4 text-[18px] font-black text-white cursor-pointer border-none disabled:opacity-40"
+            className="flex-1 rounded-2xl py-4 text-[18px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#00B23B', boxShadow:'0 4px 20px rgba(22,163,74,0.35)'}}>
             {processing?'⏳ Processing...': remaining<=0 ? `✓ Complete Order — $${liveTotal.toFixed(2)}` : `Complete ($${paid.toFixed(2)} of $${liveTotal.toFixed(2)})`}
           </button>
@@ -521,7 +521,7 @@ export default function PaymentPanel() {
           style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
           <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'360px',background:'#fff'}}>
             <div className="px-5 py-4 flex items-center justify-between"
-              style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1F1F1F)`}}>
+              style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'}}>
               <div>
                 <div className="text-[12px] text-white/70">Payment {payments.length+1}</div>
                 <div className="text-[18px] font-bold text-white">{METHODS.find(m=>m.id===selMethod)?.icon} {METHODS.find(m=>m.id===selMethod)?.label}</div>
@@ -532,8 +532,8 @@ export default function PaymentPanel() {
               <div className="text-[11px] text-slate-400 mb-1">Remaining: ${remaining.toFixed(2)}</div>
               <div className="rounded-2xl py-4 flex items-center justify-center gap-1"
                 style={{background:'#E6F0FF',border:'2px solid #80B2FF'}}>
-                <span className="text-[26px] font-black text-indigo-400">$</span>
-                <span className="text-[44px] font-black font-mono leading-none" style={{color:'#006AFF'}}>{payInput||'0'}</span>
+                <span className="text-[26px] font-bold text-indigo-400">$</span>
+                <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>{payInput||'0'}</span>
               </div>
             </div>
             <div className="px-4 pb-4 grid grid-cols-3 gap-2">
@@ -561,7 +561,7 @@ export default function PaymentPanel() {
               </button>
               <button onClick={()=>{if(parseFloat(payInput)>0){setShowPayPad(false);setTimeout(()=>handleAddPayment(),50)}}}
                 disabled={!payInput||parseFloat(payInput)<=0}
-                className="col-span-3 rounded-2xl py-4 text-[15px] font-black text-white cursor-pointer border-none disabled:opacity-40"
+                className="col-span-3 rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
                 style={{background:'#00B23B'}}>
                 ✓ Pay ${payInput?parseFloat(payInput).toFixed(2):'0.00'}
               </button>

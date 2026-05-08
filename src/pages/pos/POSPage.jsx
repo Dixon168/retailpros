@@ -113,7 +113,7 @@ export default function POSPage() {
       <div className="flex items-center justify-between px-4 py-0 flex-shrink-0"
         style={{height:'44px', background:'#1F1F1F', borderBottom:'1px solid #2A2A2A'}}>
         <div className="flex items-center gap-3">
-          <div className="text-[15px] font-black tracking-tight text-white">RetailPOS</div>
+          <div className="text-[15px] font-bold tracking-tight text-white">RetailPOS</div>
           <div className="w-px h-4 bg-slate-600"/>
           <div className="text-[12px] text-slate-400">{store?.name || 'Main Store'}</div>
           <div className="w-px h-4 bg-slate-600"/>
