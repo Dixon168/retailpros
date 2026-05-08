@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import ReceivePaymentModal from './ReceivePaymentModal'
+import { buildInvoiceHtml, buildPackingSlipHtml, openPrintWindow, downloadHtml } from '@/lib/pdfTemplates'
 
 const STATUS_BADGE = {
   draft:    { bg:'#F5F5F5', color:'#666',    label:'Draft' },
@@ -26,7 +27,7 @@ const PAYMENT_METHOD_LABELS = {
 }
 
 export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
-  const { tenant } = useAuthStore()
+  const { tenant, store } = useAuthStore()
   const [showReceive, setShowReceive] = useState(false)
   const [updating, setUpdating] = useState(false)
 
@@ -74,6 +75,38 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
     toast.success(`Invoice marked as ${newStatus}`)
     refetch()
     onChanged?.()
+  }
+
+  // Build doc data once
+  const docData = {
+    invoice: detail,
+    items,
+    customer,
+    payments: (detail.allocations || []).map(a => ({
+      ...(a.received_payments || {}),
+      amount: a.amount,    // use the allocated amount (not the full payment amount)
+    })).filter(p => p.payment_number),
+    store,
+    tenant,
+  }
+
+  const printInvoice = () => {
+    const html = buildInvoiceHtml(docData)
+    openPrintWindow(html, `Invoice ${detail.invoice_number}`)
+  }
+  const downloadInvoice = () => {
+    const html = buildInvoiceHtml(docData)
+    downloadHtml(html, `${detail.invoice_number}.html`)
+    toast.success('Invoice downloaded — open it to save as PDF')
+  }
+  const printPacking = () => {
+    const html = buildPackingSlipHtml(docData)
+    openPrintWindow(html, `Packing ${detail.invoice_number}`)
+  }
+  const downloadPacking = () => {
+    const html = buildPackingSlipHtml(docData)
+    downloadHtml(html, `Packing-${detail.invoice_number}.html`)
+    toast.success('Packing slip downloaded')
   }
 
   return (
@@ -275,6 +308,31 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
               style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
               Close
             </button>
+
+            {/* Print menu group */}
+            <div className="flex gap-1.5 items-stretch rounded-lg overflow-hidden"
+              style={{border:'1px solid #1F1F1F'}}>
+              <button onClick={printInvoice} title="Print invoice (or Save as PDF in print dialog)"
+                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#1F1F1F', color:'#FFFFFF', border:'none'}}>
+                🖨️ Print
+              </button>
+              <button onClick={downloadInvoice} title="Download invoice"
+                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
+                📥
+              </button>
+              <button onClick={printPacking} title="Print packing slip (no prices)"
+                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
+                📦 Packing
+              </button>
+              <button onClick={downloadPacking} title="Download packing slip"
+                className="px-2.5 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
+                📥
+              </button>
+            </div>
 
             {detail.status === 'draft' && (
               <button onClick={() => updateStatus('sent')} disabled={updating}

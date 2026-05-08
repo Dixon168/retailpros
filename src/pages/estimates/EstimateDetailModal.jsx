@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
+import { buildEstimateHtml, openPrintWindow, downloadHtml } from '@/lib/pdfTemplates'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666',    label:'Draft' },
@@ -15,7 +16,7 @@ const STATUS_BADGE = {
 }
 
 export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
-  const { tenant, user } = useAuthStore()
+  const { tenant, store, user } = useAuthStore()
   const [showConvert, setShowConvert] = useState(false)
   const [updating, setUpdating] = useState(false)
 
@@ -53,6 +54,13 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
     toast.success(`Estimate marked as ${newStatus}`)
     refetch()
     onChanged?.()
+  }
+
+  const docData = { estimate: detail, items, customer, store, tenant }
+  const printEstimate = () => openPrintWindow(buildEstimateHtml(docData), `Estimate ${detail.estimate_number}`)
+  const downloadEstimate = () => {
+    downloadHtml(buildEstimateHtml(docData), `${detail.estimate_number}.html`)
+    toast.success('Estimate downloaded — open it to save as PDF')
   }
 
   return (
@@ -188,6 +196,21 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
               style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
               Close
             </button>
+
+            {/* Print/Download */}
+            <div className="flex items-stretch rounded-lg overflow-hidden"
+              style={{border:'1px solid #1F1F1F'}}>
+              <button onClick={printEstimate} title="Print estimate (or Save as PDF)"
+                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#1F1F1F', color:'#FFFFFF', border:'none'}}>
+                🖨️ Print
+              </button>
+              <button onClick={downloadEstimate} title="Download estimate"
+                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
+                📥
+              </button>
+            </div>
 
             {!isLocked && (
               <>
