@@ -37,6 +37,7 @@ const NAV_GROUPS = [
   {
     group: 'Sales',
     items: [
+      { to:'/b2b-center', icon:'💼', label:'B2B Center' },
       { to:'/estimates',  icon:'📝', label:'Estimates' },
       { to:'/invoices',   icon:'📄', label:'Invoices' },
       { to:'/payments',   icon:'💰', label:'Payments' },
