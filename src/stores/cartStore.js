@@ -427,6 +427,18 @@ export const useCartStore = create((set, get) => ({
     }
 
     toast.success(`✅ Order ${result.order_number} completed!`)
+
+    // Show oversold warnings if any (stock went negative)
+    if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+      result.warnings.forEach(w => {
+        toast(`⚠️ ${w}`, {
+          icon: '📉',
+          duration: 6000,
+          style: { background:'#FEF3C7', color:'#B45309', fontWeight:600 }
+        })
+      })
+    }
+
     get().clearCart()
 
     return { id: result.order_id, order_number: result.order_number }

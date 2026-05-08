@@ -413,6 +413,15 @@ export default function CartPanel({ onRefund, onHold }) {
                           if (item.type === 'service' || item.type === 'weight') return null
                           const stock = item.inventory?.reduce((a,i)=>a+(i.quantity||0),0)
                           if (stock === undefined || stock === null) return null
+                          if (stock < 0) {
+                            return (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"
+                                style={{background:'#FEE2E2', color:'#CF1322'}}>
+                                <span className="w-1 h-1 rounded-full" style={{background:'#CF1322'}}/>
+                                Stock: {stock} (oversold)
+                              </span>
+                            )
+                          }
                           if (item.qty > stock) {
                             return (
                               <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"

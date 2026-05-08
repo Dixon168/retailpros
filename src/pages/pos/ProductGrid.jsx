@@ -61,7 +61,7 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
                    : 'ok'
 
   const stockBadge = {
-    out:  { bg:'#FEE2E2', color:'#CF1322', label:'OUT', dot:'#CF1322' },
+    out:  { bg:'#FEE2E2', color:'#CF1322', label: qty < 0 ? `${qty}` : 'OUT', dot:'#CF1322' },
     low:  { bg:'#FEF3C7', color:'#B45309', label:`Only ${qty}`, dot:'#F59E0B' },
     ok:   { bg:'#DCFCE7', color:'#15803D', label:String(qty), dot:'#15803D' },
     untracked: null,
