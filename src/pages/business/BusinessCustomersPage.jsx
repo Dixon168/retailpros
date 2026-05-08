@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
+import CustomerHistoryModal from './CustomerHistoryModal'
 
 const TIER_STYLE = {
   standard:  { bg: 'rgba(136,153,176,0.12)', color: '#666666', label: 'Standard' },
@@ -22,6 +23,7 @@ export default function BusinessCustomersPage() {
   const [selected, setSelected] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editForm, setEditForm] = useState(null)
+  const [historyFor, setHistoryFor] = useState(null)
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['business-customers', tenant?.id, search],
@@ -137,6 +139,7 @@ export default function BusinessCustomersPage() {
             customer={selected}
             onClose={() => setSelected(null)}
             onEdit={() => { setEditForm(selected); setShowForm(true) }}
+            onShowHistory={(c) => setHistoryFor(c)}
             tenantId={tenant?.id}
           />
         : (
@@ -171,12 +174,22 @@ export default function BusinessCustomersPage() {
           onClose={() => setShowForm(false)}
         />
       )}
+
+      {historyFor && (
+        <CustomerHistoryModal
+          customerId={historyFor.id}
+          onClose={() => setHistoryFor(null)}
+          onChanged={() => {
+            qc.invalidateQueries({ queryKey: ['business-customers'] })
+          }}
+        />
+      )}
     </div>
   )
 }
 
 // ── Business Detail ──
-function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
+function BusinessDetail({ customer: c, onClose, onEdit, onShowHistory, tenantId }) {
   const qc = useQueryClient()
   const [tab, setTab] = useState('overview')
   const ts = TIER_STYLE[c.tier] || TIER_STYLE.standard
@@ -228,14 +241,11 @@ function BusinessDetail({ customer: c, onClose, onEdit, tenantId }) {
             className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
               text-[11px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
               transition-all">Edit</button>
-          <button onClick={() => toast.success('Creating invoice...')}
-            className="bg-cyan-500 border-none rounded-lg px-3 py-1.5
-              text-[11px] font-bold text-white">+ Invoice</button>
-          {c.credit_balance > 0 && (
-            <button onClick={() => toast.success('Recording payment...')}
-              className="bg-green-500 border-none rounded-lg px-3 py-1.5
-                text-[11px] font-bold text-white">💰 Record Payment</button>
-          )}
+          <button onClick={() => onShowHistory?.(c)}
+            className="bg-[#FFFFFF] border border-[#006AFF] rounded-lg px-3 py-1.5
+              text-[11px] font-bold text-[#006AFF] hover:bg-[#E6F0FF] transition-all">
+            📋 View A/R History
+          </button>
         </div>
       </div>
 

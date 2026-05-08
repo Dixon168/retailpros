@@ -13,6 +13,7 @@ import CustomersPage from '@/pages/customers/CustomersPage'
 import InvoicesPage from '@/pages/invoices/InvoicesPage'
 import EstimatesPage from '@/pages/estimates/EstimatesPage'
 import PaymentsPage from '@/pages/payments/PaymentsPage'
+import ARAgingPage from '@/pages/reports/ARAgingPage'
 import MarketingPage from '@/pages/marketing/MarketingPage'
 import LoyaltyPage from '@/pages/loyalty/LoyaltyPage'
 import VendorsPage from '@/pages/vendors/VendorsPage'
@@ -99,6 +100,7 @@ export default function App() {
             <Route path="/invoices"   element={<InvoicesPage />} />
             <Route path="/estimates"  element={<EstimatesPage />} />
             <Route path="/payments"   element={<PaymentsPage />} />
+            <Route path="/reports/ar-aging" element={<ARAgingPage />} />
             <Route path="/marketing"  element={<MarketingPage />} />
             <Route path="/loyalty"    element={<LoyaltyPage />} />
             <Route path="/vendors"    element={<VendorsPage />} />

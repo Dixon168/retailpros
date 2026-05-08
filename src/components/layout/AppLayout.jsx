@@ -12,6 +12,7 @@ const NAV_GROUPS = [
       { to:'/backoffice', icon:'🏠', label:'Dashboard' },
       { to:'/orders',     icon:'🔍', label:'Orders' },
       { to:'/reports',    icon:'📊', label:'Reports' },
+      { to:'/reports/ar-aging', icon:'💸', label:'A/R Aging' },
     ]
   },
   {
