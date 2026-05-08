@@ -12,7 +12,7 @@ import { AdjustModal } from './AdjustModal'
 import toast from 'react-hot-toast'
 
 const TYPE_COLOR = {
-  unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#8b5cf6'
+  unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#006AFF'
 }
 
 export default function ProductsPage() {
@@ -96,7 +96,7 @@ export default function ProductsPage() {
           ['unit','Unit','#3b82f6'],
           ['weight','Weight','#10b981'],
           ['serialized','Serialized','#f59e0b'],
-          ['service','Service','#8b5cf6'],
+          ['service','Service','#006AFF'],
         ].map(([id,label,color]) => (
           <div key={id} onClick={() => setFilterType(id)}
             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${
@@ -226,7 +226,7 @@ export default function ProductsPage() {
                         {cat && <div className="text-[9px] text-slate-400 mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
                         {p.tags?.length > 0 && (
                           <div className="flex gap-1 mt-0.5 flex-wrap">
-                            {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:'#e0e7ff',color:'#6366f1'}}>{t}</span>)}
+                            {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:'#E6F0FF',color:'#006AFF'}}>{t}</span>)}
                           </div>
                         )}
                       </td>
@@ -296,7 +296,7 @@ export default function ProductsPage() {
                           <button onClick={() => { setExpandedId(expandedId===p.id?null:p.id); setHistoryId(null); setAiId(null) }}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={expandedId===p.id
-                              ? {background:'#e0e7ff', borderColor:'#a5b4fc', color:'#6366f1'}
+                              ? {background:'#E6F0FF', borderColor:'#80B2FF', color:'#006AFF'}
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📋 {expandedId===p.id ? 'Close' : 'Detail'}
                           </button>
@@ -396,7 +396,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
   const [timeType,  setTimeType]  = useState('fixed')
   const [timeVal,   setTimeVal]   = useState('')
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-  const TYPE_COLOR = { sale:'#6366f1', bulk:'#16a34a', time:'#d97706' }
+  const TYPE_COLOR = { sale:'#006AFF', bulk:'#16a34a', time:'#d97706' }
 
   const { data: promos=[] } = useQuery({
     queryKey: ['product-promos', product.id],
@@ -446,7 +446,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
-      <div className="rounded-2xl w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl"
+      <div className="rounded-2xl w-[520px] max-h-[90vh] overflow-y-auto shadow-md"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -467,7 +467,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
               <div className="flex flex-col gap-2">
                 {promos.map(p => (
                   <div key={p.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{background:'#f8fafc', border:`1.5px solid ${p.is_active ? (TYPE_COLOR[p.type]||'#6366f1')+'40' : '#e2e8f0'}`}}>
+                    style={{background:'#f8fafc', border:`1.5px solid ${p.is_active ? (TYPE_COLOR[p.type]||'#006AFF')+'40' : '#e2e8f0'}`}}>
                     <span className="text-[16px]">{{sale:'🏷️',bulk:'📦',time:'⏰'}[p.type]||'🏷️'}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] font-semibold text-slate-700">{p.name}</div>
@@ -507,19 +507,19 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 
           {/* Sale fields */}
           {type==='sale' && (
-            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-[10px] font-semibold text-slate-500 mb-1">Start Date & Time</div>
                   <input type="datetime-local" value={saleStart} onChange={e=>setSaleStart(e.target.value)}
                     className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
                 </div>
                 <div>
                   <div className="text-[10px] font-semibold text-slate-500 mb-1">End Date & Time</div>
                   <input type="datetime-local" value={saleEnd} onChange={e=>setSaleEnd(e.target.value)}
                     className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -527,7 +527,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
                   <div className="text-[10px] font-semibold text-slate-500 mb-1">Type</div>
                   <select value={saleType} onChange={e=>setSaleType(e.target.value)}
                     className="rounded-xl px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}>
+                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}>
                     <option value="fixed">$ Fixed Sale Price</option>
                     <option value="pct">% Percentage Off</option>
                   </select>
@@ -537,7 +537,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
                   <input type="number" value={saleVal} onChange={e=>setSaleVal(e.target.value)}
                     placeholder={saleType==='fixed'?'e.g. 8.00':'e.g. 20'} step="0.01"
                     className="w-full rounded-xl px-3 py-2 text-[13px] font-mono outline-none"
-                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
                 </div>
               </div>
               {saleVal && (
@@ -641,7 +641,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 
           <button onClick={savePromo} disabled={saving}
             className="w-full mt-4 rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-            style={{background:'linear-gradient(135deg,#9333ea,#6366f1)'}}>
+            style={{background:'linear-gradient(135deg,#006AFF,#006AFF)'}}>
             {saving ? '⏳ Saving...' : '✓ Add Promotion'}
           </button>
         </div>
@@ -664,7 +664,7 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(4px)'}} onClick={onClose}>
-      <div className="rounded-2xl shadow-2xl overflow-hidden"
+      <div className="rounded-2xl shadow-md overflow-hidden"
         style={{background:'#fff', width:'360px'}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -682,7 +682,7 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[
               ['In Stock', p.type==='service'?'—':`${qty} ${p.unit||'ea'}`, isLow?'#dc2626':'#16a34a'],
-              ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`, '#6366f1'],
+              ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`, '#006AFF'],
               ['Stock Value', p.type==='service'?'—':`$${stockVal.toFixed(2)}`, '#1e293b'],
             ].map(([l,v,c]) => (
               <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
@@ -703,7 +703,7 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => setShowReceive(true)}
               className="rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none transition-all"
-              style={{background:'linear-gradient(135deg,#16a34a,#15803d)', color:'#fff'}}>
+              style={{background:'#00B23B', color:'#fff'}}>
               📥 + Receive
             </button>
             <button onClick={() => setShowAdjust(true)}
@@ -904,7 +904,7 @@ function SalesHistoryInline({ product: p }) {
                     {/* Invoice */}
                     <td className="px-3 py-2.5">
                       {r.invoice
-                        ? <span className="text-[11px] font-mono font-bold" style={{color:'#6366f1'}}>{r.invoice}</span>
+                        ? <span className="text-[11px] font-mono font-bold" style={{color:'#006AFF'}}>{r.invoice}</span>
                         : <span className="text-[11px] text-slate-300">—</span>}
                     </td>
                     {/* Party */}
@@ -925,7 +925,7 @@ function SalesHistoryInline({ product: p }) {
                     {/* Total */}
                     <td className="px-3 py-2.5">
                       {r.total!=null
-                        ? <span className="text-[12px] font-bold font-mono" style={{color:r._type==='sale'?'#16a34a':'#6366f1'}}>${parseFloat(r.total).toFixed(2)}</span>
+                        ? <span className="text-[12px] font-bold font-mono" style={{color:r._type==='sale'?'#16a34a':'#006AFF'}}>${parseFloat(r.total).toFixed(2)}</span>
                         : <span className="text-[11px] text-slate-300">—</span>}
                     </td>
                     {/* Serial */}

@@ -107,7 +107,7 @@ export default function POSPage() {
   ]
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{height:'100vh', background:'#f0f2f5'}}>
+    <div className="flex flex-col overflow-hidden" style={{height:'100vh', background:'#FFFFFF'}}>
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-4 py-0 flex-shrink-0"
@@ -136,10 +136,10 @@ export default function POSPage() {
       <div className="flex overflow-hidden" style={{flex:'1 1 0', minHeight:0}}>
 
         {/* Left: Products */}
-        <div className="flex flex-col flex-1 overflow-hidden" style={{background:'#f0f2f5'}}>
+        <div className="flex flex-col flex-1 overflow-hidden" style={{background:'#FFFFFF'}}>
 
           {/* Search bar */}
-          <div className="px-3 py-2 flex-shrink-0" style={{background:'#f0f2f5'}}>
+          <div className="px-3 py-2 flex-shrink-0" style={{background:'#FFFFFF'}}>
             <div className="flex items-center gap-2 rounded-xl px-3 shadow-sm"
               style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
               <span className="text-slate-400 text-[15px]">🔍</span>

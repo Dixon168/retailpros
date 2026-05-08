@@ -59,12 +59,12 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)'}}
       onClick={onClose}>
-      <div className="w-full max-w-[320px] rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+      <div className="w-full max-w-[320px] rounded-t-3xl sm:rounded-xl overflow-hidden shadow-md"
         style={{background:'#fff'}} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="px-5 pt-5 pb-3 text-center"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <div className="text-[13px] font-semibold text-indigo-200 mb-1">{title}</div>
           {subtitle && <div className="text-[11px] text-indigo-300">{subtitle}</div>}
 
@@ -85,9 +85,9 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
               <button key={`${ri}-${ci}`} onClick={() => handleKey(key)}
                 className="rounded-2xl py-4 text-[22px] font-bold cursor-pointer border-none transition-all active:scale-95"
                 style={{
-                  background: key === '-' ? '#fef2f2' : key === '.' ? '#f0f4ff' : '#f8fafc',
-                  color: key === '-' ? '#ef4444' : key === '.' ? '#6366f1' : '#1e293b',
-                  boxShadow: key === '-' ? '0 2px 0 #fecdd3' : key === '.' ? '0 2px 0 #c7d2fe' : '0 2px 0 #e2e8f0',
+                  background: key === '-' ? '#fef2f2' : key === '.' ? '#E6F0FF' : '#f8fafc',
+                  color: key === '-' ? '#ef4444' : key === '.' ? '#006AFF' : '#1e293b',
+                  boxShadow: key === '-' ? '0 2px 0 #fecdd3' : key === '.' ? '0 2px 0 #B3D1FF' : '0 2px 0 #e2e8f0',
                   fontSize: '18px',
                 }}>
                 {key}
@@ -109,7 +109,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
           <button onClick={() => isValid && onConfirm(numVal)}
             disabled={!isValid || value === '-'}
             className="rounded-2xl py-4 text-[22px] cursor-pointer border-none transition-all active:scale-95 disabled:opacity-30"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', boxShadow:'0 2px 0 #a5b4fc'}}>
+            style={{background:'#000000', color:'#fff', boxShadow:'0 2px 0 #80B2FF'}}>
             ✓
           </button>
         </div>

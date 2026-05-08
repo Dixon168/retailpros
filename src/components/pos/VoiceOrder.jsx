@@ -158,7 +158,7 @@ export function VoiceOrderButton({ products }) {
           width: '40px', height: '40px',
           background: isListening
             ? 'linear-gradient(135deg,#dc2626,#ef4444)'
-            : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            : '#000000',
           boxShadow: isListening ? '0 0 0 4px rgba(239,68,68,0.25)' : 'none',
         }}
         title={supported ? 'Hold to speak' : 'Voice not supported'}>
@@ -175,7 +175,7 @@ export function VoiceOrderButton({ products }) {
       {showPanel && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center"
           style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(4px)'}}>
-          <div className="w-full rounded-t-3xl overflow-hidden shadow-2xl"
+          <div className="w-full rounded-t-3xl overflow-hidden shadow-md"
             style={{background:'#1e293b', maxWidth:'480px'}}>
 
             {/* Listening state */}
@@ -238,7 +238,7 @@ export function VoiceOrderButton({ products }) {
                       <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3"
                         style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)'}}>
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
-                          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                          style={{background:'#000000'}}>
                           {item.product_name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div className="flex-1">
@@ -263,13 +263,13 @@ export function VoiceOrderButton({ products }) {
                   {matches.length > 0 && (
                     <button onClick={confirmAdd}
                       className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none"
-                      style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+                      style={{background:'#00B23B'}}>
                       ✓ Add to Cart
                     </button>
                   )}
                   <button onClick={() => { setState('idle'); setTranscript(''); setMatches([]); startListening() }}
                     className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer border-none"
-                    style={{background:'rgba(99,102,241,0.2)', color:'#a5b4fc'}}>
+                    style={{background:'rgba(99,102,241,0.2)', color:'#80B2FF'}}>
                     🎤 Retry
                   </button>
                 </div>

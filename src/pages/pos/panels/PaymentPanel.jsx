@@ -26,7 +26,7 @@ const PAX_STATE = {
 const METHODS = [
   { id:'cash',          icon:'💵', label:'Cash',       color:'#16a34a', bg:'#f0fdf4', border:'#86efac' },
   { id:'card',          icon:'💳', label:'Card',       color:'#2563eb', bg:'#eff6ff', border:'#93c5fd' },
-  { id:'member_card',   icon:'🏷️', label:'VIP',       color:'#9333ea', bg:'#fdf4ff', border:'#d8b4fe' },
+  { id:'member_card',   icon:'🏷️', label:'VIP',       color:'#006AFF', bg:'#fdf4ff', border:'#d8b4fe' },
   { id:'gift_card',     icon:'🎁', label:'Gift',       color:'#ea580c', bg:'#fff7ed', border:'#fed7aa' },
   { id:'bank_transfer', icon:'🏦', label:'Transfer',   color:'#0891b2', bg:'#f0f9ff', border:'#7dd3fc' },
   { id:'check',         icon:'📝', label:'Check',      color:'#ca8a04', bg:'#fffbeb', border:'#fde047' },
@@ -47,15 +47,15 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-3xl overflow-hidden shadow-2xl" style={{width:'360px', background:'#fff'}}>
+      <div className="rounded-xl overflow-hidden shadow-md" style={{width:'360px', background:'#fff'}}>
         <div className="px-5 py-4 flex items-center justify-between"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <div className="text-[18px] font-bold text-white">{ICONS[adjTab]} {TITLES[adjTab]}</div>
           <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px] flex items-center justify-center">✕</button>
         </div>
         {isDisc && (
           <div className="flex gap-2 px-5 pt-4">
-            {[['pct','% Percent','#6366f1','#e0e7ff'],['amt','$ Amount','#16a34a','#dcfce7']].map(([m,l,c,b])=>(
+            {[['pct','% Percent','#006AFF','#E6F0FF'],['amt','$ Amount','#16a34a','#dcfce7']].map(([m,l,c,b])=>(
               <button key={m} onClick={()=>setDiscMode(m)}
                 className="flex-1 py-3 rounded-2xl text-[14px] font-black cursor-pointer border-2 transition-all"
                 style={discMode===m?{background:b,borderColor:c,color:c}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#94a3b8'}}>
@@ -66,9 +66,9 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
         )}
         <div className="px-5 py-3">
           <div className="rounded-2xl py-4 flex items-center justify-center gap-2"
-            style={{background:'#f0f4ff', border:'2px solid #a5b4fc'}}>
+            style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
             {(!isDisc||discMode==='amt') && <span className="text-[26px] font-black text-indigo-400">$</span>}
-            <span className="text-[44px] font-black font-mono leading-none" style={{color:'#6366f1'}}>{input||'0'}</span>
+            <span className="text-[44px] font-black font-mono leading-none" style={{color:'#006AFF'}}>{input||'0'}</span>
             {isDisc&&discMode==='pct' && <span className="text-[26px] font-black text-indigo-400">%</span>}
           </div>
         </div>
@@ -89,7 +89,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
           <button onClick={()=>{ const v=parseFloat(input)||0; if(v>0) onConfirm(v) }}
             disabled={!input||parseFloat(input)<=0}
             className="col-span-3 rounded-2xl py-4 text-[15px] font-black text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+            style={{background:'#000000'}}>
             ✓ Apply {isDisc&&input?(discMode==='pct'?`${input}%`:`$${parseFloat(input).toFixed(2)}`):input?`$${parseFloat(input).toFixed(2)}`:''}
           </button>
         </div>
@@ -231,12 +231,12 @@ export default function PaymentPanel() {
   return (
     <Overlay onClose={paxState!=='idle'?undefined:close}>
       {/* Full screen no-scroll container */}
-      <div className="rounded-3xl overflow-hidden shadow-2xl"
-        style={{width:'min(1080px, 96vw)', height:'min(88vh, 800px)', background:'#f0f2f5', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
+      <div className="rounded-xl overflow-hidden shadow-md"
+        style={{width:'min(1080px, 96vw)', height:'min(88vh, 800px)', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
 
         {/* ══ HEADER - full width ══ */}
         <div className="col-span-3 flex items-center justify-between px-6 py-4"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', gridRow:'1', gridColumn:'1 / -1'}}>
+          style={{background:'#000000', gridRow:'1', gridColumn:'1 / -1'}}>
           <div className="flex items-center gap-4">
             {customer ? (
               <div className="flex items-center gap-2.5">
@@ -307,7 +307,7 @@ export default function PaymentPanel() {
                 ['✂️ Disc',    -orderDiscountAmt, '#16a34a', orderDiscountAmt>0?'#f0fdf4':'#fff', true],
                 [taxExempt?'🏛️ Tax':'Tax', taxExempt?0:taxAmount, taxExempt?'#2563eb':'#64748b', taxExempt?'#eff6ff':'#fff', true],
                 ['🙏 Tip',     tip,               '#ca8a04', tip>0?'#fffbeb':'#fff', true],
-                [`💼 Fee`,     feeAmt,            '#9333ea', feeAmt>0?'#fdf4ff':'#fff', true],
+                [`💼 Fee`,     feeAmt,            '#006AFF', feeAmt>0?'#fdf4ff':'#fff', true],
               ].map(([label,val,color,bg])=>(
                 <div key={label} className="flex justify-between px-3 py-1.5 text-[11px]"
                   style={{borderBottom:'1px solid #f1f5f9', background:bg}}>
@@ -319,7 +319,7 @@ export default function PaymentPanel() {
                 </div>
               ))}
               <div className="flex justify-between px-3 py-3"
-                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                style={{background:'#000000'}}>
                 <span className="text-[15px] font-black text-white">TOTAL</span>
                 <span className="text-[17px] font-black font-mono text-white">${liveTotal.toFixed(2)}</span>
               </div>
@@ -341,7 +341,7 @@ export default function PaymentPanel() {
               {[
                 ['disc','✂️','Discount','#16a34a','#f0fdf4', orderDiscount?(orderDiscount.type==='pct'?`${orderDiscount.value}%`:`$${orderDiscount.value}`):null],
                 ['tip', '🙏','Tip',     '#ca8a04','#fffbeb', tip>0?`$${tip.toFixed(2)}`:null],
-                ['fee', '💼','Surcharge','#9333ea','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
+                ['fee', '💼','Surcharge','#006AFF','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
               ].map(([id,icon,label,col,bg,applied])=>(
                 <button key={id}
                   onClick={()=>{ setAdjTab(id); setShowAdjPad(true) }}
@@ -391,7 +391,7 @@ export default function PaymentPanel() {
               {/* PAX overlay */}
               {paxState!=='idle' && (
                 <div className="rounded-xl p-4 text-center flex-shrink-0"
-                  style={{background:'#f0f4ff', border:'2px solid #a5b4fc'}}>
+                  style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
                   <div className="text-[32px]">{PAX_STATE[paxState]?.icon}</div>
                   <div className="text-[14px] font-bold text-slate-800">{PAX_STATE[paxState]?.label}</div>
                   {paxState==='waiting'&&(
@@ -407,9 +407,9 @@ export default function PaymentPanel() {
                 <>
                   <button onClick={()=>setShowPayPad(true)}
                     className="flex-shrink-0 w-full rounded-2xl px-4 py-4 text-left cursor-pointer border-2 transition-all"
-                    style={{borderColor:'#a5b4fc', background:'#eef2ff'}}>
+                    style={{borderColor:'#80B2FF', background:'#E6F0FF'}}>
                     <div className="text-[10px] text-indigo-400 mb-0.5">Payment {payments.length+1} Amount</div>
-                    <div className="text-[38px] font-black font-mono leading-none" style={{color:'#6366f1'}}>
+                    <div className="text-[38px] font-black font-mono leading-none" style={{color:'#006AFF'}}>
                       ${payInput||remaining.toFixed(2)}
                     </div>
                   </button>
@@ -419,7 +419,7 @@ export default function PaymentPanel() {
                       .map(q=>(
                         <button key={q} onClick={()=>setPayInput(q.toFixed(2))}
                           className="flex-1 rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2 transition-all"
-                          style={parseFloat(payInput)===q?{background:'#e0e7ff',borderColor:'#6366f1',color:'#6366f1'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                          style={parseFloat(payInput)===q?{background:'#E6F0FF',borderColor:'#006AFF',color:'#006AFF'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                           {q===remaining?'Exact':'$'+q}
                         </button>
                       ))
@@ -427,7 +427,7 @@ export default function PaymentPanel() {
                   </div>
                   <button onClick={handleAddPayment}
                     className="flex-shrink-0 w-full rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none"
-                    style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#6366f1'},#1e293b)`, boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+                    style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1e293b)`, boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
                     {METHODS.find(m=>m.id===selMethod)?.icon} Add {METHODS.find(m=>m.id===selMethod)?.label} — ${payInput||remaining.toFixed(2)}
                   </button>
                 </>
@@ -452,7 +452,7 @@ export default function PaymentPanel() {
           <div className="px-3 py-2.5 flex-shrink-0"
             style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
             <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payments</div>
-            <div className="text-[12px] font-black mt-0.5" style={{color:paid>=liveTotal?'#16a34a':'#6366f1'}}>
+            <div className="text-[12px] font-black mt-0.5" style={{color:paid>=liveTotal?'#16a34a':'#006AFF'}}>
               {paid>=liveTotal?'✓ Paid':payments.length===0?'None yet':`$${paid.toFixed(2)} paid`}
             </div>
           </div>
@@ -508,7 +508,7 @@ export default function PaymentPanel() {
           <button onClick={()=>handleComplete()}
             disabled={processing||(paid<liveTotal&&!payments.some(p=>p.method==='on_account'))}
             className="flex-1 rounded-2xl py-4 text-[18px] font-black text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'linear-gradient(135deg,#16a34a,#15803d)', boxShadow:'0 4px 20px rgba(22,163,74,0.35)'}}>
+            style={{background:'#00B23B', boxShadow:'0 4px 20px rgba(22,163,74,0.35)'}}>
             {processing?'⏳ Processing...': remaining<=0 ? `✓ Complete Order — $${liveTotal.toFixed(2)}` : `Complete ($${paid.toFixed(2)} of $${liveTotal.toFixed(2)})`}
           </button>
         </div>
@@ -519,9 +519,9 @@ export default function PaymentPanel() {
       {showPayPad && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center"
           style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}>
-          <div className="rounded-3xl overflow-hidden shadow-2xl" style={{width:'360px',background:'#fff'}}>
+          <div className="rounded-xl overflow-hidden shadow-md" style={{width:'360px',background:'#fff'}}>
             <div className="px-5 py-4 flex items-center justify-between"
-              style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#6366f1'},#1e293b)`}}>
+              style={{background:`linear-gradient(135deg,${METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'},#1e293b)`}}>
               <div>
                 <div className="text-[12px] text-white/70">Payment {payments.length+1}</div>
                 <div className="text-[18px] font-bold text-white">{METHODS.find(m=>m.id===selMethod)?.icon} {METHODS.find(m=>m.id===selMethod)?.label}</div>
@@ -531,9 +531,9 @@ export default function PaymentPanel() {
             <div className="px-5 py-3">
               <div className="text-[11px] text-slate-400 mb-1">Remaining: ${remaining.toFixed(2)}</div>
               <div className="rounded-2xl py-4 flex items-center justify-center gap-1"
-                style={{background:'#f0f4ff',border:'2px solid #a5b4fc'}}>
+                style={{background:'#E6F0FF',border:'2px solid #80B2FF'}}>
                 <span className="text-[26px] font-black text-indigo-400">$</span>
-                <span className="text-[44px] font-black font-mono leading-none" style={{color:'#6366f1'}}>{payInput||'0'}</span>
+                <span className="text-[44px] font-black font-mono leading-none" style={{color:'#006AFF'}}>{payInput||'0'}</span>
               </div>
             </div>
             <div className="px-4 pb-4 grid grid-cols-3 gap-2">
@@ -562,7 +562,7 @@ export default function PaymentPanel() {
               <button onClick={()=>{if(parseFloat(payInput)>0){setShowPayPad(false);setTimeout(()=>handleAddPayment(),50)}}}
                 disabled={!payInput||parseFloat(payInput)<=0}
                 className="col-span-3 rounded-2xl py-4 text-[15px] font-black text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+                style={{background:'#00B23B'}}>
                 ✓ Pay ${payInput?parseFloat(payInput).toFixed(2):'0.00'}
               </button>
             </div>
@@ -641,11 +641,11 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
     <>
       <div className="fixed inset-0 z-[400] flex items-center justify-center"
         style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
-        <div className="rounded-3xl overflow-hidden shadow-2xl" style={{width:'520px', background:'#fff', maxHeight:'94vh', overflowY:'auto'}}>
+        <div className="rounded-xl overflow-hidden shadow-md" style={{width:'520px', background:'#fff', maxHeight:'94vh', overflowY:'auto'}}>
 
           {/* Header */}
           <div className="px-6 py-5 text-center"
-            style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+            style={{background:'#00B23B'}}>
             <div className="text-[42px] mb-1">✅</div>
             <div className="text-[18px] font-black text-white">Order Complete</div>
             <div className="text-[12px] text-green-100 mt-1 font-mono">#{orderNumber}</div>
@@ -721,7 +721,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
                   </button>
                   <button onClick={handleSms} disabled={busy || !phone}
                     className="rounded-xl px-5 text-[14px] font-black cursor-pointer border-none text-white disabled:opacity-40 active:scale-95"
-                    style={{background: done.smsed ? '#16a34a' : 'linear-gradient(135deg,#a855f7,#7e22ce)', minWidth:'90px'}}>
+                    style={{background: done.smsed ? '#16a34a' : '#000000', minWidth:'90px'}}>
                     {done.smsed ? '✓ Sent' : 'Send'}
                   </button>
                 </div>
@@ -733,7 +733,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
           <div className="px-6 py-4" style={{background:'#f8fafc', borderTop:'1px solid #e2e8f0'}}>
             <button onClick={onDone}
               className="w-full rounded-xl py-4 text-[15px] font-black cursor-pointer border-none text-white active:scale-[0.98]"
-              style={{background:'linear-gradient(135deg,#16a34a,#15803d)', boxShadow:'0 4px 0 #14532d'}}>
+              style={{background:'#00B23B', boxShadow:'0 4px 0 #14532d'}}>
               ✓ Done — Next Order
             </button>
           </div>

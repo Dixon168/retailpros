@@ -248,7 +248,7 @@ export default function ReportsPage() {
                     .sort(([,a],[,b])=>b-a)
                     .map(([method, amount]) => {
                       const pct = totalRevenue > 0 ? amount/totalRevenue*100 : 0
-                      const colors = { cash:'#10b981', card:'#3b82f6', check:'#06b6d4', bank_transfer:'#8b5cf6', member_card:'#f59e0b', on_account:'#ec4899' }
+                      const colors = { cash:'#10b981', card:'#3b82f6', check:'#06b6d4', bank_transfer:'#006AFF', member_card:'#f59e0b', on_account:'#ec4899' }
                       return (
                         <div key={method} className="flex items-center gap-3">
                           <div className="text-[12px] w-[110px] capitalize">{method.replace('_',' ')}</div>
@@ -394,7 +394,7 @@ export default function ReportsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 mb-5">
                 {(empData||[]).map((emp,i) => {
-                  const COLORS = ['linear-gradient(135deg,#3b82f6,#8b5cf6)','linear-gradient(135deg,#10b981,#14b8a6)','linear-gradient(135deg,#f59e0b,#f97316)','linear-gradient(135deg,#ec4899,#8b5cf6)']
+                  const COLORS = ['linear-gradient(135deg,#3b82f6,#006AFF)','linear-gradient(135deg,#10b981,#14b8a6)','linear-gradient(135deg,#f59e0b,#f97316)','linear-gradient(135deg,#ec4899,#006AFF)']
                   return (
                     <div key={i} className="bg-[#0d1117] border border-[#1e2d42] rounded-[12px] p-4">
                       <div className="flex items-center gap-3 mb-3">

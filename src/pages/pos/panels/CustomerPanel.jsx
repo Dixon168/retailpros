@@ -87,12 +87,12 @@ export default function CustomerPanel() {
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}
       onClick={close}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl w-[480px] max-h-[90vh] flex flex-col"
+      <div className="rounded-2xl overflow-hidden shadow-md w-[480px] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <span className="text-[22px]">👥</span>
           <div className="flex-1">
             <div className="text-[16px] font-bold text-white">
@@ -112,9 +112,9 @@ export default function CustomerPanel() {
             <button key={m} onClick={()=>setMode(m)}
               className="flex-1 py-2.5 text-[12px] font-semibold cursor-pointer border-none border-b-2 transition-all"
               style={{
-                background: mode===m ? '#f0f4ff' : '#fff',
-                borderBottomColor: mode===m ? '#6366f1' : 'transparent',
-                color: mode===m ? '#6366f1' : '#64748b',
+                background: mode===m ? '#E6F0FF' : '#fff',
+                borderBottomColor: mode===m ? '#006AFF' : 'transparent',
+                color: mode===m ? '#006AFF' : '#64748b',
               }}>
               {l}
             </button>
@@ -157,7 +157,7 @@ export default function CustomerPanel() {
                   <div className="text-[13px]">No customer found</div>
                   <button onClick={()=>setMode('add')}
                     className="mt-3 px-4 py-2 rounded-xl text-[12px] font-bold cursor-pointer border-none"
-                    style={{background:'#e0e7ff', color:'#6366f1'}}>
+                    style={{background:'#E6F0FF', color:'#006AFF'}}>
                     + Add "{search}" as new customer
                   </button>
                 </div>
@@ -169,15 +169,15 @@ export default function CustomerPanel() {
                   vip:       {bg:'#fef9c3', color:'#ca8a04'},
                   silver:    {bg:'#f1f5f9', color:'#64748b'},
                   gold:      {bg:'#fffbeb', color:'#d97706'},
-                  platinum:  {bg:'#f0f4ff', color:'#6366f1'},
+                  platinum:  {bg:'#E6F0FF', color:'#006AFF'},
                 }
-                const ts = TIER_STYLE[c.tier] || TIER_STYLE[c.type] || {bg:'#f0f4ff',color:'#6366f1'}
+                const ts = TIER_STYLE[c.tier] || TIER_STYLE[c.type] || {bg:'#E6F0FF',color:'#006AFF'}
                 return (
                   <button key={c.id} onClick={()=>handleSelect(c)}
                     className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer border-none text-left transition-all hover:bg-blue-50"
                     style={{borderBottom:'1px solid #f8fafc', background:'#fff'}}>
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0"
-                      style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                      style={{background:'#000000'}}>
                       {initials}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -198,7 +198,7 @@ export default function CustomerPanel() {
                       <div className="flex gap-2 mt-1">
                         {c.loyalty_points > 0 && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                            style={{background:'#fdf4ff', color:'#9333ea'}}>
+                            style={{background:'#fdf4ff', color:'#006AFF'}}>
                             💎 {c.loyalty_points} pts
                           </span>
                         )}
@@ -310,7 +310,7 @@ export default function CustomerPanel() {
               {/* Save button */}
               <button onClick={handleAdd} disabled={saving || !form.name.trim()}
                 className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                style={{background:'#000000'}}>
                 {saving ? '⏳ Saving...' : '✓ Add Customer & Select'}
               </button>
             </div>

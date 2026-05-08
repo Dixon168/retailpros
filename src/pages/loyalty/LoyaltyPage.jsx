@@ -78,7 +78,7 @@ export default function LoyaltyPage() {
         <div>
           <div className="grid grid-cols-5 gap-3 mb-6">
             {[
-              ['Active Cards', cards.filter(c=>c.status==='active').length, '#8b5cf6'],
+              ['Active Cards', cards.filter(c=>c.status==='active').length, '#006AFF'],
               ['Card Balances', `$${totalBalance.toFixed(0)}`, '#10b981'],
               ['Member Cards', memberCards.length, undefined],
               ['Gift Cards', giftCards.length, '#10b981'],
@@ -110,7 +110,7 @@ export default function LoyaltyPage() {
       {tab === 'cards' && (
         <div>
           <div className="flex gap-4 mb-4">
-            {[['Member Cards', memberCards.length, '#8b5cf6'],['Gift Cards', giftCards.length, '#10b981']].map(([l,v,c]) => (
+            {[['Member Cards', memberCards.length, '#006AFF'],['Gift Cards', giftCards.length, '#10b981']].map(([l,v,c]) => (
               <div key={l} className="flex-1 bg-[#0d1117] border border-[#1e2d42] rounded-[10px] p-3.5 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{background:`${c}18`}}>
                   {l.includes('Member')?'👤':'🎁'}
@@ -131,8 +131,8 @@ export default function LoyaltyPage() {
             {cards.map(card => (
               <div key={card.id} className="grid border-b border-[#1e2d42] last:border-0 hover:bg-[#111827] transition-colors" style={{gridTemplateColumns:'1.5fr 1fr 1fr 1fr 80px'}}>
                 <div className="px-3.5 py-3 flex items-center gap-2">
-                  <span className="font-mono text-[12px] font-bold" style={{color: card.type==='member'?'#8b5cf6':'#10b981'}}>{card.card_number}</span>
-                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded font-bold" style={{background: card.type==='member'?'rgba(139,92,246,0.12)':'rgba(16,185,129,0.12)', color: card.type==='member'?'#8b5cf6':'#10b981'}}>
+                  <span className="font-mono text-[12px] font-bold" style={{color: card.type==='member'?'#006AFF':'#10b981'}}>{card.card_number}</span>
+                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded font-bold" style={{background: card.type==='member'?'rgba(139,92,246,0.12)':'rgba(16,185,129,0.12)', color: card.type==='member'?'#006AFF':'#10b981'}}>
                     {card.type.toUpperCase()}
                   </span>
                 </div>

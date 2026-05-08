@@ -12,8 +12,8 @@ export function LangSwitcher({ dark = false }) {
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer border transition-all"
         style={{
-          background: dark ? 'rgba(255,255,255,0.08)' : open ? '#e0e7ff' : '#f8fafc',
-          borderColor: dark ? 'rgba(255,255,255,0.15)' : open ? '#a5b4fc' : '#e2e8f0',
+          background: dark ? 'rgba(255,255,255,0.08)' : open ? '#E6F0FF' : '#f8fafc',
+          borderColor: dark ? 'rgba(255,255,255,0.15)' : open ? '#80B2FF' : '#e2e8f0',
           color: dark ? '#e2e8f0' : '#475569',
         }}>
         <span className="text-[14px]">{current.flag}</span>
@@ -31,12 +31,12 @@ export function LangSwitcher({ dark = false }) {
                 onClick={() => { setLang(l.code); setOpen(false) }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 cursor-pointer border-none text-left transition-all"
                 style={{
-                  background: lang === l.code ? '#f0f4ff' : '#fff',
+                  background: lang === l.code ? '#E6F0FF' : '#fff',
                   borderBottom: '1px solid #f1f5f9',
                 }}>
                 <span className="text-[16px]">{l.flag}</span>
                 <div>
-                  <div className="text-[12px] font-semibold" style={{color: lang===l.code ? '#6366f1' : '#1e293b'}}>
+                  <div className="text-[12px] font-semibold" style={{color: lang===l.code ? '#006AFF' : '#1e293b'}}>
                     {l.name}
                   </div>
                 </div>

@@ -17,7 +17,7 @@ export function OrderStatusBadge({ order }) {
     completed: { bg:'#dcfce7', color:'#16a34a', label:'Completed' },
     voided:    { bg:'#fee2e2', color:'#dc2626', label:'Voided' },
     held:      { bg:'#fef9c3', color:'#ca8a04', label:'On Hold' },
-    refunded:  { bg:'#fdf4ff', color:'#9333ea', label:'Refunded' },
+    refunded:  { bg:'#fdf4ff', color:'#006AFF', label:'Refunded' },
     partial_refund: { bg:'#eff6ff', color:'#2563eb', label:'Part. Refunded' },
   }
 
@@ -246,12 +246,12 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     <div className="fixed inset-0 z-50 flex items-stretch"
       style={{background:'rgba(15,23,42,0.7)', backdropFilter:'blur(6px)'}}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="ml-auto flex flex-col shadow-2xl overflow-hidden"
+      <div className="ml-auto flex flex-col shadow-md overflow-hidden"
         style={{width:'520px', background:'#fff'}}>
 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
-          style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)', color:'#fff'}}>
+          style={{background:'#000000', color:'#fff'}}>
           <span className="text-[22px]">↩</span>
           <div>
             <div className="text-[16px] font-bold">Return / Refund</div>
@@ -290,7 +290,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
               <div className="flex gap-3 w-full">
                 <button onClick={onClose}
                   className="flex-1 rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                  style={{background:'#000000'}}>
                   Continue to Payment
                 </button>
               </div>
@@ -309,10 +309,10 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                 <button onClick={() => setMode('by_item')}
                   className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
                   style={{border:'2px solid #e2e8f0', background:'#fff'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#6366f1';e.currentTarget.style.background='#f0f4ff'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#E6F0FF'}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
-                    style={{background:'#e0e7ff'}}>
+                    style={{background:'#E6F0FF'}}>
                     📦
                   </div>
                   <div>
@@ -328,7 +328,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                 <button onClick={() => setMode('by_invoice')}
                   className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
                   style={{border:'2px solid #e2e8f0', background:'#fff'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#8b5cf6';e.currentTarget.style.background='#faf5ff'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#faf5ff'}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
                     style={{background:'#ede9fe'}}>
@@ -381,7 +381,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                       <div key={idx} className="flex items-center gap-3 px-4 py-3 border-b"
                         style={{borderColor:'#f1f5f9'}}>
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
-                          style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)'}}>
+                          style={{background:'#000000'}}>
                           {item.product.name.charAt(0)}
                         </div>
                         <div className="flex-1">
@@ -419,7 +419,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
               {returnItems.length > 0 && (
                 <button onClick={confirmByItem}
                   className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)'}}>
+                  style={{background:'#000000'}}>
                   ↩ Add Returns to Cart
                 </button>
               )}
@@ -484,7 +484,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
               {selectedOrder && (
                 <>
                   {/* Order header */}
-                  <div className="rounded-2xl p-4" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+                  <div className="rounded-2xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[14px] font-bold text-indigo-700">{selectedOrder.order_number}</span>
@@ -577,7 +577,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                   <button onClick={confirmByInvoice}
                     disabled={processing || invoiceReturnAmt === 0}
                     className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                    style={{background:'linear-gradient(135deg,#7c3aed,#6366f1)'}}>
+                    style={{background:'#000000'}}>
                     {processing ? '⏳ Processing...' : `↩ Confirm Return — $${invoiceReturnAmt.toFixed(2)}`}
                   </button>
                 </>

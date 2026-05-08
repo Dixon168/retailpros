@@ -602,10 +602,10 @@ function UsersSection({ tenantId }) {
     cashier: { bg:'rgba(16,185,129,0.1)', color:'#10b981' },
   }
   const AVATAR_COLORS = [
-    'linear-gradient(135deg,#3b82f6,#8b5cf6)',
+    'linear-gradient(135deg,#3b82f6,#006AFF)',
     'linear-gradient(135deg,#10b981,#14b8a6)',
     'linear-gradient(135deg,#f59e0b,#f97316)',
-    'linear-gradient(135deg,#ec4899,#8b5cf6)',
+    'linear-gradient(135deg,#ec4899,#006AFF)',
     'linear-gradient(135deg,#06b6d4,#3b82f6)',
   ]
 
@@ -1008,7 +1008,7 @@ function MemberLevelsSection({ tenantId }) {
         <button onClick={() => { setAdding(true); setNewName(''); setNewDisc('0') }}
           disabled={adding}
           className="rounded-xl px-4 py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           + Add Level
         </button>
       </div>
@@ -1016,7 +1016,7 @@ function MemberLevelsSection({ tenantId }) {
       {/* Add form */}
       {adding && (
         <div className="rounded-2xl p-4 flex flex-col gap-3"
-          style={{background:'#f0f4ff', border:'2px solid #a5b4fc'}}>
+          style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
           <div className="text-[12px] font-bold text-indigo-700">New Member Level</div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1025,17 +1025,17 @@ function MemberLevelsSection({ tenantId }) {
                 placeholder="e.g. Diamond, VIP Gold..."
                 autoFocus
                 className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
-                style={{border:'1.5px solid #a5b4fc', background:'#fff'}}
+                style={{border:'1.5px solid #80B2FF', background:'#fff'}}
                 onKeyDown={e => e.key === 'Enter' && addLevel()}/>
             </div>
             <div>
               <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">VIP Discount %</div>
               <div className="flex items-center gap-2 rounded-xl px-3"
-                style={{border:'1.5px solid #a5b4fc', background:'#fff', height:'42px'}}>
+                style={{border:'1.5px solid #80B2FF', background:'#fff', height:'42px'}}>
                 <input type="number" min="0" max="100" step="0.5"
                   value={newDisc} onChange={e => setNewDisc(e.target.value)}
                   className="flex-1 border-none outline-none text-[15px] font-bold bg-transparent"
-                  style={{color:'#6366f1'}}/>
+                  style={{color:'#006AFF'}}/>
                 <span className="text-[13px] text-slate-400 font-semibold">%</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-1">0% = no discount</div>
@@ -1049,7 +1049,7 @@ function MemberLevelsSection({ tenantId }) {
             </button>
             <button onClick={addLevel} disabled={saving || !newName.trim()}
               className="px-5 py-2 rounded-xl text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-              style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+              style={{background:'#000000'}}>
               {saving ? '⏳' : '✓ Save Level'}
             </button>
           </div>
@@ -1087,7 +1087,7 @@ function MemberLevelsSection({ tenantId }) {
                   <div>
                     {level.discount_pct > 0 ? (
                       <span className="text-[13px] font-bold px-2.5 py-1 rounded-lg"
-                        style={{background:'#eff6ff', color:'#6366f1'}}>
+                        style={{background:'#eff6ff', color:'#006AFF'}}>
                         {level.discount_pct}% off
                       </span>
                     ) : (
@@ -1097,7 +1097,7 @@ function MemberLevelsSection({ tenantId }) {
                   <div className="flex gap-1.5">
                     <button onClick={() => startEdit(level)}
                       className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border transition-all"
-                      style={{background:'#f0f4ff', borderColor:'#c7d2fe', color:'#6366f1'}}>
+                      style={{background:'#E6F0FF', borderColor:'#B3D1FF', color:'#006AFF'}}>
                       ✏️ Edit
                     </button>
                     {!level.is_default && (
@@ -1132,7 +1132,7 @@ function MemberLevelsSection({ tenantId }) {
                           value={editDisc} onChange={e => setEditDisc(e.target.value)}
                           disabled={level.is_default}
                           className="flex-1 border-none outline-none text-[15px] font-bold bg-transparent"
-                          style={{color:'#6366f1'}}/>
+                          style={{color:'#006AFF'}}/>
                         <span className="text-[13px] text-slate-400">%</span>
                       </div>
                     </div>
@@ -1470,7 +1470,7 @@ function PrintingSection() {
         {/* ═══ RIGHT: Live Preview ═══ */}
         <div>
           <CardTitle>👁️ Live Preview</CardTitle>
-          <div className="bg-white rounded-[12px] shadow-2xl overflow-hidden sticky top-0">
+          <div className="bg-white rounded-[12px] shadow-md overflow-hidden sticky top-0">
             <div className="px-4 py-2 text-[10px] font-mono text-gray-400 uppercase border-b border-gray-200 flex justify-between">
               <span>Receipt Preview</span>
               <span>{s.fontSize} • {s.copies}× copies</span>

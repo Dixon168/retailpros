@@ -164,7 +164,7 @@ export function AIStockPanel({ product, onClose }) {
 
   return (
     <tr>
-      <td colSpan={11} className="p-0" style={{borderBottom:'2px solid #6366f1'}}>
+      <td colSpan={11} className="p-0" style={{borderBottom:'2px solid #006AFF'}}>
         <div style={{background:'#0f172a'}}>
 
           {/* Header */}
@@ -203,7 +203,7 @@ export function AIStockPanel({ product, onClose }) {
                   {[
                     ['Current Stock',   `${qty} ${product.unit||'ea'}`,                        '#f8fafc', '#1e293b'],
                     ['Days Until Empty', prediction.days_until_stockout != null ? `${Math.round(Math.max(0,prediction.days_until_stockout))} days` : '—', '#fef9c3', '#ca8a04'],
-                    ['Daily Avg Sales',  `${(prediction.daily_avg||0).toFixed(1)} ${product.unit||'ea'}/day`, '#f0f4ff', '#6366f1'],
+                    ['Daily Avg Sales',  `${(prediction.daily_avg||0).toFixed(1)} ${product.unit||'ea'}/day`, '#E6F0FF', '#006AFF'],
                     ['Stock Value',      `$${(qty*avgCost).toFixed(2)}`,                        '#f0fdf4', '#16a34a'],
                   ].map(([label,value,bg,color]) => (
                     <div key={label} className="rounded-xl p-3" style={{background:bg, border:'1px solid #e2e8f0'}}>
@@ -239,7 +239,7 @@ export function AIStockPanel({ product, onClose }) {
                         style={{
                           height: `${Math.max(4, (d.qty/maxBar)*80)}px`,
                           background: d.qty > 0
-                            ? 'linear-gradient(180deg,#6366f1,#8b5cf6)'
+                            ? 'linear-gradient(180deg,#006AFF,#006AFF)'
                             : '#334155',
                           minHeight: '4px',
                         }}/>

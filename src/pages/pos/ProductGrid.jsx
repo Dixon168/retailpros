@@ -6,7 +6,7 @@ import { PhotoViewer } from '@/components/ui/ProductPhoto'
 const TYPE_BADGE = {
   weight:     { bg: '#dcfce7', color: '#16a34a', label: 'LB' },
   serialized: { bg: '#fef9c3', color: '#ca8a04', label: 'SN' },
-  service:    { bg: '#ede9fe', color: '#7c3aed', label: 'SVC' },
+  service:    { bg: '#ede9fe', color: '#006AFF', label: 'SVC' },
 }
 
 export default function ProductGrid({ products }) {
@@ -96,7 +96,7 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
   return (
     <div className="rounded-xl overflow-hidden transition-all duration-150 cursor-pointer group"
       style={{background:'#fff', border:'1.5px solid #e2e8f0', boxShadow:'0 1px 3px rgba(0,0,0,0.06)'}}
-      onMouseEnter={e => e.currentTarget.style.borderColor='#6366f1'}
+      onMouseEnter={e => e.currentTarget.style.borderColor='#006AFF'}
       onMouseLeave={e => e.currentTarget.style.borderColor='#e2e8f0'}>
 
       {/* Photo */}

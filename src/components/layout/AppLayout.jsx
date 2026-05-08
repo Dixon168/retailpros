@@ -60,7 +60,7 @@ export default function AppLayout() {
   const [collapsed,      setCollapsed]      = useState(false)
 
   return (
-    <div className="flex h-screen" style={{background:'#f0f2f5'}}>
+    <div className="flex h-screen" style={{background:'#FFFFFF'}}>
 
       {/* ── Left Sidebar ── */}
       <div className="flex flex-col flex-shrink-0 transition-all"
@@ -76,7 +76,7 @@ export default function AppLayout() {
             <>
               <div className="text-[15px] font-black text-white">RetailPOS</div>
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded ml-1 flex-shrink-0"
-                style={{background:'rgba(99,102,241,0.35)', color:'#a5b4fc'}}>
+                style={{background:'rgba(99,102,241,0.35)', color:'#80B2FF'}}>
                 BACK OFFICE
               </span>
             </>
@@ -135,7 +135,7 @@ export default function AppLayout() {
           <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${collapsed?'justify-center':''}`}
             style={{background:'rgba(255,255,255,0.06)'}}>
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-              style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+              style={{background:'#000000'}}>
               {user?.name?.charAt(0)||'U'}
             </div>
             {!collapsed && (

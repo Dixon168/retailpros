@@ -11,7 +11,7 @@ const TIER_STYLE = {
   vip:       { bg:'#fef9c3', color:'#ca8a04', label:'VIP' },
   silver:    { bg:'#f1f5f9', color:'#64748b', label:'Silver' },
   gold:      { bg:'#fffbeb', color:'#d97706', label:'Gold' },
-  platinum:  { bg:'#e0e7ff', color:'#6366f1', label:'Platinum' },
+  platinum:  { bg:'#E6F0FF', color:'#006AFF', label:'Platinum' },
   wholesale: { bg:'#eff6ff', color:'#2563eb', label:'Wholesale' },
   staff:     { bg:'#f0fdf4', color:'#16a34a', label:'Staff' },
 }
@@ -51,7 +51,7 @@ export default function CustomersPage() {
   const totalPoints  = customers.reduce((s,c)=>s+(c.loyalty_points||0),0)
 
   return (
-    <div className="h-full flex" style={{background:'#f0f2f5'}}>
+    <div className="h-full flex" style={{background:'#FFFFFF'}}>
 
       {/* ── Left: List ── */}
       <div className="flex flex-col flex-shrink-0" style={{width:'380px', borderRight:'1px solid #e2e8f0', background:'#fff'}}>
@@ -68,7 +68,7 @@ export default function CustomersPage() {
             </div>
             <button onClick={()=>setShowAdd(true)}
               className="rounded-xl px-3 py-2 text-[12px] font-bold text-white cursor-pointer border-none"
-              style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+              style={{background:'#000000'}}>
               + New
             </button>
           </div>
@@ -77,7 +77,7 @@ export default function CustomersPage() {
             {[['all','All'],['vip','VIP'],['balance','Has Balance'],['owes','Owes'],['expiring','Expiring']].map(([id,label])=>(
               <button key={id} onClick={()=>setFilter(id)}
                 className="px-2.5 py-1 rounded-lg text-[10px] font-semibold cursor-pointer border transition-all"
-                style={filter===id ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'} : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                style={filter===id ? {background:'#006AFF',borderColor:'#006AFF',color:'#fff'} : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                 {label}
               </button>
             ))}
@@ -87,7 +87,7 @@ export default function CustomersPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-px flex-shrink-0" style={{background:'#f1f5f9'}}>
           {[
-            ['Members', customers.length, '#6366f1'],
+            ['Members', customers.length, '#006AFF'],
             ['Total Balance', `$${totalBalance.toFixed(0)}`, '#16a34a'],
             ['Total Points', totalPoints.toLocaleString(), '#f59e0b'],
           ].map(([l,v,c])=>(
@@ -117,11 +117,11 @@ export default function CustomersPage() {
                 className="flex items-center gap-3 px-3 py-3 cursor-pointer border-b transition-all"
                 style={{
                   borderColor:'#f8fafc',
-                  background: isSelected ? '#f0f4ff' : '#fff',
-                  borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
+                  background: isSelected ? '#E6F0FF' : '#fff',
+                  borderLeft: isSelected ? '3px solid #006AFF' : '3px solid transparent',
                 }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
-                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                  style={{background:'#000000'}}>
                   {initials}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -142,7 +142,7 @@ export default function CustomersPage() {
                       </span>
                     )}
                     {(c.loyalty_points||0) > 0 && (
-                      <span className="text-[10px] font-bold" style={{color:'#9333ea'}}>
+                      <span className="text-[10px] font-bold" style={{color:'#006AFF'}}>
                         💎 {c.loyalty_points}pts
                       </span>
                     )}
@@ -261,7 +261,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-[24px] font-black text-white flex-shrink-0"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+            style={{background:'#000000'}}>
             {c.name.charAt(0)}
           </div>
           {/* Info */}
@@ -286,7 +286,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
             </button>
             <button onClick={onEdit}
               className="rounded-xl px-3 py-2 text-[12px] font-bold cursor-pointer border-none"
-              style={{background:'#e0e7ff', color:'#6366f1'}}>
+              style={{background:'#E6F0FF', color:'#006AFF'}}>
               ✏️ Edit
             </button>
           </div>
@@ -296,8 +296,8 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
         <div className="grid grid-cols-4 gap-3 mt-4">
           {[
             ['💳 Card Balance', `$${(c.card_balance||0).toFixed(2)}`, c.card_balance>0?'#16a34a':'#94a3b8', '#f0fdf4','#86efac'],
-            ['💎 Points', `${(c.loyalty_points||0).toLocaleString()}`, c.loyalty_points>0?'#9333ea':'#94a3b8', '#fdf4ff','#e9d5ff'],
-            ['🏷️ Member Since', c.member_since ? new Date(c.member_since).toLocaleDateString() : '—', '#6366f1','#f0f4ff','#c7d2fe'],
+            ['💎 Points', `${(c.loyalty_points||0).toLocaleString()}`, c.loyalty_points>0?'#006AFF':'#94a3b8', '#fdf4ff','#e9d5ff'],
+            ['🏷️ Member Since', c.member_since ? new Date(c.member_since).toLocaleDateString() : '—', '#006AFF','#E6F0FF','#B3D1FF'],
             ['📅 Expires', c.card_expire_date ? new Date(c.card_expire_date).toLocaleDateString() : '—',
               isExpired?'#dc2626':isExpiring?'#f59e0b':'#64748b',
               isExpired?'#fef2f2':isExpiring?'#fffbeb':'#f8fafc',
@@ -319,8 +319,8 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
             className="px-4 py-2.5 text-[12px] font-semibold cursor-pointer border-none border-b-2 transition-all"
             style={{
               background:'transparent',
-              borderBottomColor: activeTab===tab ? '#6366f1' : 'transparent',
-              color: activeTab===tab ? '#6366f1' : '#64748b',
+              borderBottomColor: activeTab===tab ? '#006AFF' : 'transparent',
+              color: activeTab===tab ? '#006AFF' : '#64748b',
             }}>
             {tab}
           </button>
@@ -376,7 +376,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
                 ['Total Spent', `$${orders.reduce((s,o)=>s+(o.grand_total||0),0).toFixed(2)}`, '#16a34a'],
-                ['Transactions', orders.length, '#6366f1'],
+                ['Transactions', orders.length, '#006AFF'],
                 ['Avg Order', orders.length>0?`$${(orders.reduce((s,o)=>s+(o.grand_total||0),0)/orders.length).toFixed(2)}`:'—', '#f59e0b'],
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
@@ -395,11 +395,11 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                 </tr></thead>
                 <tbody>{orders.map((o,i)=>{
                   const status = o.refund_status==='full'?'Refunded':o.refund_status==='partial'?'Part.Refund':o.status==='voided'?'Voided':'Completed'
-                  const sc = {Refunded:'#9333ea','Part.Refund':'#2563eb',Voided:'#64748b',Completed:'#16a34a'}
+                  const sc = {Refunded:'#006AFF','Part.Refund':'#2563eb',Voided:'#64748b',Completed:'#16a34a'}
                   return (
                     <tr key={i} className="hover:bg-blue-50/30" style={{borderBottom:'1px solid #f1f5f9'}}>
                       <td className="px-3 py-2.5 text-[12px] text-slate-600">{new Date(o.created_at).toLocaleDateString()} {new Date(o.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                      <td className="px-3 py-2.5 text-[12px] font-mono font-bold" style={{color:'#6366f1'}}>{o.order_number}</td>
+                      <td className="px-3 py-2.5 text-[12px] font-mono font-bold" style={{color:'#006AFF'}}>{o.order_number}</td>
                       <td className="px-3 py-2.5 text-[13px] font-bold font-mono">${(o.grand_total||0).toFixed(2)}</td>
                       <td className="px-3 py-2.5"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:`${sc[status]}20`,color:sc[status]}}>{status}</span></td>
                     </tr>
@@ -415,7 +415,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
           <div>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                ['Current Balance', `${(c.loyalty_points||0).toLocaleString()} pts`, '#9333ea'],
+                ['Current Balance', `${(c.loyalty_points||0).toLocaleString()} pts`, '#006AFF'],
                 ['Total Earned', `${pointsLog.filter(p=>p.type==='earn').reduce((s,p)=>s+(p.points||0),0).toLocaleString()} pts`, '#16a34a'],
                 ['Total Redeemed', `${pointsLog.filter(p=>p.type==='redeem').reduce((s,p)=>s+Math.abs(p.points||0),0).toLocaleString()} pts`, '#f59e0b'],
               ].map(([l,v,c2])=>(
@@ -438,7 +438,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                     <td className="px-3 py-2.5 text-[11px] text-slate-500">{new Date(p.created_at).toLocaleDateString()}</td>
                     <td className="px-3 py-2.5">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{background:p.type==='earn'?'#dcfce7':p.type==='redeem'?'#fdf4ff':'#f1f5f9', color:p.type==='earn'?'#16a34a':p.type==='redeem'?'#9333ea':'#64748b'}}>
+                        style={{background:p.type==='earn'?'#dcfce7':p.type==='redeem'?'#fdf4ff':'#f1f5f9', color:p.type==='earn'?'#16a34a':p.type==='redeem'?'#006AFF':'#64748b'}}>
                         {(p.type||'earn').toUpperCase()}
                       </span>
                     </td>
@@ -461,7 +461,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
                 ['Total Topped Up', `$${topups.reduce((s,t)=>s+(t.amount||0),0).toFixed(2)}`, '#16a34a'],
-                ['Times', topups.length, '#6366f1'],
+                ['Times', topups.length, '#006AFF'],
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
                   <div className="text-[10px] text-slate-400 mb-1">{l}</div>
@@ -524,11 +524,11 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl w-[400px]"
+      <div className="rounded-2xl overflow-hidden shadow-md w-[400px]"
         style={{background:'#fff'}}>
 
         <div className="px-5 py-4 flex items-center justify-between"
-          style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+          style={{background:'#00B23B'}}>
           <div>
             <div className="text-[16px] font-bold text-white">💳 Top Up Balance</div>
             <div className="text-[11px] text-green-200">{customer.name} · Current: ${(customer.card_balance||0).toFixed(2)}</div>
@@ -568,7 +568,7 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
                 <button key={m} onClick={()=>setMethod(m)}
                   className="flex-1 rounded-xl py-2 text-[11px] font-bold cursor-pointer border-2 transition-all"
                   style={method===m
-                    ? {background:'#e0e7ff', borderColor:'#6366f1', color:'#6366f1'}
+                    ? {background:'#E6F0FF', borderColor:'#006AFF', color:'#006AFF'}
                     : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                   {l}
                 </button>
@@ -608,7 +608,7 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
               style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>Cancel</button>
             <button onClick={handleSave} disabled={saving || !amount}
               className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-              style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+              style={{background:'#00B23B'}}>
               {saving ? '⏳' : `✓ Top Up $${amount ? parseFloat(amount).toFixed(2) : '0.00'}`}
             </button>
           </div>
@@ -681,11 +681,11 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl w-[560px] max-h-[90vh] flex flex-col"
+      <div className="rounded-2xl overflow-hidden shadow-md w-[560px] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}}>
 
         <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <div className="text-[16px] font-bold text-white">➕ New Customer</div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer text-white flex items-center justify-center">✕</button>
         </div>
@@ -699,7 +699,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name *</div>
                 <input value={form.name} onChange={e=>setF('name',e.target.value)} placeholder="Customer name" autoFocus
                   className="w-full rounded-xl px-3 py-2.5 text-[14px] font-semibold outline-none"
-                  style={{border:'1.5px solid #a5b4fc',background:'#fff'}}/>
+                  style={{border:'1.5px solid #80B2FF',background:'#fff'}}/>
               </div>
               {[['phone','Phone','tel'],['email','Email','email'],['birthday','Birthday','date']].map(([k,l,t])=>(
                 <div key={k}>
@@ -780,7 +780,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
           <button onClick={handleSave} disabled={saving||!form.name.trim()||!form.phone.trim()}
             className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+            style={{background:'#000000'}}>
             {saving ? '⏳ Saving...' : '✓ Add Customer'}
           </button>
         </div>
@@ -841,10 +841,10 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-2xl overflow-hidden shadow-2xl w-[560px] max-h-[90vh] flex flex-col"
+      <div className="rounded-2xl overflow-hidden shadow-md w-[560px] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}}>
         <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <div className="text-[16px] font-bold text-white">✏️ Edit — {customer.name}</div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer text-white flex items-center justify-center">✕</button>
         </div>
@@ -856,7 +856,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name *</div>
                 <input value={form.name} onChange={e=>setF('name',e.target.value)} autoFocus
                   className="w-full rounded-xl px-3 py-2.5 text-[14px] font-semibold outline-none"
-                  style={{border:'1.5px solid #a5b4fc',background:'#fff'}}/>
+                  style={{border:'1.5px solid #80B2FF',background:'#fff'}}/>
               </div>
               {[['phone','Phone','tel'],['email','Email','email'],['company','Company','text'],['birthday','Birthday','date'],['referrer','Referrer','text']].map(([k,l,t])=>(
                 <div key={k}>
@@ -922,7 +922,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+            style={{background:'#000000'}}>
             {saving ? '⏳ Saving...' : '✓ Save Changes'}
           </button>
         </div>

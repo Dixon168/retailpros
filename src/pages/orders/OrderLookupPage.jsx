@@ -13,7 +13,7 @@ const STATUS = {
   completed:     { label:'Completed',      bg:'#dcfce7', color:'#16a34a' },
   held:          { label:'On Hold',        bg:'#fef9c3', color:'#ca8a04' },
   voided:        { label:'Voided',         bg:'#f1f5f9', color:'#64748b' },
-  refunded:      { label:'Refunded',       bg:'#fdf4ff', color:'#9333ea' },
+  refunded:      { label:'Refunded',       bg:'#fdf4ff', color:'#006AFF' },
   partial_refund:{ label:'Part. Refunded', bg:'#eff6ff', color:'#2563eb' },
 }
 function getStatus(o) {
@@ -123,7 +123,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
         </button>
         <button onClick={() => onResume(order)}
           className="w-full rounded-xl py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           🔄 Retry Payment in POS
         </button>
       </>}
@@ -156,7 +156,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
         {/* Member card notice */}
         {hasMember && (
           <div className="rounded-xl p-2.5 text-[10px]"
-            style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#9333ea'}}>
+            style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#006AFF'}}>
             🏷️ VIP Card payment — balance will be restored on void/refund
           </div>
         )}
@@ -181,7 +181,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
         {/* REFUND */}
         <button onClick={onRefund}
           className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
-          style={{background:'#fdf4ff',borderColor:'#e9d5ff',color:'#9333ea'}}>
+          style={{background:'#fdf4ff',borderColor:'#e9d5ff',color:'#006AFF'}}>
           ↩ {batchClosed ? 'Process Card Refund' : 'Process Refund'}
         </button>
       </>}
@@ -210,7 +210,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
       {/* ── FULLY REFUNDED ── */}
       {st === 'refunded' && (
         <div className="rounded-xl p-3 text-center text-[11px]"
-          style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#9333ea'}}>
+          style={{background:'#fdf4ff',border:'1px solid #e9d5ff',color:'#006AFF'}}>
           🟣 Fully Refunded
           {order.refunded_at && (
             <div className="text-[10px] text-slate-400 mt-1">
@@ -245,7 +245,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
           📝 {order.staff_note ? 'Edit Note' : 'Add Note'}
         </button>
       ) : (
-        <div className="rounded-xl overflow-hidden" style={{border:'1.5px solid #a5b4fc'}}>
+        <div className="rounded-xl overflow-hidden" style={{border:'1.5px solid #80B2FF'}}>
           <textarea value={note} onChange={e=>setNote(e.target.value)} rows={2}
             placeholder="Add internal note..."
             className="w-full px-3 py-2 text-[12px] outline-none resize-none border-none"
@@ -256,7 +256,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
               style={{background:'#fff',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
             <button onClick={saveNote} disabled={saving}
               className="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white cursor-pointer border-none"
-              style={{background:'#6366f1'}}>
+              style={{background:'#006AFF'}}>
               {saving?'Saving...':'✓ Save Note'}
             </button>
           </div>
@@ -427,7 +427,7 @@ export default function OrderLookupPage() {
 
 
   return (
-    <div className="flex h-full" style={{background:'#f0f2f5'}}>
+    <div className="flex h-full" style={{background:'#FFFFFF'}}>
 
       {/* ── LEFT: Receipt Preview (small) ── */}
       <div className="flex flex-col flex-shrink-0"
@@ -435,7 +435,7 @@ export default function OrderLookupPage() {
 
         {/* Header */}
         <div className="px-4 py-3 flex-shrink-0 flex items-center justify-between"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <div className="text-[14px] font-bold text-white">🧾 Receipt Preview</div>
           {selected && (
             <button onClick={()=>setSelected(null)}
@@ -474,7 +474,7 @@ export default function OrderLookupPage() {
                   ].map(([l,v]) => (
                     <div key={l} className="flex justify-between text-[11px] mb-1.5">
                       <span className="text-slate-400">{l}</span>
-                      <span className="font-semibold text-slate-700 text-right ml-2 max-w-[150px] truncate" style={l==='Invoice #'?{color:'#6366f1'}:{}}>{v}</span>
+                      <span className="font-semibold text-slate-700 text-right ml-2 max-w-[150px] truncate" style={l==='Invoice #'?{color:'#006AFF'}:{}}>{v}</span>
                     </div>
                   ))}
                 </div>
@@ -538,7 +538,7 @@ export default function OrderLookupPage() {
                   <div className="flex justify-between items-center text-[15px] font-black pt-2 mt-1"
                     style={{borderTop:'2px solid #1e293b'}}>
                     <span className="text-slate-800">TOTAL</span>
-                    <span className="font-mono" style={{color:'#6366f1'}}>
+                    <span className="font-mono" style={{color:'#006AFF'}}>
                       ${parseFloat(selected.grand_total||selected.total||0).toFixed(2)}
                     </span>
                   </div>
@@ -609,7 +609,7 @@ export default function OrderLookupPage() {
             </div>
             <div className="text-right flex-shrink-0">
               <div className="text-[11px] text-slate-400">{filtered.length} orders</div>
-              <div className="text-[15px] font-black" style={{color:'#6366f1'}}>${totalAmt.toFixed(2)}</div>
+              <div className="text-[15px] font-black" style={{color:'#006AFF'}}>${totalAmt.toFixed(2)}</div>
             </div>
           </div>
 
@@ -617,7 +617,7 @@ export default function OrderLookupPage() {
             {[['today','Today'],['3days','3 Days'],['week','Week'],['month','Month'],['custom','📅 Custom']].map(([id,label])=>(
               <button key={id} onClick={()=>setDateMode(id)}
                 className="flex-1 py-2 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                style={dateMode===id?{background:'#6366f1',borderColor:'#6366f1',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                style={dateMode===id?{background:'#006AFF',borderColor:'#006AFF',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                 {label}
               </button>
             ))}
@@ -659,7 +659,7 @@ export default function OrderLookupPage() {
             {PAY_FILTERS.map(f => (
               <button key={f.id} onClick={()=>setPayF(f.id)}
                 className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
-                style={payF===f.id?{background:'#6366f1',borderColor:'#6366f1',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                style={payF===f.id?{background:'#006AFF',borderColor:'#006AFF',color:'#fff'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                 {f.icon} {f.label}
               </button>
             ))}
@@ -699,14 +699,14 @@ export default function OrderLookupPage() {
                 style={{
                   gridTemplateColumns:'160px 130px 140px 100px 110px 90px 40px',
                   borderColor:'#f8fafc',
-                  background: isSelected ? '#f0f4ff' : '#fff',
-                  borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
+                  background: isSelected ? '#E6F0FF' : '#fff',
+                  borderLeft: isSelected ? '3px solid #006AFF' : '3px solid transparent',
                 }}
                 onClick={() => setSelected(o)}>
                 <div>
                   {isHeld
                     ? <span className="text-[12px] font-bold text-amber-600">📌 {o.label||'Held'}</span>
-                    : <span className="text-[12px] font-bold font-mono" style={{color:'#6366f1'}}>{o.order_number}</span>
+                    : <span className="text-[12px] font-bold font-mono" style={{color:'#006AFF'}}>{o.order_number}</span>
                   }
                 </div>
                 <div>
@@ -730,7 +730,7 @@ export default function OrderLookupPage() {
                   )) : <span className="text-[11px] text-slate-300">—</span>}
                 </div>
                 <div className="flex justify-center">
-                  <span className="text-[15px]" style={{color:isSelected?'#6366f1':'#cbd5e1'}}>👁️</span>
+                  <span className="text-[15px]" style={{color:isSelected?'#006AFF':'#cbd5e1'}}>👁️</span>
                 </div>
               </div>
             )

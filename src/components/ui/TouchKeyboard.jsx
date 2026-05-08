@@ -55,13 +55,13 @@ export function TouchKeyboard({ value, onChange, onDone, onClose, title, placeho
     const isDelete  = key === '⌫'
     const isShift   = key === '⇧'
     return {
-      background: isAction  ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
+      background: isAction  ? '#000000'
                 : isDelete  ? '#fef2f2'
                 : isSpecial ? '#e2e8f0'
                 : '#fff',
       color:      isAction  ? '#fff'
                 : isDelete  ? '#ef4444'
-                : isShift && layout === 'upper' ? '#6366f1'
+                : isShift && layout === 'upper' ? '#006AFF'
                 : '#1e293b',
       fontWeight: isSpecial ? 600 : 500,
       fontSize:   key === 'space' ? '11px'

@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 
 const TYPE_INFO = {
-  sale: { label:'Sale Pricing',       icon:'🏷️', color:'#6366f1', bg:'#e0e7ff', desc:'Date range discount' },
+  sale: { label:'Sale Pricing',       icon:'🏷️', color:'#006AFF', bg:'#E6F0FF', desc:'Date range discount' },
   bulk: { label:'Bulk Pricing',       icon:'📦', color:'#16a34a', bg:'#dcfce7', desc:'Qty-based discount' },
   time: { label:'Time Based Pricing', icon:'⏰', color:'#d97706', bg:'#fef9c3', desc:'Day/hour discount' },
 }
@@ -70,7 +70,7 @@ export default function MarketingPage() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{background:'#f0f2f5'}}>
+    <div className="flex flex-col h-full" style={{background:'#FFFFFF'}}>
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
@@ -83,7 +83,7 @@ export default function MarketingPage() {
         </div>
         <button onClick={() => { setEditPromo(null); setShowForm(true) }}
           className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white cursor-pointer border-none"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           + New Promotion
         </button>
       </div>
@@ -120,7 +120,7 @@ export default function MarketingPage() {
             <div className="text-[12px] mb-4">Create your first promotion to boost sales</div>
             <button onClick={() => { setEditPromo(null); setShowForm(true) }}
               className="px-4 py-2 rounded-lg text-[12px] font-bold text-white cursor-pointer border-none"
-              style={{background:'#6366f1'}}>
+              style={{background:'#006AFF'}}>
               + New Promotion
             </button>
           </div>
@@ -156,7 +156,7 @@ export default function MarketingPage() {
                       </button>
                       <button onClick={() => { setEditPromo(promo); setShowForm(true) }}
                         className="px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer border"
-                        style={{background:'#e0e7ff', border:'1px solid #a5b4fc', color:'#6366f1'}}>
+                        style={{background:'#E6F0FF', border:'1px solid #80B2FF', color:'#006AFF'}}>
                         Edit
                       </button>
                       <button onClick={() => deletePromo(promo.id)}
@@ -329,7 +329,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
               placeholder="e.g. Summer Sale, Happy Hour, Buy 2 Get Discount"
               className="w-full rounded-xl px-4 py-2.5 text-[14px] outline-none transition-all"
               style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}
-              onFocus={e=>e.target.style.borderColor='#6366f1'}
+              onFocus={e=>e.target.style.borderColor='#006AFF'}
               onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
           </div>
 
@@ -373,20 +373,20 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
 
           {/* ── SALE PRICING ── */}
           {form.type === 'sale' && (
-            <div className="rounded-xl p-4" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+            <div className="rounded-xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
               <div className="text-[12px] font-bold text-indigo-700 mb-3">🏷️ Sale Pricing Settings</div>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="block text-[11px] text-slate-500 mb-1">Start Date & Time *</label>
                   <input type="datetime-local" value={form.sale_start} onChange={e=>set('sale_start',e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
                 </div>
                 <div>
                   <label className="block text-[11px] text-slate-500 mb-1">End Date & Time *</label>
                   <input type="datetime-local" value={form.sale_end} onChange={e=>set('sale_end',e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #c7d2fe', background:'#fff'}}/>
+                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -406,7 +406,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                   <label className="block text-[11px] text-slate-500 mb-1">
                     {form.sale_type==='fixed' ? 'Sale Price ($) *' : 'Discount (%) *'}
                   </label>
-                  <div className="flex items-center rounded-lg px-3" style={{border:'1.5px solid #c7d2fe', background:'#fff'}}>
+                  <div className="flex items-center rounded-lg px-3" style={{border:'1.5px solid #B3D1FF', background:'#fff'}}>
                     <span className="text-slate-400 mr-1">{form.sale_type==='fixed'?'$':'%'}</span>
                     <input type="number" value={form.sale_value} onChange={e=>set('sale_value',e.target.value)}
                       placeholder={form.sale_type==='fixed'?'8.00':'10'} step="0.01"
@@ -600,7 +600,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
           </button>
           <button onClick={handleSave} disabled={saving}
             className="flex-[2] rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50 transition-all"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+            style={{background:'#000000'}}>
             {saving ? '⏳ Saving...' : initial?.id ? '✓ Update Promotion' : '✓ Create Promotion'}
           </button>
         </div>

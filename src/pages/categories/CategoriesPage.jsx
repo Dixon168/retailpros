@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 
-const COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6','#84cc16']
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#006AFF','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6','#84cc16']
 const EMOJIS = ['📁','🛒','📱','💻','🍎','🥛','🔧','👕','💊','🏠','🎮','📚','🚗','🎵','💄','🌿','🍕','☕','🔑','💎']
 
 export default function CategoriesPage() {

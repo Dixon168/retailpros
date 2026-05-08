@@ -11,7 +11,7 @@ const STATUS_STYLE = {
   completed:      { bg:'#dcfce7', color:'#16a34a', label:'Completed' },
   held:           { bg:'#fef9c3', color:'#ca8a04', label:'On Hold' },
   voided:         { bg:'#f1f5f9', color:'#64748b', label:'Voided' },
-  refunded:       { bg:'#fdf4ff', color:'#9333ea', label:'Refunded' },
+  refunded:       { bg:'#fdf4ff', color:'#006AFF', label:'Refunded' },
   partial_refund: { bg:'#eff6ff', color:'#2563eb', label:'Part. Refunded' },
 }
 
@@ -210,8 +210,8 @@ export function RecallPanel({ onClose }) {
                     className="flex items-center gap-3 px-4 py-3.5 cursor-pointer border-b transition-all"
                     style={{
                       borderColor:'#f1f5f9',
-                      background: selected?.id===order.id ? '#f0f4ff' : '#fff',
-                      borderLeft: selected?.id===order.id ? '3px solid #6366f1' : '3px solid transparent',
+                      background: selected?.id===order.id ? '#E6F0FF' : '#fff',
+                      borderLeft: selected?.id===order.id ? '3px solid #006AFF' : '3px solid transparent',
                     }}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
@@ -302,7 +302,7 @@ export function RecallPanel({ onClose }) {
               <div className="mt-3 rounded-xl p-4" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
                 <div className="flex justify-between text-[15px] font-black">
                   <span>Total</span>
-                  <span className="font-mono" style={{color:'#6366f1'}}>
+                  <span className="font-mono" style={{color:'#006AFF'}}>
                     ${parseFloat(selected.total || selected.grand_total || 0).toFixed(2)}
                   </span>
                 </div>

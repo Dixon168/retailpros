@@ -65,7 +65,7 @@ export function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
-      <div className="rounded-2xl w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl"
+      <div className="rounded-2xl w-[480px] max-h-[90vh] overflow-y-auto shadow-md"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
 
         <div className="px-5 py-4 flex items-center justify-between sticky top-0"
@@ -128,7 +128,7 @@ export function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
                   style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
                 <button onClick={addSerial}
                   className="rounded-xl px-3 py-2 text-[11px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'#6366f1'}}>Add</button>
+                  style={{background:'#006AFF'}}>Add</button>
               </div>
               <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1">
                 {serials.map((s,i) => (
@@ -159,7 +159,7 @@ export function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
             style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>Cancel</button>
           <button onClick={handleSave} disabled={saving||(needsSerials&&serials.length<qty)}
             className="flex-[2] rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+            style={{background:'#00B23B'}}>
             {saving ? '⏳ Saving...' : `✓ Receive ${qty||0} ${p.unit||'units'}`}
           </button>
         </div>

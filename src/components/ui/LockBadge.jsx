@@ -47,7 +47,7 @@ export function LockBlocker({ lockStatus, lockedByName, onDismiss }) {
     <div className="absolute inset-0 z-30 flex items-center justify-center
       bg-[rgba(7,9,15,0.75)] backdrop-blur-[2px] rounded-xl">
       <div className="bg-[#0d1117] border border-red-500/30 rounded-[14px]
-        p-6 text-center max-w-[300px] shadow-2xl">
+        p-6 text-center max-w-[300px] shadow-md">
         <div className="text-3xl mb-3">🔒</div>
         <div className="text-[14px] font-bold mb-2">Record Locked</div>
         <div className="text-[12px] text-[#8899b0] mb-4">
@@ -80,7 +80,7 @@ export function ConflictToast({ show, onRefresh, onDismiss }) {
   return (
     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50
       bg-[#0d1117] border border-yellow-500/40 rounded-[12px]
-      px-5 py-4 flex items-center gap-4 shadow-2xl
+      px-5 py-4 flex items-center gap-4 shadow-md
       animate-[fadeUp_0.3s_ease_both] min-w-[380px]">
       <div className="text-2xl">⚠️</div>
       <div className="flex-1">

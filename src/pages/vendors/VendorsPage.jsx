@@ -50,10 +50,10 @@ export default function VendorsPage() {
   const pending = pos.filter(p=>['ordered','partial'].includes(p.status))
 
   const AVATAR_COLORS = [
-    'linear-gradient(135deg,#3b82f6,#8b5cf6)',
+    'linear-gradient(135deg,#3b82f6,#006AFF)',
     'linear-gradient(135deg,#10b981,#06b6d4)',
     'linear-gradient(135deg,#f59e0b,#ef4444)',
-    'linear-gradient(135deg,#ec4899,#8b5cf6)',
+    'linear-gradient(135deg,#ec4899,#006AFF)',
     'linear-gradient(135deg,#14b8a6,#3b82f6)',
   ]
 

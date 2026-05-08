@@ -6,16 +6,16 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 const MENU = [
-  { to:'/orders',        icon:'🔍', label:'Orders',         desc:'View & search orders',         color:'#6366f1' },
+  { to:'/orders',        icon:'🔍', label:'Orders',         desc:'View & search orders',         color:'#006AFF' },
   { to:'/products',      icon:'📦', label:'Products',       desc:'Manage inventory & pricing',   color:'#16a34a' },
   { to:'/categories',    icon:'📁', label:'Categories',     desc:'Organize product categories',  color:'#0891b2' },
-  { to:'/customers',     icon:'👥', label:'Customers',      desc:'Member & customer management', color:'#8b5cf6' },
+  { to:'/customers',     icon:'👥', label:'Customers',      desc:'Member & customer management', color:'#006AFF' },
   { to:'/invoices',      icon:'📄', label:'Invoices',       desc:'View all invoices',            color:'#d97706' },
   { to:'/business',      icon:'🏢', label:'B2B',            desc:'Business customers & credit',  color:'#dc2626' },
   { to:'/marketing',     icon:'🎯', label:'Promotions',     desc:'Promotions & campaigns',       color:'#ec4899' },
   { to:'/loyalty',       icon:'⭐', label:'Loyalty',        desc:'Points & membership tiers',    color:'#f59e0b' },
   { to:'/cardcenter',    icon:'💳', label:'Card Center',    desc:'Payment & card transactions',  color:'#0284c7' },
-  { to:'/reports',       icon:'📊', label:'Reports',        desc:'Sales & inventory reports',    color:'#7c3aed' },
+  { to:'/reports',       icon:'📊', label:'Reports',        desc:'Sales & inventory reports',    color:'#006AFF' },
   { to:'/smart-receive', icon:'🤖', label:'Smart Receive',  desc:'AI-powered inventory intake',  color:'#16a34a' },
   { to:'/settings',      icon:'⚙️', label:'Settings',       desc:'Store & system settings',      color:'#475569' },
 ]
@@ -171,7 +171,7 @@ export default function DashboardPage() {
     : null
 
   return (
-    <div className="h-full overflow-auto" style={{background:'#f0f2f5'}}>
+    <div className="h-full overflow-auto" style={{background:'#FFFFFF'}}>
       <div className="p-6" style={{maxWidth:'1400px', margin:'0 auto'}}>
 
         {/* Header */}
@@ -187,10 +187,10 @@ export default function DashboardPage() {
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           {[
-            ["Today's Orders",   stats.todayOrders,                                                    '#6366f1', '🛒', null],
+            ["Today's Orders",   stats.todayOrders,                                                    '#006AFF', '🛒', null],
             ["Today's Revenue",  `$${(stats.todayRevenue||0).toFixed(2)}`,                             '#16a34a', '💰', revenueChange],
             ['Active Products',  stats.totalProducts,                                                  '#0891b2', '📦', null],
-            ['Total Customers',  stats.totalCustomers,                                                 '#8b5cf6', '👥', null],
+            ['Total Customers',  stats.totalCustomers,                                                 '#006AFF', '👥', null],
           ].map(([label, value, color, icon, change]) => (
             <div key={label} className="rounded-2xl p-4 shadow-sm" style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
               <div className="flex justify-between items-start mb-2">
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                         style={{
                           height:`${Math.max(4,(d.rev/maxRev)*56)}px`,
                           background: i===weekData.length-1
-                            ? 'linear-gradient(180deg,#6366f1,#8b5cf6)'
+                            ? 'linear-gradient(180deg,#006AFF,#006AFF)'
                             : 'linear-gradient(180deg,#93c5fd,#bfdbfe)',
                         }}/>
                       <div className="text-[9px] text-slate-400">
@@ -262,7 +262,7 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="px-4 py-3.5 flex items-center gap-3 border-b" style={{borderColor:'#1e2d42'}}>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[16px]"
-                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                style={{background:'#000000'}}>
                 🤖
               </div>
               <div>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 <div key={i} className={`flex ${msg.role==='user'?'justify-end':'justify-start'}`}>
                   <div className="rounded-2xl px-3.5 py-2.5 max-w-[85%]"
                     style={msg.role==='user'
-                      ? {background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff'}
+                      ? {background:'#000000', color:'#fff'}
                       : {background:'#1e2d42', color:'#e2e8f0'}}>
                     {msg.role==='ai' && (
                       <div className="text-[10px] text-indigo-400 font-semibold mb-1">🤖 AI Analyst</div>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                 <button key={i} onClick={() => handleAsk(q)}
                   disabled={thinking}
                   className="text-[10px] px-2.5 py-1.5 rounded-lg cursor-pointer border-none transition-all disabled:opacity-40 text-left"
-                  style={{background:'rgba(99,102,241,0.12)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.2)'}}>
+                  style={{background:'rgba(99,102,241,0.12)', color:'#80B2FF', border:'1px solid rgba(99,102,241,0.2)'}}>
                   {q}
                 </button>
               ))}
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                 />
                 <button onClick={() => handleAsk()} disabled={!input.trim() || thinking}
                   className="rounded-xl w-10 h-10 flex items-center justify-center cursor-pointer border-none disabled:opacity-40 flex-shrink-0"
-                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                  style={{background:'#000000'}}>
                   <span className="text-white text-[14px]">→</span>
                 </button>
               </div>

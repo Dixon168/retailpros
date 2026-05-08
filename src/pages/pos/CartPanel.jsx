@@ -133,7 +133,7 @@ export default function CartPanel({ onRefund, onHold }) {
           {hasSelection ? (
             <div>
               <div className="w-8 h-8 rounded-lg mx-auto overflow-hidden flex items-center justify-center mb-0.5"
-                style={{background:'#e0e7ff'}}>
+                style={{background:'#E6F0FF'}}>
                 {selectedItem.imageUrl
                   ? <img src={selectedItem.imageUrl} className="w-full h-full object-cover" alt=""/>
                   : <span className="text-[9px] font-bold text-indigo-600">{selectedItem.name?.substring(0,2).toUpperCase()}</span>
@@ -159,8 +159,8 @@ export default function CartPanel({ onRefund, onHold }) {
               disabled={isDisabled}
               className="flex flex-col items-center justify-center py-2 px-1 cursor-pointer border-none transition-all text-center"
               style={{
-                background: isActive ? '#6366f1' : isDisabled ? 'transparent' : 'transparent',
-                borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
+                background: isActive ? '#006AFF' : isDisabled ? 'transparent' : 'transparent',
+                borderLeft: isActive ? '3px solid #006AFF' : '3px solid transparent',
                 opacity: isDisabled ? 0.25 : 1,
               }}
               onMouseEnter={e => { if (!isDisabled && !isActive) e.currentTarget.style.background = '#f1f5f9' }}
@@ -221,7 +221,7 @@ export default function CartPanel({ onRefund, onHold }) {
           <span className="text-[12px] text-slate-600 flex-1">{customer?.name || t('walkIn')}</span>
           {customer?.tier && (
             <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
-              style={{background:'#e0e7ff', color:'#6366f1'}}>{customer.tier.toUpperCase()}</span>
+              style={{background:'#E6F0FF', color:'#006AFF'}}>{customer.tier.toUpperCase()}</span>
           )}
           <span className="text-slate-300 text-[12px]">›</span>
         </div>
@@ -229,12 +229,12 @@ export default function CartPanel({ onRefund, onHold }) {
         {/* Discount type selector — shows when disc action active */}
         {activeAction === 'disc' && (
           <div className="px-3 py-2 flex-shrink-0 flex items-center gap-2 animate-fadeIn"
-            style={{background:'#eef2ff', borderBottom:'1px solid #c7d2fe'}}>
+            style={{background:'#E6F0FF', borderBottom:'1px solid #B3D1FF'}}>
             <span className="text-[10px] font-semibold text-indigo-600">Type:</span>
             {[['pct','% Off'],['amt','$ Off']].map(([t,l]) => (
               <button key={t} onClick={() => { setDiscType(t); setShowNumPad(true) }}
                 className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-2 transition-all"
-                style={discType===t ? {background:'#6366f1',borderColor:'#6366f1',color:'#fff'} : {background:'#fff',borderColor:'#c7d2fe',color:'#6366f1'}}>
+                style={discType===t ? {background:'#006AFF',borderColor:'#006AFF',color:'#fff'} : {background:'#fff',borderColor:'#B3D1FF',color:'#006AFF'}}>
                 {l}
               </button>
             ))}
@@ -247,10 +247,10 @@ export default function CartPanel({ onRefund, onHold }) {
         {activeAction === 'remark' && (
           <div className="fixed inset-0 z-[200] flex items-end justify-center"
             style={{background:'rgba(15,23,42,0.5)', backdropFilter:'blur(3px)'}}>
-            <div className="w-full shadow-2xl" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
+            <div className="w-full shadow-md" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="text-[14px] font-bold text-slate-800">
-                  📝 <span style={{color:'#6366f1'}}>{(selectedItem||activeItem)?.name}</span>
+                  📝 <span style={{color:'#006AFF'}}>{(selectedItem||activeItem)?.name}</span>
                 </div>
                 <button onClick={() => { setActiveAction(null); setInputVal('') }}
                   className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500">✕</button>
@@ -261,7 +261,7 @@ export default function CartPanel({ onRefund, onHold }) {
                   placeholder="Type here using any keyboard..."
                   rows={3}
                   className="w-full rounded-2xl px-4 py-3 text-[15px] outline-none resize-none"
-                  style={{border:'2px solid #a5b4fc', background:'#f8f9ff', color:'#1e293b'}}/>
+                  style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1e293b'}}/>
               </div>
               <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
                 {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild'].map(w => (
@@ -271,7 +271,7 @@ export default function CartPanel({ onRefund, onHold }) {
                     document.getElementById('remark-input')?.focus()
                   }}
                     className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border"
-                    style={{background:'#eef2ff', borderColor:'#c7d2fe', color:'#6366f1'}}>{w}</button>
+                    style={{background:'#E6F0FF', borderColor:'#B3D1FF', color:'#006AFF'}}>{w}</button>
                 ))}
               </div>
               <div className="px-2 pb-1 pt-1" style={{background:'#f8fafc'}}>
@@ -308,7 +308,7 @@ export default function CartPanel({ onRefund, onHold }) {
                   setInputVal('')
                 }}
                   className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                  style={{background:'#000000'}}>
                   ✓ Save Note
                 </button>
               </div>
@@ -319,7 +319,7 @@ export default function CartPanel({ onRefund, onHold }) {
         {/* Staff picker */}
         {activeAction === 'staff' && selectedItem && (
           <div className="px-3 py-2.5 flex-shrink-0 animate-fadeIn"
-            style={{background:'#eef2ff', borderBottom:'1.5px solid #6366f1'}}>
+            style={{background:'#E6F0FF', borderBottom:'1.5px solid #006AFF'}}>
             <div className="text-[10px] font-bold text-indigo-700 mb-2">👤 Select Staff — {selectedItem.name}</div>
             <div className="flex flex-col gap-1 max-h-[130px] overflow-y-auto">
               {staffList.map(s => (
@@ -331,14 +331,14 @@ export default function CartPanel({ onRefund, onHold }) {
                   }}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-left border transition-all"
                   style={selectedItem.employee?.id===s.id
-                    ? {background:'#6366f1', borderColor:'#6366f1', color:'#fff'}
+                    ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
                     : {background:'#fff', borderColor:'#e2e8f0', color:'#1e293b'}}>
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                    style={{background:'#e0e7ff', color:'#6366f1'}}>
+                    style={{background:'#E6F0FF', color:'#006AFF'}}>
                     {s.name.charAt(0)}
                   </div>
                   <span className="text-[12px] font-medium">{s.name}</span>
-                  <span className="text-[10px] ml-auto" style={{color: selectedItem.employee?.id===s.id ? '#c7d2fe' : '#94a3b8'}}>{s.role}</span>
+                  <span className="text-[10px] ml-auto" style={{color: selectedItem.employee?.id===s.id ? '#B3D1FF' : '#94a3b8'}}>{s.role}</span>
                 </button>
               ))}
               {staffList.length === 0 && (
@@ -374,8 +374,8 @@ export default function CartPanel({ onRefund, onHold }) {
                   className="px-3 py-2.5 cursor-pointer transition-all"
                   style={{
                     borderBottom: '1px solid #f8fafc',
-                    background: isSelected ? '#eef2ff' : 'transparent',
-                    borderLeft: `3px solid ${isSelected ? '#6366f1' : 'transparent'}`,
+                    background: isSelected ? '#E6F0FF' : 'transparent',
+                    borderLeft: `3px solid ${isSelected ? '#006AFF' : 'transparent'}`,
                   }}
                   onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#fafbff' }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
@@ -384,7 +384,7 @@ export default function CartPanel({ onRefund, onHold }) {
                     {/* Photo */}
                     <div onClick={e => { e.stopPropagation(); setPhotoViewer(item) }}
                       className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer"
-                      style={{background:'#f1f5f9', border:`2px solid ${isSelected?'#a5b4fc':'#e2e8f0'}`}}>
+                      style={{background:'#f1f5f9', border:`2px solid ${isSelected?'#80B2FF':'#e2e8f0'}`}}>
                       {item.imageUrl
                         ? <img src={item.imageUrl} alt="" className="w-full h-full object-cover"/>
                         : <span className="text-[9px] font-bold text-slate-400">{item.name?.substring(0,2).toUpperCase()}</span>
@@ -432,7 +432,7 @@ export default function CartPanel({ onRefund, onHold }) {
 
                   {/* Selected hint */}
                   {isSelected && (
-                    <div className="mt-1.5 text-[9px] font-semibold" style={{color:'#6366f1'}}>
+                    <div className="mt-1.5 text-[9px] font-semibold" style={{color:'#006AFF'}}>
                       ← Use side buttons to modify
                     </div>
                   )}
@@ -469,7 +469,7 @@ export default function CartPanel({ onRefund, onHold }) {
               disabled={items.length === 0}
               className="w-full rounded-2xl py-4 text-[16px] font-black text-white cursor-pointer border-none disabled:opacity-30 transition-all"
               style={{
-                background: items.length > 0 ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : '#e2e8f0',
+                background: items.length > 0 ? 'linear-gradient(135deg,#4f46e5,#006AFF)' : '#e2e8f0',
                 letterSpacing: '1px',
                 boxShadow: items.length > 0 ? '0 4px 20px rgba(99,102,241,0.4)' : 'none',
               }}>

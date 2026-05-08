@@ -40,7 +40,7 @@ export function AdjustModal({ product: p, tenantId, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)'}} onClick={onClose}>
-      <div className="rounded-2xl w-[400px] shadow-2xl"
+      <div className="rounded-2xl w-[400px] shadow-md"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
 
         <div className="px-5 py-4 flex items-center justify-between"
@@ -75,7 +75,7 @@ export function AdjustModal({ product: p, tenantId, onSave, onClose }) {
                 <button key={r} onClick={()=>setReason(r)}
                   className="px-2.5 py-1.5 rounded-xl text-[11px] font-medium border cursor-pointer transition-all"
                   style={reason===r
-                    ? {background:'#e0e7ff', borderColor:'#a5b4fc', color:'#6366f1'}
+                    ? {background:'#E6F0FF', borderColor:'#80B2FF', color:'#006AFF'}
                     : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                   {r}
                 </button>
@@ -94,8 +94,8 @@ export function AdjustModal({ product: p, tenantId, onSave, onClose }) {
           <button onClick={handleSave} disabled={saving||!qty||!reason}
             className="flex-[2] rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background: adjustQty < 0
-              ? 'linear-gradient(135deg,#dc2626,#b91c1c)'
-              : 'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+              ? '#CF1322'
+              : '#000000'}}>
             {saving ? '⏳ Saving...' : `${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`}
           </button>
         </div>

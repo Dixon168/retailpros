@@ -50,12 +50,12 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
     {/* Backdrop - no close on click */}
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.65)', backdropFilter:'blur(6px)'}}>
-      <div className="rounded-3xl overflow-hidden shadow-2xl"
+      <div className="rounded-xl overflow-hidden shadow-md"
         style={{background:'#fff', width:'420px', maxHeight:'90vh', overflowY:'auto'}}>
 
         {/* Header */}
         <div className="px-5 py-4 flex items-center justify-between"
-          style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+          style={{background:'#000000'}}>
           <div>
             <div className="text-[16px] font-bold text-white">✏️ Open Item</div>
             <div className="text-[11px] text-indigo-200">Custom product</div>
@@ -79,7 +79,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
               onChange={e => setName(e.target.value)}
               placeholder="Open Item"
               className="w-full rounded-xl px-4 py-3 text-[15px] font-semibold outline-none"
-              style={{border:'2px solid #a5b4fc', background:'#f8f9ff', color:'#1e293b'}}
+              style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1e293b'}}
             />
           </div>
 
@@ -91,13 +91,13 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
             <button onClick={() => setShowNumPad(true)}
               className="w-full rounded-xl px-4 py-3.5 text-left cursor-pointer border-2 transition-all"
               style={{
-                border: price ? '2px solid #a5b4fc' : '2px dashed #e2e8f0',
-                background: price ? '#eef2ff' : '#f8fafc',
+                border: price ? '2px solid #80B2FF' : '2px dashed #e2e8f0',
+                background: price ? '#E6F0FF' : '#f8fafc',
               }}>
               {price ? (
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] text-indigo-400 font-semibold">$</span>
-                  <span className="text-[28px] font-black font-mono" style={{color:'#6366f1'}}>
+                  <span className="text-[28px] font-black font-mono" style={{color:'#006AFF'}}>
                     {parseFloat(price).toFixed(2)}
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
 
           {/* Summary */}
           {price && (
-            <div className="rounded-xl p-4" style={{background:'#f0f4ff', border:'1.5px solid #c7d2fe'}}>
+            <div className="rounded-xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
               <div className="flex justify-between text-[12px] text-slate-500 mb-1">
                 <span>Price</span>
                 <span className="font-mono">${priceNum.toFixed(2)}</span>
@@ -172,9 +172,9 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
                 </div>
               )}
               <div className="flex justify-between text-[15px] font-bold pt-2"
-                style={{borderTop:'1px solid #c7d2fe', color:'#1e293b'}}>
+                style={{borderTop:'1px solid #B3D1FF', color:'#1e293b'}}>
                 <span>Total</span>
-                <span className="font-mono" style={{color:'#6366f1'}}>${totalAmt.toFixed(2)}</span>
+                <span className="font-mono" style={{color:'#006AFF'}}>${totalAmt.toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -183,7 +183,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
           <button onClick={handleAdd}
             disabled={!price || priceNum <= 0}
             className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow:'0 4px 16px rgba(99,102,241,0.3)'}}>
+            style={{background:'#000000', boxShadow:'0 4px 16px rgba(99,102,241,0.3)'}}>
             + Add to Cart — ${totalAmt.toFixed(2)}
           </button>
         </div>

@@ -33,7 +33,7 @@ function ProtectedRoute({ children }) {
     <div style={{
       display:'flex', flexDirection:'column', alignItems:'center',
       justifyContent:'center', height:'100vh',
-      background:'#f0f2f5', color:'#64748b',
+      background:'#FFFFFF', color:'#64748b',
       fontFamily:'monospace', fontSize:'13px', gap:'12px'
     }}>
       <div style={{
@@ -54,14 +54,14 @@ class ErrorBoundary extends Component {
   static getDerivedStateFromError(error) { return { hasError: true, error } }
   render() {
     if (this.state.hasError) return (
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',background:'#f0f2f5',gap:'16px',padding:'20px'}}>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',background:'#FFFFFF',gap:'16px',padding:'20px'}}>
         <div style={{fontSize:'40px'}}>⚠️</div>
         <div style={{fontSize:'18px',fontWeight:'bold',color:'#1e293b'}}>Something went wrong</div>
         <div style={{fontSize:'12px',color:'#64748b',maxWidth:'400px',textAlign:'center',fontFamily:'monospace',background:'#fff',padding:'12px',borderRadius:'8px',border:'1px solid #e2e8f0'}}>
           {this.state.error?.message}
         </div>
         <button onClick={() => window.location.href='/pos'}
-          style={{background:'#6366f1',color:'#fff',border:'none',borderRadius:'10px',padding:'10px 24px',fontSize:'13px',fontWeight:'bold',cursor:'pointer'}}>
+          style={{background:'#006AFF',color:'#fff',border:'none',borderRadius:'10px',padding:'10px 24px',fontSize:'13px',fontWeight:'bold',cursor:'pointer'}}>
           Back to POS
         </button>
       </div>

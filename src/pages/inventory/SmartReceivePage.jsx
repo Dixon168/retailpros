@@ -246,7 +246,7 @@ export default function SmartReceivePage() {
   }
 
   return (
-    <div className="h-full overflow-auto p-6" style={{background:'#f0f2f5'}}>
+    <div className="h-full overflow-auto p-6" style={{background:'#FFFFFF'}}>
       <div style={{maxWidth:'680px', margin:'0 auto'}}>
 
         {/* Header */}
@@ -266,7 +266,7 @@ export default function SmartReceivePage() {
 
             <div className="flex gap-3">
               <div className="flex-1 flex items-center rounded-xl px-4 gap-2"
-                style={{border:'2px solid #6366f1', background:'#f8fafc'}}>
+                style={{border:'2px solid #006AFF', background:'#f8fafc'}}>
                 <span className="text-[20px]">🔍</span>
                 <input
                   ref={barcodeRef}
@@ -285,13 +285,13 @@ export default function SmartReceivePage() {
               </div>
               <button onClick={handleScan} disabled={!barcode.trim() || looking}
                 className="rounded-xl px-6 py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                style={{background:'#000000'}}>
                 {looking ? '⏳' : '→ Lookup'}
               </button>
             </div>
 
             {looking && (
-              <div className="mt-4 p-4 rounded-xl text-center" style={{background:'#f0f4ff', border:'1px solid #c7d2fe'}}>
+              <div className="mt-4 p-4 rounded-xl text-center" style={{background:'#E6F0FF', border:'1px solid #B3D1FF'}}>
                 <div className="text-[13px] text-indigo-700 font-semibold animate-pulse">
                   🔍 Searching database... 🤖 AI analyzing...
                 </div>
@@ -361,7 +361,7 @@ export default function SmartReceivePage() {
               </button>
               <button onClick={handleReceive} disabled={saving || !form.qty}
                 className="flex-[2] rounded-xl py-3.5 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+                style={{background:'#00B23B'}}>
                 {saving ? '⏳ Saving...' : `✓ Receive ${form.qty||0} ${form.unit}`}
               </button>
             </div>
@@ -373,12 +373,12 @@ export default function SmartReceivePage() {
           <div className="flex flex-col gap-4">
             {/* Status bar */}
             <div className="rounded-2xl overflow-hidden shadow-sm"
-              style={{border:`1.5px solid ${offData?.found?'#a5b4fc':'#e2e8f0'}`}}>
+              style={{border:`1.5px solid ${offData?.found?'#80B2FF':'#e2e8f0'}`}}>
               <div className="px-5 py-3 flex items-center gap-2"
-                style={{background: offData?.found?'#f0f4ff':'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+                style={{background: offData?.found?'#E6F0FF':'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
                 <span className="text-[18px]">{offData?.found?'🤖':'📝'}</span>
                 <div>
-                  <div className="text-[13px] font-bold" style={{color: offData?.found?'#6366f1':'#64748b'}}>
+                  <div className="text-[13px] font-bold" style={{color: offData?.found?'#006AFF':'#64748b'}}>
                     {offData?.found ? 'AI found product info — please verify' : 'New product — fill in manually'}
                   </div>
                   <div className="text-[10px] text-slate-400">UPC: {barcode}</div>
@@ -398,7 +398,7 @@ export default function SmartReceivePage() {
                   <div>
                     {aiData?.category_suggestion && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 inline-block"
-                        style={{background:'#e0e7ff', color:'#6366f1'}}>
+                        style={{background:'#E6F0FF', color:'#006AFF'}}>
                         {aiData.category_suggestion}
                       </span>
                     )}
@@ -446,7 +446,7 @@ export default function SmartReceivePage() {
                     <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Retail Price</div>
                     <button onClick={()=>setShowPricePad(true)}
                       className="w-full rounded-xl px-3 py-2.5 text-left text-[14px] font-bold font-mono cursor-pointer"
-                      style={{border:'1.5px solid #a5b4fc', background:'#eef2ff', color:'#6366f1'}}>
+                      style={{border:'1.5px solid #80B2FF', background:'#E6F0FF', color:'#006AFF'}}>
                       ${parseFloat(form.price||0).toFixed(2)}
                     </button>
                   </div>
@@ -476,7 +476,7 @@ export default function SmartReceivePage() {
               </button>
               <button onClick={handleReceive} disabled={saving || !form.qty || !form.name}
                 className="flex-[2] rounded-xl py-3.5 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+                style={{background:'#00B23B'}}>
                 {saving ? '⏳ Saving...' : `✓ Create & Receive ${form.qty||0} ${form.unit}`}
               </button>
             </div>
@@ -494,7 +494,7 @@ export default function SmartReceivePage() {
             <div className="flex gap-3 justify-center">
               <button onClick={reset}
                 className="rounded-xl px-6 py-3 text-[13px] font-bold text-white cursor-pointer border-none"
-                style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                style={{background:'#000000'}}>
                 📥 Receive Another
               </button>
               <button onClick={() => window.location.href='/products'}

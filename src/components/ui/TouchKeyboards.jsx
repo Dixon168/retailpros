@@ -25,7 +25,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
 
   const Key = ({ label, onClick, color='slate', wide, danger, primary, warn }) => {
     const styles = primary
-      ? { background:'linear-gradient(135deg,#16a34a,#15803d)', color:'#fff', boxShadow:'0 3px 0 #14532d' }
+      ? { background:'#00B23B', color:'#fff', boxShadow:'0 3px 0 #14532d' }
       : danger
       ? { background:'#fee2e2', color:'#dc2626', boxShadow:'0 3px 0 #fca5a5' }
       : warn
@@ -43,7 +43,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
   return (
     <div className="fixed inset-0 z-[500] flex flex-col items-center justify-end"
       style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
-      <div className="w-full max-w-[760px] bg-white rounded-t-3xl shadow-2xl">
+      <div className="w-full max-w-[760px] bg-white rounded-t-3xl shadow-md">
 
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
@@ -122,7 +122,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
             </button>
             <button onClick={onClose}
               className="h-12 rounded-xl text-[15px] font-black text-white cursor-pointer border-none"
-              style={{background:'linear-gradient(135deg,#16a34a,#15803d)', boxShadow:'0 3px 0 #14532d'}}>
+              style={{background:'#00B23B', boxShadow:'0 3px 0 #14532d'}}>
               ✓ Done
             </button>
           </div>
@@ -161,7 +161,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
   return (
     <div className="fixed inset-0 z-[500] flex flex-col items-center justify-end"
       style={{background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)'}}>
-      <div className="w-full max-w-[440px] bg-white rounded-t-3xl shadow-2xl">
+      <div className="w-full max-w-[440px] bg-white rounded-t-3xl shadow-md">
 
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
@@ -216,7 +216,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
             </button>
             <button onClick={onClose}
               className="h-12 rounded-2xl text-[15px] font-black text-white cursor-pointer border-none"
-              style={{background:'linear-gradient(135deg,#16a34a,#15803d)', boxShadow:'0 4px 0 #14532d'}}>
+              style={{background:'#00B23B', boxShadow:'0 4px 0 #14532d'}}>
               ✓ Done
             </button>
           </div>
