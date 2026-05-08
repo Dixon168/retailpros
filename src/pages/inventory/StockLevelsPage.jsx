@@ -1,5 +1,5 @@
 // src/pages/inventory/StockLevelsPage.jsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -7,46 +7,133 @@ import toast from 'react-hot-toast'
 import { NumericKeypad } from '@/components/ui/TouchKeyboards'
 
 const ATTENTION_THRESHOLD = 5  // <= this counts as "low" in addition to product's own low_stock_qty
+const PAGE_LIMIT = 200         // max rows to render at once
 
 export default function StockLevelsPage() {
   const { tenant, store, user } = useAuthStore()
   const qc = useQueryClient()
-  const [tab, setTab]       = useState('all')        // all | attention | normal
-  const [search, setSearch] = useState('')
-  const [sort, setSort]     = useState('low_first')  // low_first | high_first | name
-  const [adjusting, setAdjusting] = useState(null)   // { product, mode: 'set'|'add'|'sub', currentQty }
-  const [historyFor, setHistoryFor] = useState(null) // product object
+  const [tab, setTab]               = useState('attention')  // attention | search | category | all
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch]         = useState('')           // debounced
+  const [categoryId, setCategoryId] = useState('')
+  const [sort, setSort]             = useState('low_first')
+  const [adjusting, setAdjusting]   = useState(null)
+  const [historyFor, setHistoryFor] = useState(null)
 
-  // Fetch all products + their inventory (separately, so products without
-  // an inventory row still show up — they'll appear with qty = 0)
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['stock-levels', tenant?.id, store?.id],
+  // Debounce search input (only fire query 400ms after typing stops, min 2 chars)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const q = searchInput.trim()
+      setSearch(q.length >= 2 ? q : '')
+    }, 400)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  // ── Categories list (always loaded — small) ──
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories', tenant?.id],
     queryFn: async () => {
-      // Two queries in parallel — much faster than nested join
-      const [productsRes, inventoryRes, categoriesRes] = await Promise.all([
-        supabase.from('products')
-          .select('id, name, sku, type, low_stock_qty, image_url, category_id')
+      const { data, error } = await supabase.from('categories')
+        .select('id, name')
+        .eq('tenant_id', tenant.id)
+        .order('name')
+      if (error) throw error
+      return data || []
+    },
+    enabled: !!tenant?.id,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // ── Summary counts (small query — gets ALL inventory rows for this store) ──
+  const { data: summary = { total: 0, attention: 0, normal: 0 } } = useQuery({
+    queryKey: ['stock-summary', tenant?.id, store?.id],
+    queryFn: async () => {
+      // Count total products (excluding services)
+      const { count: total } = await supabase.from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenant.id)
+        .neq('type', 'service')
+
+      // Get inventory + thresholds (need both to classify "attention")
+      const { data: inv } = await supabase.from('inventory')
+        .select('product_id, quantity, products!inner(low_stock_qty, type)')
+        .eq('tenant_id', tenant.id)
+        .eq('store_id', store.id)
+
+      let attention = 0
+      ;(inv || []).forEach(r => {
+        if (r.products?.type === 'service') return
+        const t = r.products?.low_stock_qty || ATTENTION_THRESHOLD
+        if (r.quantity <= t) attention++
+      })
+      return { total: total || 0, attention, normal: (total || 0) - attention }
+    },
+    enabled: !!tenant?.id && !!store?.id,
+    staleTime: 30000,
+    refetchInterval: 60000,
+  })
+
+  // ── Build the right query depending on tab ──
+  // 'attention' → query inventory rows where qty <= threshold
+  // 'search'    → search products by name/sku
+  // 'category'  → products in selected category
+  // 'all'       → first 500 products (with warning)
+  const queryMode = search ? 'search'
+                  : tab === 'attention' ? 'attention'
+                  : categoryId ? 'category'
+                  : tab === 'all' ? 'all'
+                  : 'idle'  // nothing to show — empty state
+
+  const { data: rows = [], isLoading, isFetching } = useQuery({
+    queryKey: ['stock-rows', tenant?.id, store?.id, queryMode, search, categoryId, tab],
+    queryFn: async () => {
+      if (queryMode === 'idle') return []
+
+      // Build product query
+      let pq = supabase.from('products')
+        .select('id, name, sku, type, low_stock_qty, image_url, category_id')
+        .eq('tenant_id', tenant.id)
+        .neq('type', 'service')
+
+      if (queryMode === 'search') {
+        pq = pq.or(`name.ilike.%${search}%,sku.ilike.%${search}%`).limit(PAGE_LIMIT)
+      } else if (queryMode === 'category') {
+        pq = pq.eq('category_id', categoryId).limit(PAGE_LIMIT)
+      } else if (queryMode === 'attention') {
+        // Get product_ids that have low/zero/negative stock first
+        const { data: lowInv } = await supabase.from('inventory')
+          .select('product_id, quantity, products!inner(low_stock_qty, type)')
           .eq('tenant_id', tenant.id)
-          .neq('type', 'service')
-          .order('name'),
+          .eq('store_id', store.id)
+        const ids = (lowInv || [])
+          .filter(r => {
+            if (r.products?.type === 'service') return false
+            const t = r.products?.low_stock_qty || ATTENTION_THRESHOLD
+            return r.quantity <= t
+          })
+          .map(r => r.product_id)
+        if (ids.length === 0) return []
+        pq = pq.in('id', ids).limit(PAGE_LIMIT)
+      } else {
+        // 'all' mode — limit + sort by name
+        pq = pq.order('name').limit(PAGE_LIMIT)
+      }
+
+      const [productsRes, inventoryRes] = await Promise.all([
+        pq,
         supabase.from('inventory')
           .select('product_id, quantity')
           .eq('tenant_id', tenant.id)
           .eq('store_id', store.id),
-        supabase.from('categories')
-          .select('id, name')
-          .eq('tenant_id', tenant.id),
       ])
 
       if (productsRes.error) throw productsRes.error
-      if (inventoryRes.error) throw inventoryRes.error
 
-      // Build lookup maps
       const stockMap = {}
       ;(inventoryRes.data || []).forEach(i => { stockMap[i.product_id] = i.quantity })
 
       const catMap = {}
-      ;(categoriesRes.data || []).forEach(c => { catMap[c.id] = c.name })
+      categories.forEach(c => { catMap[c.id] = c.name })
 
       return (productsRes.data || []).map(p => ({
         ...p,
@@ -55,9 +142,8 @@ export default function StockLevelsPage() {
         hasInventoryRecord: stockMap[p.id] !== undefined,
       }))
     },
-    enabled: !!tenant?.id && !!store?.id,
-    refetchInterval: 60000,
-    staleTime: 30000,
+    enabled: !!tenant?.id && !!store?.id && queryMode !== 'idle',
+    staleTime: 15000,
   })
 
   // Categorize each row
@@ -69,41 +155,14 @@ export default function StockLevelsPage() {
     return 'normal'
   }
 
-  // Filter & sort
-  const filtered = useMemo(() => {
-    let list = rows
-    const q = search.trim().toLowerCase()
-    if (q) {
-      list = list.filter(r =>
-        (r.name || '').toLowerCase().includes(q) ||
-        (r.sku || '').toLowerCase().includes(q)
-      )
-    }
-    if (tab !== 'all') {
-      list = list.filter(r => {
-        const c = classify(r)
-        if (tab === 'attention') return c !== 'normal'
-        if (tab === 'normal') return c === 'normal'
-        return true
-      })
-    }
-    list = [...list]
+  // Sort the loaded rows
+  const sorted = useMemo(() => {
+    const list = [...rows]
     if (sort === 'low_first') list.sort((a, b) => a.qty - b.qty)
     else if (sort === 'high_first') list.sort((a, b) => b.qty - a.qty)
     else list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     return list
-  }, [rows, search, tab, sort])
-
-  // Counts for tab badges
-  const counts = useMemo(() => {
-    const out = { all: rows.length, attention: 0, normal: 0 }
-    rows.forEach(r => {
-      const c = classify(r)
-      if (c === 'normal') out.normal++
-      else out.attention++
-    })
-    return out
-  }, [rows])
+  }, [rows, sort])
 
   // Quick adjust by ±1
   const quickAdjust = async (product, delta) => {
@@ -120,11 +179,8 @@ export default function StockLevelsPage() {
     if (error) { toast.error(error.message); return }
     if (!data?.success) { toast.error(data?.message || 'Failed'); return }
     toast.success(`${product.name}: ${product.qty} → ${newQty}`)
-    qc.invalidateQueries({ queryKey: ['stock-levels'] })
-  }
-
-  if (isLoading) {
-    return <div className="p-8 text-center text-[#666]">Loading...</div>
+    qc.invalidateQueries({ queryKey: ['stock-rows'] })
+    qc.invalidateQueries({ queryKey: ['stock-summary'] })
   }
 
   return (
@@ -134,48 +190,126 @@ export default function StockLevelsPage() {
         <div>
           <div className="text-[22px] font-bold text-[#1F1F1F]">📦 Stock Levels</div>
           <div className="text-[12px] text-[#666] mt-1">
-            Total {counts.all} · Need attention <span className="text-[#CF1322] font-bold">{counts.attention}</span> · Normal <span className="text-[#15803D] font-bold">{counts.normal}</span>
+            Total {summary.total} · Need attention <span className="text-[#CF1322] font-bold">{summary.attention}</span> · Normal <span className="text-[#15803D] font-bold">{summary.normal}</span>
           </div>
         </div>
       </div>
 
       {/* Search */}
-      <input value={search} onChange={e => setSearch(e.target.value)}
-        placeholder="🔍 Search by name or SKU..."
-        className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF] mb-3"/>
-
-      {/* Tabs + Sort */}
-      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        <div className="flex gap-2">
-          <TabBtn active={tab==='all'} onClick={() => setTab('all')} count={counts.all}>All</TabBtn>
-          <TabBtn active={tab==='attention'} onClick={() => setTab('attention')} count={counts.attention} alert>⚠️ Need attention</TabBtn>
-          <TabBtn active={tab==='normal'} onClick={() => setTab('normal')} count={counts.normal}>✅ Normal</TabBtn>
-        </div>
-        <select value={sort} onChange={e => setSort(e.target.value)}
-          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none cursor-pointer">
-          <option value="low_first">Stock low → high</option>
-          <option value="high_first">Stock high → low</option>
-          <option value="name">Name A → Z</option>
-        </select>
+      <div className="relative mb-3">
+        <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
+          placeholder="🔍 Search by name or SKU (type 2+ characters)..."
+          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
+        {searchInput && (
+          <button onClick={() => { setSearchInput(''); setSearch('') }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-[12px] cursor-pointer"
+            style={{background:'#E5E5E5', color:'#666', border:'none'}}>✕</button>
+        )}
       </div>
 
-      {/* List */}
-      {filtered.length === 0 ? (
-        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center text-[#666]">
-          {search ? 'No products match your search' : 'No products in this category'}
+      {/* Filters: Tab + Category + Sort */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <TabBtn active={tab==='attention' && !search && !categoryId}
+          onClick={() => { setTab('attention'); setCategoryId(''); setSearchInput(''); setSearch('') }}
+          count={summary.attention} alert>
+          ⚠️ Attention
+        </TabBtn>
+        <TabBtn active={tab==='all' && !search && !categoryId}
+          onClick={() => { setTab('all'); setCategoryId(''); setSearchInput(''); setSearch('') }}>
+          All (first {PAGE_LIMIT})
+        </TabBtn>
+
+        <select value={categoryId}
+          onChange={e => { setCategoryId(e.target.value); setTab(''); setSearchInput(''); setSearch('') }}
+          className="border rounded-lg px-3 py-2 text-[12px] font-bold outline-none cursor-pointer"
+          style={{
+            background:'#FFFFFF',
+            color: categoryId ? '#006AFF' : '#1F1F1F',
+            borderColor: categoryId ? '#006AFF' : '#E5E5E5'
+          }}>
+          <option value="">📁 All categories</option>
+          {categories.map(c => <option key={c.id} value={c.id}>📁 {c.name}</option>)}
+        </select>
+
+        <div className="ml-auto">
+          <select value={sort} onChange={e => setSort(e.target.value)}
+            className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none cursor-pointer">
+            <option value="low_first">Stock low → high</option>
+            <option value="high_first">Stock high → low</option>
+            <option value="name">Name A → Z</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Active filter pill */}
+      {(search || categoryId) && (
+        <div className="mb-3 text-[12px] text-[#666] flex items-center gap-2 flex-wrap">
+          <span className="font-bold">Showing:</span>
+          {search && (
+            <span className="px-2 py-1 rounded font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>
+              🔍 "{search}"
+            </span>
+          )}
+          {categoryId && (
+            <span className="px-2 py-1 rounded font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>
+              📁 {categories.find(c => c.id === categoryId)?.name}
+            </span>
+          )}
+          <button onClick={() => { setSearchInput(''); setSearch(''); setCategoryId(''); setTab('attention') }}
+            className="text-[#CF1322] font-bold cursor-pointer hover:underline"
+            style={{background:'none', border:'none', padding:0}}>
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* List / Empty / Loading */}
+      {queryMode === 'idle' ? (
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center">
+          <div className="text-[48px] mb-2">📦</div>
+          <div className="text-[16px] font-bold text-[#1F1F1F] mb-1">Search to begin</div>
+          <div className="text-[13px] text-[#666] max-w-[400px] mx-auto">
+            With {summary.total} products, type a name/SKU above, pick a category, or click <span className="font-bold">⚠️ Attention</span> to see items that need help.
+          </div>
+        </div>
+      ) : isLoading || isFetching ? (
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center text-[#666] text-[13px]">
+          Loading...
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center">
+          <div className="text-[48px] mb-2">{tab === 'attention' ? '🎉' : '🤷'}</div>
+          <div className="text-[14px] font-bold text-[#1F1F1F] mb-1">
+            {search ? 'No products match this search'
+             : tab === 'attention' ? 'All stock looks good!'
+             : 'No products in this filter'}
+          </div>
+          <div className="text-[12px] text-[#666]">
+            {search ? 'Try a shorter search'
+             : tab === 'attention' ? 'Nothing needs your attention right now.'
+             : 'Try a different category'}
+          </div>
         </div>
       ) : (
-        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
-          {filtered.map((p, i) => (
-            <StockRow
-              key={p.id} product={p} cls={classify(p)}
-              onQuickAdjust={(delta) => quickAdjust(p, delta)}
-              onSet={() => setAdjusting({ product: p, currentQty: p.qty })}
-              onHistory={() => setHistoryFor(p)}
-              isLast={i === filtered.length - 1}
-            />
-          ))}
-        </div>
+        <>
+          {sorted.length >= PAGE_LIMIT && (
+            <div className="mb-3 rounded-lg px-4 py-3 text-[12px]"
+              style={{background:'#FEF3C7', border:'1px solid #FCD34D', color:'#B45309'}}>
+              ⚠️ Showing first {PAGE_LIMIT} results. Refine search or category to narrow down.
+            </div>
+          )}
+          <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
+            {sorted.map((p, i) => (
+              <StockRow
+                key={p.id} product={p} cls={classify(p)}
+                onQuickAdjust={(delta) => quickAdjust(p, delta)}
+                onSet={() => setAdjusting({ product: p, currentQty: p.qty })}
+                onHistory={() => setHistoryFor(p)}
+                isLast={i === sorted.length - 1}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Adjust modal */}
