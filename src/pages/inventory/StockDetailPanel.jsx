@@ -293,6 +293,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
         <ReceiveModal
           product={p}
           tenantId={tenant.id}
+          storeId={store.id}
           onClose={() => setShowReceive(false)}
           onSave={() => {
             setShowReceive(false)

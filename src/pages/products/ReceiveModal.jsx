@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import NumPad from '@/components/ui/NumPad'
 import toast from 'react-hot-toast'
 
-export function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
+export function ReceiveModal({ product: p, tenantId, storeId, onSave, onClose }) {
   const [form, setForm] = useState({ vendor_id:'', cost:'', qty:'', notes:'' })
   const [serials, setSerials] = useState([])
   const [serialInput, setSerialInput] = useState('')
@@ -43,14 +43,18 @@ export function ReceiveModal({ product: p, tenantId, onSave, onClose }) {
     setSaving(true)
     try {
       const cost = parseFloat(form.cost) || 0
-      const { data: inv } = await supabase.from('inventory')
-        .select('id,quantity,avg_cost').eq('product_id', p.id).maybeSingle()
+      // Read inventory row scoped to current store
+      let invQuery = supabase.from('inventory')
+        .select('id,quantity,avg_cost').eq('product_id', p.id).eq('tenant_id', tenantId)
+      if (storeId) invQuery = invQuery.eq('store_id', storeId)
+      else invQuery = invQuery.is('store_id', null)
+      const { data: inv } = await invQuery.maybeSingle()
       if (inv) {
         const newQty = (inv.quantity||0) + qty
         const newAvgCost = ((inv.avg_cost||0)*(inv.quantity||0) + cost*qty) / newQty
         await supabase.from('inventory').update({ quantity: newQty, avg_cost: newAvgCost, updated_at: new Date().toISOString() }).eq('id', inv.id)
       } else {
-        await supabase.from('inventory').insert({ tenant_id: tenantId, product_id: p.id, quantity: qty, avg_cost: cost })
+        await supabase.from('inventory').insert({ tenant_id: tenantId, store_id: storeId || null, product_id: p.id, quantity: qty, avg_cost: cost })
       }
       if (needsSerials && serials.length > 0) {
         await supabase.from('serial_numbers').insert(serials.map(s => ({ tenant_id: tenantId, product_id: p.id, serial: s, status: 'in_stock' })))

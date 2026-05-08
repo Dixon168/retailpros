@@ -16,7 +16,7 @@ const TYPE_COLOR = {
 }
 
 export default function ProductsPage() {
-  const { tenant } = useAuthStore()
+  const { tenant, store } = useAuthStore()
   const qc = useQueryClient()
   const [search, setSearch]         = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -360,7 +360,7 @@ export default function ProductsPage() {
 
 
       {showStock && (
-        <StockPanel product={showStock} tenantId={tenant?.id}
+        <StockPanel product={showStock} tenantId={tenant?.id} storeId={store?.id}
           onClose={() => setShowStock(null)}
           onRefresh={() => { qc.invalidateQueries(['products']); setShowStock(null) }}/>
       )}
@@ -651,7 +651,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 }
 
 // ── Stock Quick Panel ──
-function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
+function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
   const [showReceive, setShowReceive] = useState(false)
   const [showAdjust, setShowAdjust]   = useState(false)
 
@@ -716,7 +716,7 @@ function StockPanel({ product: p, tenantId, onClose, onRefresh }) {
       </div>
 
       {showReceive && (
-        <ReceiveModal product={p} tenantId={tenantId}
+        <ReceiveModal product={p} tenantId={tenantId} storeId={storeId}
           onSave={() => { onRefresh(); setShowReceive(false) }}
           onClose={() => setShowReceive(false)}/>
       )}
