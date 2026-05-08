@@ -24,11 +24,11 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
   const [showWriteOff, setShowWriteOff] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
-  // Fetch fresh detail (includes inventory + 7d sales)
+  // Fetch fresh detail (includes inventory + 7d sales + vendor pricing)
   const { data: detail, isLoading } = useQuery({
     queryKey: ['stock-detail', product.id],
     queryFn: async () => {
-      const [productRes, invRes, salesRes, dailyRes, activityRes] = await Promise.all([
+      const [productRes, invRes, salesRes, dailyRes, activityRes, vendorPricingRes] = await Promise.all([
         supabase.from('products')
           .select('id, name, sku, barcode, type, unit, price, cost, low_stock_qty, emoji, image_url')
           .eq('id', product.id).single(),
@@ -43,11 +43,15 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
           .select('sale_date, units')
           .eq('product_id', product.id).eq('tenant_id', tenant.id).eq('store_id', store.id)
           .order('sale_date'),
-        // Recent activity: combine adjustments + sales
         supabase.from('inventory_adjustments')
           .select('id, qty_change, qty_before, qty_after, reason, notes, created_at, users(name)')
           .eq('tenant_id', tenant.id).eq('product_id', product.id)
-          .order('created_at', { ascending: false }).limit(10),
+          .order('created_at', { ascending: false }).limit(15),
+        // Vendor pricing for this product
+        supabase.from('vendor_product_pricing')
+          .select('vendor_id, last_cost, avg_cost, total_received_qty, last_received_at, suppliers(name)')
+          .eq('tenant_id', tenant.id).eq('product_id', product.id)
+          .order('last_received_at', { ascending: false }),
       ])
 
       // Get recent sales too
@@ -62,11 +66,26 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
 
       // Merge activity (adjustments + sales) into one timeline
       const activity = []
-      ;(activityRes.data || []).forEach(a => activity.push({
-        kind: 'adjust', at: a.created_at,
-        delta: a.qty_change, reason: a.reason, notes: a.notes,
-        user: a.users?.name, qty_after: a.qty_after,
-      }))
+      ;(activityRes.data || []).forEach(a => {
+        // Detect PO receive adjustments (reason starts with "Received from PO ")
+        const isPoReceive = a.reason?.startsWith('Received from PO ')
+        const poNumber = isPoReceive ? a.reason.replace('Received from PO ', '').trim() : null
+        // Extract cost from notes if present (format: "Cost: $X.XX from vendor")
+        const costMatch = a.notes?.match(/\$([0-9.]+)/)
+        const unitCost = costMatch ? parseFloat(costMatch[1]) : null
+
+        activity.push({
+          kind: isPoReceive ? 'receive' : 'adjust',
+          at: a.created_at,
+          delta: a.qty_change,
+          reason: a.reason,
+          notes: a.notes,
+          user: a.users?.name,
+          qty_after: a.qty_after,
+          po_number: poNumber,
+          unit_cost: unitCost,
+        })
+      })
       ;(salesItems || []).forEach(s => activity.push({
         kind: 'sale', at: s.created_at,
         delta: -Math.abs(s.quantity), order_number: s.orders?.order_number,
@@ -80,6 +99,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
         sales7d:   salesRes.data || { units_sold: 0, revenue: 0, order_count: 0 },
         dailySales: dailyRes.data || [],
         activity:  activity.slice(0, 15),
+        vendorPricing: vendorPricingRes.data || [],
       }
     },
     enabled: !!product?.id && !!tenant?.id && !!store?.id,
@@ -261,6 +281,55 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
             </button>
           </Section>
 
+          {/* ── Vendor pricing comparison ── */}
+          {detail.vendorPricing && detail.vendorPricing.length > 0 && (
+            <Section title="Vendor pricing">
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg overflow-hidden">
+                <div className="grid bg-[#F5F5F5] border-b border-[#E5E5E5]"
+                  style={{gridTemplateColumns:'1.4fr 90px 90px 60px'}}>
+                  {['Vendor', 'Last cost', 'Avg cost', 'Bought'].map(h => (
+                    <div key={h} className="px-2.5 py-1.5 text-[9px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
+                  ))}
+                </div>
+                {detail.vendorPricing.map((vp, i) => {
+                  // Find lowest cost among all vendors for highlight
+                  const minLast = Math.min(...detail.vendorPricing.map(x => x.last_cost || Infinity))
+                  const isCheapest = vp.last_cost === minLast && detail.vendorPricing.length > 1
+                  return (
+                    <div key={i} className="grid border-b border-[#E5E5E5] last:border-0 items-center"
+                      style={{gridTemplateColumns:'1.4fr 90px 90px 60px'}}>
+                      <div className="px-2.5 py-2">
+                        <div className="text-[12px] font-bold text-[#1F1F1F] truncate flex items-center gap-1.5">
+                          {vp.suppliers?.name || '—'}
+                          {isCheapest && (
+                            <span className="text-[8px] font-bold px-1 py-0.5 rounded"
+                              style={{background:'#DCFCE7', color:'#15803D'}}>
+                              CHEAPEST
+                            </span>
+                          )}
+                        </div>
+                        {vp.last_received_at && (
+                          <div className="text-[9px] text-[#999]">
+                            Last: {new Date(vp.last_received_at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="px-2.5 py-2 text-right font-mono text-[12px] font-bold text-[#1F1F1F]">
+                        ${(vp.last_cost || 0).toFixed(2)}
+                      </div>
+                      <div className="px-2.5 py-2 text-right font-mono text-[11px] text-[#666]">
+                        ${(vp.avg_cost || 0).toFixed(2)}
+                      </div>
+                      <div className="px-2.5 py-2 text-right font-mono text-[11px] text-[#666]">
+                        {(vp.total_received_qty || 0).toFixed(0)}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Section>
+          )}
+
           {/* ── Recent activity ── */}
           <Section title="Recent activity">
             {detail.activity.length === 0 ? (
@@ -400,6 +469,7 @@ function EditableNum({ value: initial, onSave, onCancel, prefix }) {
 
 function ActivityRow({ item }) {
   const ago = relativeTime(item.at)
+
   if (item.kind === 'sale') {
     return (
       <div className="flex items-center gap-2 px-2 py-1.5 rounded text-[12px]" style={{background:'#FAFAFA'}}>
@@ -410,7 +480,33 @@ function ActivityRow({ item }) {
       </div>
     )
   }
-  // adjust
+
+  if (item.kind === 'receive') {
+    // PO receive — special highlight with cost + PO number
+    const total = item.unit_cost && item.delta ? (item.unit_cost * item.delta).toFixed(2) : null
+    return (
+      <div className="flex items-start gap-2 px-2 py-1.5 rounded text-[12px]"
+        style={{background:'#E6F0FF', border:'1px solid #BFDBFE'}}>
+        <span className="text-[12px]">📥</span>
+        <span className="font-bold font-mono text-[#15803D]">+{item.delta}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[#1F1F1F] truncate font-bold">
+            Received <span className="font-mono text-[#006AFF]">{item.po_number}</span>
+            {item.user && <span className="font-normal text-[#666]"> · {item.user}</span>}
+          </div>
+          {item.unit_cost != null && (
+            <div className="text-[10px] text-[#666] font-mono">
+              @ ${item.unit_cost.toFixed(2)}/each
+              {total && <span className="text-[#999]"> = ${total}</span>}
+            </div>
+          )}
+        </div>
+        <span className="text-[10px] text-[#999] flex-shrink-0">{ago}</span>
+      </div>
+    )
+  }
+
+  // Regular adjust (count, write-off, etc)
   const isPositive = item.delta >= 0
   return (
     <div className="flex items-start gap-2 px-2 py-1.5 rounded text-[12px]" style={{background:'#FAFAFA'}}>
