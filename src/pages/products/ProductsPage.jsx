@@ -9,6 +9,7 @@ import { ProductDetailInline } from './ProductDetailInline'
 import { AIStockBadge, AIStockPanel } from './AIStockPredict'
 import { ReceiveModal } from './ReceiveModal'
 import { AdjustModal } from './AdjustModal'
+import { CountModal, WriteOffModal, HistoryModal } from '@/components/inventory/StockOpsModals'
 import toast from 'react-hot-toast'
 
 const TYPE_COLOR = {
@@ -653,7 +654,9 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 // ── Stock Quick Panel ──
 function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
   const [showReceive, setShowReceive] = useState(false)
-  const [showAdjust, setShowAdjust]   = useState(false)
+  const [showCount, setShowCount]     = useState(false)
+  const [showWriteOff, setShowWriteOff] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
 
   const qty      = p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
@@ -700,18 +703,34 @@ function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setShowReceive(true)}
-              className="rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none transition-all"
-              style={{background:'#00B23B', color:'#fff'}}>
-              📥 + Receive
+              className="rounded-lg py-2.5 px-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
+              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              📥 Receive
             </button>
-            <button onClick={() => setShowAdjust(true)}
-              className="rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none transition-all"
-              style={{background:'#006AFF', color:'#fff'}}>
-              ⚖️ Adjust
+            <button onClick={() => setShowCount(true)}
+              className="rounded-lg py-2.5 px-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
+              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+              🔢 Count
+            </button>
+            <button onClick={() => setShowWriteOff(true)}
+              className="rounded-lg py-2.5 px-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
+              style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+              💔 Write off
+            </button>
+            <button onClick={() => setShowHistory(true)}
+              className="rounded-lg py-2.5 px-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
+              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+              📜 History
             </button>
           </div>
+
+          <button onClick={() => { window.location.href = `/stock-levels?focus=${p.id}` }}
+            className="mt-3 w-full rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-2"
+            style={{background:'#F5F5F5', color:'#006AFF', border:'1px solid #E5E5E5'}}>
+            📊 Open in Stock Center →
+          </button>
         </div>
       </div>
 
@@ -720,10 +739,18 @@ function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
           onSave={() => { onRefresh(); setShowReceive(false) }}
           onClose={() => setShowReceive(false)}/>
       )}
-      {showAdjust && (
-        <AdjustModal product={p} tenantId={tenantId}
-          onSave={() => { onRefresh(); setShowAdjust(false) }}
-          onClose={() => setShowAdjust(false)}/>
+      {showCount && (
+        <CountModal product={p} currentQty={qty}
+          onClose={() => setShowCount(false)}
+          onSaved={() => { onRefresh(); setShowCount(false) }}/>
+      )}
+      {showWriteOff && (
+        <WriteOffModal product={p} currentQty={qty}
+          onClose={() => setShowWriteOff(false)}
+          onSaved={() => { onRefresh(); setShowWriteOff(false) }}/>
+      )}
+      {showHistory && (
+        <HistoryModal product={p} onClose={() => setShowHistory(false)}/>
       )}
     </div>
   )

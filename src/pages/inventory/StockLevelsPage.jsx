@@ -23,6 +23,26 @@ export default function StockLevelsPage() {
   const [historyFor, setHistoryFor] = useState(null)
   const [detailFor, setDetailFor]   = useState(null)  // product currently shown in side panel
 
+  // ── Auto-open detail panel if URL has ?focus=PRODUCT_ID ──
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const focusId = url.searchParams.get('focus')
+    if (!focusId || !tenant?.id || !store?.id) return
+    ;(async () => {
+      const { data } = await supabase.from('products')
+        .select('id, name, sku, type, low_stock_qty, image_url, category_id')
+        .eq('id', focusId).maybeSingle()
+      if (data) {
+        const { data: inv } = await supabase.from('inventory')
+          .select('quantity').eq('product_id', focusId).eq('store_id', store.id).maybeSingle()
+        setDetailFor({ ...data, qty: inv?.quantity ?? 0 })
+        // Clean the URL so refresh doesn't re-trigger
+        url.searchParams.delete('focus')
+        window.history.replaceState({}, '', url.toString())
+      }
+    })()
+  }, [tenant?.id, store?.id])
+
   // Debounce search input (only fire query 400ms after typing stops, min 2 chars)
   useEffect(() => {
     const t = setTimeout(() => {
@@ -438,21 +458,11 @@ function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, onOpen, isLas
         <span className="text-[13px] font-bold font-mono">{badge.label}</span>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-1 flex-shrink-0">
-        <button onClick={() => onQuickAdjust(-1)} title="Decrease by 1"
-          className="w-9 h-9 rounded-lg text-[16px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{ background:'#FEE2E2', color:'#CF1322', border:'1px solid #FECACA' }}>−</button>
-        <button onClick={() => onQuickAdjust(1)} title="Increase by 1"
-          className="w-9 h-9 rounded-lg text-[16px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{ background:'#DCFCE7', color:'#15803D', border:'1px solid #BBF7D0' }}>+</button>
-        <button onClick={onSet}
-          className="px-3 h-9 rounded-lg text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{ background:'#006AFF', color:'#FFFFFF', border:'none' }}>Set</button>
-        <button onClick={onHistory}
-          className="w-9 h-9 rounded-lg text-[14px] cursor-pointer active:scale-[0.96]"
-          style={{ background:'#F5F5F5', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>📜</button>
-      </div>
+      {/* Open detail panel */}
+      <button onClick={onOpen}
+        className="w-9 h-9 rounded-lg text-[16px] cursor-pointer active:scale-[0.96] flex-shrink-0"
+        style={{ background:'#F5F5F5', color:'#666', border:'1px solid #E5E5E5' }}
+        title="Manage this item">›</button>
     </div>
   )
 }
