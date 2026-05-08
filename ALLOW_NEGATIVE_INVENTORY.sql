@@ -1,11 +1,7 @@
 -- ============================================================
--- 🔓 允许负库存 — 警告但不拦截
+-- 🔓 允许负库存 — 警告但不拦截 (v2 - 修复 balance_due bug)
 -- 复制全部内容 → Supabase SQL Editor → 点 Run
 -- 安全：可以重复跑
---
--- 改动：
--- 1. fn_deduct_inventory_atomic — 不再拒绝，允许扣到负数
--- 2. fn_submit_order_atomic — 收集所有警告返回前端显示
 -- ============================================================
 
 -- ── PART 1: 库存扣减允许负数 ──
@@ -30,7 +26,6 @@ BEGIN
     AND product_id = p_product_id
   FOR UPDATE;
 
-  -- 如果库存记录不存在 → 创建一条（允许负库存）
   IF v_current IS NULL THEN
     INSERT INTO inventory (tenant_id, store_id, product_id, quantity)
     VALUES (p_tenant_id, p_store_id, p_product_id, -p_quantity);
@@ -41,12 +36,10 @@ BEGIN
     );
   END IF;
 
-  -- 库存不够 → 不拒绝，只警告
   IF v_current < p_quantity THEN
     v_warning := 'Stock went negative: was ' || v_current || ', sold ' || p_quantity || ' (now ' || (v_current - p_quantity) || ')';
   END IF;
 
-  -- 直接扣，允许变负数
   UPDATE inventory
   SET quantity = quantity - p_quantity,
       version  = version + 1,
@@ -64,7 +57,7 @@ END;
 $$;
 
 
--- ── PART 2: 订单提交时收集所有警告 ──
+-- ── PART 2: 订单提交（修复 balance_due 不能手动插入）──
 CREATE OR REPLACE FUNCTION fn_submit_order_atomic(
   p_tenant_id    UUID,
   p_store_id     UUID,
@@ -90,7 +83,6 @@ BEGIN
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
-    -- 序列号商品 → 仍然必须有序列号（不能负卖）
     IF v_item->>'serial_number' IS NOT NULL AND v_item->>'serial_number' != '' THEN
       SELECT fn_claim_serial_atomic(
         p_tenant_id,
@@ -109,7 +101,6 @@ BEGIN
         );
       END IF;
 
-    -- 普通商品（非服务）→ 扣库存（允许负数）
     ELSIF COALESCE(v_item->>'product_type', 'product') NOT IN ('service') THEN
       SELECT fn_deduct_inventory_atomic(
         p_tenant_id,
@@ -119,7 +110,6 @@ BEGIN
         COALESCE(v_item->>'unit', 'ea')
       ) INTO v_inv_result;
 
-      -- 收集警告（但不阻止订单）
       IF v_inv_result->>'warning' IS NOT NULL THEN
         v_warnings := array_append(v_warnings,
           (v_item->>'product_name') || ': ' || (v_inv_result->>'warning')
@@ -128,11 +118,11 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 写入订单主记录
+  -- 写入订单主记录（不包含 balance_due，它是 generated column）
   INSERT INTO orders (
     id, tenant_id, store_id, order_number, cashier_id, terminal_id,
     customer_id, status, subtotal, discount_amount, tax_amount, total,
-    amount_paid, balance_due, tax_breakdown, points_earned, version
+    amount_paid, tax_breakdown, points_earned, version
   ) VALUES (
     v_order_id, p_tenant_id, p_store_id, v_order_number, p_cashier_id, p_terminal_id,
     NULLIF(p_order_data->>'customer_id', '')::UUID,
@@ -142,7 +132,6 @@ BEGIN
     (p_order_data->>'tax_amount')::NUMERIC,
     (p_order_data->>'total')::NUMERIC,
     (p_order_data->>'amount_paid')::NUMERIC,
-    GREATEST(0, (p_order_data->>'total')::NUMERIC - (p_order_data->>'amount_paid')::NUMERIC),
     COALESCE(p_order_data->'tax_breakdown', '[]'::JSONB),
     COALESCE((p_order_data->>'points_earned')::INTEGER, 0),
     1
@@ -206,6 +195,3 @@ END;
 $$;
 
 -- ✅ 跑完看到 "Success. No rows returned"
--- 现在所有结账都不会因库存不足被拦
--- 库存可以变负数，订单完成后会显示警告 toast
--- 商家在库存页面看到负数后自己处理（盘点、补货）
