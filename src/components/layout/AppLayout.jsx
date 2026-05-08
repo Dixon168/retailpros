@@ -20,6 +20,7 @@ const NAV_GROUPS = [
       { to:'/products',   icon:'📦', label:'Products' },
       { to:'/categories', icon:'📁', label:'Categories' },
       { to:'/stock-levels', icon:'📊', label:'Stock Center' },
+      { to:'/purchase-orders', icon:'📋', label:'Purchase Orders' },
       { to:'/vendors',       icon:'🚚', label:'Vendors' },
       { to:'/smart-receive', icon:'🤖', label:'Smart Receive' },
     ]

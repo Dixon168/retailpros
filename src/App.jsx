@@ -20,6 +20,7 @@ import OrderLookupPage from '@/pages/orders/OrderLookupPage'
 import DashboardPage from '@/pages/backoffice/DashboardPage'
 import SmartReceivePage from '@/pages/inventory/SmartReceivePage'
 import StockLevelsPage from '@/pages/inventory/StockLevelsPage'
+import PurchaseOrdersPage from '@/pages/purchase-orders/PurchaseOrdersPage'
 import CardCenterPage from '@/pages/cardcenter/CardCenterPage'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
 import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="/backoffice"      element={<DashboardPage />} />
             <Route path="/smart-receive"   element={<SmartReceivePage />} />
             <Route path="/stock-levels"    element={<StockLevelsPage />} />
+            <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
             <Route path="/orders"     element={<OrderLookupPage />} />
             <Route path="/products"   element={<ProductsPage />} />
             <Route path="/customers"  element={<CustomersPage />} />
