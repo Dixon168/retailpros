@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { QWERTYKeyboard, NumericKeypad } from '@/components/ui/TouchKeyboards'
+import DualInput from '@/components/ui/DualInput'
 
 const PO_STATUS = {
   draft:     { bg:'#F5F5F5',  color:'#666666' },
@@ -382,8 +383,6 @@ function VendorFormModal({ vendor, tenantId, onClose, onSaved }) {
     notes:          vendor?.notes          || '',
   })
   const [saving, setSaving] = useState(false)
-  const [showKB, setShowKB] = useState(null)
-  const [showNumPad, setShowNumPad] = useState(null)
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
 
@@ -403,113 +402,94 @@ function VendorFormModal({ vendor, tenantId, onClose, onSaved }) {
     onSaved(result.data)
   }
 
-  const openKB = (field, label) => setShowKB({
-    field, title: label, value: form[field], onChange: v => set(field, v),
-  })
-  const openNumPad = (field, label) => setShowNumPad({
-    field, title: label, value: form[field], onChange: v => set(field, v),
-  })
+  const isCustomTerms = form.payment_terms && !['Net 15','Net 30','Net 60','COD'].includes(form.payment_terms)
 
   return (
-    <>
-      <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.45)'}}>
-        <div className="rounded-2xl overflow-hidden flex flex-col" style={{
-          width:'520px', maxWidth:'100%', maxHeight:'92vh', background:'#FFFFFF',
-          boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
-        }}>
-          <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
-            <div>
-              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">
-                {isNew ? 'New Vendor' : 'Edit Vendor'}
-              </div>
-              <div className="text-[16px] font-bold text-[#1F1F1F]">{form.name || 'Untitled'}</div>
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="rounded-2xl overflow-hidden flex flex-col" style={{
+        width:'520px', maxWidth:'100%', maxHeight:'92vh', background:'#FFFFFF',
+        boxShadow:'0 20px 50px rgba(0,0,0,0.25)'
+      }}>
+        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div>
+            <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">
+              {isNew ? 'New Vendor' : 'Edit Vendor'}
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-              style={{background:'#F5F5F5', border:'none'}}>✕</button>
+            <div className="text-[16px] font-bold text-[#1F1F1F]">{form.name || 'Untitled'}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
+            style={{background:'#F5F5F5', border:'none'}}>✕</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <DualInput label="Vendor Name" required autoFocus
+            value={form.name} onChange={v => set('name', v)}
+            placeholder="e.g. Acme Foods"/>
+
+          <DualInput label="Contact Person"
+            value={form.contact_name} onChange={v => set('contact_name', v)}
+            placeholder="e.g. John Smith"/>
+
+          <div className="grid grid-cols-2 gap-3">
+            <DualInput label="Email" mode="email"
+              value={form.email} onChange={v => set('email', v)}
+              placeholder="vendor@example.com"/>
+            <DualInput label="Phone" mode="phone"
+              value={form.phone} onChange={v => set('phone', v)}
+              placeholder="(555) 123-4567"/>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            <FormField label="Vendor Name *" value={form.name} onTap={() => openKB('name', 'Vendor Name')} required/>
-            <FormField label="Contact Person" value={form.contact_name} onTap={() => openKB('contact_name', 'Contact Person')}/>
+          <DualInput label="Street Address"
+            value={form.address} onChange={v => set('address', v)}
+            placeholder="123 Main St"/>
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Email" value={form.email} onTap={() => openKB('email', 'Email')}/>
-              <FormField label="Phone" value={form.phone} onTap={() => openNumPad('phone', 'Phone Number')} mono/>
-            </div>
-
-            <FormField label="Street Address" value={form.address} onTap={() => openKB('address', 'Street Address')}/>
-
-            <div className="grid grid-cols-3 gap-3">
-              <FormField label="City" value={form.city} onTap={() => openKB('city', 'City')}/>
-              <FormField label="State" value={form.state} onTap={() => openKB('state', 'State')}/>
-              <FormField label="ZIP" value={form.zip} onTap={() => openNumPad('zip', 'ZIP Code')} mono/>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Payment Terms</div>
-              <div className="grid grid-cols-4 gap-1.5 mb-2">
-                {['Net 15', 'Net 30', 'Net 60', 'COD'].map(t => (
-                  <button key={t} onClick={() => set('payment_terms', form.payment_terms === t ? '' : t)}
-                    className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={form.payment_terms === t
-                      ? { background:'#E6F0FF', color:'#006AFF', border:'1px solid #006AFF' }
-                      : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => openKB('payment_terms', 'Custom Payment Terms')}
-                className="w-full text-left bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] cursor-pointer"
-                style={{color: form.payment_terms && !['Net 15','Net 30','Net 60','COD'].includes(form.payment_terms) ? '#1F1F1F' : '#999'}}>
-                {form.payment_terms && !['Net 15','Net 30','Net 60','COD'].includes(form.payment_terms)
-                  ? form.payment_terms
-                  : 'Or tap to type custom terms...'}
-              </button>
-            </div>
-
-            <FormField label="Notes" value={form.notes} onTap={() => openKB('notes', 'Notes')} multiline/>
+          <div className="grid grid-cols-3 gap-3">
+            <DualInput label="City"
+              value={form.city} onChange={v => set('city', v)}/>
+            <DualInput label="State"
+              value={form.state} onChange={v => set('state', v)}/>
+            <DualInput label="ZIP" mode="numeric"
+              value={form.zip} onChange={v => set('zip', v)}/>
           </div>
 
-          <div className="px-5 py-4 flex gap-2 flex-shrink-0" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
-            <button onClick={onClose}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
-              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-              Cancel
-            </button>
-            <button onClick={save} disabled={saving || !form.name.trim()}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-              {saving ? 'Saving...' : (isNew ? 'Add Vendor' : 'Save Changes')}
-            </button>
+          <div>
+            <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">Payment Terms</div>
+            <div className="grid grid-cols-4 gap-1.5 mb-2">
+              {['Net 15', 'Net 30', 'Net 60', 'COD'].map(t => (
+                <button key={t} type="button" onClick={() => set('payment_terms', form.payment_terms === t ? '' : t)}
+                  className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                  style={form.payment_terms === t
+                    ? { background:'#E6F0FF', color:'#006AFF', border:'1px solid #006AFF' }
+                    : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <DualInput
+              value={isCustomTerms ? form.payment_terms : ''}
+              onChange={v => set('payment_terms', v)}
+              placeholder="Or type custom terms..."
+              kbTitle="Custom Payment Terms"/>
           </div>
+
+          <DualInput label="Notes" multiline
+            value={form.notes} onChange={v => set('notes', v)}
+            placeholder="Any extra info about this vendor..."/>
+        </div>
+
+        <div className="px-5 py-4 flex gap-2 flex-shrink-0" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
+          <button onClick={onClose}
+            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
+            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+            Cancel
+          </button>
+          <button onClick={save} disabled={saving || !form.name.trim()}
+            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            {saving ? 'Saving...' : (isNew ? 'Add Vendor' : 'Save Changes')}
+          </button>
         </div>
       </div>
-
-      {showKB && (
-        <QWERTYKeyboard value={showKB.value} onChange={showKB.onChange}
-          onClose={() => setShowKB(null)} title={showKB.title}
-          mode={showKB.field === 'email' ? 'email' : 'text'}/>
-      )}
-      {showNumPad && (
-        <NumericKeypad value={showNumPad.value} onChange={showNumPad.onChange}
-          onClose={() => setShowNumPad(null)} title={showNumPad.title}
-          formatPhone={showNumPad.field === 'phone'} allowPlus={showNumPad.field === 'phone'}/>
-      )}
-    </>
-  )
-}
-
-function FormField({ label, value, onTap, required, multiline, mono }) {
-  return (
-    <div>
-      <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">
-        {label}{required && <span className="text-[#CF1322]"> *</span>}
-      </div>
-      <button onClick={onTap}
-        className={`w-full text-left bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] cursor-pointer hover:border-[#006AFF] ${mono ? 'font-mono' : ''}`}
-        style={{ color: value ? '#1F1F1F' : '#999', minHeight: multiline ? '60px' : 'auto', whiteSpace: multiline ? 'pre-wrap' : 'normal' }}>
-        {value || `Tap to enter ${label.replace(' *', '').toLowerCase()}...`}
-      </button>
     </div>
   )
 }
