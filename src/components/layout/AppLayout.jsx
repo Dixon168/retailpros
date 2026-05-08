@@ -36,6 +36,7 @@ const NAV_GROUPS = [
   {
     group: 'Sales',
     items: [
+      { to:'/estimates',  icon:'📝', label:'Estimates' },
       { to:'/invoices',   icon:'📄', label:'Invoices' },
       { to:'/cardcenter', icon:'💳', label:'Card Center' },
     ]
