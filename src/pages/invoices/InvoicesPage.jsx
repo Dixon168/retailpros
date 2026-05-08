@@ -1,6 +1,7 @@
 // src/pages/invoices/InvoicesPage.jsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import CreateInvoiceModal from './CreateInvoiceModal'
@@ -20,11 +21,23 @@ const STATUS_BADGE = {
 export default function InvoicesPage() {
   const { tenant } = useAuthStore()
   const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showCreate, setShowCreate]     = useState(false)
   const [showReceive, setShowReceive]   = useState(false)
   const [viewingInv, setViewingInv]     = useState(null)
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('filter') || 'all')
   const [search, setSearch]             = useState('')
+
+  // Sync filter to URL (so deep links from B2B Center KPIs work)
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      searchParams.delete('filter')
+    } else {
+      searchParams.set('filter', statusFilter)
+    }
+    setSearchParams(searchParams, { replace: true })
+    // eslint-disable-next-line
+  }, [statusFilter])
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices-list', tenant?.id],

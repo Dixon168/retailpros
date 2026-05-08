@@ -190,14 +190,14 @@ export default function B2BCenterPage() {
           value={`$${kpis.outstanding.toFixed(0)}`}
           note={`${kpis.outstandingCount} unpaid invoice${kpis.outstandingCount === 1 ? '' : 's'}`}
           color="#1F1F1F"
-          onClick={() => navigate('/invoices')}
+          onClick={() => navigate('/invoices?filter=unpaid')}
         />
         <KpiCard
           icon="⚠️" label="Overdue"
           value={`$${kpis.overdue.toFixed(0)}`}
           note={`${kpis.overdueCount} past due`}
           color={kpis.overdueCount > 0 ? '#CF1322' : '#15803D'}
-          onClick={() => navigate('/reports/ar-aging')}
+          onClick={() => navigate('/invoices?filter=overdue')}
           highlight={kpis.overdueCount > 0}
         />
         <KpiCard
@@ -205,7 +205,7 @@ export default function B2BCenterPage() {
           value={`$${kpis.dueThisWeek.toFixed(0)}`}
           note={`${kpis.dueThisWeekCount} invoice${kpis.dueThisWeekCount === 1 ? '' : 's'}`}
           color="#B45309"
-          onClick={() => navigate('/invoices')}
+          onClick={() => navigate('/invoices?filter=unpaid')}
         />
         <KpiCard
           icon="✅" label="Paid This Month"

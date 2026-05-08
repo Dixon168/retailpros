@@ -7,9 +7,9 @@ import toast from 'react-hot-toast'
 import DualInput from '@/components/ui/DualInput'
 import EstimateProductPicker from '@/pages/estimates/EstimateProductPicker'
 
-export default function CreateInvoiceModal({ onClose, onCreated }) {
+export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerId }) {
   const { tenant, store, user } = useAuthStore()
-  const [customerId, setCustomerId]     = useState('')
+  const [customerId, setCustomerId]     = useState(presetCustomerId || '')
   const [dueDate, setDueDate]           = useState(() => {
     const d = new Date()
     d.setDate(d.getDate() + 30)

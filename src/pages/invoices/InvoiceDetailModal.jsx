@@ -29,6 +29,7 @@ const PAYMENT_METHOD_LABELS = {
 export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
   const { tenant, store } = useAuthStore()
   const [showReceive, setShowReceive] = useState(false)
+  const [showVoidInline, setShowVoidInline] = useState(false)
   const [updating, setUpdating] = useState(false)
 
   const { data: detail, isLoading, refetch } = useQuery({
@@ -299,61 +300,89 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                 <div className="text-[12px] text-[#1F1F1F] whitespace-pre-wrap">{detail.notes}</div>
               </div>
             )}
+
+            {/* INLINE: Void confirm */}
+            {showVoidInline && !isPaidOrVoid && (
+              <div className="rounded-lg p-4" style={{background:'#FEE2E2', border:'1px solid #CF1322'}}>
+                <div className="text-[13px] font-bold text-[#CF1322] mb-2">⚠️ Void this invoice?</div>
+                <div className="text-[11px] text-[#1F1F1F] mb-3">
+                  This will:
+                  <ul className="list-disc list-inside mt-1 space-y-0.5">
+                    <li>Mark invoice as <strong>Void</strong> and exclude from totals</li>
+                    <li>Customer's outstanding balance goes back down</li>
+                    <li><strong className="text-[#CF1322]">Inventory is NOT auto-restored</strong> — adjust manually if items returned</li>
+                  </ul>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowVoidInline(false)} disabled={updating}
+                    className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer"
+                    style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+                    Keep Invoice
+                  </button>
+                  <button onClick={() => { setShowVoidInline(false); updateStatus('void') }} disabled={updating}
+                    className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
+                    style={{background:'#CF1322', border:'none'}}>
+                    🗑 Yes, Void Invoice
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 flex gap-2 flex-shrink-0 flex-wrap" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
+          <div className="px-5 py-4 flex gap-2 flex-shrink-0 flex-wrap items-center" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
             <button onClick={onClose}
               className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
               style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
               Close
             </button>
 
-            {/* Print menu group */}
-            <div className="flex gap-1.5 items-stretch rounded-lg overflow-hidden"
-              style={{border:'1px solid #1F1F1F'}}>
-              <button onClick={printInvoice} title="Print invoice (or Save as PDF in print dialog)"
+            {/* Print group — primary action prominent */}
+            <div className="flex items-stretch rounded-lg overflow-hidden" style={{border:'1px solid #1F1F1F'}}>
+              <button onClick={printInvoice} title="Print or Save as PDF"
                 className="px-3 py-3 text-[13px] font-bold cursor-pointer"
                 style={{background:'#1F1F1F', color:'#FFFFFF', border:'none'}}>
-                🖨️ Print
+                🖨️ Print / PDF
               </button>
-              <button onClick={downloadInvoice} title="Download invoice"
+              <button onClick={downloadInvoice} title="Download HTML"
                 className="px-3 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
-                📥
-              </button>
-              <button onClick={printPacking} title="Print packing slip (no prices)"
-                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
-                📦 Packing
-              </button>
-              <button onClick={downloadPacking} title="Download packing slip"
-                className="px-2.5 py-3 text-[13px] font-bold cursor-pointer"
                 style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
                 📥
               </button>
             </div>
 
-            {detail.status === 'draft' && (
-              <button onClick={() => updateStatus('sent')} disabled={updating}
-                className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
-                📤 Mark as Sent
+            {/* Packing slip group — separate */}
+            <div className="flex items-stretch rounded-lg overflow-hidden" style={{border:'1px solid #B45309'}}>
+              <button onClick={printPacking} title="Print packing slip (no prices)"
+                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#B45309', border:'none'}}>
+                📦 Packing Slip
               </button>
-            )}
-            {!isPaidOrVoid && (
-              <button onClick={() => {
-                if (confirm('Void this invoice? It will be marked Void and excluded from totals. (Inventory is NOT auto-restored.)')) {
-                  updateStatus('void')
-                }
-              }} disabled={updating}
-                className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
-                Void
+              <button onClick={downloadPacking} title="Download packing slip"
+                className="px-2.5 py-3 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#B45309', border:'none', borderLeft:'1px solid #FCD34D'}}>
+                📥
               </button>
+            </div>
+
+            {!isPaidOrVoid && !showVoidInline && (
+              <>
+                {detail.status === 'draft' && (
+                  <button onClick={() => updateStatus('sent')} disabled={updating}
+                    className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                    style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                    📤 Mark Sent
+                  </button>
+                )}
+                <button onClick={() => setShowVoidInline(true)} disabled={updating}
+                  className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                  style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                  Void
+                </button>
+              </>
             )}
 
-            {balanceDue > 0 && !isPaidOrVoid && (
+            {balanceDue > 0 && !isPaidOrVoid && !showVoidInline && (
               <button onClick={() => setShowReceive(true)}
                 className="ml-auto rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
                 style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>

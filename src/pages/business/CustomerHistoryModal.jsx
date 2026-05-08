@@ -13,6 +13,8 @@ import { useAuthStore } from '@/stores/authStore'
 import InvoiceDetailModal from '@/pages/invoices/InvoiceDetailModal'
 import PaymentDetailModal from '@/pages/payments/PaymentDetailModal'
 import ReceivePaymentModal from '@/pages/invoices/ReceivePaymentModal'
+import CreateInvoiceModal from '@/pages/invoices/CreateInvoiceModal'
+import CreateEstimateModal from '@/pages/estimates/CreateEstimateModal'
 
 const STATUS_COLOR = {
   draft:   { bg:'#F5F5F5', color:'#666' },
@@ -35,6 +37,8 @@ export default function CustomerHistoryModal({ customerId, onClose, onChanged })
   const [viewingInv, setViewingInv] = useState(null)
   const [viewingPmt, setViewingPmt] = useState(null)
   const [showReceive, setShowReceive] = useState(false)
+  const [showCreateInv, setShowCreateInv] = useState(false)
+  const [showCreateEst, setShowCreateEst] = useState(false)
 
   const { data: customer } = useQuery({
     queryKey: ['business-customer', customerId],
@@ -120,20 +124,34 @@ export default function CustomerHistoryModal({ customerId, onClose, onChanged })
           </div>
 
           {/* Tabs */}
-          <div className="px-5 py-2 flex gap-2 flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div className="px-5 py-2 flex gap-2 flex-shrink-0 items-center" style={{borderBottom:'1px solid #E5E5E5'}}>
             <TabButton active={tab==='invoices'} onClick={() => setTab('invoices')}>
               📄 Invoices ({invoices.length})
             </TabButton>
             <TabButton active={tab==='payments'} onClick={() => setTab('payments')}>
               💰 Payments ({payments.length})
             </TabButton>
-            {totalOwed > 0 && (
-              <button onClick={() => setShowReceive(true)}
-                className="ml-auto rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
-                💰 Receive Payment
+
+            {/* Quick actions for this customer */}
+            <div className="ml-auto flex gap-1.5">
+              <button onClick={() => setShowCreateEst(true)}
+                className="rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                + Estimate
               </button>
-            )}
+              <button onClick={() => setShowCreateInv(true)}
+                className="rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                + Invoice
+              </button>
+              {totalOwed > 0 && (
+                <button onClick={() => setShowReceive(true)}
+                  className="rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                  style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+                  💰 Receive
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Body */}
@@ -243,6 +261,20 @@ export default function CustomerHistoryModal({ customerId, onClose, onChanged })
           presetCustomerId={customerId}
           onClose={() => setShowReceive(false)}
           onDone={() => { setShowReceive(false); onChanged?.() }}
+        />
+      )}
+      {showCreateInv && (
+        <CreateInvoiceModal
+          presetCustomerId={customerId}
+          onClose={() => setShowCreateInv(false)}
+          onCreated={() => { setShowCreateInv(false); onChanged?.() }}
+        />
+      )}
+      {showCreateEst && (
+        <CreateEstimateModal
+          presetCustomerId={customerId}
+          onClose={() => setShowCreateEst(false)}
+          onCreated={() => { setShowCreateEst(false); onChanged?.() }}
         />
       )}
     </>
