@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { NumericKeypad, QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
+import { ReceiveModal } from '@/pages/products/ReceiveModal'
 
 const REASONS = ['Damage / loss', 'Stocktake', 'Return to vendor', 'Gift / sample', 'Found stock', 'Other']
 
@@ -20,6 +21,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
   const [editing, setEditing] = useState(null)         // 'name' | 'sku' | 'price' | 'cost' | 'low_stock_qty'
   const [showSetPad, setShowSetPad] = useState(false)
   const [showKB, setShowKB] = useState(null)           // for editing string fields
+  const [showReceive, setShowReceive] = useState(false)
 
   // Fetch fresh detail (includes inventory + 7d sales)
   const { data: detail, isLoading } = useQuery({
@@ -205,16 +207,19 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button onClick={() => adjust(qty - 1, 'Quick -1')}
-                className="rounded-lg py-2.5 text-[14px] font-bold cursor-pointer active:scale-[0.96]"
+                className="rounded-lg py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
                 style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FECACA'}}>− 1</button>
               <button onClick={() => adjust(qty + 1, 'Quick +1')}
-                className="rounded-lg py-2.5 text-[14px] font-bold cursor-pointer active:scale-[0.96]"
+                className="rounded-lg py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
                 style={{background:'#DCFCE7', color:'#15803D', border:'1px solid #BBF7D0'}}>+ 1</button>
               <button onClick={() => setShowSetPad(true)}
-                className="rounded-lg py-2.5 text-[14px] font-bold cursor-pointer active:scale-[0.96]"
-                style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>Set...</button>
+                className="rounded-lg py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
+                style={{background:'#F5F5F5', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>📐 Set quantity</button>
+              <button onClick={() => setShowReceive(true)}
+                className="rounded-lg py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
+                style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>📥 Receive stock</button>
             </div>
           </Section>
 
@@ -280,6 +285,18 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
           onSave={(newQty, reason, notes) => {
             adjust(newQty, reason, notes)
             setShowSetPad(false)
+          }}
+        />
+      )}
+
+      {showReceive && (
+        <ReceiveModal
+          product={p}
+          tenantId={tenant.id}
+          onClose={() => setShowReceive(false)}
+          onSave={() => {
+            setShowReceive(false)
+            refetchAll()
           }}
         />
       )}

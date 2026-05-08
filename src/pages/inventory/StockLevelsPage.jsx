@@ -195,6 +195,11 @@ export default function StockLevelsPage() {
             Total {summary.total} · Need attention <span className="text-[#CF1322] font-bold">{summary.attention}</span> · Normal <span className="text-[#15803D] font-bold">{summary.normal}</span>
           </div>
         </div>
+        <button onClick={() => window.location.href = '/smart-receive'}
+          className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
+          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          🤖 Smart Receive
+        </button>
       </div>
 
       {/* Search */}
