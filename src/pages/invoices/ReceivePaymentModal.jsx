@@ -25,6 +25,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
   const [method, setMethod]           = useState('check')
   const [reference, setReference]     = useState('')
   const [notes, setNotes]              = useState('')
+  const [storedMethodId, setStoredMethodId] = useState('')  // 'new' (or empty) | uuid of stored method
   // allocations: { [invoiceId]: stringAmount }
   const [allocations, setAllocations] = useState({})
   const [saving, setSaving]            = useState(false)
@@ -41,6 +42,37 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
     },
     enabled: !!tenant?.id,
   })
+
+  // Stored payment methods for the selected customer + selected method type
+  const { data: storedMethods = [] } = useQuery({
+    queryKey: ['stored-methods', customerId, method],
+    queryFn: async () => {
+      const { data } = await supabase.from('business_payment_methods')
+        .select('*')
+        .eq('business_customer_id', customerId)
+        .eq('method_type', method)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('created_at')
+      return data || []
+    },
+    enabled: !!customerId && (method === 'check' || method === 'card' || method === 'ach'),
+  })
+
+  // Auto-clear stored selection when customer or method changes
+  useEffect(() => {
+    setStoredMethodId('')
+  }, [customerId, method])
+
+  // When stored method picked, auto-fill reference with hint about which method
+  useEffect(() => {
+    if (!storedMethodId || storedMethodId === 'new') return
+    const m = storedMethods.find(s => s.id === storedMethodId)
+    if (!m) return
+    if (m.method_type === 'check' && m.account_last4 && !reference) {
+      setReference(`Acct •••• ${m.account_last4}`)
+    }
+  }, [storedMethodId, storedMethods])
 
   // Open invoices for the selected customer
   const { data: openInvoices = [] } = useQuery({
@@ -124,6 +156,16 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
       }
     }
 
+    // If using a stored method, prefix notes so it's clear in payment history
+    let effectiveNotes = notes || ''
+    if (storedMethodId) {
+      const m = storedMethods.find(s => s.id === storedMethodId)
+      if (m) {
+        const tag = `[${m.method_type.toUpperCase()} on file: ${m.nickname || m.bank_name || m.method_type}${m.account_last4 ? ` ····${m.account_last4}` : ''}]`
+        effectiveNotes = effectiveNotes ? `${tag}\n${effectiveNotes}` : tag
+      }
+    }
+
     setSaving(true)
     const { data, error } = await supabase.rpc('fn_receive_payment_atomic', {
       p_tenant_id:     tenant.id,
@@ -132,7 +174,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
       p_payment_date:  paymentDate,
       p_method:        method,
       p_reference:     reference || null,
-      p_notes:         notes || null,
+      p_notes:         effectiveNotes || null,
       p_user_id:       user?.id || null,
       p_allocations:   allocList,
     })
@@ -206,6 +248,48 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
                 kbTitle="Reference Number"/>
             </div>
           </div>
+
+          {/* Stored methods picker — shown when customer + check/card/ach + at least one stored */}
+          {customerId && (method === 'check' || method === 'card' || method === 'ach') && storedMethods.length > 0 && (
+            <div className="rounded-lg p-2.5"
+              style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+              <div className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-2">
+                💳 On file for this company
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {storedMethods.map(m => (
+                  <button key={m.id} onClick={() => setStoredMethodId(m.id)}
+                    className="rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.97]"
+                    style={storedMethodId === m.id
+                      ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                      : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
+                    {m.method_type === 'check' ? '🏦' : m.method_type === 'card' ? '💳' : '🔄'}{' '}
+                    {m.nickname || m.bank_name || `${m.method_type}`}
+                    {m.account_last4 && <span className="opacity-75"> ····{m.account_last4}</span>}
+                    {m.is_default && <span className="ml-1 text-[9px]">⭐</span>}
+                  </button>
+                ))}
+                <button onClick={() => setStoredMethodId('')}
+                  className="rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.97]"
+                  style={!storedMethodId
+                    ? { background:'#1F1F1F', color:'#FFFFFF', border:'none' }
+                    : { background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5' }}>
+                  + New / one-time
+                </button>
+              </div>
+              {storedMethodId && (() => {
+                const m = storedMethods.find(s => s.id === storedMethodId)
+                if (!m) return null
+                return (
+                  <div className="mt-2 text-[10px] text-[#666]">
+                    {m.bank_name && <span>🏦 {m.bank_name}</span>}
+                    {m.holder_name && <span> · 👤 {m.holder_name}</span>}
+                    {m.notes && <div className="italic mt-0.5">{m.notes}</div>}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
 
           {/* Open invoices */}
           {!customerId ? (
