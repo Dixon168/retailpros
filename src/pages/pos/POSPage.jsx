@@ -22,6 +22,7 @@ import CustomerPanel from './panels/CustomerPanel'
 import DiscountPanel from './panels/DiscountPanel'
 import PaymentPanel from './panels/PaymentPanel'
 import RefundPanel from './panels/RefundPanel'
+import GiftCardPanel from '@/components/pos/GiftCardPanel'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
@@ -35,10 +36,11 @@ export default function POSPage() {
   const [searchQuery,    setSearchQuery]    = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
   const [showRefund,     setShowRefund]     = useState(false)
-  const [refundPreload,  setRefundPreload]  = useState(null)  // order obj to pre-load into refund panel
+  const [refundPreload,  setRefundPreload]  = useState(null)
   const [showHold,       setShowHold]       = useState(false)
   const [showRecall,     setShowRecall]     = useState(false)
   const [showPoints,     setShowPoints]     = useState(false)
+  const [showGiftCard,   setShowGiftCard]   = useState(false)
   const [showOpenItem,   setShowOpenItem]   = useState(false)
   const [time,           setTime]           = useState(new Date())
 
@@ -131,6 +133,7 @@ export default function POSPage() {
       })
       if (ok) toast.success('📌 Order held')
     }},
+    { id:'giftcard', label:'Gift Card', icon:'🎁', action: () => setShowGiftCard(true) },
     { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
@@ -229,7 +232,7 @@ export default function POSPage() {
               <span className="text-[9px] font-medium" style={{color:'#94a3b8'}}>{btn.label}</span>
             </button>
           ))}
-          {Array(5).fill(0).map((_,i) => (
+          {Array(4).fill(0).map((_,i) => (
             <button key={`slot-${i}`}
               className="flex-1 rounded-lg py-1.5 flex flex-col items-center gap-0.5 opacity-20 cursor-not-allowed border"
               style={{background:'transparent', border:'1px dashed rgba(255,255,255,0.2)'}}>
@@ -252,6 +255,8 @@ export default function POSPage() {
         onClose={() => { setShowRefund(false); setRefundPreload(null) }} />}
 
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
+
+    {showGiftCard && <GiftCardPanel onClose={() => setShowGiftCard(false)}/>}
 
     {showOpenItem && (
       <OpenItemModal
