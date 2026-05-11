@@ -357,63 +357,183 @@ function TerminalEditForm({ initial, onSave, onClose }) {
 // ── Tax Rates ──
 function TaxSection({ tenantId }) {
   const qc = useQueryClient()
-  const { data: groups = [] } = useQuery({
-    queryKey: ['tax-groups', tenantId],
+  const [editing, setEditing] = useState(null) // { id, name, ratePct }
+  const [adding, setAdding]   = useState(false)
+  const [newRate, setNewRate] = useState({ name:'', ratePct:'' })
+
+  const { data: rates = [], isLoading } = useQuery({
+    queryKey: ['tax-rates-flat', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('tax_groups')
-        .select('*, tax_rates(*)').eq('tenant_id', tenantId)
+      const { data } = await supabase.from('tax_rates')
+        .select('id, name, rate')
+        .eq('tenant_id', tenantId)
+        .order('name')
       return data || []
     },
     enabled: !!tenantId,
   })
 
+  const startEdit = (r) => setEditing({
+    id: r.id,
+    name: r.name,
+    ratePct: (r.rate * 100).toFixed(4).replace(/\.?0+$/, ''),  // 0.0825 → "8.25"
+  })
+
+  const saveEdit = async () => {
+    if (!editing.name.trim()) { toast.error('Name required'); return }
+    const pct = parseFloat(editing.ratePct)
+    if (isNaN(pct) || pct < 0 || pct > 100) { toast.error('Rate must be 0–100'); return }
+    const { error } = await supabase.from('tax_rates')
+      .update({ name: editing.name.trim(), rate: pct / 100 })
+      .eq('id', editing.id)
+    if (error) { toast.error('Save failed: ' + error.message); return }
+    qc.invalidateQueries({ queryKey: ['tax-rates-flat'] })
+    qc.invalidateQueries({ queryKey: ['tax-rates'] })  // refresh product form too
+    setEditing(null)
+    toast.success('Tax rate updated')
+  }
+
+  const addRate = async () => {
+    if (!newRate.name.trim()) { toast.error('Name required'); return }
+    const pct = parseFloat(newRate.ratePct || '0')
+    if (isNaN(pct) || pct < 0 || pct > 100) { toast.error('Rate must be 0–100'); return }
+    const { error } = await supabase.from('tax_rates')
+      .insert({ tenant_id: tenantId, name: newRate.name.trim(), rate: pct / 100 })
+    if (error) { toast.error('Add failed: ' + error.message); return }
+    qc.invalidateQueries({ queryKey: ['tax-rates-flat'] })
+    qc.invalidateQueries({ queryKey: ['tax-rates'] })
+    setNewRate({ name:'', ratePct:'' })
+    setAdding(false)
+    toast.success('Tax rate added')
+  }
+
+  const deleteRate = async (r) => {
+    // Check if any products use this rate
+    const { count } = await supabase.from('product_tax_rates')
+      .select('id', { count:'exact', head:true })
+      .eq('tax_rate_id', r.id)
+    const inUse = count || 0
+    const msg = inUse > 0
+      ? `"${r.name}" is currently applied to ${inUse} product${inUse>1?'s':''}.\nDelete it? Those products will no longer have this tax.`
+      : `Delete "${r.name}"?`
+    if (!confirm(msg)) return
+    const { error } = await supabase.from('tax_rates').delete().eq('id', r.id)
+    if (error) { toast.error('Delete failed: ' + error.message); return }
+    qc.invalidateQueries({ queryKey: ['tax-rates-flat'] })
+    qc.invalidateQueries({ queryKey: ['tax-rates'] })
+    toast.success('Tax rate deleted')
+  }
+
   return (
     <div className="max-w-[600px]">
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex justify-between items-center mb-2">
         <SectionTitle className="mb-0">🧾 Tax Rates</SectionTitle>
-        <button onClick={() => toast.success('Add tax group')}
-          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
-          + Add Tax Group
-        </button>
-      </div>
-
-      {groups.map(group => (
-        <Card key={group.id} className="mb-3">
-          <div className="flex justify-between items-center mb-3">
-            <div>
-              <div className="text-[13px] font-bold flex items-center gap-2">
-                {group.name}
-                {group.is_default && (
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded
-                    bg-[#006AFF]/10 text-[#006AFF]">DEFAULT</span>
-                )}
-              </div>
-              <div className="text-[10px] font-mono text-[#999999] mt-0.5">
-                State: {group.state || '—'}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-[16px] font-bold font-mono text-[#FA8C16]">
-                {((group.tax_rates || []).reduce((s,r) => s + r.rate, 0) * 100).toFixed(2)}%
-              </div>
-              <div className="text-[10px] text-[#999999]">total rate</div>
-            </div>
-          </div>
-          {(group.tax_rates || []).map(rate => (
-            <div key={rate.id} className="flex items-center justify-between
-              bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 mb-1.5 last:mb-0">
-              <span className="text-[12px]">{rate.name}</span>
-              <span className="font-mono text-[12px] font-bold text-[#FA8C16]">
-                {(rate.rate * 100).toFixed(2)}%
-              </span>
-            </div>
-          ))}
-          <button onClick={() => toast.success('Add rate layer')}
-            className="mt-2 text-[10px] text-[#006AFF] hover:underline">
-            + Add Rate Layer
+        {!adding && (
+          <button onClick={() => setAdding(true)}
+            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer active:scale-[0.97]">
+            + Add Tax Rate
           </button>
-        </Card>
-      ))}
+        )}
+      </div>
+      <p className="text-[12px] text-[#666666] mb-4">
+        Click any name or rate to edit. These show up as checkboxes on each product.
+      </p>
+
+      <Card>
+        {/* Add-new row */}
+        {adding && (
+          <div className="flex items-center gap-2 mb-3 p-2 rounded-lg"
+            style={{background:'#E6F0FF', border:'1.5px solid #006AFF'}}>
+            <input autoFocus value={newRate.name}
+              onChange={e=>setNewRate(p=>({...p, name:e.target.value}))}
+              onKeyDown={e=>{ if(e.key==='Enter') addRate(); if(e.key==='Escape'){setAdding(false); setNewRate({name:'',ratePct:''})} }}
+              placeholder="Name (e.g. Tax 3, City Tax, ...)"
+              className="flex-1 rounded-md px-2.5 py-1.5 text-[12px] outline-none"
+              style={{border:'1px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+            <input value={newRate.ratePct}
+              onChange={e=>setNewRate(p=>({...p, ratePct:e.target.value}))}
+              onKeyDown={e=>{ if(e.key==='Enter') addRate() }}
+              placeholder="0.00" type="number" step="0.01" min="0" max="100"
+              className="w-20 rounded-md px-2.5 py-1.5 text-[12px] outline-none font-mono text-right"
+              style={{border:'1px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+            <span className="text-[12px] font-bold text-[#006AFF]">%</span>
+            <button onClick={addRate}
+              className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
+              style={{background:'#15803d', color:'#fff', border:'none'}}>Save</button>
+            <button onClick={()=>{setAdding(false); setNewRate({name:'',ratePct:''})}}
+              className="rounded-md px-2 py-1.5 text-[11px] font-bold cursor-pointer"
+              style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
+          </div>
+        )}
+
+        {/* List */}
+        {isLoading ? (
+          <div className="text-[12px] text-[#999] py-4 text-center">Loading...</div>
+        ) : rates.length === 0 && !adding ? (
+          <div className="text-[12px] text-[#999] py-6 text-center">
+            No tax rates yet. Click <b>+ Add Tax Rate</b> to create your first one.
+          </div>
+        ) : rates.map(r => (
+          <div key={r.id} className="flex items-center gap-2 py-2 border-b border-[#E5E5E5] last:border-0">
+            {editing?.id === r.id ? (
+              <>
+                <input autoFocus value={editing.name}
+                  onChange={e=>setEditing(p=>({...p, name:e.target.value}))}
+                  onKeyDown={e=>{ if(e.key==='Enter') saveEdit(); if(e.key==='Escape') setEditing(null) }}
+                  className="flex-1 rounded-md px-2.5 py-1.5 text-[12px] outline-none"
+                  style={{border:'1.5px solid #006AFF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+                <input value={editing.ratePct}
+                  onChange={e=>setEditing(p=>({...p, ratePct:e.target.value}))}
+                  onKeyDown={e=>{ if(e.key==='Enter') saveEdit(); if(e.key==='Escape') setEditing(null) }}
+                  type="number" step="0.01" min="0" max="100"
+                  className="w-20 rounded-md px-2.5 py-1.5 text-[12px] outline-none font-mono text-right"
+                  style={{border:'1.5px solid #006AFF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+                <span className="text-[12px] font-bold text-[#FA8C16]">%</span>
+                <button onClick={saveEdit}
+                  className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
+                  style={{background:'#15803d', color:'#fff', border:'none'}}>Save</button>
+                <button onClick={()=>setEditing(null)}
+                  className="rounded-md px-2 py-1.5 text-[11px] font-bold cursor-pointer"
+                  style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
+              </>
+            ) : (
+              <>
+                <button onClick={()=>startEdit(r)}
+                  className="flex-1 text-left rounded-md px-2.5 py-1.5 text-[13px] cursor-pointer"
+                  style={{background:'transparent', border:'1px solid transparent', color:'#1F1F1F'}}
+                  onMouseEnter={e=>{e.currentTarget.style.background='#F5F5F5'; e.currentTarget.style.borderColor='#E5E5E5'}}
+                  onMouseLeave={e=>{e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='transparent'}}>
+                  {r.name}
+                </button>
+                <button onClick={()=>startEdit(r)}
+                  className="rounded-md px-2.5 py-1.5 text-[13px] font-mono font-bold cursor-pointer"
+                  style={{background:'#fef9c3', color:'#FA8C16', border:'1px solid #fde68a'}}>
+                  {(r.rate * 100).toFixed(2)}%
+                </button>
+                <button onClick={()=>deleteRate(r)}
+                  className="rounded-md px-2 py-1.5 text-[12px] cursor-pointer"
+                  style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FECACA'}}
+                  title="Delete this tax rate">✕</button>
+              </>
+            )}
+          </div>
+        ))}
+
+        {rates.length > 0 && (
+          <div className="mt-3 pt-3 flex items-center justify-between" style={{borderTop:'1px dashed #E5E5E5'}}>
+            <span className="text-[11px] text-[#666]">
+              {rates.length} tax rate{rates.length>1?'s':''} configured
+            </span>
+            <span className="text-[11px] text-[#666] font-mono">
+              Sum: <span className="font-bold text-[#FA8C16]">{(rates.reduce((s,r)=>s+r.rate,0)*100).toFixed(2)}%</span>
+            </span>
+          </div>
+        )}
+      </Card>
+
+      <div className="mt-4 rounded-lg p-3 text-[11px]" style={{background:'#FAFAFA', border:'1px solid #E5E5E5', color:'#666'}}>
+        💡 <b>How it works:</b> Each tax rate becomes a checkbox on every product. When you create or edit a product, tick the boxes for the taxes that apply. Multiple taxes stack (e.g. state + city).
+      </div>
     </div>
   )
 }
