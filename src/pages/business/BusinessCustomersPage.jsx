@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import CustomerHistoryModal from './CustomerHistoryModal'
-import QuickCreateCompanyModal from './QuickCreateCompanyModal'
+import CreateCompanyWizard from './CreateCompanyWizard'
 
 export default function BusinessCustomersPage() {
   const { tenant } = useAuthStore()
@@ -206,7 +206,7 @@ export default function BusinessCustomersPage() {
 
       {/* Modals */}
       {showCreate && (
-        <QuickCreateCompanyModal
+        <CreateCompanyWizard
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false)
