@@ -10,6 +10,8 @@ const REPORT_NAV = [
   { id:'sales',     icon:'📈', label:'Sales Overview',      group:'Sales' },
   { id:'products',  icon:'📦', label:'Product Sales',        group:'Sales' },
   { id:'payments',  icon:'💳', label:'Payment Methods',      group:'Sales' },
+  { id:'discounts', icon:'✂️', label:'Discounts',            group:'Sales' },
+  { id:'giftcards', icon:'🎁', label:'Gift Cards',           group:'Sales' },
   { id:'tax',       icon:'🧾', label:'Tax Report',           group:'Financial' },
   { id:'pnl',       icon:'💰', label:'Profit & Loss',        group:'Financial' },
   { id:'aging',     icon:'📋', label:'Accounts Receivable',  group:'Financial' },
@@ -49,7 +51,7 @@ export default function ReportsPage() {
     queryKey: ['report-sales', tenant?.id, dateFrom, dateTo],
     queryFn: async () => {
       const { data: orders } = await supabase.from('orders')
-        .select('total, subtotal, tax_amount, discount_amount, status, created_at')
+        .select('total, subtotal, tax_amount, discount_amount, coupon_discount, coupon_code, points_redeemed, status, created_at')
         .eq('tenant_id', tenant.id)
         .eq('status', 'completed')
         .gte('created_at', dateFrom.toISOString())
@@ -63,6 +65,44 @@ export default function ReportsPage() {
       return { orders: orders||[], payments: payments||[] }
     },
     enabled: !!tenant?.id,
+  })
+
+  // ── Phase 10: Product sales — top sellers, by day-of-week, by category
+  const { data: productData } = useQuery({
+    queryKey: ['report-products', tenant?.id, dateFrom, dateTo],
+    queryFn: async () => {
+      const { data: items } = await supabase.from('order_items')
+        .select(`
+          product_id, product_name, product_sku, quantity, line_total, unit_price,
+          orders!inner(tenant_id, status, created_at),
+          products(category_id, categories(name))
+        `)
+        .eq('tenant_id', tenant.id)
+        .eq('orders.status', 'completed')
+        .gte('orders.created_at', dateFrom.toISOString())
+        .lte('orders.created_at', dateTo.toISOString())
+      return items || []
+    },
+    enabled: !!tenant?.id && activeReport === 'products',
+  })
+
+  // ── Phase 10: Gift cards aggregate report
+  const { data: giftCardData } = useQuery({
+    queryKey: ['report-giftcards', tenant?.id],
+    queryFn: async () => {
+      const { data: cards } = await supabase.from('member_cards')
+        .select('id, card_number, card_type, init_amount, balance, status, expires_at, created_at, last_used_at, customers(name)')
+        .eq('tenant_id', tenant.id)
+        .eq('card_type', 'gift')
+        .order('created_at', { ascending: false })
+      const { data: txns } = await supabase.from('gift_card_transactions')
+        .select('type, amount, created_at')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dateFrom.toISOString())
+        .lte('created_at', dateTo.toISOString())
+      return { cards: cards || [], txns: txns || [] }
+    },
+    enabled: !!tenant?.id && activeReport === 'giftcards',
   })
 
   // Tax summary
@@ -123,6 +163,27 @@ export default function ReportsPage() {
   const totalTax = orders.reduce((s,o)=>s+(o.tax_amount||0), 0)
   const orderCount = orders.length
   const avgOrder = orderCount > 0 ? totalRevenue / orderCount : 0
+
+  // ── Phase 10: discount breakdown ──
+  // discount_amount in orders = manual + coupon + points combined (legacy)
+  // We can extract coupon_discount and points_redeemed separately,
+  // and infer manual as: discount_amount - coupon - points_cash_value
+  const POINTS_RATE = tenant?.points_redeem_rate || 100
+  const discountStats = orders.reduce((s,o) => {
+    const totalDisc = Number(o.discount_amount || 0)
+    const couponDisc = Number(o.coupon_discount || 0)
+    const pointsCash = Number(o.points_redeemed || 0) / POINTS_RATE
+    const manualDisc = Math.max(0, totalDisc - couponDisc - pointsCash)
+    s.total += totalDisc
+    s.manual += manualDisc
+    s.coupon += couponDisc
+    s.points += pointsCash
+    s.pointsUsed += Number(o.points_redeemed || 0)
+    if (couponDisc > 0) s.couponOrders++
+    if (Number(o.points_redeemed || 0) > 0) s.pointsOrders++
+    if (manualDisc > 0) s.manualOrders++
+    return s
+  }, { total:0, manual:0, coupon:0, points:0, pointsUsed:0, couponOrders:0, pointsOrders:0, manualOrders:0 })
 
   // Payment method breakdown
   const paymentBreakdown = {}
@@ -427,8 +488,28 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Placeholder for other reports */}
-          {['products','payments','pnl','aging','inventory'].includes(activeReport) && (
+          {/* ── PRODUCT SALES (Phase 10) ── */}
+          {activeReport === 'products' && (
+            <ProductReport items={productData || []} dateFrom={dateFrom} dateTo={dateTo}/>
+          )}
+
+          {/* ── DISCOUNTS (Phase 10) ── */}
+          {activeReport === 'discounts' && (
+            <DiscountReport stats={discountStats} orderCount={orderCount} pointsRate={POINTS_RATE} orders={orders}/>
+          )}
+
+          {/* ── GIFT CARDS (Phase 10) ── */}
+          {activeReport === 'giftcards' && (
+            <GiftCardReport cards={giftCardData?.cards || []} txns={giftCardData?.txns || []} dateFrom={dateFrom} dateTo={dateTo}/>
+          )}
+
+          {/* ── PAYMENT METHODS (Phase 10 — promote from sales overview) ── */}
+          {activeReport === 'payments' && (
+            <PaymentReport orders={orders} payments={salesData?.payments || []} totalRevenue={totalRevenue}/>
+          )}
+
+          {/* Remaining placeholders */}
+          {['pnl','inventory'].includes(activeReport) && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center text-[#999999]">
                 <div className="text-4xl mb-3 opacity-30">{REPORT_NAV.find(r=>r.id===activeReport)?.icon}</div>
@@ -439,6 +520,436 @@ export default function ReportsPage() {
           )}
 
         </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// PHASE 10 — Report components
+// ════════════════════════════════════════════════════════════════════
+
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+// ── PRODUCT SALES REPORT ──────────────────────────────────────────
+function ProductReport({ items, dateFrom, dateTo }) {
+  // Top sellers (by qty)
+  const byProduct = {}
+  items.forEach(it => {
+    const id = it.product_id || it.product_name
+    if (!byProduct[id]) {
+      byProduct[id] = {
+        name: it.product_name, sku: it.product_sku,
+        category: it.products?.categories?.name || 'Uncategorized',
+        qty: 0, revenue: 0, orderCount: 0,
+      }
+    }
+    byProduct[id].qty += Number(it.quantity || 0)
+    byProduct[id].revenue += Number(it.line_total || 0)
+    byProduct[id].orderCount += 1
+  })
+  const ranked = Object.values(byProduct).sort((a,b) => b.qty - a.qty)
+  const top20 = ranked.slice(0, 20)
+  const maxQty = Math.max(...top20.map(p => p.qty), 1)
+
+  // By day-of-week
+  const dowSales = Array(7).fill(0).map(() => ({ revenue: 0, qty: 0, orders: 0 }))
+  items.forEach(it => {
+    const d = new Date(it.orders?.created_at)
+    const dow = d.getDay()
+    dowSales[dow].revenue += Number(it.line_total || 0)
+    dowSales[dow].qty += Number(it.quantity || 0)
+  })
+  const maxDow = Math.max(...dowSales.map(d => d.revenue), 1)
+
+  // By category
+  const byCat = {}
+  items.forEach(it => {
+    const cat = it.products?.categories?.name || 'Uncategorized'
+    if (!byCat[cat]) byCat[cat] = { name: cat, qty: 0, revenue: 0, products: new Set() }
+    byCat[cat].qty += Number(it.quantity || 0)
+    byCat[cat].revenue += Number(it.line_total || 0)
+    byCat[cat].products.add(it.product_id)
+  })
+  const cats = Object.values(byCat)
+    .map(c => ({...c, productCount: c.products.size}))
+    .sort((a,b) => b.revenue - a.revenue)
+  const totalCatRev = cats.reduce((s,c) => s + c.revenue, 0)
+
+  if (items.length === 0) return (
+    <EmptyState icon="📦" label="No product sales in this period"/>
+  )
+
+  return (
+    <div className="space-y-5">
+      {/* Summary */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          ['Products sold', ranked.length, '#3b82f6', 'unique items'],
+          ['Total units',   items.reduce((s,it)=>s+Number(it.quantity||0),0).toLocaleString(), '#10b981', 'pieces'],
+          ['Total revenue', `$${items.reduce((s,it)=>s+Number(it.line_total||0),0).toFixed(0)}`, '#FA8C16', 'from products'],
+          ['Categories',    cats.length, '#ec4899', 'in scope'],
+        ].map(([l,v,c,sub]) => (
+          <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+            <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+            <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
+            <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top 20 sellers */}
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-[13px] font-bold">🏆 Top 20 Sellers</div>
+          <div className="text-[10px] text-[#666] font-mono">
+            {format(dateFrom,'MMM d')} – {format(dateTo,'MMM d, yyyy')}
+          </div>
+        </div>
+        <div className="space-y-1">
+          {top20.map((p, i) => {
+            const pct = (p.qty / maxQty) * 100
+            return (
+              <div key={i} className="flex items-center gap-3 py-1.5">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                  style={i<3
+                    ? {background: i===0?'#FEF3C7':i===1?'#F1F5F9':'#FFEDD5', color: i===0?'#B45309':i===1?'#475569':'#9A3412'}
+                    : {background:'#F8FAFC', color:'#94A3B8'}}>
+                  {i+1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-bold text-[#1F1F1F] truncate">{p.name}</div>
+                  <div className="text-[10px] text-[#666]">
+                    {p.category}{p.sku ? ` · ${p.sku}` : ''}
+                  </div>
+                  <div className="h-1.5 bg-[#F1F5F9] rounded mt-1 overflow-hidden">
+                    <div className="h-full rounded" style={{width:`${pct}%`, background:'linear-gradient(90deg,#FA8C16,#FB923C)'}}/>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-[14px] font-bold font-mono text-[#1F1F1F]">{p.qty}</div>
+                  <div className="text-[10px] text-[#666] font-mono">${p.revenue.toFixed(0)}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* By day of week */}
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
+        <div className="text-[13px] font-bold mb-3">📅 Sales by Day of Week</div>
+        <div className="flex items-end gap-2 h-[140px] mb-2">
+          {dowSales.map((d, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center justify-end">
+              <div className="text-[10px] font-mono text-[#666] mb-1">
+                {d.revenue > 0 ? `$${(d.revenue/1000).toFixed(1)}k` : ''}
+              </div>
+              <div className="w-full rounded-t transition-all" title={`${DOW[i]}: $${d.revenue.toFixed(2)}, ${d.qty} units`}
+                style={{
+                  height:`${Math.max(2, d.revenue/maxDow * 110)}px`,
+                  background: i===0||i===6 ? 'linear-gradient(180deg,#A78BFA,#7C3AED)' : 'linear-gradient(180deg,#60A5FA,#2563EB)',
+                  minHeight:'4px',
+                }}/>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          {DOW.map((d,i) => (
+            <div key={i} className="flex-1 text-[10px] font-mono font-bold text-center"
+              style={{color: i===0||i===6 ? '#7C3AED' : '#1F1F1F'}}>{d}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* By category */}
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
+        <div className="text-[13px] font-bold mb-3">🏷️ Sales by Category</div>
+        <div className="space-y-2">
+          {cats.map(c => {
+            const pct = totalCatRev > 0 ? (c.revenue / totalCatRev) * 100 : 0
+            return (
+              <div key={c.name} className="flex items-center gap-3">
+                <div className="w-[140px] text-[12px] font-semibold text-[#1F1F1F] truncate">{c.name}</div>
+                <div className="flex-1 h-3 bg-[#F1F5F9] rounded overflow-hidden">
+                  <div className="h-full rounded" style={{width:`${pct}%`, background:'linear-gradient(90deg,#10B981,#34D399)'}}/>
+                </div>
+                <div className="text-right w-[100px]">
+                  <div className="text-[12px] font-bold font-mono">${c.revenue.toFixed(0)}</div>
+                  <div className="text-[9px] text-[#666] font-mono">{c.qty} units · {c.productCount} SKUs</div>
+                </div>
+                <div className="text-[11px] font-mono text-[#666] w-[40px] text-right">{pct.toFixed(0)}%</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ── DISCOUNT REPORT ───────────────────────────────────────────────
+function DiscountReport({ stats, orderCount, pointsRate, orders }) {
+  if (stats.total === 0) return (
+    <EmptyState icon="✂️" label="No discounts applied in this period"/>
+  )
+
+  const types = [
+    { label:'Manual Discount', amt: stats.manual, color:'#16a34a', bg:'#dcfce7', count: stats.manualOrders, icon:'✂️' },
+    { label:'Coupon Codes',    amt: stats.coupon, color:'#c026d3', bg:'#fdf4ff', count: stats.couponOrders, icon:'🎫' },
+    { label:'Loyalty Points',  amt: stats.points, color:'#B45309', bg:'#FEF3C7', count: stats.pointsOrders, icon:'⭐' },
+  ]
+  // Top coupons used
+  const byCoupon = {}
+  orders.forEach(o => {
+    if (o.coupon_code && Number(o.coupon_discount||0) > 0) {
+      if (!byCoupon[o.coupon_code]) byCoupon[o.coupon_code] = { code: o.coupon_code, count: 0, total: 0 }
+      byCoupon[o.coupon_code].count++
+      byCoupon[o.coupon_code].total += Number(o.coupon_discount || 0)
+    }
+  })
+  const topCoupons = Object.values(byCoupon).sort((a,b) => b.total - a.total).slice(0, 10)
+
+  return (
+    <div className="space-y-5">
+      {/* Summary */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          ['Total Discounted',  `$${stats.total.toFixed(2)}`, '#dc2626', `${orderCount} orders`],
+          ['Manual Discounts',  `$${stats.manual.toFixed(2)}`, '#16a34a', `${stats.manualOrders} orders`],
+          ['Coupon Codes',      `$${stats.coupon.toFixed(2)}`, '#c026d3', `${stats.couponOrders} orders`],
+          ['Loyalty Points',    `$${stats.points.toFixed(2)}`, '#B45309', `${stats.pointsUsed.toLocaleString()} pts used`],
+        ].map(([l,v,c,sub]) => (
+          <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+            <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+            <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
+            <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Breakdown bar */}
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
+        <div className="text-[13px] font-bold mb-4">Breakdown by Discount Type</div>
+        <div className="rounded-lg overflow-hidden flex h-10 mb-3" style={{border:'1px solid #E5E5E5'}}>
+          {types.map(t => {
+            const pct = stats.total > 0 ? (t.amt / stats.total) * 100 : 0
+            if (pct === 0) return null
+            return (
+              <div key={t.label}
+                className="flex items-center justify-center text-[11px] font-bold text-white"
+                style={{width:`${pct}%`, background:t.color}}
+                title={`${t.label}: $${t.amt.toFixed(2)} (${pct.toFixed(1)}%)`}>
+                {pct > 12 && `${t.icon} ${pct.toFixed(0)}%`}
+              </div>
+            )
+          })}
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {types.map(t => {
+            const pct = stats.total > 0 ? (t.amt / stats.total) * 100 : 0
+            return (
+              <div key={t.label} className="rounded-lg p-3" style={{background:t.bg, border:`1px solid ${t.color}33`}}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span>{t.icon}</span>
+                  <span className="text-[11px] font-bold" style={{color:t.color}}>{t.label}</span>
+                </div>
+                <div className="text-[16px] font-bold font-mono" style={{color:t.color}}>${t.amt.toFixed(2)}</div>
+                <div className="text-[10px] font-mono mt-0.5" style={{color:t.color}}>{pct.toFixed(1)}% · {t.count} orders</div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-3 rounded-lg px-3 py-2 text-[10px]"
+          style={{background:'#F8FAFC', color:'#475569', border:'1px solid #E5E5E5'}}>
+          💡 Manual discount is whatever wasn't captured by coupon or points — i.e. the cashier-applied % or $ off.
+          Conversion rate: <b>{pointsRate} pts = $1.00</b>
+        </div>
+      </div>
+
+      {/* Top coupons */}
+      {topCoupons.length > 0 && (
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
+          <div className="text-[13px] font-bold mb-3">🎫 Top Coupon Codes</div>
+          <div className="space-y-1.5">
+            {topCoupons.map((c,i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5">
+                <span className="rounded-md px-2 py-0.5 text-[11px] font-mono font-bold"
+                  style={{background:'#1F1F1F', color:'#fff'}}>{c.code}</span>
+                <div className="flex-1 text-[11px] text-[#666]">used {c.count} time{c.count>1?'s':''}</div>
+                <div className="text-[13px] font-bold font-mono" style={{color:'#c026d3'}}>−${c.total.toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ── GIFT CARDS REPORT ─────────────────────────────────────────────
+function GiftCardReport({ cards, txns, dateFrom, dateTo }) {
+  const active = cards.filter(c => c.status === 'active')
+  const totalIssued = cards.reduce((s,c) => s + Number(c.init_amount || 0), 0)
+  const poolBalance = cards.reduce((s,c) => s + Number(c.balance || 0), 0)
+  const totalUsed = totalIssued - poolBalance
+  // Top-ups + redemptions in window
+  const topupsInWindow  = txns.filter(t => t.type === 'topup').reduce((s,t) => s + Number(t.amount), 0)
+  const redeemsInWindow = txns.filter(t => t.type === 'redeem').reduce((s,t) => s + Math.abs(Number(t.amount)), 0)
+
+  if (cards.length === 0) return (
+    <EmptyState icon="🎁" label="No gift cards issued yet"/>
+  )
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-5 gap-3">
+        {[
+          ['Active Cards',    active.length,                       '#10b981', `of ${cards.length} total`],
+          ['Total Issued',    `$${totalIssued.toFixed(2)}`,        '#3b82f6', 'lifetime value'],
+          ['Pool Balance',    `$${poolBalance.toFixed(2)}`,        '#FA8C16', 'outstanding'],
+          ['Total Redeemed',  `$${totalUsed.toFixed(2)}`,          '#dc2626', 'lifetime used'],
+          ['Top-ups (period)', `$${topupsInWindow.toFixed(2)}`,    '#15803d', `redeems $${redeemsInWindow.toFixed(0)}`],
+        ].map(([l,v,c,sub]) => (
+          <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+            <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+            <div className="text-[20px] font-bold" style={{color:c}}>{v}</div>
+            <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* All cards table */}
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+        <div className="px-4 py-3" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div className="text-[13px] font-bold">🎁 All Gift Cards ({cards.length})</div>
+          <div className="text-[10px] text-[#666] mt-0.5">Click 📋 to view that card's full transaction history</div>
+        </div>
+        <div className="grid bg-[#F8FAFC] text-[10px] font-mono font-bold text-[#666] uppercase tracking-wider"
+          style={{gridTemplateColumns:'1.4fr 1fr 0.8fr 0.8fr 1fr 1fr 70px'}}>
+          {['Card #','Customer','Initial','Balance','Status','Last used','Hist'].map((h,i)=>(
+            <div key={h} className="px-3 py-2.5">{h}</div>
+          ))}
+        </div>
+        {cards.map(c => {
+          const STATUS = {
+            active:   { bg:'#dcfce7', color:'#15803d' },
+            depleted: { bg:'#f1f5f9', color:'#64748b' },
+            expired:  { bg:'#f1f5f9', color:'#64748b' },
+            voided:   { bg:'#fee2e2', color:'#dc2626' },
+          }
+          const st = STATUS[c.status] || STATUS.active
+          return (
+            <div key={c.id} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F8FAFC] transition-colors items-center"
+              style={{gridTemplateColumns:'1.4fr 1fr 0.8fr 0.8fr 1fr 1fr 70px'}}>
+              <div className="px-3 py-2.5 font-mono text-[11px] font-bold text-[#ea580c]">{c.card_number}</div>
+              <div className="px-3 py-2.5 text-[12px]">{c.customers?.name || '—'}</div>
+              <div className="px-3 py-2.5 font-mono text-[12px]">${Number(c.init_amount||0).toFixed(2)}</div>
+              <div className="px-3 py-2.5 font-mono text-[12px] font-bold">${Number(c.balance||0).toFixed(2)}</div>
+              <div className="px-3 py-2.5">
+                <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase"
+                  style={{background:st.bg, color:st.color}}>{c.status || 'active'}</span>
+              </div>
+              <div className="px-3 py-2.5 text-[10px] text-[#666]">
+                {c.last_used_at ? new Date(c.last_used_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}
+              </div>
+              <div className="px-3 py-2.5">
+                <button onClick={()=>toast.success('Open Gift Cards panel from POS → 📋 History tab to view full ledger')}
+                  className="rounded px-2 py-1 text-[11px] cursor-pointer"
+                  style={{background:'#F1F5F9', color:'#475569', border:'1px solid #E5E5E5'}}>📋</button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+
+// ── PAYMENT METHODS REPORT (now a dedicated page) ────────────────
+function PaymentReport({ orders, payments, totalRevenue }) {
+  const breakdown = {}
+  payments.forEach(p => {
+    breakdown[p.method] = (breakdown[p.method] || 0) + Number(p.amount || 0)
+  })
+  const entries = Object.entries(breakdown).sort((a,b)=>b[1]-a[1])
+  if (entries.length === 0) return (
+    <EmptyState icon="💳" label="No payments in this period"/>
+  )
+  const COLORS = {
+    cash:'#10b981', card:'#3b82f6', credit_card:'#3b82f6', debit_card:'#06b6d4',
+    check:'#06b6d4', bank_transfer:'#0891b2',
+    member_card:'#f59e0b', gift_card:'#ea580c', on_account:'#ec4899',
+  }
+  const LABEL = {
+    cash:'Cash', card:'Card', credit_card:'Credit Card', debit_card:'Debit Card',
+    member_card:'VIP / Member Card', gift_card:'Gift Card',
+    bank_transfer:'Bank Transfer', check:'Check', on_account:'Account/Credit',
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          ['Total Receipts',  `$${totalRevenue.toFixed(2)}`, '#3b82f6', `${orders.length} orders`],
+          ['Methods Used',    entries.length, undefined, 'distinct types'],
+          ['Top Method',      LABEL[entries[0][0]] || entries[0][0], '#10b981', `$${entries[0][1].toFixed(2)}`],
+        ].map(([l,v,c,sub]) => (
+          <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+            <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+            <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
+            <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5">
+        <div className="text-[13px] font-bold mb-4">💳 Tender Breakdown</div>
+        <div className="rounded-lg overflow-hidden flex h-10 mb-4" style={{border:'1px solid #E5E5E5'}}>
+          {entries.map(([m,a]) => {
+            const pct = totalRevenue > 0 ? a/totalRevenue*100 : 0
+            return (
+              <div key={m} title={`${LABEL[m]||m}: $${a.toFixed(2)} (${pct.toFixed(1)}%)`}
+                className="flex items-center justify-center text-[11px] font-bold text-white"
+                style={{width:`${pct}%`, background:COLORS[m]||'#64748b'}}>
+                {pct > 8 && `${pct.toFixed(0)}%`}
+              </div>
+            )
+          })}
+        </div>
+        <div className="space-y-2">
+          {entries.map(([m,a]) => {
+            const pct = totalRevenue > 0 ? a/totalRevenue*100 : 0
+            return (
+              <div key={m} className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{background:COLORS[m]||'#64748b'}}/>
+                <div className="w-[160px] text-[12px] font-semibold">{LABEL[m] || m}</div>
+                <div className="flex-1 h-2 bg-[#F1F5F9] rounded overflow-hidden">
+                  <div className="h-full rounded" style={{width:`${pct}%`, background:COLORS[m]||'#64748b'}}/>
+                </div>
+                <div className="font-mono text-[12px] font-bold w-[90px] text-right">${a.toFixed(2)}</div>
+                <div className="font-mono text-[10px] text-[#999999] w-[50px] text-right">{pct.toFixed(1)}%</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+function EmptyState({ icon, label }) {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-center text-[#999999]">
+        <div className="text-4xl mb-3 opacity-30">{icon}</div>
+        <div className="text-[14px] font-bold">{label}</div>
+        <div className="text-[11px] font-mono mt-2 opacity-60">Try a different date range</div>
       </div>
     </div>
   )
