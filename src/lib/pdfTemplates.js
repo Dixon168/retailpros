@@ -406,13 +406,22 @@ export function buildPackingSlipHtml({ invoice, items, customer, store, tenant }
   `).join('')
 
   const totalUnits = items.reduce((s, it) => s + (Number(it.quantity) || 0), 0)
-  const shipAddr = invoice.shipping_address_snapshot || {
+
+  // Prefer the shipping address snapshot captured at invoice creation
+  // (saved delivery address OR one-time custom address). Fall back to billing.
+  const snap = invoice.shipping_address_snapshot
+  const usingSnap = !!(snap && snap.address)
+  const shipAddr = usingSnap ? snap : {
     address: customer?.billing_address,
     city:    customer?.billing_city,
     state:   customer?.billing_state,
     zip:     customer?.billing_zip,
     country: customer?.billing_country,
   }
+  // Contact at the receiving site — snapshot overrides company-level contact
+  const shipContactName  = usingSnap ? snap.contact_name  : customer?.contact_name
+  const shipContactPhone = usingSnap ? snap.contact_phone : customer?.contact_phone
+  const shipLabel        = usingSnap ? snap.label         : null
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Packing Slip ${escapeHtml(invoice.invoice_number)}</title>
@@ -432,12 +441,12 @@ export function buildPackingSlipHtml({ invoice, items, customer, store, tenant }
 
   <div class="parties">
     <div class="party">
-      <div class="lbl">Ship To</div>
+      <div class="lbl">Ship To${shipLabel ? ` — ${escapeHtml(shipLabel)}` : ''}</div>
       <div class="name">${escapeHtml(customer?.company_name || '—')}</div>
       <div class="meta">
-        ${customer?.contact_name ? `<div>${escapeHtml(customer.contact_name)}</div>` : ''}
+        ${shipContactName ? `<div>${escapeHtml(shipContactName)}</div>` : ''}
         ${formatAddr(shipAddr)}
-        ${customer?.contact_phone ? `<div>${escapeHtml(customer.contact_phone)}</div>` : ''}
+        ${shipContactPhone ? `<div>📞 ${escapeHtml(shipContactPhone)}</div>` : ''}
       </div>
     </div>
     <div class="party">
@@ -449,6 +458,12 @@ export function buildPackingSlipHtml({ invoice, items, customer, store, tenant }
       </div>
     </div>
   </div>
+
+  ${invoice.delivery_notes ? `
+    <div style="margin:14px 0; padding:12px 14px; border:2px solid #B45309; background:#FEF3C7; border-radius:6px;">
+      <div style="font-size:8pt; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:#B45309; margin-bottom:4px;">⚠️ Delivery Instructions</div>
+      <div style="font-size:11pt; color:#1F1F1F; line-height:1.45;">${escapeHtml(invoice.delivery_notes).replace(/\n/g, '<br/>')}</div>
+    </div>` : ''}
 
   <table class="items">
     <thead>
@@ -468,7 +483,7 @@ export function buildPackingSlipHtml({ invoice, items, customer, store, tenant }
     </tfoot>
   </table>
 
-  ${invoice.notes ? `<div class="notes"><div class="lbl">Special Instructions</div>${escapeHtml(invoice.notes).replace(/\n/g, '<br/>')}</div>` : ''}
+  ${invoice.notes ? `<div class="notes"><div class="lbl">Customer Notes</div>${escapeHtml(invoice.notes).replace(/\n/g, '<br/>')}</div>` : ''}
 
   <div style="margin-top:32px; padding-top:18px; border-top:1px dashed #999;">
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px;">

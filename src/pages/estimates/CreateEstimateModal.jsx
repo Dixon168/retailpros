@@ -1,11 +1,12 @@
 // src/pages/estimates/CreateEstimateModal.jsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import DualInput from '@/components/ui/DualInput'
 import EstimateProductPicker from './EstimateProductPicker'
+import { ShipToSection } from '@/pages/invoices/CreateInvoiceModal'
 
 export default function CreateEstimateModal({ onClose, onCreated, presetCustomerId }) {
   const { tenant, store, user } = useAuthStore()
@@ -16,11 +17,22 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
     return d.toISOString().slice(0, 10)
   })
   const [notes, setNotes]               = useState('')
+  const [internalNotes, setInternalNotes] = useState('')
+  const [deliveryNotes, setDeliveryNotes] = useState('')
   const [items, setItems]               = useState([])
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [saving, setSaving]             = useState(false)
 
-  // Customers
+  // Ship-to selection: 'billing' | 'saved' | 'custom'
+  const [shipMode, setShipMode] = useState('billing')
+  const [savedShipId, setSavedShipId] = useState('')
+  const [customShip, setCustomShip] = useState({
+    address:'', city:'', state:'', zip:'',
+    contact_name:'', contact_phone:'', label:''
+  })
+  const setCS = (k, v) => setCustomShip(p => ({ ...p, [k]: v }))
+
+  // Companies
   const { data: customers = [] } = useQuery({
     queryKey: ['business-customers-active', tenant?.id],
     queryFn: async () => {
@@ -32,6 +44,34 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
     },
     enabled: !!tenant?.id,
   })
+
+  // Saved delivery/shipping addresses for the selected company
+  const { data: savedAddrs = [] } = useQuery({
+    queryKey: ['business-ship-addresses', customerId],
+    queryFn: async () => {
+      const { data } = await supabase.from('business_addresses')
+        .select('id, type, label, address, city, state, zip, country, contact_name, contact_phone, is_default')
+        .eq('business_customer_id', customerId)
+        .in('type', ['delivery','shipping'])
+        .order('is_default', { ascending: false })
+        .order('type')
+      return data || []
+    },
+    enabled: !!customerId,
+  })
+
+  // Reset ship-to when company changes
+  useEffect(() => {
+    setShipMode('billing')
+    setSavedShipId('')
+    setCustomShip({ address:'', city:'', state:'', zip:'', contact_name:'', contact_phone:'', label:'' })
+  }, [customerId])
+
+  useEffect(() => {
+    if (shipMode === 'saved' && !savedShipId && savedAddrs.length > 0) {
+      setSavedShipId(savedAddrs[0].id)
+    }
+  }, [shipMode, savedAddrs, savedShipId])
 
   const totals = useMemo(() => {
     let subtotal = 0, discount = 0, total = 0
@@ -60,7 +100,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
       quantity:      '1',
       unit_price:    String(product.price || 0),
       discount_pct:  '0',
-      stock_qty:     product.stock_qty || 0,  // for display only
+      stock_qty:     product.stock_qty || 0,
     }])
     setShowProductPicker(false)
   }
@@ -70,6 +110,38 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
   }
   const removeItem = (idx) => setItems(items.filter((_, i) => i !== idx))
 
+  const selectedCustomer = customers.find(c => c.id === customerId)
+
+  const buildShipSnapshot = () => {
+    if (shipMode === 'billing') return null
+    if (shipMode === 'saved') {
+      const a = savedAddrs.find(x => x.id === savedShipId)
+      if (!a) return null
+      return {
+        label:         a.label || (a.type === 'delivery' ? 'Delivery' : 'Shipping'),
+        address:       a.address,
+        city:          a.city,
+        state:         a.state,
+        zip:           a.zip,
+        country:       a.country || 'US',
+        contact_name:  a.contact_name,
+        contact_phone: a.contact_phone,
+        source_address_id: a.id,
+      }
+    }
+    return {
+      label:         customShip.label || 'One-time delivery',
+      address:       customShip.address.trim(),
+      city:          customShip.city.trim()  || null,
+      state:         customShip.state.trim() || null,
+      zip:           customShip.zip.trim()   || null,
+      country:       'US',
+      contact_name:  customShip.contact_name.trim()  || null,
+      contact_phone: customShip.contact_phone.trim() || null,
+      one_time: true,
+    }
+  }
+
   const create = async () => {
     if (!customerId) { toast.error('Please select a company'); return }
     if (items.length === 0) { toast.error('Add at least one item'); return }
@@ -77,6 +149,12 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
       if (!parseFloat(it.quantity) || parseFloat(it.quantity) <= 0) {
         toast.error(`${it.product_name}: quantity must be > 0`); return
       }
+    }
+    if (shipMode === 'custom' && !customShip.address.trim()) {
+      toast.error('Custom delivery address: street is required'); return
+    }
+    if (shipMode === 'saved' && !savedShipId) {
+      toast.error('Pick a saved delivery address'); return
     }
 
     const customer = customers.find(c => c.id === customerId)
@@ -86,6 +164,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
       state:   customer.billing_state,
       zip:     customer.billing_zip,
     } : null
+    const shipSnapshot = buildShipSnapshot()
 
     setSaving(true)
     const { data, error } = await supabase.rpc('fn_create_estimate_atomic', {
@@ -94,7 +173,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
       p_customer_id:    customerId,
       p_valid_until:    validUntil || null,
       p_notes:          notes || null,
-      p_internal_notes: null,
+      p_internal_notes: internalNotes || null,
       p_created_by:     user?.id || null,
       p_items: items.map(it => ({
         product_id:   it.product_id,
@@ -106,7 +185,8 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
         discount_pct: parseFloat(it.discount_pct) || 0,
       })),
       p_billing_addr:  billingAddr,
-      p_shipping_addr: null,
+      p_shipping_addr: shipSnapshot,
+      p_delivery_notes: deliveryNotes || null,
     })
     setSaving(false)
     if (error || !data?.success) {
@@ -116,8 +196,6 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
     toast.success(`Created ${data.estimate_number}`)
     onCreated()
   }
-
-  const selectedCustomer = customers.find(c => c.id === customerId)
 
   return (
     <>
@@ -140,7 +218,6 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
-            {/* Customer + Valid until */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <FieldLabel>Company *</FieldLabel>
@@ -167,6 +244,18 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"/>
               </div>
             </div>
+
+            {/* ── Ship-to section (Phase 5) — same UX as invoice ── */}
+            {customerId && (
+              <ShipToSection
+                selectedCustomer={selectedCustomer}
+                savedAddrs={savedAddrs}
+                shipMode={shipMode}     setShipMode={setShipMode}
+                savedShipId={savedShipId} setSavedShipId={setSavedShipId}
+                customShip={customShip} setCS={setCS}
+                deliveryNotes={deliveryNotes} setDeliveryNotes={setDeliveryNotes}
+              />
+            )}
 
             {/* Items */}
             <div>
@@ -246,7 +335,6 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                       </div>
                     )
                   })}
-                  {/* Totals */}
                   <div className="bg-[#FAFAFA] border-t border-[#E5E5E5] px-4 py-3">
                     <div className="ml-auto max-w-[280px] text-[12px] space-y-1">
                       <div className="flex justify-between">
@@ -274,11 +362,17 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
               </div>
             </div>
 
-            {/* Notes */}
-            <DualInput label="Notes (visible to customer)" multiline
-              value={notes} onChange={setNotes}
-              placeholder="e.g. Delivery in 2 weeks, payment within 30 days..."
-              kbTitle="Estimate Notes"/>
+            {/* Notes — customer-visible and internal memo */}
+            <div className="grid grid-cols-2 gap-3">
+              <DualInput label="Notes (visible to customer)" multiline
+                value={notes} onChange={setNotes}
+                placeholder="e.g. Delivery in 2 weeks, payment within 30 days..."
+                kbTitle="Customer Notes"/>
+              <DualInput label="Internal memo (private)" multiline
+                value={internalNotes} onChange={setInternalNotes}
+                placeholder="Visible only to your team — not printed"
+                kbTitle="Internal Memo"/>
+            </div>
           </div>
 
           {/* Footer */}

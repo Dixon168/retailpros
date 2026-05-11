@@ -1,5 +1,5 @@
 // src/pages/invoices/CreateInvoiceModal.jsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -16,10 +16,22 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
     return d.toISOString().slice(0, 10)
   })
   const [notes, setNotes]               = useState('')
+  const [internalNotes, setInternalNotes] = useState('')
+  const [deliveryNotes, setDeliveryNotes] = useState('')
   const [items, setItems]               = useState([])
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [saving, setSaving]             = useState(false)
 
+  // Ship-to selection: 'billing' | 'saved' | 'custom'
+  const [shipMode, setShipMode] = useState('billing')
+  const [savedShipId, setSavedShipId] = useState('')
+  const [customShip, setCustomShip] = useState({
+    address:'', city:'', state:'', zip:'',
+    contact_name:'', contact_phone:'', label:''
+  })
+  const setCS = (k, v) => setCustomShip(p => ({ ...p, [k]: v }))
+
+  // Companies
   const { data: customers = [] } = useQuery({
     queryKey: ['business-customers-active', tenant?.id],
     queryFn: async () => {
@@ -31,6 +43,35 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
     },
     enabled: !!tenant?.id,
   })
+
+  // Saved delivery/shipping addresses for the selected company
+  const { data: savedAddrs = [] } = useQuery({
+    queryKey: ['business-ship-addresses', customerId],
+    queryFn: async () => {
+      const { data } = await supabase.from('business_addresses')
+        .select('id, type, label, address, city, state, zip, country, contact_name, contact_phone, is_default')
+        .eq('business_customer_id', customerId)
+        .in('type', ['delivery','shipping'])
+        .order('is_default', { ascending: false })
+        .order('type')
+      return data || []
+    },
+    enabled: !!customerId,
+  })
+
+  // When company changes, reset ship-to to billing and clear picks
+  useEffect(() => {
+    setShipMode('billing')
+    setSavedShipId('')
+    setCustomShip({ address:'', city:'', state:'', zip:'', contact_name:'', contact_phone:'', label:'' })
+  }, [customerId])
+
+  // Auto-pick the default saved address when user switches to "saved"
+  useEffect(() => {
+    if (shipMode === 'saved' && !savedShipId && savedAddrs.length > 0) {
+      setSavedShipId(savedAddrs[0].id)
+    }
+  }, [shipMode, savedAddrs, savedShipId])
 
   const totals = useMemo(() => {
     let subtotal = 0, discount = 0, total = 0
@@ -47,7 +88,6 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
     return { subtotal, discount, total }
   }, [items])
 
-  // Detect items whose qty exceeds stock — show warning
   const stockWarnings = useMemo(() =>
     items.filter(i => (parseFloat(i.quantity) || 0) > (i.stock_qty || 0))
   , [items])
@@ -74,6 +114,39 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
   }
   const removeItem = (idx) => setItems(items.filter((_, i) => i !== idx))
 
+  const selectedCustomer = customers.find(c => c.id === customerId)
+
+  // Build the shipping_address_snapshot JSONB we'll persist
+  const buildShipSnapshot = () => {
+    if (shipMode === 'billing') return null   // null → packing slip falls back to billing
+    if (shipMode === 'saved') {
+      const a = savedAddrs.find(x => x.id === savedShipId)
+      if (!a) return null
+      return {
+        label:         a.label || (a.type === 'delivery' ? 'Delivery' : 'Shipping'),
+        address:       a.address,
+        city:          a.city,
+        state:         a.state,
+        zip:           a.zip,
+        country:       a.country || 'US',
+        contact_name:  a.contact_name,
+        contact_phone: a.contact_phone,
+        source_address_id: a.id,
+      }
+    }
+    return {
+      label:         customShip.label || 'One-time delivery',
+      address:       customShip.address.trim(),
+      city:          customShip.city.trim()  || null,
+      state:         customShip.state.trim() || null,
+      zip:           customShip.zip.trim()   || null,
+      country:       'US',
+      contact_name:  customShip.contact_name.trim()  || null,
+      contact_phone: customShip.contact_phone.trim() || null,
+      one_time: true,
+    }
+  }
+
   const create = async () => {
     if (!customerId) { toast.error('Please select a company'); return }
     if (items.length === 0) { toast.error('Add at least one item'); return }
@@ -81,6 +154,12 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
       if (!parseFloat(it.quantity) || parseFloat(it.quantity) <= 0) {
         toast.error(`${it.product_name}: quantity must be > 0`); return
       }
+    }
+    if (shipMode === 'custom' && !customShip.address.trim()) {
+      toast.error('Custom delivery address: street is required'); return
+    }
+    if (shipMode === 'saved' && !savedShipId) {
+      toast.error('Pick a saved delivery address'); return
     }
 
     const customer = customers.find(c => c.id === customerId)
@@ -90,6 +169,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
       state:   customer.billing_state,
       zip:     customer.billing_zip,
     } : null
+    const shipSnapshot = buildShipSnapshot()
 
     setSaving(true)
     const { data, error } = await supabase.rpc('fn_create_invoice_atomic', {
@@ -98,7 +178,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
       p_customer_id:    customerId,
       p_due_date:       dueDate || null,
       p_notes:          notes || null,
-      p_internal_notes: null,
+      p_internal_notes: internalNotes || null,
       p_created_by:     user?.id || null,
       p_items: items.map(it => ({
         product_id:   it.product_id,
@@ -110,8 +190,9 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
         discount_pct: parseFloat(it.discount_pct) || 0,
       })),
       p_billing_addr:  billingAddr,
-      p_shipping_addr: null,
+      p_shipping_addr: shipSnapshot,
       p_source_estimate_id: null,
+      p_delivery_notes: deliveryNotes || null,
     })
     setSaving(false)
     if (error || !data?.success) {
@@ -121,8 +202,6 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
     toast.success(`Created ${data.invoice_number} — stock deducted`)
     onCreated()
   }
-
-  const selectedCustomer = customers.find(c => c.id === customerId)
 
   return (
     <>
@@ -171,6 +250,18 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"/>
               </div>
             </div>
+
+            {/* ── Ship-to section (Phase 5) ── */}
+            {customerId && (
+              <ShipToSection
+                selectedCustomer={selectedCustomer}
+                savedAddrs={savedAddrs}
+                shipMode={shipMode}     setShipMode={setShipMode}
+                savedShipId={savedShipId} setSavedShipId={setSavedShipId}
+                customShip={customShip} setCS={setCS}
+                deliveryNotes={deliveryNotes} setDeliveryNotes={setDeliveryNotes}
+              />
+            )}
 
             {/* Items */}
             <div>
@@ -284,10 +375,17 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
               </div>
             </div>
 
-            <DualInput label="Notes (visible to customer)" multiline
-              value={notes} onChange={setNotes}
-              placeholder="e.g. Pay by check to ABC Company, terms net 30..."
-              kbTitle="Invoice Notes"/>
+            {/* Notes — customer-visible and internal memo */}
+            <div className="grid grid-cols-2 gap-3">
+              <DualInput label="Notes (visible to customer)" multiline
+                value={notes} onChange={setNotes}
+                placeholder="e.g. Pay by check to ABC Company, terms net 30..."
+                kbTitle="Customer Notes"/>
+              <DualInput label="Internal memo (private)" multiline
+                value={internalNotes} onChange={setInternalNotes}
+                placeholder="Visible only to your team — not printed on invoice"
+                kbTitle="Internal Memo"/>
+            </div>
           </div>
 
           {/* Footer */}
@@ -315,6 +413,129 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
         />
       )}
     </>
+  )
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Ship-To selector subcomponent (exported, reused by CreateEstimateModal)
+// ────────────────────────────────────────────────────────────────────
+export function ShipToSection({
+  selectedCustomer, savedAddrs,
+  shipMode, setShipMode,
+  savedShipId, setSavedShipId,
+  customShip, setCS,
+  deliveryNotes, setDeliveryNotes,
+}) {
+  const hasSaved = savedAddrs.length > 0
+  const billingPreview = selectedCustomer
+    ? [selectedCustomer.billing_address,
+       [selectedCustomer.billing_city, selectedCustomer.billing_state, selectedCustomer.billing_zip]
+         .filter(Boolean).join(', ')]
+        .filter(Boolean).join(' · ')
+    : ''
+  const picked = savedAddrs.find(a => a.id === savedShipId)
+
+  const optBtn = (mode, label, sublabel) => {
+    const active = shipMode === mode
+    return (
+      <button onClick={() => setShipMode(mode)}
+        className="flex-1 rounded-lg px-3 py-2 text-left cursor-pointer active:scale-[0.98]"
+        style={active
+          ? { background:'#E6F0FF', border:'1.5px solid #006AFF' }
+          : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center"
+            style={{ border: `2px solid ${active ? '#006AFF' : '#CCCCCC'}` }}>
+            {active && <div className="w-1.5 h-1.5 rounded-full" style={{background:'#006AFF'}}/>}
+          </div>
+          <span className="text-[12px] font-bold text-[#1F1F1F]">{label}</span>
+        </div>
+        {sublabel && <div className="text-[10px] text-[#666] mt-0.5 pl-5 truncate">{sublabel}</div>}
+      </button>
+    )
+  }
+
+  return (
+    <div className="rounded-xl p-4" style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="text-[11px] font-bold text-[#1F1F1F] uppercase tracking-wider">🚚 Ship To</div>
+        <div className="text-[10px] text-[#666]">
+          {hasSaved ? `${savedAddrs.length} saved address${savedAddrs.length>1?'es':''}` : 'No saved delivery addresses yet'}
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-3">
+        {optBtn('billing', 'Same as billing', billingPreview || '—')}
+        {hasSaved && optBtn('saved', 'Saved delivery', `Pick from ${savedAddrs.length}`)}
+        {optBtn('custom', 'One-time custom', 'Different address this time')}
+      </div>
+
+      {shipMode === 'saved' && hasSaved && (
+        <div>
+          <select value={savedShipId} onChange={e => setSavedShipId(e.target.value)}
+            className="w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer mb-2"
+            style={{borderColor: savedShipId ? '#006AFF' : '#E5E5E5'}}>
+            <option value="">— Pick an address —</option>
+            {savedAddrs.map(a => {
+              const cityLine = [a.city, a.state, a.zip].filter(Boolean).join(', ')
+              const prefix = a.is_default ? '⭐ ' : (a.type === 'delivery' ? '🚚 ' : '📦 ')
+              const lbl = a.label ? `${a.label} — ` : ''
+              return <option key={a.id} value={a.id}>{prefix}{lbl}{a.address}{cityLine ? `, ${cityLine}` : ''}</option>
+            })}
+          </select>
+          {picked && (
+            <div className="rounded-lg px-3 py-2 text-[11px] text-[#1F1F1F]"
+              style={{background:'#FFFFFF', border:'1px solid #E5E5E5'}}>
+              <div className="font-bold">{picked.label || (picked.type === 'delivery' ? 'Delivery address' : 'Shipping address')}</div>
+              <div>{picked.address}</div>
+              <div>{[picked.city, picked.state, picked.zip].filter(Boolean).join(', ')}</div>
+              {(picked.contact_name || picked.contact_phone) && (
+                <div className="text-[#666] mt-0.5">
+                  {picked.contact_name && <span>👤 {picked.contact_name}</span>}
+                  {picked.contact_name && picked.contact_phone && <span> · </span>}
+                  {picked.contact_phone && <span>📞 {picked.contact_phone}</span>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {shipMode === 'custom' && (
+        <div className="space-y-2.5">
+          <DualInput label="Address label (optional)" value={customShip.label} onChange={v => setCS('label', v)}
+            placeholder="e.g. Job site, customer's warehouse" kbTitle="Label"/>
+          <DualInput label="Street address *" value={customShip.address} onChange={v => setCS('address', v)}
+            placeholder="123 Main St" kbTitle="Street"/>
+          <div className="grid grid-cols-3 gap-2">
+            <DualInput label="City" value={customShip.city} onChange={v => setCS('city', v)}
+              placeholder="Brooklyn" kbTitle="City"/>
+            <DualInput label="State" value={customShip.state} onChange={v => setCS('state', v)}
+              placeholder="NY" kbTitle="State"/>
+            <DualInput label="ZIP" mode="numeric" value={customShip.zip} onChange={v => setCS('zip', v)}
+              placeholder="11209" kbTitle="ZIP"/>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <DualInput label="Contact at site" value={customShip.contact_name} onChange={v => setCS('contact_name', v)}
+              placeholder="Receiving dock" kbTitle="Contact"/>
+            <DualInput label="Phone" mode="phone" value={customShip.contact_phone} onChange={v => setCS('contact_phone', v)}
+              placeholder="(555) 999-8888" kbTitle="Phone"/>
+          </div>
+          <div className="text-[10px] text-[#666] flex items-start gap-1">
+            <span>💡</span>
+            <span>This address is for this document only — it won't be saved to the company profile.</span>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery notes — always shown */}
+      <div className="mt-3 pt-3" style={{borderTop:'1px solid #E5E5E5'}}>
+        <DualInput label="Delivery instructions (printed on packing slip)" multiline
+          value={deliveryNotes} onChange={setDeliveryNotes}
+          placeholder="e.g. Loading dock B, ring buzzer #2, deliver between 9am-2pm..."
+          kbTitle="Delivery Notes"/>
+      </div>
+    </div>
   )
 }
 
