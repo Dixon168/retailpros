@@ -353,7 +353,7 @@ export const useCartStore = create((set, get) => ({
 
   // ── 完成订单（原子性，含并发控制）──
   submitOrder: async (storeId, cashierId, tenantId, terminalId) => {
-    const { items, customer, payments } = get()
+    const { items, customer, payments, orderDiscount } = get()
     const { subtotal, orderDiscountAmt, taxAmount, grandTotal } = get().totals()
 
     if (items.length === 0) {
@@ -362,6 +362,11 @@ export const useCartStore = create((set, get) => ({
     }
 
     const paidAmt = get().paidAmount()
+
+    // If the order discount is a points redemption, capture the points used
+    const pointsRedeemed = (orderDiscount?.type === 'points_cash' || orderDiscount?.type === 'points_product')
+      ? (orderDiscount.points_used || 0)
+      : 0
 
     // 构建传给数据库函数的数据
     const orderData = {
@@ -372,6 +377,7 @@ export const useCartStore = create((set, get) => ({
       total:           grandTotal,
       amount_paid:     paidAmt,
       points_earned:   customer ? Math.floor(grandTotal) : 0,
+      points_redeemed: pointsRedeemed,
       tax_breakdown:   [],
     }
 

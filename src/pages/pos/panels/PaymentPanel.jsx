@@ -98,6 +98,103 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
   )
 }
 
+function PointsRedeemNumPad({ customerPts, maxRedeemable, redeemRate, currentPoints, onConfirm, onClose }) {
+  const [input, setInput] = useState(currentPoints > 0 ? String(currentPoints) : '')
+  const ptsNum    = parseInt(input) || 0
+  const cashValue = ptsNum / redeemRate
+  const remaining = customerPts - ptsNum
+  const exceeds   = ptsNum > maxRedeemable
+  const press = k => {
+    if (k==='⌫') { setInput(i=>i.slice(0,-1)); return }
+    if (input.length>=7) return
+    setInput(i => (i==='0' ? k : i+k))
+  }
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center"
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
+      <div className="rounded-lg overflow-hidden shadow-xl" style={{width:'420px', background:'#fff'}}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{background:'#000000'}}>
+          <div className="text-[18px] font-bold text-white">⭐ Use Loyalty Points</div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px] flex items-center justify-center">✕</button>
+        </div>
+
+        {/* Balance preview */}
+        <div className="px-5 pt-4 pb-2 grid grid-cols-2 gap-2">
+          <div className="rounded-lg px-3 py-2.5" style={{background:'#FEF3C7', border:'1px solid #FCD34D'}}>
+            <div className="text-[10px] font-bold text-[#92400e] uppercase tracking-wider">Available</div>
+            <div className="text-[18px] font-bold text-[#B45309] font-mono">{customerPts.toLocaleString()}<span className="text-[11px] ml-1 font-normal">pts</span></div>
+          </div>
+          <div className="rounded-lg px-3 py-2.5" style={{background:'#DCFCE7', border:'1px solid #86efac'}}>
+            <div className="text-[10px] font-bold text-[#166534] uppercase tracking-wider">Max usable now</div>
+            <div className="text-[18px] font-bold text-[#15803D] font-mono">{maxRedeemable.toLocaleString()}<span className="text-[11px] ml-1 font-normal">pts</span></div>
+          </div>
+        </div>
+        <div className="px-5 pb-1 text-[10px] text-slate-500">
+          Conversion: <b>{redeemRate} pts = $1.00</b>
+        </div>
+
+        {/* Entry display */}
+        <div className="px-5 py-3">
+          <div className="rounded-lg py-4 flex items-center justify-center gap-2"
+            style={{background: exceeds?'#FEE2E2':'#FEF3C7', border: `2px solid ${exceeds?'#fca5a5':'#FCD34D'}`}}>
+            <span className="text-[24px] font-bold" style={{color: exceeds?'#dc2626':'#B45309'}}>⭐</span>
+            <span className="text-[40px] font-bold font-mono leading-none" style={{color: exceeds?'#dc2626':'#B45309'}}>{input||'0'}</span>
+            <span className="text-[16px] font-bold text-[#B45309]">pts</span>
+          </div>
+          <div className="text-center mt-2 text-[12px]">
+            {ptsNum > 0 && !exceeds && (
+              <span className="text-slate-600">
+                = <b className="text-[#15803D]">−${cashValue.toFixed(2)}</b> off
+                <span className="text-slate-400 mx-1">·</span>
+                {remaining.toLocaleString()} pts left after
+              </span>
+            )}
+            {exceeds && (
+              <span className="text-[#dc2626] font-bold">
+                ⚠ Exceeds max ({maxRedeemable.toLocaleString()} pts)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Numpad */}
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+          {['7','8','9','4','5','6','1','2','3','00','0','⌫'].map(k=>(
+            <button key={k} onClick={()=>press(k)}
+              className="rounded-xl py-3 text-[20px] font-bold cursor-pointer border-2 active:scale-95"
+              style={k==='⌫'?{background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#1F1F1F'}}>
+              {k}
+            </button>
+          ))}
+          <button onClick={()=>setInput(String(maxRedeemable))}
+            className="rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2"
+            style={{background:'#DCFCE7', borderColor:'#86efac', color:'#15803D'}}>
+            Use Max
+          </button>
+          <button onClick={()=>setInput('')}
+            disabled={!input}
+            className="rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2 disabled:opacity-40"
+            style={{background:'#fff7ed',borderColor:'#fed7aa',color:'#ea580c'}}>
+            Clear
+          </button>
+          <button onClick={()=>{ if (currentPoints > 0) onConfirm(0) ; else onClose() }}
+            className="rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2"
+            style={{background:'#f8fafc', borderColor:'#cbd5e1', color:'#64748b'}}>
+            {currentPoints > 0 ? 'Remove' : 'Cancel'}
+          </button>
+          <button onClick={()=>{ if (!exceeds && ptsNum > 0) onConfirm(ptsNum) }}
+            disabled={exceeds || ptsNum <= 0}
+            className="col-span-3 rounded-lg py-3.5 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+            style={{background:'#000000'}}>
+            ✓ Apply {ptsNum > 0 ? `${ptsNum} pts · −$${cashValue.toFixed(2)}` : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 export default function PaymentPanel() {
   const { totals, payments, addPayment, removePayment, paidAmount, submitOrder, setOrderDiscount, orderDiscount } = useCartStore()
   const { user, tenant, store } = useAuthStore()
@@ -112,6 +209,7 @@ export default function PaymentPanel() {
   const [adjTab,    setAdjTab]    = useState(null)
   const [discMode,  setDiscMode]  = useState('pct')
   const [showAdjPad,setShowAdjPad]= useState(false)
+  const [showPointsPad, setShowPointsPad] = useState(false)
   const [selMethod, setSelMethod] = useState('cash')
   const [payInput,  setPayInput]  = useState('')
   const [showPayPad,setShowPayPad]= useState(false)
@@ -119,10 +217,36 @@ export default function PaymentPanel() {
   const [processing,setProcessing]= useState(false)
   const [receiptPrompt, setReceiptPrompt] = useState(null)  // { html, orderNumber, settings } or null
 
+  // ── Points-redemption settings & computed limits ──────────────────
+  const REDEEM_RATE  = tenant?.points_redeem_rate     || 100  // 100 pts = $1
+  const MIN_PTS      = tenant?.redeem_min_pts         || 100
+  const MAX_PTS_TXN  = tenant?.redeem_max_pts_per_txn  || 0   // 0 = unlimited
+  const MAX_CASH_TXN = tenant?.redeem_max_cash_per_txn || 0
+  const MAX_PCT_TXN  = tenant?.redeem_max_pct_per_txn  || 0
+  const customerPts  = customer?.loyalty_points       || 0
+  // Is current orderDiscount actually a points redemption?
+  const pointsOrderDiscount = orderDiscount?.type === 'points_cash' ? orderDiscount : null
+  const currentPts = pointsOrderDiscount?.points_used || 0
+
   const liveTotal = subtotal - orderDiscountAmt + (taxExempt?0:taxAmount) + tip + feeAmt
   const paid      = paidAmount()
   const remaining = Math.max(0, liveTotal - paid)
   const change    = paid > liveTotal ? paid - liveTotal : 0
+
+  // Max points the user can apply right now (in pts):
+  //  - never more than they have
+  //  - never more than per-txn pts limit (if set)
+  //  - never more than the cash-cap allows (× rate)
+  //  - never more than pct cap of (pre-points) subtotal allows
+  //  - never more than what brings cart total to $0
+  // Re-add the current points discount when computing "what the order would
+  // be before any points applied" so max recomputes consistently.
+  const cartBeforePoints = liveTotal + currentPts / REDEEM_RATE
+  const capByPts    = MAX_PTS_TXN  > 0 ? Math.min(customerPts, MAX_PTS_TXN)             : customerPts
+  const capByCash   = MAX_CASH_TXN > 0 ? Math.min(capByPts,  MAX_CASH_TXN * REDEEM_RATE) : capByPts
+  const capByPct    = MAX_PCT_TXN  > 0 ? Math.min(capByCash, Math.floor(cartBeforePoints * (MAX_PCT_TXN/100) * REDEEM_RATE)) : capByCash
+  const capByOrder  = Math.floor(cartBeforePoints * REDEEM_RATE)
+  const maxRedeemable = Math.max(0, Math.min(capByPct, capByOrder))
 
   useEffect(() => { setPayInput(remaining>0 ? remaining.toFixed(2) : '') }, [remaining, selMethod])
 
@@ -133,6 +257,25 @@ export default function PaymentPanel() {
     else if (adjTab==='tip')  setTip(v)
     else if (adjTab==='fee')  setFeeAmt(v)
     setShowAdjPad(false)
+  }
+
+  const applyPoints = (pts) => {
+    if (pts === 0) {
+      setOrderDiscount(null)
+      toast.success('Points removed')
+    } else {
+      if (pts < MIN_PTS) {
+        toast.error(`Minimum ${MIN_PTS} pts required to redeem`)
+        return
+      }
+      setOrderDiscount({
+        type: 'points_cash',
+        amount: pts / REDEEM_RATE,
+        points_used: pts,
+      })
+      toast.success(`Applied ${pts} pts (−$${(pts/REDEEM_RATE).toFixed(2)})`)
+    }
+    setShowPointsPad(false)
   }
 
   const handleCardPax = async (amount) => {
@@ -304,7 +447,8 @@ export default function PaymentPanel() {
             <div className="rounded-lg overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
               {[
                 ['Subtotal',   subtotal,         '#64748b', '#fff',     true],
-                ['✂️ Disc',    -orderDiscountAmt, '#16a34a', orderDiscountAmt>0?'#f0fdf4':'#fff', true],
+                [orderDiscount?.type==='points_cash' ? `⭐ Points (${orderDiscount.points_used})` : '✂️ Disc',
+                  -orderDiscountAmt, '#16a34a', orderDiscountAmt>0?'#f0fdf4':'#fff', true],
                 [taxExempt?'🏛️ Tax':'Tax', taxExempt?0:taxAmount, taxExempt?'#2563eb':'#64748b', taxExempt?'#eff6ff':'#fff', true],
                 ['🙏 Tip',     tip,               '#ca8a04', tip>0?'#fffbeb':'#fff', true],
                 [`💼 Fee`,     feeAmt,            '#006AFF', feeAmt>0?'#fdf4ff':'#fff', true],
@@ -337,9 +481,9 @@ export default function PaymentPanel() {
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Invoice Adjustments
             </div>
-            <div className="p-3 grid grid-cols-4 gap-2">
+            <div className="p-3 grid grid-cols-5 gap-2">
               {[
-                ['disc','✂️','Discount','#16a34a','#f0fdf4', orderDiscount?(orderDiscount.type==='pct'?`${orderDiscount.value}%`:`$${orderDiscount.value}`):null],
+                ['disc','✂️','Discount','#16a34a','#f0fdf4', orderDiscount && orderDiscount.type !== 'points_cash' ?(orderDiscount.type==='pct'?`${orderDiscount.value}%`:`$${orderDiscount.value}`):null],
                 ['tip', '🙏','Tip',     '#ca8a04','#fffbeb', tip>0?`$${tip.toFixed(2)}`:null],
                 ['fee', '💼','Surcharge','#006AFF','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
               ].map(([id,icon,label,col,bg,applied])=>(
@@ -358,6 +502,35 @@ export default function PaymentPanel() {
                   }
                 </button>
               ))}
+              {/* ── Points card (Phase 7) ── */}
+              <button
+                onClick={()=>{
+                  if (!customer) { toast.error('Select a customer first to use points'); return }
+                  if (customerPts < MIN_PTS) { toast.error(`Customer needs at least ${MIN_PTS} pts (has ${customerPts})`); return }
+                  if (maxRedeemable < MIN_PTS) { toast.error('Cart total too small to redeem points'); return }
+                  setShowPointsPad(true)
+                }}
+                className="flex flex-col items-center py-3 rounded-xl cursor-pointer border-2 transition-all"
+                style={currentPts>0
+                  ? {background:'#FEF3C7', borderColor:'#FCD34D'}
+                  : !customer || customerPts<MIN_PTS
+                    ? {background:'#f8fafc', borderColor:'#e2e8f0', opacity:0.55}
+                    : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
+                <span className="text-[20px]">⭐</span>
+                <span className="text-[10px] font-bold mt-1" style={{color: currentPts>0 ? '#B45309' : '#64748b'}}>Points</span>
+                {currentPts > 0
+                  ? <span className="text-[11px] font-bold" style={{color:'#B45309'}}>
+                      {currentPts} pts
+                      <button onClick={e=>{e.stopPropagation(); setOrderDiscount(null)}}
+                        className="ml-1 bg-transparent border-none cursor-pointer font-bold" style={{color:'#B45309'}}>✕</button>
+                    </span>
+                  : !customer
+                    ? <span className="text-[9px] text-slate-400">no customer</span>
+                    : customerPts < MIN_PTS
+                      ? <span className="text-[9px] text-slate-400">{customerPts} pts</span>
+                      : <span className="text-[9px] text-[#15803D] font-bold">{customerPts} avail</span>
+                }
+              </button>
               <button onClick={()=>setTaxExempt(!taxExempt)}
                 className="flex flex-col items-center py-3 rounded-xl cursor-pointer border-2 transition-all"
                 style={taxExempt?{background:'#eff6ff',borderColor:'#2563eb'}:{background:'#f8fafc',borderColor:'#e2e8f0'}}>
@@ -515,6 +688,15 @@ export default function PaymentPanel() {
       </div>
 
       {showAdjPad && <DiscountNumPad adjTab={adjTab} discMode={discMode} setDiscMode={setDiscMode} onConfirm={applyAdj} onClose={()=>setShowAdjPad(false)}/>}
+      {showPointsPad && (
+        <PointsRedeemNumPad
+          customerPts={customerPts}
+          maxRedeemable={maxRedeemable}
+          redeemRate={REDEEM_RATE}
+          currentPoints={currentPts}
+          onConfirm={applyPoints}
+          onClose={()=>setShowPointsPad(false)}/>
+      )}
 
       {showPayPad && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center"
