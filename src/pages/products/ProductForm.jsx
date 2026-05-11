@@ -209,6 +209,19 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     enabled: !!initial.id,
   })
 
+  // All tags already used on other products (for "pick from existing" UX)
+  const { data: existingTags = [] } = useQuery({
+    queryKey: ['all-product-tags', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('products')
+        .select('tags').eq('tenant_id', tenantId).eq('is_active', true)
+      const all = new Set()
+      ;(data || []).forEach(p => (p.tags || []).forEach(t => t && all.add(t)))
+      return Array.from(all).sort()
+    },
+    enabled: !!tenantId,
+  })
+
   // Derived
   const margin = form.price && form.cost
     ? (((parseFloat(form.price)-parseFloat(form.cost))/parseFloat(form.price))*100).toFixed(1) : null
@@ -317,7 +330,14 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
       }
       toast.success(form.id ? 'Product updated ✓' : 'Product added ✓')
       onSave?.()
-    } catch(err) { toast.error('Error: '+err.message) }
+    } catch(err) {
+      // Surface every available detail so we can debug column/RLS/constraint issues
+      console.error('[ProductForm save] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      const code   = err?.code ? ` [${err.code}]` : ''
+      toast.error(`Save failed${code}: ${err?.message || 'Unknown error'}${detail ? ` — ${detail}` : ''}`,
+        { duration: 8000 })
+    }
     finally { setSaving(false) }
   }
 
@@ -582,25 +602,65 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               </div>
               <div>
                 <Label>Tags</Label>
-                <div className="flex gap-2">
-                  <input value={tagInput} onChange={e=>setTagInput(e.target.value)}
-                    onKeyDown={e=>{if(e.key==='Enter'&&tagInput.trim()){e.preventDefault();if(!form.tags.includes(tagInput.trim().toLowerCase())){set('tags',[...form.tags,tagInput.trim().toLowerCase()])};setTagInput('')}}}
-                    placeholder="Type + Enter"
-                    className="flex-1 rounded-xl px-3 py-2.5 text-[12px] outline-none"
-                    style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
-                </div>
+                {/* Input — type & Enter to add, OR pick from existing below */}
+                <input value={tagInput} onChange={e=>setTagInput(e.target.value)}
+                  onKeyDown={e=>{
+                    if(e.key==='Enter' && tagInput.trim()){
+                      e.preventDefault()
+                      const t = tagInput.trim().toLowerCase()
+                      if(!form.tags.includes(t)) set('tags',[...form.tags, t])
+                      setTagInput('')
+                    }
+                  }}
+                  placeholder="Type new tag + Enter, or click existing below"
+                  className="w-full rounded-xl px-3 py-2.5 text-[12px] outline-none"
+                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}/>
+
+                {/* Currently selected tags (removable pills) */}
                 {form.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1.5">
+                  <div className="flex flex-wrap gap-1 mt-2">
                     {form.tags.map(t=>(
-                      <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
-                        style={{background:'#E6F0FF', color:'#006AFF'}}>
-                        {t}
+                      <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                        style={{background:'#006AFF', color:'#FFFFFF'}}>
+                        ✓ {t}
                         <button onClick={()=>set('tags',form.tags.filter(x=>x!==t))}
-                          className="text-indigo-400 hover:text-red-500 bg-transparent border-none cursor-pointer ml-0.5 text-[10px]">✕</button>
+                          className="bg-transparent border-none cursor-pointer ml-0.5 text-[10px] text-white opacity-80 hover:opacity-100">✕</button>
                       </span>
                     ))}
                   </div>
                 )}
+
+                {/* Existing tags (filtered by input, excluding already-picked) */}
+                {(() => {
+                  const filter = tagInput.trim().toLowerCase()
+                  const available = existingTags
+                    .filter(t => !form.tags.includes(t))
+                    .filter(t => !filter || t.includes(filter))
+                    .slice(0, 20)
+                  if (existingTags.length === 0) return (
+                    <div className="text-[10px] text-slate-400 mt-1.5 italic">No tags used yet across your products.</div>
+                  )
+                  if (available.length === 0 && filter) return (
+                    <div className="text-[10px] text-slate-400 mt-1.5">No existing tag matches "{filter}" — press Enter to add as new.</div>
+                  )
+                  if (available.length === 0) return null
+                  return (
+                    <div className="mt-2">
+                      <div className="text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-wider">Pick from existing</div>
+                      <div className="flex flex-wrap gap-1">
+                        {available.map(t => (
+                          <button key={t} onClick={()=>{set('tags',[...form.tags, t]); setTagInput('')}}
+                            className="px-2 py-0.5 rounded-full text-[11px] font-medium cursor-pointer transition-all"
+                            style={{background:'#f1f5f9', color:'#475569', border:'1px solid #e2e8f0'}}
+                            onMouseEnter={e=>{e.target.style.background='#E6F0FF'; e.target.style.color='#006AFF'; e.target.style.borderColor='#80B2FF'}}
+                            onMouseLeave={e=>{e.target.style.background='#f1f5f9'; e.target.style.color='#475569'; e.target.style.borderColor='#e2e8f0'}}>
+                            + {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </Section>
@@ -630,14 +690,14 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                   <span className="text-slate-400 mr-1">$</span>
                   <input type="number" value={form.cost} onChange={e=>set('cost',e.target.value)}
                     placeholder="0.00" step="0.01"
-                    className="flex-1 border-none outline-none py-2.5 text-[13px] font-mono bg-transparent" style={{color:'#E5E5E5'}}/>
+                    className="flex-1 border-none outline-none py-2.5 text-[13px] font-mono bg-transparent" style={{color:'#1F1F1F'}}/>
                 </div>
               </div>
               <div>
                 <Label>Unit</Label>
                 <select value={form.unit} onChange={e=>set('unit',e.target.value)}
                   className="w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none"
-                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#E5E5E5'}}>
+                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}>
                   {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
@@ -677,36 +737,26 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
                     No tax rates configured. Add them in Settings → Tax Rates.
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    <label className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border transition-all ${
-                      form.selectedTaxRates.length===0 ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-slate-50 hover:bg-white'
-                    }`} onClick={()=>set('selectedTaxRates',[])}>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        form.selectedTaxRates.length===0 ? 'border-green-500 bg-green-500' : 'border-slate-300'
-                      }`}>
-                        {form.selectedTaxRates.length===0 && <div className="w-2 h-2 rounded-full bg-white"/>}
+                  <>
+                    <select
+                      value={form.selectedTaxRates[0] || ''}
+                      onChange={e => set('selectedTaxRates', e.target.value ? [e.target.value] : [])}
+                      className="w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none cursor-pointer"
+                      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}>
+                      <option value="">— No Tax —</option>
+                      {taxRates.map(tr => (
+                        <option key={tr.id} value={tr.id}>
+                          {tr.name} ({(tr.rate*100).toFixed(2)}%)
+                        </option>
+                      ))}
+                    </select>
+                    {form.selectedTaxRates.length > 1 && (
+                      <div className="mt-2 rounded-lg px-2 py-1.5 text-[10px]"
+                        style={{background:'#fef3c7', color:'#92400e', border:'1px solid #fde68a'}}>
+                        ⚠️ Multiple taxes were previously stacked on this product. Saving with the dropdown above will replace them with the single selection.
                       </div>
-                      <span className="text-[12px] font-medium text-slate-700">No Tax</span>
-                    </label>
-                    {taxRates.map(tr=>(
-                      <label key={tr.id}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border transition-all ${
-                          form.selectedTaxRates.includes(tr.id) ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200 bg-slate-50 hover:bg-white'
-                        }`}
-                        onClick={()=>set('selectedTaxRates', form.selectedTaxRates.includes(tr.id)
-                          ? form.selectedTaxRates.filter(t=>t!==tr.id)
-                          : [...form.selectedTaxRates, tr.id])}>
-                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                          form.selectedTaxRates.includes(tr.id) ? 'border-yellow-500 bg-yellow-500' : 'border-slate-300'
-                        }`}>
-                          {form.selectedTaxRates.includes(tr.id) && <span className="text-white text-[10px] font-bold">✓</span>}
-                        </div>
-                        <span className="text-[12px] font-medium text-slate-700">{tr.name}</span>
-                        <span className="text-[11px] font-bold font-mono px-1.5 py-0.5 rounded"
-                          style={{background:'#fef9c3', color:'#ca8a04'}}>{(tr.rate*100).toFixed(2)}%</span>
-                      </label>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
