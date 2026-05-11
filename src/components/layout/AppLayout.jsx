@@ -8,50 +8,64 @@ import { LangSwitcher } from '@/components/ui/LangSwitcher'
 import { OpenShiftModal, CloseShiftModal } from '@/components/pos/ShiftModal'
 
 const NAV_GROUPS = [
+  // ─────────────────────────────────────
+  // 🏠 OVERVIEW — top-level summary pages
+  // ─────────────────────────────────────
   {
     group: 'Overview',
     items: [
       { to:'/backoffice', icon:'🏠', label:'Dashboard' },
-      { to:'/orders',     icon:'🔍', label:'Orders' },
       { to:'/reports',    icon:'📊', label:'Reports' },
-      { to:'/reports/ar-aging', icon:'💸', label:'A/R Aging' },
     ]
   },
+
+  // ─────────────────────────────────────
+  // 🛒 RETAIL POS — walk-in customers
+  // ─────────────────────────────────────
   {
-    group: 'Inventory',
+    group: '🛒 Retail POS',
     items: [
-      { to:'/products',   icon:'📦', label:'Products' },
-      { to:'/categories', icon:'📁', label:'Categories' },
-      { to:'/stock-levels', icon:'📊', label:'Stock Center' },
-      { to:'/purchase-orders', icon:'📋', label:'Purchase Orders' },
-      { to:'/vendors',       icon:'🚚', label:'Vendors' },
-      { to:'/smart-receive', icon:'🤖', label:'Smart Receive' },
-    ]
-  },
-  {
-    group: 'Customers',
-    items: [
+      { to:'/orders',     icon:'🧾', label:'Orders / Recall' },
       { to:'/customers',  icon:'👥', label:'Members' },
-      { to:'/business',   icon:'🏢', label:'B2B' },
       { to:'/loyalty',    icon:'⭐', label:'Loyalty' },
-    ]
-  },
-  {
-    group: 'Sales',
-    items: [
-      { to:'/b2b-center', icon:'💼', label:'B2B Center' },
-      { to:'/estimates',  icon:'📝', label:'Estimates' },
-      { to:'/invoices',   icon:'📄', label:'Invoices' },
-      { to:'/payments',   icon:'💰', label:'Payments' },
+      { to:'/marketing',  icon:'🎯', label:'Promotions' },
       { to:'/cardcenter', icon:'💳', label:'Card Center' },
     ]
   },
+
+  // ─────────────────────────────────────
+  // 💼 B2B INVOICING — business accounts
+  // ─────────────────────────────────────
   {
-    group: 'Marketing',
+    group: '💼 B2B Invoicing',
     items: [
-      { to:'/marketing',  icon:'🎯', label:'Promotions' },
+      { to:'/b2b-center',       icon:'📈', label:'B2B Dashboard' },
+      { to:'/business',         icon:'🏢', label:'Companies' },
+      { to:'/estimates',        icon:'📝', label:'Estimates' },
+      { to:'/invoices',         icon:'📄', label:'Invoices' },
+      { to:'/payments',         icon:'💰', label:'Payments' },
+      { to:'/reports/ar-aging', icon:'💸', label:'A/R Aging' },
     ]
   },
+
+  // ─────────────────────────────────────
+  // 📦 INVENTORY — shared between POS + B2B
+  // ─────────────────────────────────────
+  {
+    group: '📦 Inventory',
+    items: [
+      { to:'/products',        icon:'📦', label:'Products' },
+      { to:'/categories',      icon:'📁', label:'Categories' },
+      { to:'/stock-levels',    icon:'📊', label:'Stock Center' },
+      { to:'/purchase-orders', icon:'📋', label:'Purchase Orders' },
+      { to:'/vendors',         icon:'🚚', label:'Vendors' },
+      { to:'/smart-receive',   icon:'🤖', label:'Smart Receive' },
+    ]
+  },
+
+  // ─────────────────────────────────────
+  // ⚙️ SYSTEM
+  // ─────────────────────────────────────
   {
     group: 'System',
     items: [
