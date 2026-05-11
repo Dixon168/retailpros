@@ -218,14 +218,16 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
     type:       initial?.type       || 'sale',
     product_id: initial?.product_id || '',
     is_active:  initial?.is_active  ?? true,
-    // Sale
+    // ── Schedule (now used by ALL types: sale, bulk, time) ──
     sale_start: initial?.sale_start ? new Date(initial.sale_start).toISOString().slice(0,16) : '',
     sale_end:   initial?.sale_end   ? new Date(initial.sale_end).toISOString().slice(0,16)   : '',
+    no_end_date: initial?.id ? !initial.sale_end : false,  // "runs forever" mode
+    // Sale-specific
     sale_type:  initial?.sale_type  || 'fixed',
     sale_value: initial?.sale_value || '',
     // Bulk
     bulk_tiers: initial?.bulk_tiers || [],
-    // Time
+    // Time (within-day rules)
     time_rules: initial?.time_rules || [],
   })
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
@@ -274,14 +276,23 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name required'); return }
-    if (form.type === 'sale' && (!form.sale_start || !form.sale_end || !form.sale_value)) {
-      toast.error('Fill all sale fields'); return
+
+    // All promotion types now require a start date
+    if (!form.sale_start) { toast.error('Start date is required'); return }
+    if (!form.no_end_date && !form.sale_end) { toast.error('End date required (or check "no end date")'); return }
+    if (form.sale_end && form.sale_start && new Date(form.sale_end) <= new Date(form.sale_start)) {
+      toast.error('End date must be after start date'); return
+    }
+
+    // Type-specific validations
+    if (form.type === 'sale' && !form.sale_value) {
+      toast.error('Enter sale price / discount'); return
     }
     if (form.type === 'bulk' && form.bulk_tiers.length === 0) {
       toast.error('Add at least one bulk tier'); return
     }
     if (form.type === 'time' && form.time_rules.length === 0) {
-      toast.error('Add at least one time rule'); return
+      toast.error('Add at least one time-of-day rule'); return
     }
     setSaving(true)
     try {
@@ -292,7 +303,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
         product_id: form.product_id || null,
         is_active:  form.is_active,
         sale_start: form.sale_start || null,
-        sale_end:   form.sale_end   || null,
+        sale_end:   form.no_end_date ? null : (form.sale_end || null),
         sale_type:  form.sale_type,
         sale_value: parseFloat(form.sale_value) || null,
         bulk_tiers: form.bulk_tiers,
@@ -420,24 +431,58 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
             )}
           </div>
 
-          {/* ── SALE PRICING ── */}
+          {/* ── SCHEDULE (shared for ALL promotion types) ── */}
+          <div className="rounded-xl p-4" style={{background:'#FAFAFA', border:'1.5px solid #E5E5E5'}}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[12px] font-bold text-[#1F1F1F]">📅 Schedule</div>
+              <button onClick={() => {
+                const now = new Date()
+                // Round to nearest minute, format for datetime-local
+                set('sale_start', new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16))
+              }}
+                className="rounded-md px-2 py-1 text-[10px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                ⚡ Start now
+              </button>
+            </div>
+
+            {/* Start date */}
+            <div className="mb-2.5">
+              <label className="block text-[10px] text-[#666] font-bold uppercase mb-1">Start Date &amp; Time *</label>
+              <input type="datetime-local" value={form.sale_start} onChange={e=>set('sale_start', e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-[12px] outline-none"
+                style={{border:'1.5px solid #E5E5E5', background:'#FFFFFF'}}/>
+            </div>
+
+            {/* End date */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] text-[#666] font-bold uppercase">End Date &amp; Time</label>
+                <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                  <input type="checkbox" checked={form.no_end_date}
+                    onChange={e => set('no_end_date', e.target.checked)}
+                    className="w-3.5 h-3.5 accent-[#006AFF]"/>
+                  <span className="text-[#666] font-bold">Runs forever (no end date)</span>
+                </label>
+              </div>
+              <input type="datetime-local" value={form.sale_end} onChange={e=>set('sale_end', e.target.value)}
+                disabled={form.no_end_date}
+                className="w-full rounded-lg px-3 py-2 text-[12px] outline-none disabled:opacity-40 disabled:bg-[#F5F5F5]"
+                style={{border:'1.5px solid #E5E5E5', background:'#FFFFFF'}}/>
+            </div>
+
+            {/* Computed status preview */}
+            <PromoStatusPreview
+              startsAt={form.sale_start}
+              endsAt={form.no_end_date ? null : form.sale_end}
+              enabled={form.is_active}
+            />
+          </div>
+
+          {/* ── SALE PRICING (type-specific) ── */}
           {form.type === 'sale' && (
             <div className="rounded-xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
-              <div className="text-[12px] font-bold text-indigo-700 mb-3">🏷️ Sale Pricing Settings</div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="block text-[11px] text-slate-500 mb-1">Start Date & Time *</label>
-                  <input type="datetime-local" value={form.sale_start} onChange={e=>set('sale_start',e.target.value)}
-                    className="w-full rounded-lg px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
-                </div>
-                <div>
-                  <label className="block text-[11px] text-slate-500 mb-1">End Date & Time *</label>
-                  <input type="datetime-local" value={form.sale_end} onChange={e=>set('sale_end',e.target.value)}
-                    className="w-full rounded-lg px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #B3D1FF', background:'#fff'}}/>
-                </div>
-              </div>
+              <div className="text-[12px] font-bold text-indigo-700 mb-3">🏷️ Sale Pricing</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] text-slate-500 mb-1">Discount Type</label>
@@ -628,14 +673,22 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
             </div>
           )}
 
-          {/* Active toggle */}
+          {/* Enable / pause toggle — separate from schedule */}
           <label className="flex items-center gap-3 cursor-pointer rounded-xl px-4 py-3"
-            style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
+            style={{background: form.is_active ? '#DCFCE7' : '#FEF3C7',
+                    border: `1.5px solid ${form.is_active ? '#15803D' : '#F59E0B'}`}}>
             <input type="checkbox" checked={form.is_active} onChange={e=>set('is_active',e.target.checked)}
-              className="w-4 h-4 accent-indigo-500"/>
-            <div>
-              <div className="text-[13px] font-semibold text-slate-700">Active immediately</div>
-              <div className="text-[11px] text-slate-400">Promotion goes live as soon as you save</div>
+              className="w-4 h-4 accent-[#15803D]"/>
+            <div className="flex-1">
+              <div className="text-[13px] font-semibold"
+                style={{color: form.is_active ? '#15803D' : '#B45309'}}>
+                {form.is_active ? '✓ Enabled' : '⏸ Paused'}
+              </div>
+              <div className="text-[11px]" style={{color: form.is_active ? '#15803D' : '#B45309'}}>
+                {form.is_active
+                  ? 'Will run during the scheduled window above.'
+                  : 'Manually paused — will NOT run even if schedule says it should.'}
+              </div>
             </div>
           </label>
         </div>
@@ -668,4 +721,74 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
       )}
     </div>
   )
+}
+
+// ─────────────────────────────────────────────────────────────
+// PromoStatusPreview — small inline preview of the effective status
+// based on schedule + enabled flag. Renders right under the date inputs.
+// ─────────────────────────────────────────────────────────────
+function PromoStatusPreview({ startsAt, endsAt, enabled }) {
+  if (!startsAt) {
+    return (
+      <div className="mt-3 rounded-lg p-2 text-[11px]"
+        style={{background:'#FFFFFF', border:'1px dashed #E5E5E5', color:'#999'}}>
+        ⓘ Pick a start date to see when this promo will be live
+      </div>
+    )
+  }
+
+  const now = new Date()
+  const start = new Date(startsAt)
+  const end   = endsAt ? new Date(endsAt) : null
+
+  let label, color, bg, icon, hint
+  if (!enabled) {
+    label = 'Paused (won\'t run)'
+    icon = '⏸'
+    color = '#B45309'; bg = '#FEF3C7'
+    hint = 'Enable the toggle below to allow this promo to run.'
+  } else if (now < start) {
+    const minutesUntil = Math.round((start - now) / 60000)
+    const ago = formatDuration(minutesUntil, true)
+    label = `Scheduled — starts in ${ago}`
+    icon = '📅'
+    color = '#006AFF'; bg = '#E6F0FF'
+    hint = `Begins ${start.toLocaleString()}`
+  } else if (!end || now <= end) {
+    icon = '✅'
+    color = '#15803D'; bg = '#DCFCE7'
+    if (end) {
+      const minutesLeft = Math.round((end - now) / 60000)
+      label = `Live now — ends in ${formatDuration(minutesLeft, false)}`
+      hint = `Ends ${end.toLocaleString()}`
+    } else {
+      label = 'Live now — runs forever'
+      hint = 'No end date set'
+    }
+  } else {
+    label = 'Expired'
+    icon = '⏰'
+    color = '#999'; bg = '#F5F5F5'
+    hint = `Ended ${end.toLocaleString()}`
+  }
+
+  return (
+    <div className="mt-3 rounded-lg px-3 py-2 flex items-center gap-2"
+      style={{background: bg, border: `1px solid ${color}33`}}>
+      <span style={{fontSize: '14px'}}>{icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-bold" style={{color}}>{label}</div>
+        <div className="text-[10px]" style={{color: '#666'}}>{hint}</div>
+      </div>
+    </div>
+  )
+}
+
+function formatDuration(minutes, future) {
+  if (minutes < 1) return future ? 'less than a minute' : 'now'
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'}`
+  const days = Math.round(hours / 24)
+  return `${days} day${days === 1 ? '' : 's'}`
 }
