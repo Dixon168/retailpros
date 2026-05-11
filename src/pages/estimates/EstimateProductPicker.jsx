@@ -28,17 +28,18 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
     staleTime: 5 * 60 * 1000,
   })
 
-  const queryMode = debounced.length >= 2 ? 'search' : categoryId ? 'category' : 'idle'
+  const queryMode = debounced.length >= 1 ? 'search' : categoryId ? 'category' : 'idle'
 
   const { data: results = [], isLoading } = useQuery({
     queryKey: ['est-product-picker', tenant?.id, store?.id, queryMode, debounced, categoryId],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('id, name, sku, price, cost, category_id')
+        .select('id, name, sku, barcode, price, cost, category_id')
         .eq('tenant_id', tenant.id).neq('type', 'service')
 
       if (queryMode === 'search') {
-        q = q.or(`name.ilike.%${debounced}%,sku.ilike.%${debounced}%`)
+        // Search across name, sku, AND barcode — so UPC scanner works directly
+        q = q.or(`name.ilike.%${debounced}%,sku.ilike.%${debounced}%,barcode.ilike.%${debounced}%`)
         if (categoryId) q = q.eq('category_id', categoryId)
       } else if (queryMode === 'category') {
         q = q.eq('category_id', categoryId)
@@ -76,7 +77,15 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
 
         <div className="px-5 py-3 flex-shrink-0 space-y-2" style={{borderBottom:'1px solid #E5E5E5'}}>
           <input value={search} onChange={e => setSearch(e.target.value)} autoFocus
-            placeholder="🔍 Search by name or SKU (2+ chars)..."
+            placeholder="🔍 Search by name, SKU, or scan barcode..."
+            onKeyDown={(e) => {
+              // Barcode scanner workflow: scan ends with Enter.
+              // If we have exactly 1 result, auto-pick it.
+              if (e.key === 'Enter' && results.length === 1) {
+                e.preventDefault()
+                onPick(results[0])
+              }
+            }}
             className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"/>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-[#666] font-bold">Or pick a category:</span>
@@ -104,7 +113,7 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
             <div className="p-12 text-center">
               <div className="text-[40px] mb-2 opacity-30">📦</div>
               <div className="text-[13px] text-[#1F1F1F] font-bold mb-1">Search or pick a category</div>
-              <div className="text-[11px] text-[#999]">Type 2+ letters or select a category</div>
+              <div className="text-[11px] text-[#999]">Type a name / SKU, scan a barcode, or pick a category</div>
             </div>
           ) : isLoading ? (
             <div className="p-8 text-center text-[12px] text-[#999]">Loading...</div>

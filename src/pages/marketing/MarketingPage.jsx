@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
+import EstimateProductPicker from '@/pages/estimates/EstimateProductPicker'
 
 const TYPE_INFO = {
   sale: { label:'Sale Pricing',       icon:'🏷️', color:'#006AFF', bg:'#E6F0FF', desc:'Date range discount' },
@@ -234,15 +235,19 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
   // Time rule state
   const [newRule, setNewRule] = useState({ days:[], start_time:'', end_time:'', type:'fixed', value:'' })
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-simple', tenantId],
+  const [showProductPicker, setShowProductPicker] = useState(false)
+
+  // Fetch only the currently selected product (for displaying name + price)
+  const { data: selectedProduct } = useQuery({
+    queryKey: ['promo-selected-product', form.product_id],
     queryFn: async () => {
+      if (!form.product_id) return null
       const { data } = await supabase.from('products')
-        .select('id, name, price').eq('tenant_id', tenantId)
-        .eq('is_active', true).order('name').limit(200)
-      return data || []
+        .select('id, name, sku, barcode, price, image_url')
+        .eq('id', form.product_id).single()
+      return data
     },
-    enabled: !!tenantId,
+    enabled: !!form.product_id,
   })
 
   const addTier = () => {
@@ -314,8 +319,6 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
     finally { setSaving(false) }
   }
 
-  const selectedProduct = products.find(p => p.id === form.product_id)
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)'}} onClick={onClose}>
@@ -367,17 +370,52 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
               Apply to Product <span className="text-slate-400 font-normal normal-case">(leave blank = all products)</span>
             </label>
-            <select value={form.product_id} onChange={e=>set('product_id',e.target.value)}
-              className="w-full rounded-xl px-4 py-2.5 text-[13px] outline-none"
-              style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#E5E5E5'}}>
-              <option value="">All Products (Global)</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — ${p.price?.toFixed(2)}</option>
-              ))}
-            </select>
-            {selectedProduct && (
-              <div className="mt-1.5 text-[11px] text-slate-400">
-                Original price: <span className="font-bold text-slate-600">${selectedProduct.price?.toFixed(2)}</span>
+
+            {selectedProduct ? (
+              /* Selected product card */
+              <div className="rounded-xl px-3 py-2.5 flex items-center gap-3"
+                style={{ border: '1.5px solid #006AFF', background: '#E6F0FF' }}>
+                <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center"
+                  style={{ background: '#FFFFFF', border: '1px solid #B3D1FF' }}>
+                  {selectedProduct.image_url
+                    ? <img src={selectedProduct.image_url} alt="" className="w-full h-full object-cover"/>
+                    : <span className="text-[11px] font-bold text-[#006AFF]">{selectedProduct.name?.substring(0, 2).toUpperCase()}</span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{selectedProduct.name}</div>
+                  <div className="text-[10px] text-[#666] font-mono">
+                    {selectedProduct.sku ? `SKU: ${selectedProduct.sku}` : ''}
+                    {selectedProduct.barcode ? ` · UPC: ${selectedProduct.barcode}` : ''}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-[14px] font-bold font-mono text-[#006AFF]">${(selectedProduct.price || 0).toFixed(2)}</div>
+                </div>
+                <button onClick={() => setShowProductPicker(true)}
+                  className="rounded-lg px-2.5 py-1.5 text-[10px] font-bold cursor-pointer flex-shrink-0"
+                  style={{ background: '#FFFFFF', color: '#006AFF', border: '1px solid #006AFF' }}>
+                  Change
+                </button>
+                <button onClick={() => set('product_id', '')}
+                  className="rounded-lg px-2 py-1.5 text-[14px] cursor-pointer flex-shrink-0"
+                  style={{ background: '#FFFFFF', color: '#CF1322', border: '1px solid #FECACA' }}
+                  title="Clear (apply to all products)">
+                  ✕
+                </button>
+              </div>
+            ) : (
+              /* Pick product button + "All products" hint */
+              <button onClick={() => setShowProductPicker(true)}
+                className="w-full rounded-xl px-4 py-3 text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+                style={{ border: '1.5px dashed #B3D1FF', background: '#F5F5F5', color: '#006AFF' }}>
+                <span className="text-[16px]">📷</span>
+                <span>Scan barcode / Search / Browse categories</span>
+              </button>
+            )}
+            {!selectedProduct && (
+              <div className="mt-1.5 text-[10px] text-[#666]">
+                💡 Leave empty to apply this promotion to <strong>all products</strong>
               </div>
             )}
           </div>
@@ -616,6 +654,18 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
           </button>
         </div>
       </div>
+
+      {showProductPicker && (
+        <EstimateProductPicker
+          title="Pick product for this promotion"
+          excludeIds={[]}
+          onPick={(p) => {
+            set('product_id', p.id)
+            setShowProductPicker(false)
+          }}
+          onClose={() => setShowProductPicker(false)}
+        />
+      )}
     </div>
   )
 }
