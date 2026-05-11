@@ -21,7 +21,7 @@ export default function CustomerPanel() {
   const close = () => useCartStore.setState({ showCustPanel: false })
 
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', company: '',
+    name: '', phone: '', email: '',
     birthday: '', gender: '', address: '',
     type: 'regular', notes: '',
   })
@@ -35,7 +35,7 @@ export default function CustomerPanel() {
     queryKey: ['customer-search', tenant?.id, search],
     queryFn: async () => {
       let q = supabase.from('customers')
-        .select('id, code, name, company, phone, email, type, credit_balance, loyalty_points, tier')
+        .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search)
         q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,email.ilike.%${search}%`)
@@ -62,7 +62,6 @@ export default function CustomerPanel() {
         name:         form.name.trim(),
         phone:        form.phone || null,
         email:        form.email || null,
-        company:      form.company || null,
         birthday:     form.birthday || null,
         gender:       form.gender || null,
         billing_address: form.address || null,
@@ -193,7 +192,6 @@ export default function CustomerPanel() {
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5">
                         {c.phone || c.email || '—'}
-                        {c.company && <span className="ml-1.5">· {c.company}</span>}
                       </div>
                       <div className="flex gap-2 mt-1">
                         {c.loyalty_points > 0 && (
@@ -245,13 +243,6 @@ export default function CustomerPanel() {
                     <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Email</div>
                     <input value={form.email} onChange={e=>setF('email',e.target.value)}
                       placeholder="Email address" type="email"
-                      className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Company</div>
-                    <input value={form.company} onChange={e=>setF('company',e.target.value)}
-                      placeholder="Company (optional)"
                       className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
                       style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
                   </div>

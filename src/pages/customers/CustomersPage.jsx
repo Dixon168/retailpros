@@ -340,7 +340,6 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                 ['Birthday', c.birthday ? new Date(c.birthday).toLocaleDateString() : '—'],
                 ['Phone', c.phone || '—'],
                 ['Email', c.email || '—'],
-                ['Company', c.company || '—'],
               ].map(([l,v])=><InfoRow key={l} label={l} value={v}/>)}
             </InfoCard>
             <InfoCard title="Membership">
@@ -801,7 +800,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
   })
   const [form, setForm] = useState({
     name: customer.name||'', phone: customer.phone||'', email: customer.email||'',
-    company: customer.company||'', birthday: customer.birthday||'',
+    birthday: customer.birthday||'',
     gender: customer.gender||'', address: customer.billing_address||'',
     notes: customer.notes||'',
     card_number: customer.card_number||'', member_level: customer.member_level||'',
@@ -858,7 +857,7 @@ function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
                   className="w-full rounded-xl px-3 py-2.5 text-[14px] font-semibold outline-none"
                   style={{border:'1.5px solid #80B2FF',background:'#fff'}}/>
               </div>
-              {[['phone','Phone','tel'],['email','Email','email'],['company','Company','text'],['birthday','Birthday','date'],['referrer','Referrer','text']].map(([k,l,t])=>(
+              {[['phone','Phone','tel'],['email','Email','email'],['birthday','Birthday','date'],['referrer','Referrer','text']].map(([k,l,t])=>(
                 <div key={k}>
                   <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">{l}</div>
                   <input type={t} value={form[k]} onChange={e=>setF(k,e.target.value)}
