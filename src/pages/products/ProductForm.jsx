@@ -166,6 +166,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     track_inventory:  initial.track_inventory  ?? true,
     // Tax
     selectedTaxRates: [],
+    tax_exempt:       initial.tax_exempt       ?? false,
     points_redeem:          initial.points_redeem          ?? false,
     redeem_points_required: initial.redeem_points_required || '',
   })
@@ -302,6 +303,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
         has_serial:       form.has_serial,
         prompt_sales:     form.prompt_sales,
         track_inventory:  form.track_inventory,
+        tax_exempt:       form.tax_exempt,
         is_active:        true,
       }
 
@@ -730,33 +732,87 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               <div className={!form.id && form.track_inventory ? '' : 'col-span-2'}>
                 <Label>
                   Tax
-                  {totalTax > 0 && <span className="ml-2 text-yellow-600 font-bold normal-case">{(totalTax*100).toFixed(2)}% total</span>}
+                  {!form.tax_exempt && totalTax > 0 && (
+                    <span className="ml-2 text-yellow-600 font-bold normal-case">{(totalTax*100).toFixed(2)}% total</span>
+                  )}
                 </Label>
-                {taxRates.length === 0 ? (
-                  <div className="text-[11px] text-slate-400 py-1">
-                    No tax rates configured. Add them in Settings → Tax Rates.
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={form.selectedTaxRates[0] || ''}
-                      onChange={e => set('selectedTaxRates', e.target.value ? [e.target.value] : [])}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none cursor-pointer"
-                      style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}>
-                      <option value="">— No Tax —</option>
-                      {taxRates.map(tr => (
-                        <option key={tr.id} value={tr.id}>
-                          {tr.name} ({(tr.rate*100).toFixed(2)}%)
-                        </option>
-                      ))}
-                    </select>
-                    {form.selectedTaxRates.length > 1 && (
-                      <div className="mt-2 rounded-lg px-2 py-1.5 text-[10px]"
-                        style={{background:'#fef3c7', color:'#92400e', border:'1px solid #fde68a'}}>
-                        ⚠️ Multiple taxes were previously stacked on this product. Saving with the dropdown above will replace them with the single selection.
+
+                {/* Tax Exempt? toggle — ALWAYS shown, default No (taxable) */}
+                <div className="rounded-xl p-3 mb-2" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[12px] font-bold text-slate-700">Tax Exempt?</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        {form.tax_exempt
+                          ? 'No tax will be charged on this product.'
+                          : 'Product is taxable. Pick which taxes apply below.'}
                       </div>
-                    )}
-                  </>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={()=>set('tax_exempt', false)}
+                        className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+                        style={!form.tax_exempt
+                          ? {background:'#15803d', color:'#fff', borderColor:'#15803d'}
+                          : {background:'#fff', color:'#475569', borderColor:'#e2e8f0'}}>
+                        No
+                      </button>
+                      <button onClick={()=>set('tax_exempt', true)}
+                        className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+                        style={form.tax_exempt
+                          ? {background:'#dc2626', color:'#fff', borderColor:'#dc2626'}
+                          : {background:'#fff', color:'#475569', borderColor:'#e2e8f0'}}>
+                        Yes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tax-rate multi-select checkboxes — only when NOT exempt */}
+                {!form.tax_exempt && (
+                  taxRates.length === 0 ? (
+                    <div className="rounded-lg px-3 py-2 text-[11px]"
+                      style={{background:'#fef9c3', color:'#92400e', border:'1px solid #fde68a'}}>
+                      ⓘ No tax rates configured yet. Add them in <b>Settings → Tax Rates</b>, then come back to tick which apply.
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        Apply these taxes
+                      </div>
+                      <div className="space-y-1.5">
+                        {taxRates.map(tr => {
+                          const checked = form.selectedTaxRates.includes(tr.id)
+                          return (
+                            <label key={tr.id}
+                              onClick={()=>set('selectedTaxRates', checked
+                                ? form.selectedTaxRates.filter(t=>t!==tr.id)
+                                : [...form.selectedTaxRates, tr.id])}
+                              className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
+                              style={checked
+                                ? {background:'#fef9c3', border:'1.5px solid #ca8a04'}
+                                : {background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0"
+                                  style={checked
+                                    ? {borderColor:'#ca8a04', background:'#ca8a04'}
+                                    : {borderColor:'#cbd5e1', background:'#fff'}}>
+                                  {checked && <span className="text-white text-[10px] font-bold leading-none">✓</span>}
+                                </div>
+                                <span className="text-[12px] font-medium text-slate-700">{tr.name}</span>
+                              </div>
+                              <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded"
+                                style={{background: checked ? '#fff' : '#f1f5f9', color:'#ca8a04'}}>
+                                {(tr.rate*100).toFixed(2)}%
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1.5">
+                        💡 Tick multiple boxes to stack taxes (e.g. state + city).
+                      </div>
+                    </div>
+                  )
                 )}
               </div>
             </div>
