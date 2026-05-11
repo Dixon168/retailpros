@@ -13,7 +13,6 @@ import ReceivePaymentModal from '@/pages/invoices/ReceivePaymentModal'
 import InvoiceDetailModal from '@/pages/invoices/InvoiceDetailModal'
 import EstimateDetailModal from '@/pages/estimates/EstimateDetailModal'
 import PaymentDetailModal from '@/pages/payments/PaymentDetailModal'
-import CustomerHistoryModal from '@/pages/business/CustomerHistoryModal'
 
 const PAYMENT_METHOD_LABELS = {
   cash:'💵 Cash', check:'🏦 Check', ach:'🔄 ACH',
@@ -32,7 +31,6 @@ export default function B2BCenterPage() {
   const [viewInvoice, setViewInvoice]         = useState(null)
   const [viewEstimate, setViewEstimate]       = useState(null)
   const [viewPayment, setViewPayment]         = useState(null)
-  const [viewCustomer, setViewCustomer]       = useState(null)
 
   // ── Invoices summary (uses v_invoice_with_customer) ──
   const { data: invoices = [] } = useQuery({
@@ -286,7 +284,7 @@ export default function B2BCenterPage() {
                           : severity === 'medium'   ? '🟡'
                           : '🟢'
                 return (
-                  <div key={c.customer_id} onClick={() => setViewCustomer(c)}
+                  <div key={c.customer_id} onClick={() => navigate(`/business/${c.customer_id}`)}
                     className="px-4 py-3 hover:bg-[#FAFAFA] cursor-pointer flex items-center gap-3">
                     <span className="text-[14px]">{dot}</span>
                     <div className="flex-1 min-w-0">
@@ -365,14 +363,6 @@ export default function B2BCenterPage() {
           onChanged={() => {
             qc.invalidateQueries({ queryKey: ['b2b-recent-payments'] })
             qc.invalidateQueries({ queryKey: ['b2b-invoices-all'] })
-          }}/>
-      )}
-      {viewCustomer && (
-        <CustomerHistoryModal
-          customerId={viewCustomer.customer_id}
-          onClose={() => setViewCustomer(null)}
-          onChanged={() => {
-            qc.invalidateQueries({ queryKey: ['b2b-aging'] })
           }}/>
       )}
     </div>

@@ -4,17 +4,17 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
-import CustomerHistoryModal from '@/pages/business/CustomerHistoryModal'
 import ReceivePaymentModal from '@/pages/invoices/ReceivePaymentModal'
 
 export default function ARAgingPage() {
   const { tenant } = useAuthStore()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [search, setSearch]       = useState('')
   const [showOnlyOwing, setShowOnlyOwing] = useState(true)
-  const [viewingCustomer, setViewingCustomer] = useState(null)
   const [receiveFor, setReceiveFor] = useState(null)
 
   const { data: rows = [], isLoading } = useQuery({
@@ -157,7 +157,7 @@ export default function ARAgingPage() {
               <div key={r.customer_id}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] items-center"
                 style={{gridTemplateColumns:'1.6fr 60px 90px 90px 90px 90px 90px 105px 90px'}}>
-                <div className="px-2.5 py-3 cursor-pointer" onClick={() => setViewingCustomer(r)}>
+                <div className="px-2.5 py-3 cursor-pointer" onClick={() => navigate(`/business/${r.customer_id}`)}>
                   <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{r.company_name}</div>
                   {r.contact_name && (
                     <div className="text-[10px] text-[#666] truncate">{r.contact_name}</div>
@@ -206,14 +206,6 @@ export default function ARAgingPage() {
       </div>
 
       {/* Modals */}
-      {viewingCustomer && (
-        <CustomerHistoryModal
-          customerId={viewingCustomer.customer_id}
-          onClose={() => setViewingCustomer(null)}
-          onChanged={() => qc.invalidateQueries({ queryKey: ['ar-aging'] })}
-        />
-      )}
-
       {receiveFor && (
         <ReceivePaymentModal
           presetCustomerId={receiveFor.customer_id}

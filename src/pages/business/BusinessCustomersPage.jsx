@@ -8,18 +8,18 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
-import CustomerHistoryModal from './CustomerHistoryModal'
 import CreateCompanyWizard from './CreateCompanyWizard'
 
 export default function BusinessCustomersPage() {
   const { tenant } = useAuthStore()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [search, setSearch]             = useState('')
   const [filter, setFilter]             = useState('all')  // all | owes | overdue
-  const [historyFor, setHistoryFor]     = useState(null)
   const [showCreate, setShowCreate]     = useState(false)
 
   const { data: customers = [], isLoading } = useQuery({
@@ -152,7 +152,7 @@ export default function BusinessCustomersPage() {
             const owes = (c.computed_balance || 0) > 0
             const overdue = (c.overdue_invoice_count || 0) > 0
             return (
-              <div key={c.id} onClick={() => setHistoryFor(c)}
+              <div key={c.id} onClick={() => navigate(`/business/${c.id}`)}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] cursor-pointer items-center"
                 style={{gridTemplateColumns:'2fr 1.4fr 1fr 110px 110px 100px'}}>
                 <div className="px-3.5 py-3 min-w-0">
@@ -212,13 +212,6 @@ export default function BusinessCustomersPage() {
             setShowCreate(false)
             qc.invalidateQueries({ queryKey: ['business-customer-list'] })
           }}
-        />
-      )}
-      {historyFor && (
-        <CustomerHistoryModal
-          customerId={historyFor.id}
-          onClose={() => setHistoryFor(null)}
-          onChanged={() => qc.invalidateQueries({ queryKey: ['business-customer-list'] })}
         />
       )}
     </div>
