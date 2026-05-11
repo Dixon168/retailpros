@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import toast from 'react-hot-toast'
 
 export default function EstimateProductPicker({ onPick, onClose, excludeIds = [], title = 'Add Product' }) {
   const { tenant, store } = useAuthStore()
@@ -33,26 +34,39 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
   const { data: results = [], isLoading } = useQuery({
     queryKey: ['est-product-picker', tenant?.id, store?.id, queryMode, debounced, categoryId],
     queryFn: async () => {
+      // Match the POS picker query pattern (proven to work on Dixon's schema):
+      // - select(*) instead of cherry-picked cols (avoids missing-column errors
+      //   if the schema doesn't have e.g. `barcode`)
+      // - filter is_active = true and is_enabled != false (same as POS)
+      // - search by name, sku, OR upc (the POS uses `upc`, not `barcode`)
       let q = supabase.from('products')
-        .select('id, name, sku, barcode, price, cost, category_id')
-        .eq('tenant_id', tenant.id).neq('type', 'service')
+        .select('id, name, sku, price, cost, category_id, is_active, type')
+        .eq('tenant_id', tenant.id)
+        .eq('is_active', true)
+        .neq('type', 'service')
 
       if (queryMode === 'search') {
-        // Search across name, sku, AND barcode — so UPC scanner works directly
-        q = q.or(`name.ilike.%${debounced}%,sku.ilike.%${debounced}%,barcode.ilike.%${debounced}%`)
+        const term = debounced.replace(/[%,]/g, '')
+        q = q.or(`name.ilike.%${term}%,sku.ilike.%${term}%,upc.eq.${term}`)
         if (categoryId) q = q.eq('category_id', categoryId)
       } else if (queryMode === 'category') {
         q = q.eq('category_id', categoryId)
       }
 
-      const { data: products } = await q.order('name').limit(100)
+      const { data: products, error: pErr } = await q.order('name').limit(100)
+      if (pErr) {
+        toast.error(`Product lookup failed: ${pErr.message}`)
+        console.error('[ProductPicker] products query error:', pErr)
+        return []
+      }
       if (!products?.length) return []
 
       // Fetch inventory for these products
-      const { data: inv } = await supabase.from('inventory')
+      const { data: inv, error: iErr } = await supabase.from('inventory')
         .select('product_id, quantity')
         .eq('tenant_id', tenant.id).eq('store_id', store.id)
         .in('product_id', products.map(p => p.id))
+      if (iErr) console.warn('[ProductPicker] inventory query error:', iErr)
       const stockMap = {}
       ;(inv || []).forEach(r => { stockMap[r.product_id] = r.quantity })
 
