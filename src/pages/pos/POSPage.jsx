@@ -22,6 +22,7 @@ import CustomerPanel from './panels/CustomerPanel'
 import DiscountPanel from './panels/DiscountPanel'
 import PaymentPanel from './panels/PaymentPanel'
 import RefundPanel from './panels/RefundPanel'
+import toast from 'react-hot-toast'
 
 export default function POSPage() {
   const navigate    = useNavigate()
@@ -34,6 +35,7 @@ export default function POSPage() {
   const [searchQuery,    setSearchQuery]    = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
   const [showRefund,     setShowRefund]     = useState(false)
+  const [refundPreload,  setRefundPreload]  = useState(null)  // order obj to pre-load into refund panel
   const [showHold,       setShowHold]       = useState(false)
   const [showRecall,     setShowRecall]     = useState(false)
   const [showPoints,     setShowPoints]     = useState(false)
@@ -46,6 +48,27 @@ export default function POSPage() {
   }, [])
 
   useEffect(() => { if (tenant?.id) loadTaxGroups(tenant.id) }, [tenant?.id])
+
+  // Auto-open Refund with preloaded order if /pos?refund=<order_id>
+  useEffect(() => {
+    if (!tenant?.id) return
+    const params = new URLSearchParams(window.location.search)
+    const refundId = params.get('refund')
+    if (!refundId) return
+    ;(async () => {
+      const { data, error } = await supabase.from('orders')
+        .select('*, order_items(*, products(name, unit, price, image_url)), customers(name)')
+        .eq('id', refundId).eq('tenant_id', tenant.id).maybeSingle()
+      if (error || !data) {
+        toast.error('Could not load order for refund')
+      } else {
+        setRefundPreload(data)
+        setShowRefund(true)
+      }
+      // Clean the URL so reloading doesn't re-trigger
+      window.history.replaceState({}, '', '/pos')
+    })()
+  }, [tenant?.id])
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories', tenant?.id],
@@ -224,7 +247,9 @@ export default function POSPage() {
       {showCustPanel  && <CustomerPanel />}
       {showDiscPanel  && <DiscountPanel />}
       {showPayPanel   && <PaymentPanel />}
-      {showRefund     && <RefundPanel onClose={() => setShowRefund(false)} />}
+      {showRefund     && <RefundPanel
+        preloadOrder={refundPreload}
+        onClose={() => { setShowRefund(false); setRefundPreload(null) }} />}
 
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
 

@@ -41,7 +41,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
   const { addProduct }   = useCartStore()
   const qc               = useQueryClient()
 
-  const [mode, setMode]   = useState(null) // 'by_item' | 'by_invoice'
+  const [mode, setMode]   = useState(preloadOrder ? 'by_invoice' : null) // 'by_item' | 'by_invoice'
   const [step, setStep]   = useState('select')
 
   // ── BY ITEM mode ──
@@ -54,7 +54,12 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
   // ── BY INVOICE mode ──
   const [invoiceSearch, setInvoiceSearch] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(preloadOrder)
-  const [returnQtys,    setReturnQtys]    = useState({}) // {itemId: qty}
+  const [returnQtys,    setReturnQtys]    = useState(() => {
+    if (!preloadOrder?.order_items) return {}
+    const init = {}
+    preloadOrder.order_items.forEach(item => { init[item.id] = 0 })
+    return init
+  })
   const [showQtyPad,    setShowQtyPad]    = useState(null) // itemId
   const [showKB,        setShowKB]        = useState(false)
 

@@ -1,6 +1,6 @@
 // src/pages/orders/OrderLookupPage.jsx
 import { useState, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
@@ -276,6 +276,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
 export default function OrderLookupPage() {
   const { tenant, user } = useAuthStore()
   const { resumeHeldOrder, cancelHeldOrder } = useHeldOrdersStore()
+  const qc = useQueryClient()
 
   const [search,     setSearch]     = useState('')
   const [statusF,    setStatusF]    = useState('all')
@@ -419,7 +420,11 @@ export default function OrderLookupPage() {
       }
 
       toast.success(`✓ Order ${o.order_number} voided — recorded on today's report`)
+      // Update side-panel and refetch the list so the row's status badge
+      // changes immediately (was previously only updating selected).
       setSelected(s => s?.id===o.id ? {...s, status:'voided'} : s)
+      qc.invalidateQueries({ queryKey: ['orders-lookup'] })
+      qc.invalidateQueries({ queryKey: ['held-lookup'] })
     } catch(e) {
       toast.error('Void failed: ' + e.message)
     }
