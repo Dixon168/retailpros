@@ -294,14 +294,13 @@ $func$;
 
 
 -- ── VERIFY ─────────────────────────────────────────────────────────
-DO $$
-DECLARE v_inv_col INT; v_est_col INT;
-BEGIN
-  SELECT COUNT(*) INTO v_inv_col FROM information_schema.columns
-    WHERE table_name = 'invoices'  AND column_name = 'delivery_notes';
-  SELECT COUNT(*) INTO v_est_col FROM information_schema.columns
-    WHERE table_name = 'estimates' AND column_name = 'delivery_notes';
-  RAISE NOTICE '✅ B2B Phase 5 setup complete.';
-  RAISE NOTICE '   invoices.delivery_notes  exists: %', (v_inv_col = 1);
-  RAISE NOTICE '   estimates.delivery_notes exists: %', (v_est_col = 1);
-END $$;
+-- Run this and confirm both rows show TRUE in the "exists" column.
+SELECT
+  table_name,
+  column_name,
+  data_type,
+  TRUE AS exists
+FROM information_schema.columns
+WHERE column_name = 'delivery_notes'
+  AND table_name IN ('invoices','estimates')
+ORDER BY table_name;
