@@ -60,6 +60,7 @@ const NAV_GROUPS = [
       { to:'/purchase-orders', icon:'📋', label:'Purchase Orders' },
       { to:'/vendors',         icon:'🚚', label:'Vendors' },
       { to:'/smart-receive',   icon:'🤖', label:'Smart Receive' },
+      { to:'/barcode',         icon:'🏷️', label:'Barcode Print' },
     ]
   },
 

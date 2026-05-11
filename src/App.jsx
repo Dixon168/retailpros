@@ -29,6 +29,7 @@ import CardCenterPage from '@/pages/cardcenter/CardCenterPage'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
 import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
 import CompanyDetailPage from '@/pages/business/CompanyDetailPage'
+import BarcodePage from '@/pages/barcode/BarcodePage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 30, networkMode: 'offlineFirst' } }
@@ -112,6 +113,7 @@ export default function App() {
             <Route path="/business"      element={<BusinessCustomersPage />} />
             <Route path="/business/:id"  element={<CompanyDetailPage />} />
             <Route path="/reports"    element={<ReportsPage />} />
+            <Route path="/barcode"    element={<BarcodePage />} />
             <Route path="/settings"   element={<SettingsPage />} />
           </Route>
           <Route path="/" element={<Navigate to="/pos" replace />} />

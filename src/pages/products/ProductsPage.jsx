@@ -10,6 +10,7 @@ import { AIStockBadge, AIStockPanel } from './AIStockPredict'
 import { ReceiveModal } from './ReceiveModal'
 import { AdjustModal } from './AdjustModal'
 import { CountModal, WriteOffModal, HistoryModal } from '@/components/inventory/StockOpsModals'
+import { printLabels } from '@/components/barcode/LabelPreview'
 import toast from 'react-hot-toast'
 
 const TYPE_COLOR = {
@@ -30,6 +31,19 @@ export default function ProductsPage() {
   const [photoViewer, setPhotoViewer]   = useState(null)
   const [filterCat, setFilterCat]     = useState('')
   const [filterTag, setFilterTag]     = useState('')
+  const [printProduct, setPrintProduct] = useState(null) // product to print labels for
+
+  // Barcode templates for the print mini-dialog
+  const { data: barcodeTemplates = [] } = useQuery({
+    queryKey: ['barcode-templates', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('barcode_templates')
+        .select('*').eq('tenant_id', tenant.id)
+        .order('is_default', { ascending: false })
+      return data || []
+    },
+    enabled: !!tenant?.id,
+  })
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', tenant?.id, search, filterType, filterCat, filterTag],
@@ -315,6 +329,11 @@ export default function ProductsPage() {
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             🧾 History
                           </button>
+                          <button onClick={() => setPrintProduct(p)}
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
+                            style={{background:'#fdf4ff', borderColor:'#e9d5ff', color:'#9333ea'}}>
+                            🏷️ Label
+                          </button>
                           <button onClick={() => handleDisable(p)}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
                             style={disabled
@@ -373,6 +392,13 @@ export default function ProductsPage() {
           onClose={() => { setShowForm(false); setEditProduct(null) }}/>
       )}
 
+      {printProduct && (
+        <PrintLabelModal
+          product={printProduct}
+          templates={barcodeTemplates}
+          storeName={store?.name}
+          onClose={()=>setPrintProduct(null)}/>
+      )}
 
     </div>
   )
@@ -981,6 +1007,111 @@ function SalesHistoryInline({ product: p }) {
             </tbody>
           </table>
         )}
+      </div>
+    </div>
+  )
+}
+
+
+// ════════════════════════════════════════════════════════
+// PrintLabelModal — quick "print labels for this product"
+// ════════════════════════════════════════════════════════
+function PrintLabelModal({ product, templates, storeName, onClose }) {
+  const [picked, setPicked] = useState(templates.find(t=>t.is_default) || templates[0] || null)
+  const [qty, setQty] = useState(1)
+
+  const doPrint = () => {
+    if (!picked) { toast.error('No template — make one in Barcode Print page first'); return }
+    printLabels({ template: picked, items:[{ product, qty: parseInt(qty)||1 }], storeName })
+    toast.success(`Printing ${qty} label${qty>1?'s':''}…`)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
+      <div className="rounded-2xl overflow-hidden flex flex-col"
+        style={{width:'560px', maxWidth:'100%', maxHeight:'92vh', background:'#fff'}}
+        onClick={e=>e.stopPropagation()}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{background:'#9333ea'}}>
+          <div>
+            <div className="text-[15px] font-bold text-white">🏷️ Print Labels</div>
+            <div className="text-[11px] text-white/70 mt-0.5 truncate">{product.name}</div>
+          </div>
+          <button onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px] flex items-center justify-center">✕</button>
+        </div>
+
+        <div className="p-5 overflow-y-auto">
+          {templates.length === 0 ? (
+            <div className="text-center py-6">
+              <div className="text-[40px] mb-2 opacity-30">📐</div>
+              <div className="text-[13px] mb-3">No templates yet.</div>
+              <a href="/barcode" className="inline-block rounded-lg px-4 py-2 text-[12px] font-bold no-underline"
+                style={{background:'#006AFF', color:'#fff'}}>
+                Open Barcode Print page →
+              </a>
+            </div>
+          ) : (
+            <>
+              <div className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-2">Template</div>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {templates.map(t => (
+                  <button key={t.id} onClick={()=>setPicked(t)}
+                    className="rounded-lg px-3 py-2 text-left cursor-pointer border-2"
+                    style={picked?.id===t.id
+                      ? {background:'#E6F0FF', borderColor:'#006AFF'}
+                      : {background:'#fff', borderColor:'#E5E5E5'}}>
+                    <div className="text-[12px] font-bold">{t.name}</div>
+                    <div className="text-[10px] text-[#666] font-mono">{t.width_mm}×{t.height_mm}mm</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-2">Quantity</div>
+              <div className="flex items-center gap-2 mb-2">
+                <button onClick={()=>setQty(q=>Math.max(1,q-1))}
+                  className="w-11 h-11 rounded-lg text-[20px] font-bold cursor-pointer border active:scale-90"
+                  style={{background:'#F8FAFC', borderColor:'#E5E5E5'}}>−</button>
+                <div className="flex-1 text-center text-[18px] font-bold font-mono py-2 rounded-lg"
+                  style={{background:'#F8FAFC', border:'1px solid #E5E5E5'}}>{qty}</div>
+                <button onClick={()=>setQty(q=>q+1)}
+                  className="w-11 h-11 rounded-lg text-[20px] font-bold cursor-pointer border active:scale-90"
+                  style={{background:'#F8FAFC', borderColor:'#E5E5E5'}}>+</button>
+              </div>
+              <div className="flex gap-1 mb-4">
+                {[1,5,10,25,50,100].map(n=>(
+                  <button key={n} onClick={()=>setQty(n)}
+                    className="flex-1 rounded-md py-1.5 text-[10px] font-bold cursor-pointer border"
+                    style={qty===n
+                      ? {background:'#9333ea', color:'#fff', borderColor:'#9333ea'}
+                      : {background:'#fff', color:'#666', borderColor:'#E5E5E5'}}>{n}</button>
+                ))}
+              </div>
+
+              {picked && (
+                <div className="rounded-lg p-3 mb-4 flex items-center gap-3" style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+                  <div className="rounded p-1.5 flex-shrink-0" style={{background:'#fff', border:'1px dashed #cbd5e1'}}>
+                    <div style={{transform:'scale(0.6)', transformOrigin:'top left',
+                      width: `${picked.width_mm * 3.78}px`, height: `${picked.height_mm * 3.78}px`}}>
+                      {/* tiny preview */}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[11px] font-bold">{picked.name}</div>
+                    <div className="text-[10px] text-[#666] font-mono">{picked.width_mm}×{picked.height_mm}mm · {picked.barcode_format}</div>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={doPrint}
+                className="w-full rounded-lg py-3 text-[14px] font-bold cursor-pointer border-none"
+                style={{background:'#9333ea', color:'#fff'}}>
+                🖨 Print {qty} label{qty>1?'s':''}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
