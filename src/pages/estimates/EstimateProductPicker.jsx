@@ -37,13 +37,15 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
       // Match the POS picker query pattern (proven to work on Dixon's schema):
       // - select(*) instead of cherry-picked cols (avoids missing-column errors
       //   if the schema doesn't have e.g. `barcode`)
-      // - filter is_active = true and is_enabled != false (same as POS)
+      // - filter is_active = true (same as POS)
       // - search by name, sku, OR upc (the POS uses `upc`, not `barcode`)
+      // - NO `.neq('type', 'service')` — that filter excludes rows where type
+      //   IS NULL (in SQL `NULL != 'service'` is NULL, not TRUE). Older products
+      //   may have type=NULL and would be invisible. Filter services in JS instead.
       let q = supabase.from('products')
         .select('id, name, sku, price, cost, category_id, is_active, type')
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
-        .neq('type', 'service')
 
       if (queryMode === 'search') {
         const term = debounced.replace(/[%,]/g, '')
@@ -59,18 +61,20 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
         console.error('[ProductPicker] products query error:', pErr)
         return []
       }
-      if (!products?.length) return []
+      // Filter out services in JS — keeps products with type=null visible
+      const nonService = (products || []).filter(p => p.type !== 'service')
+      if (!nonService.length) return []
 
       // Fetch inventory for these products
       const { data: inv, error: iErr } = await supabase.from('inventory')
         .select('product_id, quantity')
         .eq('tenant_id', tenant.id).eq('store_id', store.id)
-        .in('product_id', products.map(p => p.id))
+        .in('product_id', nonService.map(p => p.id))
       if (iErr) console.warn('[ProductPicker] inventory query error:', iErr)
       const stockMap = {}
       ;(inv || []).forEach(r => { stockMap[r.product_id] = r.quantity })
 
-      return products.map(p => ({ ...p, stock_qty: stockMap[p.id] || 0 }))
+      return nonService.map(p => ({ ...p, stock_qty: stockMap[p.id] || 0 }))
     },
     enabled: !!tenant?.id && queryMode !== 'idle',
   })
