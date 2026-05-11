@@ -222,22 +222,22 @@ export default function POSPage() {
       </div>
 
       {/* ── BOTTOM QUICK BUTTONS ── */}
-      <div className="flex-shrink-0 px-3 py-1.5" style={{background:'#1F1F1F', borderTop:'1px solid #2A2A2A'}}>
+      <div className="flex-shrink-0 px-3 py-2" style={{background:'#1F1F1F', borderTop:'1px solid #2A2A2A'}}>
         <div className="flex gap-2">
           {QUICK_BTNS.map(btn => (
             <button key={btn.id} onClick={btn.action}
-              className="flex-1 rounded-lg py-1.5 flex flex-col items-center gap-0.5 cursor-pointer border transition-all"
-              style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)'}}>
-              <span className="text-[14px]">{btn.icon}</span>
-              <span className="text-[9px] font-medium" style={{color:'#94a3b8'}}>{btn.label}</span>
+              className="flex-1 rounded-lg py-2.5 flex flex-col items-center gap-1 cursor-pointer border transition-all active:scale-95"
+              style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', minHeight:'52px'}}>
+              <span className="text-[18px] leading-none">{btn.icon}</span>
+              <span className="text-[10px] font-semibold leading-none" style={{color:'#cbd5e1'}}>{btn.label}</span>
             </button>
           ))}
           {Array(4).fill(0).map((_,i) => (
             <button key={`slot-${i}`}
-              className="flex-1 rounded-lg py-1.5 flex flex-col items-center gap-0.5 opacity-20 cursor-not-allowed border"
-              style={{background:'transparent', border:'1px dashed rgba(255,255,255,0.2)'}}>
-              <span className="text-[12px] text-slate-500">+</span>
-              <span className="text-[9px] text-slate-500">Slot</span>
+              className="flex-1 rounded-lg py-2.5 flex flex-col items-center gap-1 opacity-20 cursor-not-allowed border"
+              style={{background:'transparent', border:'1px dashed rgba(255,255,255,0.2)', minHeight:'52px'}}>
+              <span className="text-[14px] text-slate-500 leading-none">+</span>
+              <span className="text-[10px] text-slate-500 leading-none">Slot</span>
             </button>
           ))}
         </div>

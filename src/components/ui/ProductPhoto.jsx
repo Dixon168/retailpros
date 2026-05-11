@@ -33,6 +33,7 @@ export function PhotoViewer({ product, onClose }) {
   if (!product) return null
   const { addProduct } = useCartStore()
   const [qty, setQty] = useState(1)
+  const [showQtyPad, setShowQtyPad] = useState(false)
 
   const totalStock = product.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0
   const avgCost = product.inventory?.[0]?.avg_cost || product.cost || 0
@@ -122,34 +123,85 @@ export function PhotoViewer({ product, onClose }) {
             <div className="flex items-center rounded-lg overflow-hidden"
               style={{background:'#FFFFFF', border:'1.5px solid #E5E5E5'}}>
               <button onClick={dec}
-                className="w-9 h-9 flex items-center justify-center text-[16px] font-bold cursor-pointer border-none"
+                className="w-12 h-12 flex items-center justify-center text-[22px] font-bold cursor-pointer border-none active:scale-90 transition-transform"
                 style={{background:'#FFFFFF', color: qty <= 1 ? '#CCC' : '#1F1F1F'}}
                 disabled={qty <= 1}>
                 −
               </button>
-              <input
-                type="number"
-                value={qty}
-                onChange={e=>{
-                  const v = parseInt(e.target.value)
-                  setQty(isNaN(v) || v < 1 ? 1 : v)
-                }}
-                className="w-12 text-center text-[14px] font-bold outline-none border-none bg-transparent"
-                style={{color:'#1F1F1F'}}/>
+              <div
+                onClick={()=>setShowQtyPad(true)}
+                className="w-14 h-12 flex items-center justify-center text-[18px] font-bold cursor-pointer select-none"
+                style={{color:'#1F1F1F'}}
+                title="Tap to enter quantity">
+                {qty}
+              </div>
               <button onClick={inc}
-                className="w-9 h-9 flex items-center justify-center text-[16px] font-bold cursor-pointer border-none"
+                className="w-12 h-12 flex items-center justify-center text-[22px] font-bold cursor-pointer border-none active:scale-90 transition-transform"
                 style={{background:'#FFFFFF', color:'#1F1F1F'}}>
                 +
               </button>
             </div>
           )}
           <button onClick={handleAdd}
-            className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer border-none active:scale-[0.97] transition-transform"
-            style={{background:'#006AFF', color:'#FFFFFF'}}>
+            className="flex-1 rounded-lg py-3.5 text-[14px] font-bold cursor-pointer border-none active:scale-[0.97] transition-transform"
+            style={{background:'#006AFF', color:'#FFFFFF', minHeight:'48px'}}>
             {isWeight ? '⚖️ Add (enter weight)' :
              product.type === 'serialized' ? '🔢 Add (enter serial)' :
              product.prompt_price ? '💲 Add (enter price)' :
              `+ Add ${qty > 1 ? `${qty} ` : ''}to Cart · $${(product.price * qty).toFixed(2)}`}
+          </button>
+        </div>
+      </div>
+
+      {/* Inline numpad to enter qty directly (no soft keyboard) */}
+      {showQtyPad && (
+        <QtyNumPad initial={qty} onConfirm={(v)=>{ setQty(v); setShowQtyPad(false) }} onClose={()=>setShowQtyPad(false)}/>
+      )}
+    </div>
+  )
+}
+
+function QtyNumPad({ initial, onConfirm, onClose }) {
+  const [input, setInput] = useState(String(initial || ''))
+  const press = (k) => {
+    if (k === '⌫') return setInput(i => i.slice(0, -1))
+    if (input.length >= 4) return
+    setInput(i => (i === '0' ? k : i + k))
+  }
+  const apply = () => {
+    const v = parseInt(input)
+    if (!v || v < 1) return onClose()
+    onConfirm(v)
+  }
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center"
+      style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(2px)'}}
+      onClick={onClose}>
+      <div className="rounded-2xl overflow-hidden shadow-xl" style={{width:'320px', background:'#fff'}}
+        onClick={e=>e.stopPropagation()}>
+        <div className="px-5 py-3 flex items-center justify-between" style={{background:'#1F1F1F'}}>
+          <div className="text-[15px] font-bold text-white">Enter Quantity</div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[16px] flex items-center justify-center">✕</button>
+        </div>
+        <div className="px-5 py-4">
+          <div className="rounded-lg py-4 text-center font-mono font-bold text-[36px]"
+            style={{background:'#E6F0FF', border:'2px solid #80B2FF', color:'#006AFF'}}>
+            {input || '0'}
+          </div>
+        </div>
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+          {['7','8','9','4','5','6','1','2','3','00','0','⌫'].map(k=>(
+            <button key={k} onClick={()=>press(k)}
+              className="rounded-xl py-4 text-[20px] font-bold cursor-pointer border-2 active:scale-95"
+              style={k==='⌫'?{background:'#fff1f2',borderColor:'#fecdd3',color:'#ef4444'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#1F1F1F'}}>
+              {k}
+            </button>
+          ))}
+          <button onClick={apply}
+            disabled={!input || parseInt(input) < 1}
+            className="col-span-3 rounded-xl py-3.5 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40 mt-1"
+            style={{background:'#000000'}}>
+            ✓ Set Qty {input ? `to ${input}` : ''}
           </button>
         </div>
       </div>

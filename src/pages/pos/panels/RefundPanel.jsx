@@ -396,19 +396,19 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                         {/* Qty controls */}
                         <div className="flex items-center gap-1">
                           <button onClick={() => setReturnItems(prev => prev.map((r,i) => i===idx ? {...r, qty: Math.max(1,r.qty-1)} : r))}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border"
+                            className="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer border text-[18px] font-bold active:scale-90"
                             style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>−</button>
                           <button onClick={() => { setEditItemIdx(idx); setShowItemPad(true) }}
-                            className="w-10 h-7 rounded-lg text-[13px] font-bold text-center cursor-pointer border"
+                            className="min-w-[44px] h-10 px-2 rounded-lg text-[15px] font-bold text-center cursor-pointer border"
                             style={{background:'#eff6ff', borderColor:'#93c5fd', color:'#2563eb'}}>
                             {item.qty}
                           </button>
                           <button onClick={() => setReturnItems(prev => prev.map((r,i) => i===idx ? {...r, qty: r.qty+1} : r))}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border"
+                            className="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer border text-[18px] font-bold active:scale-90"
                             style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>+</button>
                         </div>
                         <button onClick={() => setReturnItems(prev => prev.filter((_,i) => i!==idx))}
-                          className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-[16px] ml-1">✕</button>
+                          className="text-slate-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-[18px] ml-1 w-8 h-8 flex items-center justify-center">✕</button>
                       </div>
                     ))}
                     {/* Total */}

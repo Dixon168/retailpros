@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { ProductPhoto, PhotoViewer } from '@/components/ui/ProductPhoto'
+import NumPad from '@/components/ui/NumPad'
 import toast from 'react-hot-toast'
 
 export default function ItemPanel({ item, onClose }) {
@@ -19,6 +20,7 @@ export default function ItemPanel({ item, onClose }) {
   const [discVal, setDiscVal]   = useState(item.itemDiscount?.value ? String(item.itemDiscount.value) : '')
   const [newPrice, setNewPrice] = useState(String(item.unitPrice))
   const [photoViewer, setPhotoViewer] = useState(false)
+  const [showQtyKb, setShowQtyKb] = useState(false)
 
   // Load staff list
   const { data: staffList = [] } = useQuery({
@@ -116,13 +118,15 @@ export default function ItemPanel({ item, onClose }) {
               <div className="text-[9px] font-mono text-[#999999] uppercase mb-1.5">Quantity</div>
               <div className="flex items-center gap-2 mb-2">
                 <button onClick={() => { const n=item.qty-1; setCustomQty(String(Math.max(0,n))); setItemQty(item.id, Math.max(0,n)) }}
-                  className="w-8 h-8 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[16px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#006AFF] transition-all flex items-center justify-center">−</button>
-                <input
-                  type="number" value={customQty}
-                  onChange={e => handleQtyInput(e.target.value)}
-                  className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-[14px] font-mono font-bold text-center outline-none focus:border-[#006AFF]"/>
+                  className="w-11 h-11 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[20px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#006AFF] transition-all flex items-center justify-center active:scale-90">−</button>
+                <div
+                  onClick={()=>setShowQtyKb(true)}
+                  className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-2 py-2.5 text-[16px] font-mono font-bold text-center cursor-pointer select-none"
+                  title="Tap to type quantity">
+                  {item.qty}
+                </div>
                 <button onClick={() => { const n=item.qty+1; setCustomQty(String(n)); setItemQty(item.id, n) }}
-                  className="w-8 h-8 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[16px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#006AFF] transition-all flex items-center justify-center">+</button>
+                  className="w-11 h-11 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[20px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#006AFF] transition-all flex items-center justify-center active:scale-90">+</button>
               </div>
               <div className="text-[10px] text-[#999999] text-center">{item.unit || 'ea'} × ${item.unitPrice.toFixed(2)}</div>
             </div>
@@ -295,6 +299,24 @@ export default function ItemPanel({ item, onClose }) {
 
       {photoViewer && (
         <PhotoViewer product={{ ...item, name: item.name, image_url: item.imageUrl, price: item.unitPrice }} onClose={() => setPhotoViewer(false)}/>
+      )}
+
+      {showQtyKb && (
+        <NumPad
+          title="Enter Quantity"
+          subtitle={item.name}
+          value={customQty}
+          onChange={setCustomQty}
+          allowNegative={false}
+          allowDecimal={false}
+          onConfirm={v => {
+            const n = parseInt(v) || 0
+            if (n > 0) setItemQty(item.id, n)
+            setCustomQty(String(n))
+            setShowQtyKb(false)
+          }}
+          onClose={() => setShowQtyKb(false)}
+        />
       )}
     </div>
   )
