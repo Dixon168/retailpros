@@ -72,6 +72,49 @@ export default function MarketingPage() {
     return '—'
   }
 
+  // ── Status: combines is_active flag with start/end dates ────────────
+  const formatStatus = (p) => {
+    const now = new Date()
+    const start = p.sale_start ? new Date(p.sale_start) : null
+    const end   = p.sale_end   ? new Date(p.sale_end)   : null
+
+    if (!p.is_active)
+      return { label: 'Paused', icon: '⏸', color: '#92400e', bg: '#fef3c7' }
+    if (start && start > now) {
+      const days = Math.ceil((start - now) / 86400000)
+      return { label: `Upcoming · starts in ${days}d`, icon: '⏳', color: '#1e40af', bg: '#dbeafe' }
+    }
+    if (end && end < now) {
+      const days = Math.floor((now - end) / 86400000)
+      return { label: days === 0 ? 'Expired today' : `Expired · ${days}d ago`, icon: '⌛', color: '#64748b', bg: '#f1f5f9' }
+    }
+    if (end) {
+      const days = Math.ceil((end - now) / 86400000)
+      return { label: `Running · ${days}d left`, icon: '✅', color: '#15803d', bg: '#dcfce7' }
+    }
+    return { label: 'Running · no end date', icon: '✅', color: '#15803d', bg: '#dcfce7' }
+  }
+
+  // ── Date range pretty-print ─────────────────────────────────────────
+  const fmtPromoDate = (d) => d
+    ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null
+  const formatDateRange = (p) => {
+    if (!p.sale_start) return null
+    const start = fmtPromoDate(p.sale_start)
+    const end   = p.sale_end ? fmtPromoDate(p.sale_end) : 'No end date'
+    return `${start} → ${end}`
+  }
+
+  // ── Compute discount preview (e.g. "$10.00 → $8.00") for sale type ──
+  const computeSalePrice = (p) => {
+    if (p.type !== 'sale' || !p.products?.price) return null
+    const base = p.products.price
+    const val  = parseFloat(p.sale_value) || 0
+    if (p.sale_type === 'pct') return Math.max(0, base * (1 - val/100))
+    return Math.max(0, base - val)
+  }
+
   return (
     <div className="flex flex-col h-full" style={{background:'#FFFFFF'}}>
 
@@ -172,24 +215,91 @@ export default function MarketingPage() {
 
                   {/* Card body */}
                   <div className="px-4 py-3">
-                    <div className="text-[14px] font-bold text-slate-800 mb-1">{promo.name}</div>
+                    <div className="text-[14px] font-bold text-slate-800 mb-1.5">{promo.name}</div>
+
+                    {/* Linked product */}
                     {promo.products && (
-                      <div className="flex items-center gap-1.5 mb-2">
+                      <div className="flex items-center gap-1.5 mb-2.5">
                         <div className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {promo.products.image_url
                             ? <img src={promo.products.image_url} className="w-full h-full object-cover" alt=""/>
                             : <span className="text-[8px] font-bold text-slate-400">{promo.products.name?.substring(0,2)}</span>
                           }
                         </div>
-                        <span className="text-[11px] text-slate-500">{promo.products.name}</span>
-                        {promo.products.price && (
-                          <span className="text-[11px] font-mono text-slate-400">${promo.products.price.toFixed(2)}</span>
+                        <span className="text-[11px] text-slate-500 truncate">{promo.products.name}</span>
+                        {promo.products.price != null && (
+                          <span className="text-[11px] font-mono text-slate-400">${Number(promo.products.price).toFixed(2)}</span>
                         )}
                       </div>
                     )}
-                    <div className="text-[11px] text-slate-500 leading-relaxed">
-                      {formatSummary(promo)}
+
+                    {/* Discount detail box */}
+                    <div className="rounded-lg px-3 py-2 mb-2"
+                      style={{background: ti.bg, border: `1px solid ${ti.color}30`}}>
+                      {promo.type === 'sale' && (
+                        <>
+                          <div className="text-[15px] font-bold leading-tight" style={{color: ti.color}}>
+                            {promo.sale_type === 'pct' ? `-${promo.sale_value}% OFF` : `$${promo.sale_value} OFF`}
+                          </div>
+                          {(() => {
+                            const sp = computeSalePrice(promo)
+                            if (sp == null) return null
+                            return (
+                              <div className="text-[10px] text-slate-600 mt-0.5 font-mono">
+                                <span className="line-through opacity-60">${Number(promo.products.price).toFixed(2)}</span>
+                                <span className="mx-1">→</span>
+                                <span className="font-bold" style={{color: ti.color}}>${sp.toFixed(2)}</span>
+                                <span className="text-slate-500"> each</span>
+                              </div>
+                            )
+                          })()}
+                        </>
+                      )}
+                      {promo.type === 'bulk' && (
+                        <div className="space-y-0.5">
+                          {(promo.bulk_tiers || []).map((t, i) => (
+                            <div key={i} className="text-[11px] font-bold leading-snug" style={{color: ti.color}}>
+                              Buy {t.min_qty}+: {t.type === 'pct' ? `-${t.value}% off` : `$${t.value} each`}
+                            </div>
+                          ))}
+                          {(!promo.bulk_tiers || promo.bulk_tiers.length === 0) && (
+                            <div className="text-[10px] text-slate-400 italic">No tiers configured</div>
+                          )}
+                        </div>
+                      )}
+                      {promo.type === 'time' && (
+                        <div className="space-y-0.5">
+                          {(promo.time_rules || []).map((r, i) => (
+                            <div key={i} className="text-[11px] font-bold leading-snug" style={{color: ti.color}}>
+                              {(r.days || []).map(d => DAYS[d]).join(',')} · {r.start_time}–{r.end_time} · {r.type === 'pct' ? `-${r.value}%` : `$${r.value} off`}
+                            </div>
+                          ))}
+                          {(!promo.time_rules || promo.time_rules.length === 0) && (
+                            <div className="text-[10px] text-slate-400 italic">No time rules configured</div>
+                          )}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Date range */}
+                    {formatDateRange(promo) && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-600 mb-1.5">
+                        <span>📅</span>
+                        <span className="font-mono">{formatDateRange(promo)}</span>
+                      </div>
+                    )}
+
+                    {/* Smart status badge (combines is_active + dates) */}
+                    {(() => {
+                      const st = formatStatus(promo)
+                      return (
+                        <div className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold"
+                          style={{background: st.bg, color: st.color}}>
+                          <span>{st.icon}</span>
+                          <span>{st.label}</span>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               )
