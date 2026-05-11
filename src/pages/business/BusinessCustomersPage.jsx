@@ -28,13 +28,16 @@ export default function BusinessCustomersPage() {
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['business-customers', tenant?.id, search],
     queryFn: async () => {
+      // LIST QUERY: don't join contacts/addresses (slow on large tenants).
+      // Detail panel fetches them on demand for the selected customer only.
       let q = supabase.from('business_customers')
-        .select('*, business_contacts(*), business_addresses(*)')
+        .select('*')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(
         `company_name.ilike.%${search}%,contact_name.ilike.%${search}%,code.ilike.%${search}%,contact_phone.ilike.%${search}%`
       )
-      const { data } = await q.order('company_name')
+      const { data, error } = await q.order('company_name')
+      if (error) console.error('[Business] List error:', error)
       return data || []
     },
     enabled: !!tenant?.id,
@@ -207,6 +210,32 @@ function BusinessDetail({ customer: c, onClose, onEdit, onShowHistory, tenantId 
     enabled: tab === 'invoices',
   })
 
+  // Fetch contacts only when contacts tab is selected (lazy load)
+  const { data: contactsData = [] } = useQuery({
+    queryKey: ['business-contacts', c.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('business_contacts')
+        .select('*').eq('business_customer_id', c.id)
+      return data || []
+    },
+    enabled: tab === 'contacts',
+  })
+
+  // Fetch addresses only when addresses tab is selected (lazy load)
+  const { data: addressesData = [] } = useQuery({
+    queryKey: ['business-addresses', c.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('business_addresses')
+        .select('*').eq('business_customer_id', c.id)
+      return data || []
+    },
+    enabled: tab === 'addresses',
+  })
+
+  // Replace usages of business_contacts / business_addresses with lazy data
+  const business_contacts  = contactsData
+  const business_addresses = addressesData
+
   const TABS = ['overview','contacts','addresses','invoices']
 
   return (
@@ -319,9 +348,9 @@ function BusinessDetail({ customer: c, onClose, onEdit, onShowHistory, tenantId 
                 + Add Contact
               </button>
             </div>
-            {(c.business_contacts || []).length === 0
+            {(business_contacts || []).length === 0
               ? <div className="text-center py-8 text-[#999999] text-sm">No contacts added</div>
-              : (c.business_contacts || []).map(contact => (
+              : (business_contacts || []).map(contact => (
                   <div key={contact.id} className="bg-[#FFFFFF] border border-[#E5E5E5]
                     rounded-[10px] px-4 py-3.5 mb-2.5 flex items-center gap-4">
                     <div className="w-9 h-9 rounded-[9px] bg-gradient-to-br from-blue-500
@@ -366,9 +395,9 @@ function BusinessDetail({ customer: c, onClose, onEdit, onShowHistory, tenantId 
                 + Add Address
               </button>
             </div>
-            {(c.business_addresses || []).length === 0
+            {(business_addresses || []).length === 0
               ? <div className="text-center py-8 text-[#999999] text-sm">No addresses added</div>
-              : (c.business_addresses || []).map(addr => (
+              : (business_addresses || []).map(addr => (
                   <div key={addr.id} className="bg-[#FFFFFF] border border-[#E5E5E5]
                     rounded-[10px] px-4 py-3.5 mb-2.5 flex items-center gap-4">
                     <span className="text-2xl">📦</span>

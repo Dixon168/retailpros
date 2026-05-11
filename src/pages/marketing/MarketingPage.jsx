@@ -35,14 +35,16 @@ export default function MarketingPage() {
   const activeNow = promos.filter(p => p.is_active).length
 
   const toggleActive = async (promo) => {
-    await supabase.from('promotions').update({ is_active: !promo.is_active }).eq('id', promo.id)
+    const { error } = await supabase.from('promotions').update({ is_active: !promo.is_active }).eq('id', promo.id)
+    if (error) { toast.error('Failed: ' + error.message); return }
     qc.invalidateQueries(['promotions'])
     toast.success(promo.is_active ? 'Promotion paused' : 'Promotion activated')
   }
 
   const deletePromo = async (id) => {
     if (!confirm('Delete this promotion?')) return
-    await supabase.from('promotions').delete().eq('id', id)
+    const { error } = await supabase.from('promotions').delete().eq('id', id)
+    if (error) { toast.error('Failed: ' + error.message); return }
     qc.invalidateQueries(['promotions'])
     toast.success('Deleted')
   }
@@ -292,14 +294,23 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
         time_rules: form.time_rules,
         updated_at: new Date().toISOString(),
       }
+      let error
       if (initial?.id) {
-        await supabase.from('promotions').update(payload).eq('id', initial.id)
+        ({ error } = await supabase.from('promotions').update(payload).eq('id', initial.id))
       } else {
-        await supabase.from('promotions').insert(payload)
+        ({ error } = await supabase.from('promotions').insert(payload))
+      }
+      if (error) {
+        toast.error('Save failed: ' + (error.message || 'Unknown error'))
+        console.error('[Promotions] Save error:', error)
+        return
       }
       toast.success(initial?.id ? 'Promotion updated ✓' : 'Promotion created ✓')
       onSave()
-    } catch(err) { toast.error('Error: ' + err.message) }
+    } catch(err) {
+      toast.error('Error: ' + err.message)
+      console.error('[Promotions] Unexpected error:', err)
+    }
     finally { setSaving(false) }
   }
 
