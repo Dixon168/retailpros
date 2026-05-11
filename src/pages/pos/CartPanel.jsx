@@ -446,6 +446,12 @@ export default function CartPanel({ onRefund, onHold }) {
                             {item.itemDiscount.type==='pct' ? `-${item.itemDiscount.value}%` : `-$${item.itemDiscount.value}`}
                           </span>
                         )}
+                        {item.points_redeem && item.redeem_points_required > 0 && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold inline-flex items-center gap-0.5"
+                            style={{background:'#FEF3C7', color:'#B45309'}}>
+                            ⭐ {item.redeem_points_required * item.qty} pts
+                          </span>
+                        )}
                         {item.priceOverridden && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
                             style={{background:'#fefce8', color:'#ca8a04'}}>CUSTOM</span>

@@ -149,6 +149,15 @@ export function Overlay({ children, onClose }) {
         flex items-center justify-center animate-fade-up"
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
+      {/* Always-visible close button — top right of viewport. Cart stays intact. */}
+      {onClose && (
+        <button onClick={onClose}
+          className="fixed top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-white cursor-pointer border-none z-[60] active:scale-90 transition-transform"
+          style={{background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)', fontSize:'18px'}}
+          aria-label="Close panel — your cart will be preserved">
+          ✕
+        </button>
+      )}
       {children}
     </div>
   )

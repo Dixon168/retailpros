@@ -162,6 +162,13 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
             {formatPrice()}
             {onPromo && <span className="ml-1 text-[9px] px-1 py-0.5 rounded" style={{background:'#fee2e2',color:'#dc2626'}}>SALE</span>}
           </div>
+          {product.points_redeem && product.redeem_points_required > 0 && (
+            <div className="mt-1 text-[9px] font-bold inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded"
+              style={{background:'#FEF3C7', color:'#B45309'}}>
+              <span>⭐</span>
+              <span>{product.redeem_points_required} pts</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

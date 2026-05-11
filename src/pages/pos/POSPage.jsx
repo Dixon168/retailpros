@@ -93,7 +93,7 @@ export default function POSPage() {
   const { t } = useLang()
   const QUICK_BTNS = [
     { id:'member',  label:t('member'),   icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
-    { id:'points',  label:t('points'),   icon:'💎', action: () => setShowPoints(true) },
+    { id:'points',  label:t('points'),   icon:'⭐', action: () => setShowPoints(true) },
     { id:'openitem',label:t('openItem'), icon:'✏️', action: () => setShowOpenItem(true) },
     { id:'return',  label:t('return'),   icon:'↩️', action: () => setShowRefund(true) },
     { id:'hold', label:t('hold'), icon:'📌', action: async () => {
@@ -108,8 +108,7 @@ export default function POSPage() {
       })
       if (ok) toast.success('📌 Order held')
     }},
-    { id:'recall',  label:t('recall'),   icon:'📋', action: () => { window.location.href='/orders' } },
-    { id:'orders',  label:t('orders'),   icon:'🔍', action: () => { window.location.href='/orders' } },
+    { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
   return (
@@ -207,7 +206,7 @@ export default function POSPage() {
               <span className="text-[9px] font-medium" style={{color:'#94a3b8'}}>{btn.label}</span>
             </button>
           ))}
-          {Array(4).fill(0).map((_,i) => (
+          {Array(5).fill(0).map((_,i) => (
             <button key={`slot-${i}`}
               className="flex-1 rounded-lg py-1.5 flex flex-col items-center gap-0.5 opacity-20 cursor-not-allowed border"
               style={{background:'transparent', border:'1px dashed rgba(255,255,255,0.2)'}}>

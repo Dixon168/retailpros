@@ -106,6 +106,8 @@ export const useCartStore = create((set, get) => ({
         isTaxable: product.is_taxable,
         imageUrl: product.image_url || null,
         inventory: product.inventory || null,  // carry stock data into cart
+        points_redeem:          product.points_redeem,
+        redeem_points_required: product.redeem_points_required,
       })
     }
   },
