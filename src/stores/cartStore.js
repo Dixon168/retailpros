@@ -13,7 +13,8 @@ export const useCartStore = create((set, get) => ({
   // ── 购物车数据 ──
   items: [],           // 购物车商品列表
   customer: null,      // 选中的客户
-  orderDiscount: null, // 整单折扣 { type: 'pct'|'amt', value: number }
+  orderDiscount: null, // 整单折扣 { type: 'pct'|'amt', value: number } OR { type:'points_cash', amount, points_used }
+  appliedCoupon: null, // 已应用的 coupon { id, code, name, discount_type, discount_value, discount_amount }
   taxGroups: [],       // 税率组（从数据库加载）
 
   // ── 支付数据 ──
@@ -243,6 +244,12 @@ export const useCartStore = create((set, get) => ({
     toast.success('Discount applied')
   },
 
+  // ── 应用优惠券 ──
+  setAppliedCoupon: (coupon) => {
+    set({ appliedCoupon: coupon })
+    if (coupon) toast.success(`🎫 ${coupon.code} applied (−$${Number(coupon.discount_amount).toFixed(2)})`)
+  },
+
   // ── 选择客户 ──
   setCustomer: (customer) => {
     set({ customer, showCustPanel: false })
@@ -285,15 +292,12 @@ export const useCartStore = create((set, get) => ({
 
   // ── 汇总计算 ──
   totals: () => {
-    const { items, orderDiscount } = get()
+    const { items, orderDiscount, appliedCoupon } = get()
 
     let subtotal = 0
-    let totalTax = 0
 
     items.forEach(item => {
       const lineAmt = item.unitPrice * item.qty
-
-      // 单品折扣
       let discounted = lineAmt
       const disc = item.itemDiscount || item.discount
       if (disc) {
@@ -301,15 +305,10 @@ export const useCartStore = create((set, get) => ({
           ? lineAmt * (1 - disc.value / 100)
           : lineAmt - Math.min(disc.value, lineAmt)
       }
-
       subtotal += discounted
-
-      // 税
-      const { taxAmount } = get().calcTaxForItem({ ...item, unitPrice: discounted / item.qty })
-      totalTax += taxAmount
     })
 
-    // 整单折扣
+    // 整单折扣 (manual % or $ OR points-cash)
     let orderDiscountAmt = 0
     if (orderDiscount?.value > 0) {
       orderDiscountAmt = orderDiscount.type === 'pct'
@@ -321,12 +320,46 @@ export const useCartStore = create((set, get) => ({
       orderDiscountAmt = orderDiscount.amount || 0
     }
 
-    const afterDiscount = subtotal - orderDiscountAmt
+    // Coupon discount — applied on top of subtotal (NOT compounded with order discount, both come off independently)
+    let couponDiscountAmt = 0
+    if (appliedCoupon) {
+      if (appliedCoupon.discount_type === 'pct') {
+        couponDiscountAmt = subtotal * (Number(appliedCoupon.discount_value) / 100)
+      } else {
+        couponDiscountAmt = Math.min(Number(appliedCoupon.discount_value), subtotal)
+      }
+    }
+
+    // Don't let total discounts exceed subtotal (clamp to >= 0)
+    const totalReductions = Math.min(orderDiscountAmt + couponDiscountAmt, subtotal)
+    const afterDiscount = subtotal - totalReductions
+
+    // Tax recomputed on the discounted subtotal proportionally
+    let totalTax = 0
+    if (subtotal > 0) {
+      const taxRatio = afterDiscount / subtotal
+      items.forEach(item => {
+        const lineAmt = item.unitPrice * item.qty
+        let discounted = lineAmt
+        const disc = item.itemDiscount || item.discount
+        if (disc) {
+          discounted = disc.type === 'pct'
+            ? lineAmt * (1 - disc.value / 100)
+            : lineAmt - Math.min(disc.value, lineAmt)
+        }
+        // Apply taxRatio to fairly distribute the order/coupon discount before tax
+        const taxableAmount = discounted * taxRatio
+        const { taxAmount } = get().calcTaxForItem({ ...item, unitPrice: taxableAmount / item.qty })
+        totalTax += taxAmount
+      })
+    }
+
     const grandTotal = afterDiscount + totalTax
 
     return {
       subtotal,
       orderDiscountAmt,
+      couponDiscountAmt,
       taxAmount: totalTax,
       grandTotal,
       itemCount: items.length
@@ -353,8 +386,8 @@ export const useCartStore = create((set, get) => ({
 
   // ── 完成订单（原子性，含并发控制）──
   submitOrder: async (storeId, cashierId, tenantId, terminalId) => {
-    const { items, customer, payments, orderDiscount } = get()
-    const { subtotal, orderDiscountAmt, taxAmount, grandTotal } = get().totals()
+    const { items, customer, payments, orderDiscount, appliedCoupon } = get()
+    const { subtotal, orderDiscountAmt, couponDiscountAmt, taxAmount, grandTotal } = get().totals()
 
     if (items.length === 0) {
       toast.error('Cart is empty')
@@ -363,7 +396,6 @@ export const useCartStore = create((set, get) => ({
 
     const paidAmt = get().paidAmount()
 
-    // If the order discount is a points redemption, capture the points used
     const pointsRedeemed = (orderDiscount?.type === 'points_cash' || orderDiscount?.type === 'points_product')
       ? (orderDiscount.points_used || 0)
       : 0
@@ -372,12 +404,15 @@ export const useCartStore = create((set, get) => ({
     const orderData = {
       customer_id:     customer?.id || null,
       subtotal:        subtotal,
-      discount_amount: orderDiscountAmt,
+      discount_amount: orderDiscountAmt + (couponDiscountAmt || 0),  // total off (manual + coupon, points)
       tax_amount:      taxAmount,
       total:           grandTotal,
       amount_paid:     paidAmt,
       points_earned:   customer ? Math.floor(grandTotal) : 0,
       points_redeemed: pointsRedeemed,
+      coupon_id:       appliedCoupon?.id || null,
+      coupon_code:     appliedCoupon?.code || null,
+      coupon_discount: couponDiscountAmt || 0,
       tax_breakdown:   [],
     }
 
@@ -462,6 +497,7 @@ export const useCartStore = create((set, get) => ({
       items: [],
       customer: null,
       orderDiscount: null,
+      appliedCoupon: null,
       payments: [],
       pendingProduct: null,
       showSnPanel: false,

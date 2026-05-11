@@ -13,6 +13,7 @@ const SECTIONS = [
   { id:'printer',   icon:'🖨️', label:'Printer Setup',     role:'owner' },
   { id:'printing',  icon:'📄', label:'Print Settings',    role:'owner' },
   { id:'tax',       icon:'🧾', label:'Tax Rates',         role:'owner' },
+  { id:'coupons',   icon:'🎫', label:'Coupons',           role:'owner' },
   { id:'discounts', icon:'🏷️', label:'Discount Tiers',    role:'owner' },
   { id:'users',     icon:'👤', label:'Users',             role:'manager' },
   { id:'payment',   icon:'💳', label:'Payment Config',    role:'owner' },
@@ -55,6 +56,7 @@ export default function SettingsPage() {
         {active === 'printer'   && <PrinterSection/>}
         {active === 'printing'  && <PrintingSection/>}
         {active === 'tax'       && <TaxSection tenantId={tenant?.id}/>}
+        {active === 'coupons'   && <CouponsSection tenantId={tenant?.id} userId={user?.id}/>}
         {active === 'discounts' && <DiscountsSection tenantId={tenant?.id}/>}
         {active === 'users'     && <UsersSection tenantId={tenant?.id}/>}
         {active === 'payment'   && <PaymentSection tenantId={tenant?.id}/>}
@@ -537,6 +539,310 @@ function TaxSection({ tenantId }) {
     </div>
   )
 }
+
+// ────────────────────────────────────────────────────────────────────
+// 🎫 Coupons — full CRUD
+// ────────────────────────────────────────────────────────────────────
+function CouponsSection({ tenantId, userId }) {
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState(null) // coupon obj or null
+
+  const empty = {
+    name:'', code:'', discount_type:'pct', discount_value:'',
+    use_type:'recurring', max_uses:'', min_subtotal:'',
+    expires_at:'', is_active:true,
+  }
+  const [form, setForm] = useState(empty)
+  const setF = (k,v) => setForm(p=>({...p, [k]:v}))
+
+  const { data: coupons = [], isLoading } = useQuery({
+    queryKey: ['coupons', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('coupons')
+        .select('*').eq('tenant_id', tenantId)
+        .order('is_active', { ascending: false })
+        .order('created_at', { ascending: false })
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
+
+  const startAdd  = () => { setForm(empty); setEditing(null); setAdding(true) }
+  const startEdit = (c) => {
+    setForm({
+      name:           c.name,
+      code:           c.code,
+      discount_type:  c.discount_type,
+      discount_value: String(c.discount_value),
+      use_type:       c.use_type,
+      max_uses:       c.max_uses != null ? String(c.max_uses) : '',
+      min_subtotal:   c.min_subtotal != null ? String(c.min_subtotal) : '',
+      expires_at:     c.expires_at ? new Date(c.expires_at).toISOString().slice(0,10) : '',
+      is_active:      c.is_active,
+    })
+    setEditing(c); setAdding(true)
+  }
+  const cancel = () => { setAdding(false); setEditing(null); setForm(empty) }
+
+  const save = async () => {
+    if (!form.name.trim())  { toast.error('Name required'); return }
+    if (!form.code.trim())  { toast.error('Code required'); return }
+    const val = parseFloat(form.discount_value)
+    if (isNaN(val) || val <= 0) { toast.error('Discount value must be > 0'); return }
+    if (form.discount_type === 'pct' && val > 100) { toast.error('Percent must be ≤ 100'); return }
+
+    const payload = {
+      tenant_id:      tenantId,
+      name:           form.name.trim(),
+      code:           form.code.trim().toUpperCase(),
+      discount_type:  form.discount_type,
+      discount_value: val,
+      use_type:       form.use_type,
+      max_uses:       form.max_uses ? parseInt(form.max_uses) : null,
+      min_subtotal:   form.min_subtotal ? parseFloat(form.min_subtotal) : null,
+      expires_at:     form.expires_at ? new Date(form.expires_at + 'T23:59:59').toISOString() : null,
+      is_active:      form.is_active,
+    }
+
+    let err
+    if (editing) {
+      const { error } = await supabase.from('coupons').update(payload).eq('id', editing.id)
+      err = error
+    } else {
+      const { error } = await supabase.from('coupons').insert({ ...payload, created_by: userId })
+      err = error
+    }
+    if (err) {
+      if (err.code === '23505') toast.error(`Code "${payload.code}" already exists`)
+      else toast.error('Save failed: ' + err.message)
+      return
+    }
+    qc.invalidateQueries({ queryKey: ['coupons'] })
+    toast.success(editing ? 'Coupon updated ✓' : 'Coupon created ✓')
+    cancel()
+  }
+
+  const remove = async (c) => {
+    const usedTxt = c.times_used > 0 ? `\n\nIt has been used ${c.times_used} time${c.times_used>1?'s':''} — history will be kept but the coupon won't be usable again.` : ''
+    if (!confirm(`Delete coupon "${c.name}" (${c.code})?${usedTxt}`)) return
+    const { error } = await supabase.from('coupons').delete().eq('id', c.id)
+    if (error) { toast.error('Delete failed: ' + error.message); return }
+    qc.invalidateQueries({ queryKey: ['coupons'] })
+    toast.success('Coupon deleted')
+  }
+
+  const toggleActive = async (c) => {
+    const { error } = await supabase.from('coupons').update({ is_active: !c.is_active }).eq('id', c.id)
+    if (error) { toast.error('Failed: ' + error.message); return }
+    qc.invalidateQueries({ queryKey: ['coupons'] })
+  }
+
+  // Status pill
+  const statusOf = (c) => {
+    if (!c.is_active) return { label: 'Paused', bg:'#fef3c7', color:'#92400e' }
+    if (c.expires_at && new Date(c.expires_at) < new Date()) return { label:'Expired', bg:'#f1f5f9', color:'#64748b' }
+    if (c.max_uses != null && c.times_used >= c.max_uses) return { label:'Used up', bg:'#f1f5f9', color:'#64748b' }
+    return { label:'Active', bg:'#dcfce7', color:'#15803d' }
+  }
+
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : null
+
+  return (
+    <div className="max-w-[760px]">
+      <div className="flex justify-between items-center mb-2">
+        <SectionTitle className="mb-0">🎫 Coupons</SectionTitle>
+        {!adding && (
+          <button onClick={startAdd}
+            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer active:scale-[0.97]">
+            + Add Coupon
+          </button>
+        )}
+      </div>
+      <p className="text-[12px] text-[#666666] mb-4">
+        Coupon codes for cashiers to apply at checkout. Codes are case-insensitive when redeemed.
+      </p>
+
+      {/* ── Add / Edit form ── */}
+      {adding && (
+        <Card className="mb-4" style={{background:'#E6F0FF', border:'2px solid #006AFF'}}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[13px] font-bold text-[#006AFF]">
+              {editing ? '✏️ Edit Coupon' : '➕ New Coupon'}
+            </div>
+            <button onClick={cancel}
+              className="text-[14px] cursor-pointer bg-transparent border-none text-[#666]">✕</button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <FLabel>Name *</FLabel>
+              <input value={form.name} onChange={e=>setF('name', e.target.value)}
+                placeholder="e.g. Summer 2026"
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}/>
+            </div>
+            <div>
+              <FLabel>Code *</FLabel>
+              <input value={form.code}
+                onChange={e=>setF('code', e.target.value.toUpperCase().replace(/\s/g,''))}
+                placeholder="SUMMER10"
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
+                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}/>
+              <div className="text-[10px] text-[#666] mt-1">Cashiers will type or scan this. Auto-uppercased.</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <FLabel>Discount type *</FLabel>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[['pct','% Percent','#16a34a'],['amt','$ Amount','#006AFF']].map(([id,lbl,col])=>(
+                  <button key={id} onClick={()=>setF('discount_type', id)}
+                    className="rounded-lg py-2 text-[12px] font-bold cursor-pointer border-2"
+                    style={form.discount_type===id
+                      ? {background:col, color:'#fff', borderColor:col}
+                      : {background:'#fff', color:'#64748b', borderColor:'#e2e8f0'}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <FLabel>Discount value *</FLabel>
+              <div className="flex items-center rounded-lg px-3"
+                style={{border:'1.5px solid #80B2FF', background:'#fff'}}>
+                {form.discount_type === 'amt' && <span className="text-[14px] text-[#666] mr-1">$</span>}
+                <input value={form.discount_value} onChange={e=>setF('discount_value', e.target.value)}
+                  type="number" step="0.01" min="0"
+                  max={form.discount_type==='pct' ? 100 : undefined}
+                  placeholder={form.discount_type==='pct' ? '10' : '5.00'}
+                  className="flex-1 py-2 text-[13px] outline-none border-none bg-transparent font-mono"
+                  style={{color:'#1F1F1F'}}/>
+                {form.discount_type === 'pct' && <span className="text-[14px] text-[#666] ml-1">%</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <div>
+              <FLabel>Use type</FLabel>
+              <select value={form.use_type} onChange={e=>setF('use_type', e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none cursor-pointer"
+                style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}>
+                <option value="recurring">Recurring (unlimited per customer)</option>
+                <option value="one_time">One-time per customer</option>
+              </select>
+            </div>
+            <div>
+              <FLabel>Total uses limit (blank = ∞)</FLabel>
+              <input value={form.max_uses} onChange={e=>setF('max_uses', e.target.value.replace(/\D/g,''))}
+                placeholder="e.g. 100" inputMode="numeric"
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
+                style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}/>
+            </div>
+            <div>
+              <FLabel>Min subtotal $ (blank = none)</FLabel>
+              <input value={form.min_subtotal} onChange={e=>setF('min_subtotal', e.target.value)}
+                type="number" step="0.01" min="0" placeholder="20.00"
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
+                style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}/>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <FLabel>Expires (blank = never)</FLabel>
+              <input value={form.expires_at} onChange={e=>setF('expires_at', e.target.value)}
+                type="date"
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none cursor-pointer"
+                style={{border:'1.5px solid #e2e8f0', background:'#fff', color:'#1F1F1F'}}/>
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.is_active} onChange={e=>setF('is_active', e.target.checked)}
+                  className="w-4 h-4"/>
+                <span className="text-[12px] font-semibold text-[#1F1F1F]">Active (cashiers can use it)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={cancel}
+              className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer"
+              style={{background:'#fff', color:'#666', border:'1px solid #E5E5E5'}}>
+              Cancel
+            </button>
+            <button onClick={save}
+              className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer border-none"
+              style={{background:'#006AFF', color:'#fff'}}>
+              {editing ? '✓ Update Coupon' : '+ Create Coupon'}
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* ── List ── */}
+      <Card>
+        {isLoading ? (
+          <div className="text-[12px] text-[#999] py-4 text-center">Loading...</div>
+        ) : coupons.length === 0 && !adding ? (
+          <div className="text-[12px] text-[#999] py-8 text-center">
+            No coupons yet. Click <b>+ Add Coupon</b> to create your first one.
+          </div>
+        ) : coupons.map(c => {
+          const st = statusOf(c)
+          return (
+            <div key={c.id} className="flex items-center gap-3 py-2 border-b border-[#E5E5E5] last:border-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[13px] font-bold text-[#1F1F1F]">{c.name}</span>
+                  <span className="rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold"
+                    style={{background:'#1F1F1F', color:'#fff'}}>{c.code}</span>
+                  <span className="rounded-full px-2 py-0.5 text-[9px] font-bold"
+                    style={{background:st.bg, color:st.color}}>{st.label}</span>
+                </div>
+                <div className="text-[11px] text-[#666] mt-0.5 flex gap-3 flex-wrap">
+                  <span><b>{c.discount_type==='pct' ? `${c.discount_value}%` : `$${Number(c.discount_value).toFixed(2)}`}</b> off</span>
+                  <span>{c.use_type === 'one_time' ? '🔒 1× per customer' : '∞ recurring'}</span>
+                  {c.max_uses != null && <span>📊 {c.times_used}/{c.max_uses} used</span>}
+                  {c.max_uses == null && c.times_used > 0 && <span>📊 {c.times_used} used</span>}
+                  {c.min_subtotal != null && <span>💰 min ${Number(c.min_subtotal).toFixed(2)}</span>}
+                  {c.expires_at && <span>📅 expires {fmtDate(c.expires_at)}</span>}
+                </div>
+              </div>
+              <button onClick={()=>toggleActive(c)}
+                className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer border"
+                style={c.is_active
+                  ? {background:'#fef3c7', color:'#92400e', borderColor:'#fde68a'}
+                  : {background:'#dcfce7', color:'#15803d', borderColor:'#86efac'}}>
+                {c.is_active ? 'Pause' : 'Resume'}
+              </button>
+              <button onClick={()=>startEdit(c)}
+                className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
+                style={{background:'#E6F0FF', color:'#006AFF', border:'1px solid #80B2FF'}}>
+                Edit
+              </button>
+              <button onClick={()=>remove(c)}
+                className="rounded-md px-2 py-1.5 text-[12px] cursor-pointer"
+                style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FECACA'}}
+                title="Delete coupon">✕</button>
+            </div>
+          )
+        })}
+      </Card>
+
+      <div className="mt-4 rounded-lg p-3 text-[11px]" style={{background:'#FAFAFA', border:'1px solid #E5E5E5', color:'#666'}}>
+        💡 <b>How it works:</b> At checkout, cashier opens 🎫 Coupon, types or scans the code, and the discount applies on top of any item-level pricing. Coupons stack with loyalty points but not with order-level manual discount (only one of those at a time).
+      </div>
+    </div>
+  )
+}
+
+function FLabel({ children }) {
+  return <div className="text-[10px] font-bold text-[#1F1F1F] uppercase tracking-wider mb-1">{children}</div>
+}
+
 
 // ── Discount Tiers ──
 function DiscountsSection({ tenantId }) {

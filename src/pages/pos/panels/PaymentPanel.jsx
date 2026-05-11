@@ -1,5 +1,6 @@
 // src/pages/pos/panels/PaymentPanel.jsx
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
@@ -195,11 +196,63 @@ function PointsRedeemNumPad({ customerPts, maxRedeemable, redeemRate, currentPoi
 }
 
 
+function CouponInputModal({ onConfirm, onClose }) {
+  const [code, setCode] = useState('')
+  const [validating, setValidating] = useState(false)
+
+  const submit = async () => {
+    const c = code.trim().toUpperCase()
+    if (!c) { toast.error('Enter a coupon code'); return }
+    setValidating(true)
+    try { await onConfirm(c) } finally { setValidating(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center"
+      style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
+      <div className="rounded-lg overflow-hidden shadow-xl" style={{width:'420px', background:'#fff'}}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{background:'#000000'}}>
+          <div className="text-[18px] font-bold text-white">🎫 Enter Coupon</div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px] flex items-center justify-center">✕</button>
+        </div>
+        <div className="px-5 py-5">
+          <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+            Type or scan the coupon code
+          </div>
+          <input autoFocus
+            value={code}
+            onChange={e=>setCode(e.target.value.toUpperCase().replace(/\s/g,''))}
+            onKeyDown={e=>{ if(e.key==='Enter') submit() }}
+            placeholder="SUMMER10"
+            className="w-full rounded-lg px-4 py-3 text-[18px] outline-none font-mono font-bold tracking-wider text-center"
+            style={{border:'2px solid #80B2FF', background:'#E6F0FF', color:'#006AFF'}}/>
+          <div className="text-[10px] text-slate-400 mt-2 text-center">
+            Codes are case-insensitive. Press Enter to apply.
+          </div>
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={onClose}
+            className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer"
+            style={{background:'#fff', color:'#666', border:'1px solid #e2e8f0'}}>
+            Cancel
+          </button>
+          <button onClick={submit} disabled={validating || !code}
+            className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer border-none disabled:opacity-50"
+            style={{background:'#000000', color:'#fff'}}>
+            {validating ? 'Checking...' : '✓ Apply Coupon'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 export default function PaymentPanel() {
-  const { totals, payments, addPayment, removePayment, paidAmount, submitOrder, setOrderDiscount, orderDiscount } = useCartStore()
+  const { totals, payments, addPayment, removePayment, paidAmount, submitOrder, setOrderDiscount, orderDiscount, appliedCoupon, setAppliedCoupon } = useCartStore()
   const { user, tenant, store } = useAuthStore()
   const { terminal, paxOnline } = useTerminalStore()
-  const { subtotal, taxAmount, orderDiscountAmt, grandTotal } = totals()
+  const { subtotal, taxAmount, orderDiscountAmt, couponDiscountAmt = 0, grandTotal } = totals()
   const { items, customer } = useCartStore()
 
   const [tip,       setTip]       = useState(0)
@@ -210,6 +263,7 @@ export default function PaymentPanel() {
   const [discMode,  setDiscMode]  = useState('pct')
   const [showAdjPad,setShowAdjPad]= useState(false)
   const [showPointsPad, setShowPointsPad] = useState(false)
+  const [showCouponPad, setShowCouponPad] = useState(false)
   const [selMethod, setSelMethod] = useState('cash')
   const [payInput,  setPayInput]  = useState('')
   const [showPayPad,setShowPayPad]= useState(false)
@@ -228,7 +282,7 @@ export default function PaymentPanel() {
   const pointsOrderDiscount = orderDiscount?.type === 'points_cash' ? orderDiscount : null
   const currentPts = pointsOrderDiscount?.points_used || 0
 
-  const liveTotal = subtotal - orderDiscountAmt + (taxExempt?0:taxAmount) + tip + feeAmt
+  const liveTotal = subtotal - orderDiscountAmt - couponDiscountAmt + (taxExempt?0:taxAmount) + tip + feeAmt
   const paid      = paidAmount()
   const remaining = Math.max(0, liveTotal - paid)
   const change    = paid > liveTotal ? paid - liveTotal : 0
@@ -276,6 +330,20 @@ export default function PaymentPanel() {
       toast.success(`Applied ${pts} pts (−$${(pts/REDEEM_RATE).toFixed(2)})`)
     }
     setShowPointsPad(false)
+  }
+
+  const applyCouponCode = async (code) => {
+    if (!code) { toast.error('Enter a coupon code'); return }
+    const { data, error } = await supabase.rpc('fn_validate_coupon', {
+      p_tenant_id:   tenant.id,
+      p_code:        code,
+      p_subtotal:    subtotal,
+      p_customer_id: customer?.id || null,
+    })
+    if (error)            { toast.error('Error: ' + error.message); return }
+    if (!data?.success)   { toast.error(data?.message || 'Invalid coupon'); return }
+    setAppliedCoupon(data.coupon)
+    setShowCouponPad(false)
   }
 
   const handleCardPax = async (amount) => {
@@ -449,6 +517,7 @@ export default function PaymentPanel() {
                 ['Subtotal',   subtotal,         '#64748b', '#fff',     true],
                 [orderDiscount?.type==='points_cash' ? `⭐ Points (${orderDiscount.points_used})` : '✂️ Disc',
                   -orderDiscountAmt, '#16a34a', orderDiscountAmt>0?'#f0fdf4':'#fff', true],
+                ...(appliedCoupon ? [[`🎫 ${appliedCoupon.code}`, -couponDiscountAmt, '#c026d3', '#fdf4ff', true]] : []),
                 [taxExempt?'🏛️ Tax':'Tax', taxExempt?0:taxAmount, taxExempt?'#2563eb':'#64748b', taxExempt?'#eff6ff':'#fff', true],
                 ['🙏 Tip',     tip,               '#ca8a04', tip>0?'#fffbeb':'#fff', true],
                 [`💼 Fee`,     feeAmt,            '#006AFF', feeAmt>0?'#fdf4ff':'#fff', true],
@@ -481,7 +550,7 @@ export default function PaymentPanel() {
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Invoice Adjustments
             </div>
-            <div className="p-3 grid grid-cols-5 gap-2">
+            <div className="p-3 grid grid-cols-6 gap-2">
               {[
                 ['disc','✂️','Discount','#16a34a','#f0fdf4', orderDiscount && orderDiscount.type !== 'points_cash' ?(orderDiscount.type==='pct'?`${orderDiscount.value}%`:`$${orderDiscount.value}`):null],
                 ['tip', '🙏','Tip',     '#ca8a04','#fffbeb', tip>0?`$${tip.toFixed(2)}`:null],
@@ -502,6 +571,23 @@ export default function PaymentPanel() {
                   }
                 </button>
               ))}
+              {/* ── Coupon card (Phase 8) ── */}
+              <button onClick={()=>setShowCouponPad(true)}
+                className="flex flex-col items-center py-3 rounded-xl cursor-pointer border-2 transition-all"
+                style={appliedCoupon
+                  ? {background:'#fdf4ff', borderColor:'#c026d3'}
+                  : {background:'#f8fafc', borderColor:'#e2e8f0'}}>
+                <span className="text-[20px]">🎫</span>
+                <span className="text-[10px] font-bold mt-1" style={{color: appliedCoupon ? '#c026d3' : '#64748b'}}>Coupon</span>
+                {appliedCoupon
+                  ? <span className="text-[11px] font-bold" style={{color:'#c026d3'}}>
+                      {appliedCoupon.code}
+                      <button onClick={e=>{e.stopPropagation(); setAppliedCoupon(null); toast.success('Coupon removed')}}
+                        className="ml-1 bg-transparent border-none cursor-pointer font-bold" style={{color:'#c026d3'}}>✕</button>
+                    </span>
+                  : <span className="text-[9px] text-slate-400">scan or type</span>
+                }
+              </button>
               {/* ── Points card (Phase 7) ── */}
               <button
                 onClick={()=>{
@@ -696,6 +782,11 @@ export default function PaymentPanel() {
           currentPoints={currentPts}
           onConfirm={applyPoints}
           onClose={()=>setShowPointsPad(false)}/>
+      )}
+      {showCouponPad && (
+        <CouponInputModal
+          onConfirm={applyCouponCode}
+          onClose={()=>setShowCouponPad(false)}/>
       )}
 
       {showPayPad && (
