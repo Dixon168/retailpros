@@ -32,6 +32,7 @@ import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { logOverride } from '@/lib/auditOverride'
 import { ProductForm } from '@/pages/products/ProductForm'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
+import { ProductQuickInfo } from '@/components/pos/ProductQuickInfo'
 import { getDisplaySync, EVT } from '@/lib/displaySync'
 import { APP_VERSION } from '@/lib/version'
 import toast from 'react-hot-toast'
@@ -60,6 +61,7 @@ export default function POSPage() {
   const [override,       setOverride]       = useState(null)  // { permission, action, onApprove }
   const [highlightProductId, setHighlightProductId] = useState(null)  // scanned product to flash
   const [editingProduct,     setEditingProduct]     = useState(null)  // product object opened for full edit
+  const [quickInfoProduct,   setQuickInfoProduct]   = useState(null)  // product showing in read-only preview
   const [photoViewProduct,   setPhotoViewProduct]   = useState(null)  // product to zoom (no perm)
 
   /**
@@ -180,7 +182,10 @@ export default function POSPage() {
     queryKey: ['pos-products', tenant?.id, store?.id, searchQuery, activeCategory],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, store_id), promotions(type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules)')
+        .select(`*,
+                 inventory(quantity, store_id),
+                 promotions(type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules),
+                 subcategories(id, name, categories(id, name, emoji, color))`)
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
         .neq('is_enabled', false)
@@ -410,34 +415,11 @@ export default function POSPage() {
           {/* Product grid */}
           <ProductGrid products={products} highlightId={highlightProductId}
             onPhotoClick={(product) => {
-              const v = can('inventory.products')
-              if (v === 'allow') {
-                setEditingProduct(product)
-                return
-              }
-              if (v === 'prompt') {
-                setOverride({
-                  permission:'inventory.products',
-                  action:`edit "${product.name}"`,
-                  onApprove: (approver) => {
-                    toast.success(`✓ Approved by ${approver.name}`)
-                    logOverride({
-                      tenantId: tenant?.id,
-                      permission:'inventory.products',
-                      actionLabel:`edit product ${product.name} from POS`,
-                      requestedBy: activeEmployee
-                        ? { id: activeEmployee.id, name: activeEmployee.name }
-                        : { id: user?.id, name: user?.name },
-                      approver,
-                      notes: `Product ${product.id}`,
-                    })
-                    setEditingProduct(product)
-                  },
-                })
-                return
-              }
-              // Deny — just let them zoom the photo
-              setPhotoViewProduct(product)
+              // Always open the read-only Quick Info first. Editing is a
+              // deliberate second tap from inside the preview, which
+              // prevents the cashier from accidentally entering edit
+              // mode on a product they only wanted to glance at.
+              setQuickInfoProduct(product)
             }}/>
         </div>
 
@@ -531,6 +513,49 @@ export default function POSPage() {
     {photoViewProduct && (
       <PhotoViewer product={photoViewProduct}
         onClose={() => setPhotoViewProduct(null)}/>
+    )}
+
+    {/* Quick Info preview — read-only product view. Tapping Edit triggers
+        the permission flow and opens the full ProductForm. */}
+    {quickInfoProduct && (
+      <ProductQuickInfo
+        product={quickInfoProduct}
+        storeId={store?.id}
+        canEdit={can('inventory.products') !== 'deny'}
+        canSeeCost={can('inventory.products') !== 'deny'}
+        onClose={() => setQuickInfoProduct(null)}
+        onEdit={(product) => {
+          const v = can('inventory.products')
+          if (v === 'allow') {
+            setQuickInfoProduct(null)
+            setEditingProduct(product)
+            return
+          }
+          if (v === 'prompt') {
+            setOverride({
+              permission:'inventory.products',
+              action:`edit "${product.name}"`,
+              onApprove: (approver) => {
+                toast.success(`✓ Approved by ${approver.name}`)
+                logOverride({
+                  tenantId: tenant?.id,
+                  permission:'inventory.products',
+                  actionLabel:`edit product ${product.name} from POS`,
+                  requestedBy: activeEmployee
+                    ? { id: activeEmployee.id, name: activeEmployee.name }
+                    : { id: user?.id, name: user?.name },
+                  approver,
+                  notes: `Product ${product.id}`,
+                })
+                setQuickInfoProduct(null)
+                setEditingProduct(product)
+              },
+            })
+            return
+          }
+          // Deny — toast + close
+          toast.error('You do not have permission to edit products')
+        }}/>
     )}
     </div>
   )
