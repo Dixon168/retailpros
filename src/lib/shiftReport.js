@@ -83,6 +83,29 @@ export async function buildShiftSummary({
     payByMethod[p.method].net = payByMethod[p.method].collected - payByMethod[p.method].refunded
   })
 
+  // Per-cashier breakdown — useful when multiple employees worked the same shift
+  // (Common case: 1 station, multiple people clock in/out across one shift.)
+  const cashierIds = [...new Set(sales.map(o => o.cashier_id).filter(Boolean))]
+  let cashierNames = {}
+  if (cashierIds.length > 0) {
+    const { data: us } = await supabase.from('users').select('id, name').in('id', cashierIds)
+    ;(us || []).forEach(u => { cashierNames[u.id] = u.name })
+  }
+  const byCashier = {}
+  sales.forEach(o => {
+    const cid = o.cashier_id || 'unknown'
+    if (!byCashier[cid]) byCashier[cid] = {
+      id: cid,
+      name: cashierNames[cid] || 'Unknown',
+      orderCount: 0, gross: 0, tax: 0, disc: 0,
+    }
+    byCashier[cid].orderCount++
+    byCashier[cid].gross += Number(o.total || 0)
+    byCashier[cid].tax   += Number(o.tax_amount || 0)
+    byCashier[cid].disc  += Number(o.discount_amount || 0)
+  })
+  const byCashierList = Object.values(byCashier).sort((a,b) => b.gross - a.gross)
+
   // Cash reconciliation
   const cashCollected = payByMethod.cash?.collected || 0
   const cashRefunded  = payByMethod.cash?.refunded || 0
@@ -110,6 +133,7 @@ export async function buildShiftSummary({
     ptsRedeemed,
     voidedTotal,
     payByMethod,
+    byCashier:    byCashierList,
     cashCollected, cashRefunded, cashNet,
     opening, expected, actualClosing, variance,
   }
@@ -180,6 +204,17 @@ ${row('NET SALES', fmt(s.netSales), { bold:true, big:true })}
 ${dash}
 <div class="bold center">— PAYMENT BREAKDOWN —</div>
 ${payRows || '<div class="center small">No payments collected</div>'}
+
+${(s.byCashier && s.byCashier.length > 1) ? `
+${dash}
+<div class="bold center">— BY EMPLOYEE —</div>
+${s.byCashier.map(c => `
+  <div style="margin-top:4px;">
+    <div class="row bold"><span>${esc(c.name)}</span><span>${fmt(c.gross)}</span></div>
+    <div class="row small"><span style="padding-left:6px;">${c.orderCount} orders · tax ${fmt(c.tax)}${c.disc>0?` · disc ${fmt(c.disc)}`:''}</span></div>
+  </div>
+`).join('')}
+` : ''}
 
 ${dbl}
 <div class="bold center">— CASH DRAWER —</div>

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { Overlay } from './SerialPanel'
 import { TERMINAL_ID } from '@/hooks/useLock'
 import { paxSale, paxCancel, dollarsToCents } from '@/lib/pax'
@@ -252,6 +253,12 @@ export default function PaymentPanel() {
   const { totals, payments, addPayment, removePayment, paidAmount, submitOrder, setOrderDiscount, orderDiscount, appliedCoupon, setAppliedCoupon } = useCartStore()
   const { user, tenant, store } = useAuthStore()
   const { terminal, paxOnline } = useTerminalStore()
+  const { activeEmployee } = useEmployeeStore()
+  // Effective cashier — if an employee is signed in via PIN, use them;
+  // otherwise fall back to the tenant-owner login. This is who gets
+  // credited on every order, receipt, and report.
+  const effCashierId   = activeEmployee?.id   || user?.id
+  const effCashierName = activeEmployee?.name || user?.name || user?.email || 'Cashier'
   const { subtotal, taxAmount, orderDiscountAmt, couponDiscountAmt = 0, grandTotal } = totals()
   const { items, customer } = useCartStore()
 
@@ -387,13 +394,13 @@ export default function PaymentPanel() {
       tax: taxExempt ? 0 : taxAmount,
       total: liveTotal,
       change,
-      cashier_name: user?.name || user?.email || 'Cashier',
+      cashier_name: effCashierName,
       customer_name: customer?.name || 'Walk-in',
       date: new Date().toLocaleString(),
     }
 
     try {
-      const result = await submitOrder(store.id, user.id, tenant.id, TERMINAL_ID)
+      const result = await submitOrder(store.id, effCashierId, tenant.id, TERMINAL_ID)
       if (!result) { setProcessing(false); return }  // submitOrder returned null on error
 
       toast.success('✓ Order saved!')

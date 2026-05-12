@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
 import { useCartStore } from '@/stores/cartStore'
 import { format, subDays, startOfDay, endOfDay } from 'date-fns'
@@ -275,16 +276,32 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
 
 export default function OrderLookupPage() {
   const { tenant, user } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
+  const effCashierId   = activeEmployee?.id   || user?.id
+  const effCashierName = activeEmployee?.name || user?.name
   const { resumeHeldOrder, cancelHeldOrder } = useHeldOrdersStore()
   const qc = useQueryClient()
 
   const [search,     setSearch]     = useState('')
   const [statusF,    setStatusF]    = useState('all')
   const [payF,       setPayF]       = useState('all')
+  const [cashierF,   setCashierF]   = useState('all')
   const [dateMode,   setDateMode]   = useState('today') // today|3days|week|month|custom
   const [dateFrom,   setDateFrom]   = useState(format(new Date(),'yyyy-MM-dd'))
   const [dateTo,     setDateTo]     = useState(format(new Date(),'yyyy-MM-dd'))
   const [selected,   setSelected]   = useState(null)
+
+  // Employees for the filter dropdown
+  const { data: allEmployees = [] } = useQuery({
+    queryKey: ['employees-list', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('users')
+        .select('id, name, role').eq('tenant_id', tenant.id)
+        .order('name')
+      return data || []
+    },
+    enabled: !!tenant?.id,
+  })
 
   // Compute date range
   const range = (() => {
@@ -299,7 +316,7 @@ export default function OrderLookupPage() {
 
   // ── Orders query ──
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders-lookup', tenant?.id, search, statusF, payF, dateMode, dateFrom, dateTo],
+    queryKey: ['orders-lookup', tenant?.id, search, statusF, payF, cashierF, dateMode, dateFrom, dateTo],
     queryFn: async () => {
       let q = supabase.from('orders')
         .select(`*, customers(name,phone), users(name), terminals(name),
@@ -307,6 +324,7 @@ export default function OrderLookupPage() {
           order_payments(method,amount)`)
         .eq('tenant_id', tenant.id)
       if (search) q = q.or(`order_number.ilike.%${search}%`)
+      if (cashierF !== 'all') q = q.eq('cashier_id', cashierF)
       if (range[0]) q = q.gte('created_at', range[0].toISOString())
       if (range[1]) q = q.lte('created_at', range[1].toISOString())
       const { data } = await q.order('created_at',{ascending:false}).limit(200)
@@ -385,8 +403,8 @@ export default function OrderLookupPage() {
       await supabase.from('orders').update({
         status: 'voided',
         voided_at: new Date().toISOString(),
-        voided_by: user?.id,
-        voided_by_name: user?.name,
+        voided_by: effCashierId,
+        voided_by_name: effCashierName,
       }).eq('id', o.id)
 
       // 2. Create adjustment record on TODAY (not original date)
@@ -399,8 +417,8 @@ export default function OrderLookupPage() {
           amount:         -parseFloat(p.amount || 0),
           payment_method: p.method,
           reason:         `Void of order ${o.order_number} (original: ${new Date(o.created_at).toLocaleDateString()})`,
-          staff_id:       user?.id,
-          staff_name:     user?.name,
+          staff_id:       effCashierId,
+          staff_name:     effCashierName,
         })
       }
 
@@ -660,7 +678,7 @@ export default function OrderLookupPage() {
             })}
           </div>
 
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{scrollbarWidth:'none'}}>
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 items-center" style={{scrollbarWidth:'none'}}>
             {PAY_FILTERS.map(f => (
               <button key={f.id} onClick={()=>setPayF(f.id)}
                 className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border transition-all"
@@ -668,6 +686,17 @@ export default function OrderLookupPage() {
                 {f.icon} {f.label}
               </button>
             ))}
+            <div className="w-px h-5 bg-slate-300 mx-1 flex-shrink-0"/>
+            <select value={cashierF} onChange={e=>setCashierF(e.target.value)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border outline-none"
+              style={cashierF!=='all'
+                ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
+                : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
+              <option value="all">👥 All Employees</option>
+              {allEmployees.map(e => (
+                <option key={e.id} value={e.id}>👤 {e.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 

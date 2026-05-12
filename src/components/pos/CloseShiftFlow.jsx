@@ -158,6 +158,25 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                 </>
               )}
 
+              {summary.byCashier && summary.byCashier.length > 1 && (
+                <>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">👤 By Employee</div>
+                  <div className="rounded-xl mb-4" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                    {summary.byCashier.map(c => (
+                      <div key={c.id} className="flex items-center gap-2 px-4 py-2 border-b border-slate-100 last:border-0">
+                        <div className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
+                          style={{background:'#006AFF'}}>{c.name.charAt(0).toUpperCase()}</div>
+                        <div className="flex-1 text-[12px] font-semibold">{c.name}</div>
+                        <div className="text-right">
+                          <div className="text-[12px] font-bold font-mono">{fmt(c.gross)}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">{c.orderCount} orders</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <button onClick={proceedToCount}
                 className="w-full rounded-lg py-3 text-[14px] font-bold text-white cursor-pointer border-none"
                 style={{background:'#006AFF'}}>

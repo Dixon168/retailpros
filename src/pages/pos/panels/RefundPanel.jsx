@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { useCartStore } from '@/stores/cartStore'
 import NumPad from '@/components/ui/NumPad'
 import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
@@ -38,6 +39,9 @@ export function OrderStatusBadge({ order }) {
 
 export default function RefundPanel({ onClose, preloadOrder = null }) {
   const { user, tenant } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
+  const effCashierId   = activeEmployee?.id   || user?.id
+  const effCashierName = activeEmployee?.name || user?.name
   const { addProduct }   = useCartStore()
   const qc               = useQueryClient()
 
@@ -195,8 +199,8 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
           refund_status: refundStatus,
           refunded_amount: (selectedOrder.refunded_amount||0) + totalRefund,
           refunded_at: new Date().toISOString(),
-          refunded_by: user?.id,
-          refunded_by_name: user?.name,
+          refunded_by: effCashierId,
+          refunded_by_name: effCashierName,
         })
         .eq('id', selectedOrder.id)
 
@@ -212,8 +216,8 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
           name: item.products?.name,
           qty, unit_price: item.unit_price,
         })),
-        refunded_by: user?.id,
-        refunded_by_name: user?.name,
+        refunded_by: effCashierId,
+        refunded_by_name: effCashierName,
       })
 
       // Add negative items to cart

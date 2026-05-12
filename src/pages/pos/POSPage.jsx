@@ -135,10 +135,13 @@ export default function POSPage() {
       const { items, customer, totals } = useCartStore.getState()
       if (items.length === 0) { toast.error('Cart is empty'); return }
       const { tenant, store, terminal, user } = useAuthStore.getState()
+      const { activeEmployee } = useEmployeeStore.getState()
+      const empId   = activeEmployee?.id   || user?.id
+      const empName = activeEmployee?.name || user?.name
       const ok = await useHeldOrdersStore.getState().holdCurrentCart({
         tenantId: tenant?.id, storeId: store?.id,
         terminalId: terminal?.id, terminalName: terminal?.name,
-        userId: user?.id, userName: user?.name,
+        userId: empId, userName: empName,
         label: customer?.name || null,
       })
       if (ok) toast.success('📌 Order held')
@@ -335,7 +338,7 @@ export default function POSPage() {
         shift={currentShift}
         tenantId={tenant?.id}
         storeInfo={store}
-        cashier={user?.name}
+        cashier={activeEmployee?.name || user?.name}
         terminalName={terminal?.name}
         onClose={() => setShowCloseShift(false)}
       />

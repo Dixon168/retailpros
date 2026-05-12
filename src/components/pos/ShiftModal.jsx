@@ -5,10 +5,13 @@ import { useState } from 'react'
 import NumPad from '@/components/ui/NumPad'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 
 export function OpenShiftModal({ onClose }) {
   const { openShift, terminal } = useTerminalStore()
   const { user, tenant, store } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
+  const effCashierId = activeEmployee?.id || user?.id
   const [amount, setAmount]   = useState('')
   const [loading, setLoading] = useState(false)
   const [showPad, setShowPad] = useState(false)
@@ -18,7 +21,7 @@ export function OpenShiftModal({ onClose }) {
   const handleOpen = async () => {
     setLoading(true)
     try {
-      await openShift(tenant.id, store.id, user.id, parseFloat(amount) || 0)
+      await openShift(tenant.id, store.id, effCashierId, parseFloat(amount) || 0)
       onClose()
     } finally {
       setLoading(false)

@@ -45,23 +45,42 @@ export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState('sales')
   const [datePreset, setDatePreset] = useState('week')
   const [dateFrom, dateTo] = getDateRange(datePreset)
+  const [filterCashier, setFilterCashier] = useState('all') // 'all' | user.id
+
+  // Load employees for the filter dropdown
+  const { data: allEmployees = [] } = useQuery({
+    queryKey: ['employees-list', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('users')
+        .select('id, name, role').eq('tenant_id', tenant.id)
+        .eq('is_active', true).order('name')
+      return data || []
+    },
+    enabled: !!tenant?.id,
+  })
 
   // Sales summary
   const { data: salesData } = useQuery({
-    queryKey: ['report-sales', tenant?.id, dateFrom, dateTo],
+    queryKey: ['report-sales', tenant?.id, dateFrom, dateTo, filterCashier],
     queryFn: async () => {
-      const { data: orders } = await supabase.from('orders')
-        .select('total, subtotal, tax_amount, discount_amount, coupon_discount, coupon_code, points_redeemed, status, created_at')
+      let oq = supabase.from('orders')
+        .select('total, subtotal, tax_amount, discount_amount, coupon_discount, coupon_code, points_redeemed, status, created_at, cashier_id')
         .eq('tenant_id', tenant.id)
         .eq('status', 'completed')
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
-      const { data: payments } = await supabase.from('order_payments')
-        .select('method, amount, orders!inner(tenant_id, status, created_at)')
+      if (filterCashier !== 'all') oq = oq.eq('cashier_id', filterCashier)
+      const { data: orders } = await oq
+
+      let pq = supabase.from('order_payments')
+        .select('method, amount, orders!inner(tenant_id, status, created_at, cashier_id)')
         .eq('orders.tenant_id', tenant.id)
         .eq('orders.status', 'completed')
         .gte('orders.created_at', dateFrom.toISOString())
         .lte('orders.created_at', dateTo.toISOString())
+      if (filterCashier !== 'all') pq = pq.eq('orders.cashier_id', filterCashier)
+      const { data: payments } = await pq
+
       return { orders: orders||[], payments: payments||[] }
     },
     enabled: !!tenant?.id,
@@ -69,18 +88,20 @@ export default function ReportsPage() {
 
   // ── Phase 10: Product sales — top sellers, by day-of-week, by category
   const { data: productData } = useQuery({
-    queryKey: ['report-products', tenant?.id, dateFrom, dateTo],
+    queryKey: ['report-products', tenant?.id, dateFrom, dateTo, filterCashier],
     queryFn: async () => {
-      const { data: items } = await supabase.from('order_items')
+      let q = supabase.from('order_items')
         .select(`
           product_id, product_name, product_sku, quantity, line_total, unit_price,
-          orders!inner(tenant_id, status, created_at),
+          orders!inner(tenant_id, status, created_at, cashier_id),
           products(category_id, categories(name))
         `)
         .eq('tenant_id', tenant.id)
         .eq('orders.status', 'completed')
         .gte('orders.created_at', dateFrom.toISOString())
         .lte('orders.created_at', dateTo.toISOString())
+      if (filterCashier !== 'all') q = q.eq('orders.cashier_id', filterCashier)
+      const { data: items } = await q
       return items || []
     },
     enabled: !!tenant?.id && activeReport === 'products',
@@ -239,6 +260,14 @@ export default function ReportsPage() {
             ))}
           </div>
           <div className="flex items-center gap-2 ml-auto">
+            <select value={filterCashier} onChange={e=>setFilterCashier(e.target.value)}
+              className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#1F1F1F] font-semibold outline-none cursor-pointer"
+              title="Filter all reports by who rang up the sale">
+              <option value="all">👥 All Employees</option>
+              {allEmployees.map(e => (
+                <option key={e.id} value={e.id}>👤 {e.name}{e.role!=='cashier'?` (${e.role})`:''}</option>
+              ))}
+            </select>
             <input type="date" defaultValue={format(dateFrom,'yyyy-MM-dd')}
               className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#1F1F1F] font-mono outline-none"/>
             <span className="text-[#999999] text-sm">→</span>
@@ -253,7 +282,20 @@ export default function ReportsPage() {
 
         {/* Report content */}
         <div className="flex-1 overflow-y-auto p-6">
-
+          {filterCashier !== 'all' && (
+            <div className="mb-4 rounded-lg px-4 py-2.5 flex items-center justify-between"
+              style={{background:'#E6F0FF', border:'1px solid #80B2FF'}}>
+              <div className="text-[12px] text-[#006AFF]">
+                <b>📌 Filtered by:</b> {allEmployees.find(e=>e.id===filterCashier)?.name || 'Selected employee'}
+                <span className="ml-2 text-[10px] text-[#666]">(only orders rung up by this employee)</span>
+              </div>
+              <button onClick={()=>setFilterCashier('all')}
+                className="rounded-md px-3 py-1 text-[11px] font-bold cursor-pointer border"
+                style={{background:'#fff', color:'#006AFF', borderColor:'#80B2FF'}}>
+                Clear filter ✕
+              </button>
+            </div>
+          )}
           {/* ── SALES OVERVIEW ── */}
           {activeReport === 'sales' && (
             <div>
