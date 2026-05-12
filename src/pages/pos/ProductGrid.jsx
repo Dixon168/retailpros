@@ -1,5 +1,5 @@
 // src/pages/pos/ProductGrid.jsx
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useCartStore } from '@/stores/cartStore'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
 
@@ -9,9 +9,28 @@ const TYPE_BADGE = {
   service:    { bg: '#ede9fe', color: '#006AFF', label: 'SVC' },
 }
 
-export default function ProductGrid({ products }) {
+export default function ProductGrid({ products, highlightId }) {
   const { addProduct } = useCartStore()
   const [photoViewer, setPhotoViewer] = useState(null)
+  const cardRefs = useRef({})  // { [productId]: HTMLElement }
+
+  // When highlightId changes, scroll the matched card into view.
+  // We also re-run on products change so the scroll succeeds even if the
+  // grid is being repopulated (e.g. after a category auto-switch).
+  useEffect(() => {
+    if (!highlightId) return
+    // Try a few times in case the ref isn't attached yet (grid still rendering)
+    let tries = 0
+    const tick = () => {
+      const el = cardRefs.current[highlightId]
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else if (tries++ < 8) {
+        setTimeout(tick, 60)
+      }
+    }
+    tick()
+  }, [highlightId, products])
 
   if (products.length === 0) {
     return (
@@ -33,6 +52,8 @@ export default function ProductGrid({ products }) {
             <ProductCard
               key={product.id}
               product={product}
+              highlighted={highlightId === product.id}
+              cardRef={el => { cardRefs.current[product.id] = el }}
               onAdd={() => addProduct(product)}
               onPhotoClick={() => setPhotoViewer(product)}
             />
@@ -46,7 +67,7 @@ export default function ProductGrid({ products }) {
   )
 }
 
-function ProductCard({ product, onAdd, onPhotoClick }) {
+function ProductCard({ product, onAdd, onPhotoClick, highlighted, cardRef }) {
   const badge  = TYPE_BADGE[product.type]
   const qty    = product.inventory?.reduce((a,i) => a+(i.quantity||0), 0) ?? null
   const lowThreshold = product.low_stock_qty || 5
@@ -110,10 +131,34 @@ function ProductCard({ product, onAdd, onPhotoClick }) {
   }
 
   return (
-    <div className="rounded-xl overflow-hidden transition-all duration-150 cursor-pointer group"
-      style={{background:'#fff', border:'1.5px solid #e2e8f0', boxShadow:'0 1px 3px rgba(0,0,0,0.06)'}}
-      onMouseEnter={e => e.currentTarget.style.borderColor='#006AFF'}
-      onMouseLeave={e => e.currentTarget.style.borderColor='#e2e8f0'}>
+    <div ref={cardRef}
+      className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer group relative"
+      style={{
+        background:'#fff',
+        border: highlighted ? '3px solid #006AFF' : '1.5px solid #e2e8f0',
+        boxShadow: highlighted
+          ? '0 0 0 4px rgba(0,106,255,0.18), 0 4px 12px rgba(0,106,255,0.3)'
+          : '0 1px 3px rgba(0,0,0,0.06)',
+        transform: highlighted ? 'scale(1.04)' : 'scale(1)',
+        zIndex: highlighted ? 5 : 1,
+      }}
+      onMouseEnter={e => !highlighted && (e.currentTarget.style.borderColor='#006AFF')}
+      onMouseLeave={e => !highlighted && (e.currentTarget.style.borderColor='#e2e8f0')}>
+
+      {/* Scan flash overlay — fades out */}
+      {highlighted && (
+        <div className="absolute inset-0 pointer-events-none rounded-xl z-20"
+          style={{
+            background:'radial-gradient(circle, rgba(0,106,255,0.18) 0%, transparent 70%)',
+            animation:'scanflash 1.4s ease-out',
+          }}/>
+      )}
+      {highlighted && (
+        <div className="absolute -top-1 -right-1 z-30 px-2 py-0.5 rounded-full text-[9px] font-bold text-white"
+          style={{background:'#006AFF', boxShadow:'0 2px 6px rgba(0,106,255,0.5)'}}>
+          📷 Scanned
+        </div>
+      )}
 
       {/* Photo */}
       <div className="relative w-full overflow-hidden flex items-center justify-center"

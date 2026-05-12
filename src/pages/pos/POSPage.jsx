@@ -53,6 +53,7 @@ export default function POSPage() {
   const [showCloseShift, setShowCloseShift] = useState(false)
   const [pinMode,        setPinMode]        = useState(null)  // 'signin' | 'clockin' | 'clockout' | null
   const [override,       setOverride]       = useState(null)  // { permission, action, onApprove }
+  const [highlightProductId, setHighlightProductId] = useState(null)  // scanned product to flash
 
   /**
    * Run an action that may require permission.
@@ -154,9 +155,29 @@ export default function POSPage() {
   const handleBarcodeInput = useCallback((e) => {
     if (e.key === 'Enter' && searchQuery.length > 3) {
       const match = products.find(p => p.upc === searchQuery || p.sku === searchQuery)
-      if (match) { useCartStore.getState().addProduct(match); setSearchQuery('') }
+      if (match) {
+        useCartStore.getState().addProduct(match)
+        setSearchQuery('')
+        // If the scanned product is filtered out by the current category,
+        // switch to 'all' so it becomes visible for the highlight
+        if (activeCategory !== 'all' && match.category_id !== activeCategory) {
+          setActiveCategory('all')
+        }
+        // Trigger the scroll-to-and-highlight effect
+        setHighlightProductId(match.id)
+        toast.success(`✓ ${match.name}`, { duration: 1500 })
+      } else {
+        toast.error(`No product found for "${searchQuery}"`)
+      }
     }
-  }, [searchQuery, products])
+  }, [searchQuery, products, activeCategory])
+
+  // Auto-clear the highlight after a few seconds so it doesn't linger
+  useEffect(() => {
+    if (!highlightProductId) return
+    const t = setTimeout(() => setHighlightProductId(null), 3000)
+    return () => clearTimeout(t)
+  }, [highlightProductId])
 
   const selectedItem = items.find(i => i.id === selectedItemId)
 
@@ -314,7 +335,7 @@ export default function POSPage() {
           </div>
 
           {/* Product grid */}
-          <ProductGrid products={products} />
+          <ProductGrid products={products} highlightId={highlightProductId}/>
         </div>
 
         {/* Right: Cart */}
