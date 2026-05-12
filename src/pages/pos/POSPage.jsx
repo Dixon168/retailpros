@@ -32,7 +32,7 @@ import toast from 'react-hot-toast'
 
 export default function POSPage() {
   const navigate    = useNavigate()
-  const { user, tenant, store, can } = useAuthStore()
+  const { user, tenant, store } = useAuthStore()
   const {
     loadTaxGroups, showSnPanel, showWtPanel, showPricePanel,
     showCustPanel, showDiscPanel, showPayPanel, selectedItemId, items
@@ -127,11 +127,11 @@ export default function POSPage() {
 
   const { t } = useLang()
   const QUICK_BTNS = [
-    { id:'member',  perm:null,                label:t('member'),   icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
-    { id:'points',  perm:'pos.points_redeem', label:t('points'),   icon:'⭐', action: () => setShowPoints(true) },
-    { id:'openitem',perm:'pos.price_override',label:t('openItem'), icon:'✏️', action: () => setShowOpenItem(true) },
-    { id:'return',  perm:'pos.refund',        label:t('return'),   icon:'↩️', action: () => setShowRefund(true) },
-    { id:'hold',    perm:'pos.hold_recall',   label:t('hold'),     icon:'📌', action: async () => {
+    { id:'member',  label:t('member'),   icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
+    { id:'points',  label:t('points'),   icon:'⭐', action: () => setShowPoints(true) },
+    { id:'openitem',label:t('openItem'), icon:'✏️', action: () => setShowOpenItem(true) },
+    { id:'return',  label:t('return'),   icon:'↩️', action: () => setShowRefund(true) },
+    { id:'hold', label:t('hold'), icon:'📌', action: async () => {
       const { items, customer, totals } = useCartStore.getState()
       if (items.length === 0) { toast.error('Cart is empty'); return }
       const { tenant, store, terminal, user } = useAuthStore.getState()
@@ -146,8 +146,8 @@ export default function POSPage() {
       })
       if (ok) toast.success('📌 Order held')
     }},
-    { id:'giftcard',perm:'pos.gift_card',     label:'Gift Card',   icon:'🎁', action: () => setShowGiftCard(true) },
-    { id:'orders',  perm:'pos.hold_recall',   label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
+    { id:'giftcard', label:'Gift Card', icon:'🎁', action: () => setShowGiftCard(true) },
+    { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
   return (
@@ -292,31 +292,14 @@ export default function POSPage() {
       {/* ── BOTTOM QUICK BUTTONS ── */}
       <div className="flex-shrink-0 px-3 py-2" style={{background:'#1F1F1F', borderTop:'1px solid #2A2A2A'}}>
         <div className="flex gap-2">
-          {QUICK_BTNS.map(btn => {
-            const allowed = !btn.perm || can(btn.perm)
-            return (
-              <button key={btn.id}
-                onClick={() => {
-                  if (!allowed) {
-                    toast.error(`You don't have permission to use ${btn.label}`)
-                    return
-                  }
-                  btn.action()
-                }}
-                title={allowed ? '' : `No permission: ${btn.perm}`}
-                className="flex-1 rounded-lg py-2.5 flex flex-col items-center gap-1 cursor-pointer border transition-all active:scale-95"
-                style={{
-                  background: allowed ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-                  border:'1px solid ' + (allowed ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'),
-                  minHeight:'52px',
-                  opacity: allowed ? 1 : 0.35,
-                  cursor: allowed ? 'pointer' : 'not-allowed',
-                }}>
-                <span className="text-[18px] leading-none">{btn.icon}{!allowed && <span className="ml-0.5 text-[12px]">🔒</span>}</span>
-                <span className="text-[10px] font-semibold leading-none" style={{color:'#cbd5e1'}}>{btn.label}</span>
-              </button>
-            )
-          })}
+          {QUICK_BTNS.map(btn => (
+            <button key={btn.id} onClick={btn.action}
+              className="flex-1 rounded-lg py-2.5 flex flex-col items-center gap-1 cursor-pointer border transition-all active:scale-95"
+              style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', minHeight:'52px'}}>
+              <span className="text-[18px] leading-none">{btn.icon}</span>
+              <span className="text-[10px] font-semibold leading-none" style={{color:'#cbd5e1'}}>{btn.label}</span>
+            </button>
+          ))}
           {Array(4).fill(0).map((_,i) => (
             <button key={`slot-${i}`}
               className="flex-1 rounded-lg py-2.5 flex flex-col items-center gap-1 opacity-20 cursor-not-allowed border"
