@@ -125,27 +125,34 @@ export const useAuthStore = create(
 
       can: (permission) => {
         const { user } = get()
-        if (!user) return false
+        if (!user) return 'deny'
 
         // PIN-signed-in employee takes priority (their permissions come
         // pre-resolved from fn_user_permissions which merges role + per-user)
         const emp = useEmployeeStore.getState().activeEmployee
         if (emp?.permissions && Object.keys(emp.permissions).length > 0) {
-          if (emp.role?.toLowerCase() === 'owner') return true
-          return emp.permissions[permission] === true
+          if (emp.role?.toLowerCase() === 'owner') return 'allow'
+          const v = emp.permissions[permission]
+          if (v === true)  return 'allow'
+          if (v === false) return 'deny'
+          if (v === 'allow' || v === 'deny' || v === 'prompt') return v
+          return 'deny'
         }
 
         // Otherwise fall back to tenant-owner login defaults
-        if (user.role === 'owner') return true
+        if (user.role === 'owner') return 'allow'
         if (user.role === 'manager') {
           const mp = ['can_discount','can_refund','can_void','can_view_reports',
             'can_manage_products','can_manage_customers','can_send_invoice','can_open_drawer',
             'pos.access','pos.discount','pos.refund','pos.void','pos.coupon',
             'pos.points_redeem','pos.gift_card','pos.hold_recall','pos.open_shift','pos.close_shift',
             'reports.view','inventory.products','customers.manage']
-          if (mp.includes(permission)) return true
+          if (mp.includes(permission)) return 'allow'
         }
-        return user.permissions?.[permission] === true
+        const v = user.permissions?.[permission]
+        if (v === true || v === 'allow') return 'allow'
+        if (v === 'prompt') return 'prompt'
+        return 'deny'
       },
 
       canAccessSettings: (section) => {
@@ -155,9 +162,8 @@ export const useAuthStore = create(
         const emp = useEmployeeStore.getState().activeEmployee
         if (emp?.permissions) {
           if (emp.role?.toLowerCase() === 'owner') return true
-          const key = `settings.${section}`
-          if (emp.permissions[key] != null) return emp.permissions[key] === true
-          return false
+          const v = emp.permissions[`settings.${section}`]
+          return v === true || v === 'allow' || v === 'prompt'
         }
 
         if (user.role === 'owner') return true

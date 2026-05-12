@@ -1432,7 +1432,12 @@ function RolesSection({ tenantId, userId }) {
         <div className="space-y-2.5">
           {roles.map(r => {
             const inUse = roleCounts[r.name.toLowerCase()] || 0
-            const permCount = Object.values(r.permissions || {}).filter(Boolean).length
+            const cnt = { allow:0, prompt:0, deny:0 }
+            Object.values(r.permissions || {}).forEach(v => {
+              if (v === true || v === 'allow') cnt.allow++
+              else if (v === 'prompt') cnt.prompt++
+              else cnt.deny++
+            })
             return (
               <div key={r.id} className="bg-[#FFFFFF] rounded-xl p-4"
                 style={{border: r.is_system ? '1.5px solid #80B2FF' : '1px solid #E5E5E5'}}>
@@ -1453,9 +1458,11 @@ function RolesSection({ tenantId, userId }) {
                     <div className="text-[11px] text-[#666] mt-0.5">
                       {r.description || <span className="opacity-60">No description</span>}
                     </div>
-                    <div className="text-[10px] text-[#999] mt-1 font-mono">
-                      {permCount} / {ALL_PERMISSIONS.length} permissions enabled
-                      {' · '}max discount: {r.max_discount_pct}%
+                    <div className="text-[10px] mt-1 font-mono flex gap-2">
+                      <span style={{color:'#15803d'}}>✓ Allow: {cnt.allow}</span>
+                      <span style={{color:'#ca8a04'}}>? Prompt: {cnt.prompt}</span>
+                      <span style={{color:'#991b1b'}}>✗ Deny: {cnt.deny}</span>
+                      <span className="text-[#999]">· max disc: {r.max_discount_pct}%</span>
                     </div>
                   </div>
                   <button onClick={() => startEdit(r)}
@@ -1492,10 +1499,14 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
   const setPerm = (key, val) => setRole(p => ({...p, permissions: {...(p.permissions||{}), [key]: val}}))
 
   const isOwner = isProtected
-  const togglePerm = (key) => {
-    if (isOwner) return  // Owner always gets everything
-    setPerm(key, !role.permissions?.[key])
+  // Normalize a value to tri-state string
+  const norm = (v) => {
+    if (v === true)  return 'allow'
+    if (v === false) return 'deny'
+    if (v === 'allow' || v === 'deny' || v === 'prompt') return v
+    return 'deny'
   }
+  const permVal = (key) => isOwner ? 'allow' : norm(role.permissions?.[key])
   const allInGroup = (group, val) => {
     if (isOwner) return
     const next = {...(role.permissions||{})}
@@ -1563,9 +1574,11 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
       <div className="space-y-3">
         {PERMISSION_GROUPS.map(group => {
           const totalInGroup = group.items.length
-          const enabledInGroup = group.items.filter(([k]) => isOwner ? true : !!role.permissions?.[k]).length
-          const allOn  = enabledInGroup === totalInGroup
-          const allOff = enabledInGroup === 0
+          const cnt = { allow:0, deny:0, prompt:0 }
+          group.items.forEach(([k]) => {
+            const v = isOwner ? 'allow' : norm(role.permissions?.[k])
+            cnt[v] = (cnt[v]||0) + 1
+          })
           return (
             <div key={group.id} className="rounded-xl overflow-hidden"
               style={{border:'1px solid #E5E5E5'}}>
@@ -1578,47 +1591,72 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
                     <div className="text-[10px] text-[#666]">{group.description}</div>
                   </div>
                 </div>
-                <div className="text-[11px] text-[#666] font-mono mr-3">{enabledInGroup}/{totalInGroup}</div>
+                <div className="text-[10px] font-mono mr-3 flex gap-1.5">
+                  <span style={{color:'#15803d'}}>✓{cnt.allow}</span>
+                  <span style={{color:'#ca8a04'}}>?{cnt.prompt}</span>
+                  <span style={{color:'#991b1b'}}>✗{cnt.deny}</span>
+                </div>
                 {!isOwner && (
                   <div className="flex gap-1">
-                    <button onClick={()=>allInGroup(group, true)} disabled={allOn}
-                      className="rounded px-2 py-1 text-[10px] cursor-pointer disabled:opacity-40"
-                      style={{background:'#dcfce7', color:'#15803d', border:'1px solid #86efac'}}>All</button>
-                    <button onClick={()=>allInGroup(group, false)} disabled={allOff}
-                      className="rounded px-2 py-1 text-[10px] cursor-pointer disabled:opacity-40"
+                    <button onClick={()=>allInGroup(group, 'allow')}
+                      className="rounded px-2 py-1 text-[10px] cursor-pointer"
+                      style={{background:'#dcfce7', color:'#15803d', border:'1px solid #86efac'}}>All ✓</button>
+                    <button onClick={()=>allInGroup(group, 'prompt')}
+                      className="rounded px-2 py-1 text-[10px] cursor-pointer"
+                      style={{background:'#fefce8', color:'#ca8a04', border:'1px solid #fde047'}}>All ?</button>
+                    <button onClick={()=>allInGroup(group, 'deny')}
+                      className="rounded px-2 py-1 text-[10px] cursor-pointer"
                       style={{background:'#fef2f2', color:'#991b1b', border:'1px solid #fecaca'}}>None</button>
                   </div>
                 )}
               </div>
-              <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+              <div className="p-2 grid grid-cols-1 gap-1">
                 {group.items.map(item => {
                   const [key, label, desc, opts] = item
                   const sensitive = opts?.sensitive
-                  const checked = isOwner ? true : !!role.permissions?.[key]
+                  const val = permVal(key)
+                  const STATES = [
+                    { id:'allow',  label:'✓ Allow',   bg:'#dcfce7', fg:'#15803d', border:'#86efac' },
+                    { id:'prompt', label:'? Prompt',  bg:'#fefce8', fg:'#ca8a04', border:'#fde047' },
+                    { id:'deny',   label:'✗ Deny',    bg:'#fef2f2', fg:'#991b1b', border:'#fecaca' },
+                  ]
                   return (
-                    <label key={key}
-                      className="flex items-start gap-2 cursor-pointer rounded-lg px-3 py-2 transition-colors"
+                    <div key={key}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
                       style={{
-                        background: checked ? '#E6F0FF' : '#fff',
-                        border: `1px solid ${checked ? '#80B2FF' : '#E5E5E5'}`,
+                        background: val === 'allow' ? '#f0fdf4' : val === 'prompt' ? '#fffbeb' : '#fff',
+                        border: '1px solid ' + (val === 'allow' ? '#bbf7d0' : val === 'prompt' ? '#fde047' : '#E5E5E5'),
                         opacity: isOwner ? 0.85 : 1,
                       }}>
-                      <input type="checkbox"
-                        checked={checked}
-                        disabled={isOwner}
-                        onChange={() => togglePerm(key)}
-                        className="mt-0.5 cursor-pointer flex-shrink-0"/>
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-semibold flex items-center gap-1.5">
-                          <span style={{color: checked ? '#006AFF' : '#1F1F1F'}}>{label}</span>
-                          {sensitive && <span title="Sensitive permission — be cautious assigning"
+                          <span style={{color:'#1F1F1F'}}>{label}</span>
+                          {sensitive && <span title="Sensitive permission"
                             className="text-[9px] rounded px-1.5 py-0.5 font-bold"
                             style={{background:'#fef2f2', color:'#dc2626'}}>!</span>}
                         </div>
                         {desc && <div className="text-[10px] text-[#666] mt-0.5">{desc}</div>}
                         <div className="text-[9px] font-mono text-[#999] mt-0.5">{key}</div>
                       </div>
-                    </label>
+                      <div className="flex rounded-lg overflow-hidden flex-shrink-0" style={{border:'1px solid #E5E5E5'}}>
+                        {STATES.map(s => {
+                          const active = val === s.id
+                          return (
+                            <button key={s.id}
+                              onClick={() => !isOwner && setPerm(key, s.id)}
+                              disabled={isOwner}
+                              className="px-2.5 py-1.5 text-[10px] font-bold cursor-pointer border-none transition-all disabled:cursor-not-allowed"
+                              style={{
+                                background: active ? s.bg : '#fff',
+                                color: active ? s.fg : '#94a3b8',
+                                borderLeft: '1px solid #E5E5E5',
+                              }}>
+                              {s.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )
                 })}
               </div>

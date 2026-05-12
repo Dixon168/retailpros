@@ -5,6 +5,34 @@
 // Each permission has a key (used in the DB JSONB), label, and optional
 // description. Sensitive permissions are marked with `sensitive: true`
 // so the UI can warn before enabling them.
+//
+// Permission values are TRI-STATE strings:
+//   'allow'  — user can do it, no extra check
+//   'deny'   — user can't do it (button greyed/hidden)
+//   'prompt' — user can do it but a manager PIN must approve first
+
+export const ALLOW  = 'allow'
+export const DENY   = 'deny'
+export const PROMPT = 'prompt'
+
+// Helper: normalize legacy boolean values to tri-state
+export function normalizePerm(v) {
+  if (v === true)  return ALLOW
+  if (v === false) return DENY
+  if (v === 'allow' || v === 'deny' || v === 'prompt') return v
+  return DENY  // default for missing values
+}
+
+// Helper: is the user allowed at all (allow OR prompt)?
+export function isPermitted(v) {
+  const n = normalizePerm(v)
+  return n === ALLOW || n === PROMPT
+}
+
+// Helper: does this action require a manager PIN prompt?
+export function needsPrompt(v) {
+  return normalizePerm(v) === PROMPT
+}
 
 export const PERMISSION_GROUPS = [
   {
