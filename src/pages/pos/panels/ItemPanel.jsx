@@ -5,12 +5,16 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { ProductPhoto, PhotoViewer } from '@/components/ui/ProductPhoto'
 import NumPad from '@/components/ui/NumPad'
+import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
+import { logOverride } from '@/lib/auditOverride'
 import toast from 'react-hot-toast'
 
 export default function ItemPanel({ item, onClose }) {
-  const { tenant } = useAuthStore()
+  const { tenant, user, can, maxDiscountPct } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
   const { setItemNote, setItemEmployee, setItemPrice, setItemDiscount, setItemQty, removeItem } = useCartStore()
 
   const [tab, setTab]           = useState('main')
@@ -21,6 +25,7 @@ export default function ItemPanel({ item, onClose }) {
   const [newPrice, setNewPrice] = useState(String(item.unitPrice))
   const [photoViewer, setPhotoViewer] = useState(false)
   const [showQtyKb, setShowQtyKb] = useState(false)
+  const [override, setOverride] = useState(null)
 
   // Load staff list
   const { data: staffList = [] } = useQuery({
@@ -51,8 +56,41 @@ export default function ItemPanel({ item, onClose }) {
   const applyDiscount = () => {
     const v = parseFloat(discVal)
     if (!v || v <= 0) { toast.error('Enter discount value'); return }
-    setItemDiscount(item.id, { type: discType, value: v })
-    toast.success('Item discount applied')
+    const discountPerm = can('pos.discount')
+    if (discountPerm === 'deny') { toast.error("You don't have permission to apply discounts"); return }
+
+    // Compute equivalent % for cap check (regardless of $ vs %)
+    const maxPct = maxDiscountPct()
+    const effectivePct = discType === 'pct' ? v : (item.unitPrice > 0 ? (v / item.unitPrice) * 100 : 0)
+
+    const doApply = (approver) => {
+      setItemDiscount(item.id, { type: discType, value: v })
+      if (approver) {
+        logOverride({
+          tenantId: tenant?.id,
+          permission:'pos.discount',
+          actionLabel: `apply ${discType==='pct'?v+'%':'$'+v} line discount on ${item.name} (exceeds ${maxPct}% cap)`,
+          requestedBy: activeEmployee
+            ? { id: activeEmployee.id, name: activeEmployee.name }
+            : { id: user?.id, name: user?.name },
+          approver,
+          amount: discType==='pct' ? item.unitPrice * item.qty * (v/100) : v * item.qty,
+          notes: `Line: ${item.name} · qty ${item.qty} · unit $${item.unitPrice}`,
+        })
+      }
+      toast.success(approver ? `✓ Approved by ${approver.name}` : 'Item discount applied')
+    }
+
+    if (effectivePct <= maxPct) {
+      doApply(null)
+    } else {
+      // Over cap → manager override
+      setOverride({
+        permission:'pos.discount',
+        action: `apply this ${effectivePct.toFixed(1)}% line discount (your cap is ${maxPct}%)`,
+        onApprove: doApply,
+      })
+    }
   }
 
   const removeDiscount = () => {
@@ -64,8 +102,34 @@ export default function ItemPanel({ item, onClose }) {
   const applyPrice = () => {
     const p = parseFloat(newPrice)
     if (!p || p <= 0) { toast.error('Enter valid price'); return }
-    setItemPrice(item.id, p)
-    toast.success('Price updated')
+    const v = can('pos.price_override')
+    const doApply = (approver) => {
+      setItemPrice(item.id, p)
+      if (approver) {
+        logOverride({
+          tenantId: tenant?.id,
+          permission:'pos.price_override',
+          actionLabel:`change price of ${item.name} to $${p}`,
+          requestedBy: activeEmployee
+            ? { id: activeEmployee.id, name: activeEmployee.name }
+            : { id: user?.id, name: user?.name },
+          approver,
+          amount: Math.abs(p - item.unitPrice) * item.qty,
+          notes:`${item.name}: $${item.unitPrice.toFixed(2)} → $${p.toFixed(2)} (qty ${item.qty})`,
+        })
+      }
+      toast.success(approver ? `✓ Approved by ${approver.name}` : 'Price updated')
+    }
+    if (v === 'allow') { doApply(null); return }
+    if (v === 'prompt') {
+      setOverride({
+        permission:'pos.price_override',
+        action:`change ${item.name} price from $${item.unitPrice.toFixed(2)} to $${p.toFixed(2)}`,
+        onApprove: doApply,
+      })
+      return
+    }
+    toast.error("You don't have permission to override item prices")
   }
 
   const saveNote = () => {
@@ -317,6 +381,14 @@ export default function ItemPanel({ item, onClose }) {
           }}
           onClose={() => setShowQtyKb(false)}
         />
+      )}
+
+      {override && (
+        <ManagerOverrideModal
+          permission={override.permission}
+          action={override.action}
+          onApprove={override.onApprove}
+          onClose={() => setOverride(null)}/>
       )}
     </div>
   )
