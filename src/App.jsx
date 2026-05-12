@@ -31,6 +31,7 @@ import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
 import CompanyDetailPage from '@/pages/business/CompanyDetailPage'
 import BarcodePage from '@/pages/barcode/BarcodePage'
 import PayrollPage from '@/pages/payroll/PayrollPage'
+import CustomerDisplayPage from '@/pages/display/CustomerDisplayPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 30, networkMode: 'offlineFirst' } }
@@ -91,6 +92,13 @@ export default function App() {
           <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} />
           {/* POS — standalone, no AppLayout */}
           <Route path="/pos" element={<ProtectedRoute><POSPage /></ProtectedRoute>} />
+
+          {/* Customer-facing display for second monitor — no AppLayout, no auth gate
+              so it can be opened on a kiosk-style screen without login. The screen
+              is read-only (just a mirror of the POS via BroadcastChannel) so no
+              sensitive operations are exposed. */}
+          <Route path="/display" element={<CustomerDisplayPage/>}/>
+          <Route path="/display/:terminalId" element={<CustomerDisplayPage/>}/>
 
           {/* Back Office — uses AppLayout */}
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

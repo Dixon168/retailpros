@@ -29,6 +29,7 @@ const SECTIONS = [
   { id:'loyalty',   icon:'💎', label:'Loyalty & Points',   role:'owner' },
   { id:'memberlevels', icon:'🏅', label:'Member Levels', role:'owner' },
   { id:'notifications', icon:'📨', label:'Notifications', role:'owner' },
+  { id:'display',   icon:'📺', label:'Customer Display', role:'owner' },
   { id:'api',       icon:'🤖', label:'API & Integrations', role:'owner' },
 ]
 
@@ -118,6 +119,7 @@ export default function SettingsPage() {
         {active === 'loyalty'   && <LoyaltySettingsSection tenant={tenant}/>}
         {active === 'memberlevels' && <MemberLevelsSection tenantId={tenant?.id}/>}
         {active === 'notifications' && <NotificationsSection tenantId={tenant?.id} userId={user?.id} userName={user?.name}/>}
+        {active === 'display' && <DisplaySection tenantId={tenant?.id}/>}
         {active === 'api'       && <APISection tenantId={tenant?.id}/>}
       </div>
 
@@ -3253,5 +3255,204 @@ function TemplateEditor({ row, onSave }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 📺 DisplaySection — Customer-Facing Display configuration
+// ════════════════════════════════════════════════════════════════════
+// Stored on tenants.display_settings JSONB. Includes interactive feature
+// toggles (tip/sig/email/sms entry), the join-member CTA, and the promo
+// image carousel shown when idle.
+
+function DisplaySection({ tenantId }) {
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState(false)
+
+  const { data: tenant } = useQuery({
+    queryKey: ['tenant-display', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('tenants')
+        .select('display_settings').eq('id', tenantId).single()
+      return data
+    },
+    enabled: !!tenantId,
+  })
+
+  const defaults = {
+    enable_tip_on_display:      false,
+    enable_signature_on_display:false,
+    enable_email_on_display:    false,
+    enable_sms_on_display:      false,
+    show_join_cta:              true,
+    show_promo_carousel:        true,
+    promo_images:               [],   // array of URLs
+    logo_url:                   '',
+  }
+  const settings = { ...defaults, ...(tenant?.display_settings || {}) }
+
+  const update = async (patch) => {
+    setBusy(true)
+    const next = { ...settings, ...patch }
+    const { error } = await supabase.from('tenants')
+      .update({ display_settings: next }).eq('id', tenantId)
+    setBusy(false)
+    if (error) { toast.error(error.message); return }
+    qc.invalidateQueries({ queryKey:['tenant-display', tenantId] })
+  }
+
+  // ── Image upload to Supabase storage ──
+  const uploadImage = async (file) => {
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { toast.error('Image too large (max 2MB)'); return }
+    setBusy(true)
+    const ext = file.name.split('.').pop()
+    const fname = `display-promo-${tenantId}-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('public-uploads').upload(fname, file, { upsert:false })
+    if (upErr) { setBusy(false); toast.error(upErr.message); return }
+    const { data: { publicUrl } } = supabase.storage.from('public-uploads').getPublicUrl(fname)
+    await update({ promo_images: [...(settings.promo_images||[]), publicUrl] })
+    setBusy(false)
+    toast.success('✓ Image uploaded')
+  }
+
+  const removeImage = (url) => {
+    update({ promo_images: settings.promo_images.filter(u => u !== url) })
+  }
+
+  const previewDisplay = () => {
+    const url = `/display?tenant=${tenantId}&terminal=preview`
+    window.open(url, 'rpos-display-preview', 'popup,width=1024,height=768')
+  }
+
+  return (
+    <div className="max-w-[860px]">
+      <SectionTitle>📺 Customer-Facing Display</SectionTitle>
+      <p className="text-[12px] text-[#666] mb-4">
+        Configure the customer display that runs on a second monitor. Cart state
+        syncs live from the POS. Toggle interactive features below.
+      </p>
+
+      {/* Preview + how-to */}
+      <div className="rounded-2xl p-4 mb-5"
+        style={{background:'linear-gradient(135deg, #006AFF 0%, #003a8c 100%)', color:'#fff'}}>
+        <div className="flex items-start gap-3 mb-3">
+          <span className="text-[28px]">📺</span>
+          <div className="flex-1">
+            <div className="text-[14px] font-bold">How to use</div>
+            <div className="text-[12px] opacity-90 mt-1">
+              1. In POS top bar, tap <b>📺</b> to open the display in a new window.<br/>
+              2. Drag that window to your second monitor.<br/>
+              3. Press <b>F11</b> on the display window to enter fullscreen.<br/>
+              4. The display will mirror the cart in real-time.
+            </div>
+          </div>
+        </div>
+        <button onClick={previewDisplay}
+          className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none bg-white"
+          style={{color:'#006AFF'}}>
+          👁️ Preview Display in New Window
+        </button>
+      </div>
+
+      {/* Interactive feature toggles */}
+      <div className="text-[13px] font-bold mb-2">🎛️ Interactive Features</div>
+      <p className="text-[11px] text-[#666] mb-3">
+        Turn on features the customer can interact with on the display.
+      </p>
+      <div className="space-y-2 mb-5">
+        <ToggleRow icon="💰" title="Tip selection on display"
+          desc="Customer picks 15/18/20/25% or custom tip directly on the display"
+          value={settings.enable_tip_on_display}
+          onChange={v => update({ enable_tip_on_display: v })}/>
+        <ToggleRow icon="✍️" title="Signature capture"
+          desc="Customer signs on the display for credit card receipts (touch / mouse)"
+          value={settings.enable_signature_on_display}
+          onChange={v => update({ enable_signature_on_display: v })}/>
+        <ToggleRow icon="📧" title="Email receipt entry"
+          desc="Customer types their email on the display to receive a digital receipt"
+          value={settings.enable_email_on_display}
+          onChange={v => update({ enable_email_on_display: v })}/>
+        <ToggleRow icon="📱" title="SMS receipt entry"
+          desc="Customer types their phone on the display to receive an SMS receipt"
+          value={settings.enable_sms_on_display}
+          onChange={v => update({ enable_sms_on_display: v })}/>
+      </div>
+
+      {/* Branding & content */}
+      <div className="text-[13px] font-bold mb-2">🎨 Branding & Content</div>
+      <div className="space-y-2 mb-5">
+        <ToggleRow icon="⭐" title="Show 'Join Rewards' CTA"
+          desc="Non-member customers see a prompt to join your loyalty program"
+          value={settings.show_join_cta}
+          onChange={v => update({ show_join_cta: v })}/>
+        <ToggleRow icon="🖼️" title="Promo image carousel"
+          desc="Rotate through promo images on the idle/welcome screen (5s each)"
+          value={settings.show_promo_carousel}
+          onChange={v => update({ show_promo_carousel: v })}/>
+      </div>
+
+      {/* Promo images */}
+      {settings.show_promo_carousel && (
+        <>
+          <div className="text-[13px] font-bold mb-2">📸 Promo Images</div>
+          <p className="text-[11px] text-[#666] mb-3">
+            Upload images to rotate on the idle screen. Recommended 1920×1080 (16:9).
+            Max 2MB each.
+          </p>
+
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            {(settings.promo_images||[]).map((url, i) => (
+              <div key={i} className="relative rounded-xl overflow-hidden group"
+                style={{aspectRatio:'16/9', border:'1px solid #e5e5e5'}}>
+                <img src={url} alt="" className="w-full h-full object-cover"/>
+                <button onClick={() => removeImage(url)}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full cursor-pointer border-none text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{background:'rgba(220,38,38,0.95)'}}>
+                  ✕
+                </button>
+              </div>
+            ))}
+            <label className="rounded-xl cursor-pointer flex flex-col items-center justify-center gap-1 transition-all"
+              style={{aspectRatio:'16/9', background:'#f8fafc', border:'2px dashed #80B2FF'}}>
+              <input type="file" accept="image/*" className="hidden"
+                onChange={e => uploadImage(e.target.files?.[0])}/>
+              <span className="text-[28px]">📤</span>
+              <span className="text-[11px] font-bold" style={{color:'#006AFF'}}>
+                {busy ? 'Uploading...' : 'Add image'}
+              </span>
+            </label>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+
+function ToggleRow({ icon, title, desc, value, onChange }) {
+  return (
+    <label className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all"
+      style={value
+        ? {background:'#E6F0FF', border:'1px solid #006AFF'}
+        : {background:'#fff', border:'1px solid #e5e5e5'}}>
+      <span className="text-[24px] flex-shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-bold" style={{color: value ? '#006AFF' : '#1F1F1F'}}>{title}</div>
+        <div className="text-[11px] text-[#666] mt-0.5">{desc}</div>
+      </div>
+      <div className="flex-shrink-0 ml-2">
+        <button onClick={() => onChange(!value)}
+          className="relative rounded-full cursor-pointer border-none transition-all"
+          style={{
+            width:'44px', height:'24px',
+            background: value ? '#006AFF' : '#cbd5e1',
+          }}>
+          <div className="absolute top-0.5 transition-all rounded-full bg-white"
+            style={{ width:'20px', height:'20px', left: value ? '22px' : '2px' }}/>
+        </button>
+      </div>
+    </label>
   )
 }

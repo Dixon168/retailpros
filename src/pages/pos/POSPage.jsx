@@ -32,6 +32,7 @@ import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { logOverride } from '@/lib/auditOverride'
 import { ProductForm } from '@/pages/products/ProductForm'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
+import { getDisplaySync, EVT } from '@/lib/displaySync'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
@@ -101,6 +102,47 @@ export default function POSPage() {
   }, [])
 
   useEffect(() => { if (tenant?.id) loadTaxGroups(tenant.id) }, [tenant?.id])
+
+  // ── Customer Display sync ──
+  // Subscribe to cartStore changes and publish to BroadcastChannel so a
+  // /display tab on the secondary monitor stays in lockstep with the POS.
+  // The Display tab will receive every cart update, customer change, and
+  // totals recalc in real time without any latency.
+  useEffect(() => {
+    if (!terminal?.id && !tenant?.id) return
+    const sync = getDisplaySync(terminal?.id || tenant?.id || 'default')
+    const publishState = () => {
+      const s = useCartStore.getState()
+      const totals = s.totals()
+      sync.publish(EVT.CART_STATE, {
+        items: s.items.map(i => ({
+          id: i.id, name: i.name, qty: i.qty,
+          unitPrice: i.unitPrice, image_url: i.image_url,
+          itemDiscount: i.itemDiscount, note: i.note,
+        })),
+        customer: s.customer ? {
+          id: s.customer.id, name: s.customer.name,
+          loyalty_points: s.customer.loyalty_points,
+          tier_name: s.customer.tier_name,
+        } : null,
+        orderDiscount: s.orderDiscount,
+        appliedCoupon: s.appliedCoupon ? { code: s.appliedCoupon.code } : null,
+        totals: {
+          subtotal: totals.subtotal,
+          discountAmt: totals.orderDiscountAmt + (totals.couponDiscountAmt||0),
+          taxAmount: totals.taxAmount,
+          grandTotal: totals.grandTotal,
+        },
+        store: { name: store?.name, logo_url: store?.logo_url },
+        ts: Date.now(),
+      })
+    }
+    // Publish current state immediately for any already-open Display tab
+    publishState()
+    // Re-publish whenever the cart store changes
+    const unsub = useCartStore.subscribe(publishState)
+    return () => { unsub() }
+  }, [terminal?.id, tenant?.id, store?.name, store?.logo_url])
 
   // Auto-open Refund with preloaded order if /pos?refund=<order_id>
   useEffect(() => {
@@ -229,6 +271,23 @@ export default function POSPage() {
             {time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
           </div>
           <LangSwitcher/>
+
+          {/* 📺 Open Customer Display — pops the customer-facing screen in a
+              new window that can be dragged to a second monitor. The cart
+              state mirrors live via BroadcastChannel. */}
+          <button onClick={() => {
+            const tid = terminal?.id || tenant?.id || 'default'
+            const url = `/display/${tid}?tenant=${tenant?.id || ''}`
+            const w = window.open(url, 'rpos-display',
+              'popup,width=1024,height=768,toolbar=no,menubar=no,location=no,status=no')
+            if (!w) toast.error('Pop-up blocked — please allow pop-ups for this site')
+            else toast.success('📺 Customer display opened — drag to second monitor')
+          }}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-bold cursor-pointer border transition-all"
+            style={{background:'rgba(0,106,255,0.12)', borderColor:'rgba(0,106,255,0.4)', color:'#60a5fa'}}
+            title="Open customer-facing display (second monitor)">
+            📺
+          </button>
 
           {/* Employee signed in (PIN auth — separate from clock state) */}
           {activeEmployee ? (
