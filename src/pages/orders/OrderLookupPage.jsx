@@ -58,9 +58,6 @@ const STATUS_FILTERS = [
 
 // ── Order Actions Component ──
 function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid, onRefund }) {
-  const { can } = useAuthStore()
-  const canVoid   = can('pos.void')
-  const canRefund = can('pos.refund')
   const [addNote, setAddNote] = useState(false)
   const [note,    setNote]    = useState(order.staff_note || '')
   const [saving,  setSaving]  = useState(false)
@@ -120,17 +117,10 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
           <div className="font-bold mb-1">⚠️ Payment Incomplete</div>
           <div>Terminal disconnected mid-payment. Verify with PAX terminal before taking action.</div>
         </div>
-        <button onClick={() => canVoid ? onVoid() : toast.error("You don't have permission to void orders")}
-          title={canVoid ? '' : 'No permission: pos.void'}
-          className="w-full rounded-xl py-2.5 text-[12px] font-bold border"
-          style={{
-            background: canVoid ? '#fff1f2' : '#f1f5f9',
-            borderColor: canVoid ? '#fca5a5' : '#e2e8f0',
-            color: canVoid ? '#dc2626' : '#94a3b8',
-            cursor: canVoid ? 'pointer' : 'not-allowed',
-            opacity: canVoid ? 1 : 0.7,
-          }}>
-          🚫 Void Incomplete Order {!canVoid && '🔒'}
+        <button onClick={onVoid}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>
+          🚫 Void Incomplete Order
         </button>
         <button onClick={() => onResume(order)}
           className="w-full rounded-xl py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
@@ -182,32 +172,18 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
 
         {/* VOID — only if batch open or cash/member/gift */}
         {(!hasCard || batchOpen || batchUnknown) && (
-          <button onClick={() => canVoid ? onVoid() : toast.error("You don't have permission to void orders")}
-            title={canVoid ? '' : 'No permission: pos.void'}
-            className="w-full rounded-xl py-2.5 text-[12px] font-bold border"
-            style={{
-              background: canVoid ? '#fff1f2' : '#f1f5f9',
-              borderColor: canVoid ? '#fca5a5' : '#e2e8f0',
-              color: canVoid ? '#dc2626' : '#94a3b8',
-              cursor: canVoid ? 'pointer' : 'not-allowed',
-              opacity: canVoid ? 1 : 0.7,
-            }}>
-            🚫 Void Order {hasCard && batchOpen ? '+ Void Card Auth' : ''} {!canVoid && '🔒'}
+          <button onClick={onVoid}
+            className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+            style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>
+            🚫 Void Order {hasCard && batchOpen ? '+ Void Card Auth' : ''}
           </button>
         )}
 
         {/* REFUND */}
-        <button onClick={() => canRefund ? onRefund() : toast.error("You don't have permission to refund orders")}
-          title={canRefund ? '' : 'No permission: pos.refund'}
-          className="w-full rounded-xl py-2.5 text-[12px] font-bold border"
-          style={{
-            background: canRefund ? '#fdf4ff' : '#f1f5f9',
-            borderColor: canRefund ? '#e9d5ff' : '#e2e8f0',
-            color: canRefund ? '#006AFF' : '#94a3b8',
-            cursor: canRefund ? 'pointer' : 'not-allowed',
-            opacity: canRefund ? 1 : 0.7,
-          }}>
-          ↩ {batchClosed ? 'Process Card Refund' : 'Process Refund'} {!canRefund && '🔒'}
+        <button onClick={onRefund}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#fdf4ff',borderColor:'#e9d5ff',color:'#006AFF'}}>
+          ↩ {batchClosed ? 'Process Card Refund' : 'Process Refund'}
         </button>
       </>}
 
@@ -225,17 +201,10 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
             💳 {batchClosed ? '🔴 Batch Closed — card refund to original card' : '🟡 Batch Open — can void remaining'}
           </div>
         )}
-        <button onClick={() => canRefund ? onRefund() : toast.error("You don't have permission to refund orders")}
-          title={canRefund ? '' : 'No permission: pos.refund'}
-          className="w-full rounded-xl py-2.5 text-[12px] font-bold border"
-          style={{
-            background: canRefund ? '#eff6ff' : '#f1f5f9',
-            borderColor: canRefund ? '#bfdbfe' : '#e2e8f0',
-            color: canRefund ? '#2563eb' : '#94a3b8',
-            cursor: canRefund ? 'pointer' : 'not-allowed',
-            opacity: canRefund ? 1 : 0.7,
-          }}>
-          ↩ Continue Refund {!canRefund && '🔒'}
+        <button onClick={onRefund}
+          className="w-full rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border"
+          style={{background:'#eff6ff',borderColor:'#bfdbfe',color:'#2563eb'}}>
+          ↩ Continue Refund
         </button>
       </>}
 
@@ -306,7 +275,7 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
 
 
 export default function OrderLookupPage() {
-  const { tenant, user, can } = useAuthStore()
+  const { tenant, user } = useAuthStore()
   const { activeEmployee } = useEmployeeStore()
   const effCashierId   = activeEmployee?.id   || user?.id
   const effCashierName = activeEmployee?.name || user?.name
@@ -414,10 +383,6 @@ export default function OrderLookupPage() {
   }
 
   const handleVoid = async (o) => {
-    if (!can('pos.void')) {
-      toast.error("You don't have permission to void orders")
-      return
-    }
     const payMethods = o.order_payments || []
     const total = parseFloat(o.grand_total || 0)
     const hasCash = payMethods.some(p => p.method === 'cash')
