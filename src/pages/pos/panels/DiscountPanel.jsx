@@ -5,21 +5,28 @@ import { useState } from 'react'
 import NumPad from '@/components/ui/NumPad'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { Overlay } from './SerialPanel'
+import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
+import { logOverride } from '@/lib/auditOverride'
 import toast from 'react-hot-toast'
 
 export default function DiscountPanel() {
   const { totals, setOrderDiscount } = useCartStore()
-  const { can, maxDiscountPct } = useAuthStore()
-  const [mode, setMode] = useState('pct')   // 'pct' | 'amt'
-  const [value, setValue] = useState('')
+  const { can, maxDiscountPct, user, tenant, store } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
+  const [mode, setMode]       = useState('pct')   // 'pct' | 'amt'
+  const [value, setValue]     = useState('')
+  const [showPad, setShowPad] = useState(false)
+  const [override, setOverride] = useState(null)
   const { subtotal } = totals()
 
   const close = () => useCartStore.setState({ showDiscPanel: false })
 
-  // 权限检查
-  const maxPct = maxDiscountPct()
-  const canDiscount = can('can_discount') && maxPct > 0
+  // Permission lookup is tri-state ('allow' / 'prompt' / 'deny')
+  const discountPerm = can('pos.discount')
+  const maxPct       = maxDiscountPct()
+  const canDiscount  = discountPerm !== 'deny' && (maxPct > 0 || discountPerm === 'prompt')
 
   const discAmt = (() => {
     const v = parseFloat(value) || 0
@@ -27,16 +34,52 @@ export default function DiscountPanel() {
     return Math.min(v, subtotal)
   })()
 
+  // Equivalent % of the discount amount — used to compare $-discounts to maxPct
+  const effectivePct = (() => {
+    if (mode === 'pct') return parseFloat(value) || 0
+    if (subtotal <= 0) return 0
+    return ((parseFloat(value) || 0) / subtotal) * 100
+  })()
+
+  const applyDiscount = (approver) => {
+    setOrderDiscount({ type: mode, value: parseFloat(value) })
+    if (approver) {
+      logOverride({
+        tenantId: tenant?.id, storeId: store?.id,
+        permission:'pos.discount',
+        actionLabel: `apply ${mode==='pct'?value+'%':'$'+value} discount (exceeds ${maxPct}% cap)`,
+        requestedBy: activeEmployee
+          ? { id: activeEmployee.id, name: activeEmployee.name }
+          : { id: user?.id, name: user?.name },
+        approver,
+        amount: discAmt,
+        notes: `Subtotal $${subtotal.toFixed(2)} · discount ${mode==='pct'?value+'%':'$'+value}`,
+      })
+    }
+    close()
+  }
+
   const apply = () => {
     const v = parseFloat(value) || 0
     if (v <= 0) { toast.error('Enter a discount value'); return }
-    if (!canDiscount) { toast.error('No permission to discount'); return }
-    if (mode === 'pct' && v > maxPct) {
-      toast.error(`Max discount: ${maxPct}%`)
+    if (discountPerm === 'deny') { toast.error("You don't have permission to apply discounts"); return }
+
+    // Within cap → just apply
+    if (effectivePct <= maxPct) {
+      applyDiscount(null)
       return
     }
-    setOrderDiscount({ type: mode, value: v })
-    close()
+
+    // Over the cap — needs a manager override (only if perm is 'prompt' or
+    // if user happens to have 'allow' for pos.discount but a low max_pct)
+    setOverride({
+      permission:'pos.discount',
+      action: `apply this ${effectivePct.toFixed(1)}% discount (your cap is ${maxPct}%)`,
+      onApprove: (approver) => {
+        toast.success(`✓ Approved by ${approver.name}`)
+        applyDiscount(approver)
+      },
+    })
   }
 
   return (
@@ -45,7 +88,8 @@ export default function DiscountPanel() {
         <div className="text-[15px] font-bold mb-1">✂️ Order Discount</div>
         <div className="text-[11px] font-mono text-[#999999] mb-4">
           APPLY TO ENTIRE ORDER
-          {!canDiscount && ' · NO PERMISSION'}
+          {discountPerm === 'deny' && ' · NO PERMISSION'}
+          {discountPerm === 'prompt' && ' · NEEDS APPROVAL'}
         </div>
 
         {/* 模式切换 */}
@@ -110,8 +154,13 @@ export default function DiscountPanel() {
         </div>
 
         {maxPct < 100 && canDiscount && (
-          <div className="text-[10px] font-mono text-[#999999] mb-4 text-center">
-            Max discount: {maxPct}%
+          <div className="text-[10px] mb-3 text-center rounded-md px-2 py-1.5"
+            style={effectivePct > maxPct
+              ? { background:'#fef3c7', color:'#92400e', border:'1px solid #fde68a' }
+              : { color:'#999999', fontFamily:'monospace' }}>
+            {effectivePct > maxPct
+              ? `⚠️ ${effectivePct.toFixed(1)}% exceeds your ${maxPct}% cap — manager approval required`
+              : `Max discount: ${maxPct}%`}
           </div>
         )}
 
@@ -122,13 +171,22 @@ export default function DiscountPanel() {
             Cancel
           </button>
           <button onClick={apply} disabled={!canDiscount}
-            className="flex-[2] bg-pink-500 border-none rounded-[9px] py-2.5
+            className="flex-[2] border-none rounded-[9px] py-2.5
               text-[13px] font-bold text-white disabled:opacity-40
-              disabled:cursor-not-allowed font-sans">
-            ✓ Apply
+              disabled:cursor-not-allowed font-sans"
+            style={{background: effectivePct > maxPct ? '#9333ea' : '#ec4899'}}>
+            {effectivePct > maxPct ? '🔐 Apply with Override' : '✓ Apply'}
           </button>
         </div>
       </div>
+
+      {override && (
+        <ManagerOverrideModal
+          permission={override.permission}
+          action={override.action}
+          onApprove={override.onApprove}
+          onClose={() => setOverride(null)}/>
+      )}
     </Overlay>
   )
 }
