@@ -9,6 +9,8 @@ import { paxGetStatus } from '@/lib/pax'
 import { PERMISSION_GROUPS, ALL_PERMISSIONS } from '@/lib/permissions'
 import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { logOverride } from '@/lib/auditOverride'
+import { analyzeSms, renderTemplate, segmentStatus, SAMPLE_VARS } from '@/lib/smsLength'
+import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
 const SECTIONS = [
@@ -2576,45 +2578,49 @@ function PrintingSection() {
 
 
 // ════════════════════════════════════════════════════════════════════
-// 📨 NotificationsSection — credit balance, top-ups, trigger rules
+// 📨 NotificationsSection — quota + overage model
 // ════════════════════════════════════════════════════════════════════
-// Single place to see: where Email/SMS messages are used, how many
-// credits are left, monthly usage, and how to configure each trigger.
-// All trigger toggles are stored on tenants.notification_settings JSONB.
+// Shows the owner: monthly free quota, used, overage, projected bill,
+// per-trigger settings, SMS template editor with character counter.
 
 function NotificationsSection({ tenantId, userId, userName }) {
   const qc = useQueryClient()
-  const [topupModal, setTopupModal] = useState(null) // 'email' | 'sms' | null
+  const [templateModal, setTemplateModal] = useState(null) // trigger_type or null
+  const [capModal, setCapModal] = useState(null)           // 'email' | 'sms' | null
 
-  // ── Credit balance ──
-  const { data: credits } = useQuery({
-    queryKey: ['tenant-credits', tenantId],
+  // ── Usage / quota ──
+  const { data: m } = useQuery({
+    queryKey: ['tenant-messaging', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('tenant_credits')
+      const { data } = await supabase.from('tenant_messaging')
         .select('*').eq('tenant_id', tenantId).maybeSingle()
       return data || {
-        email_balance: 0, sms_balance: 0,
-        email_used_lifetime: 0, sms_used_lifetime: 0,
+        plan_email_quota: 500, plan_sms_quota: 100,
         email_used_month: 0, sms_used_month: 0,
-        email_low_threshold: 10, sms_low_threshold: 10,
+        email_overage_count: 0, sms_overage_count: 0,
+        email_per_overage_cents: 5, sms_per_overage_cents: 5,
+        email_overage_cap: 2000, sms_overage_cap: 2000,
+        email_used_lifetime: 0, sms_used_lifetime: 0,
+        billing_status: 'active',
       }
     },
     enabled: !!tenantId,
+    refetchInterval: 30000,  // refresh every 30s
   })
 
-  // ── Recent topups (for history) ──
-  const { data: topups = [] } = useQuery({
-    queryKey: ['credit-topups', tenantId],
+  // ── Recent monthly bills ──
+  const { data: bills = [] } = useQuery({
+    queryKey: ['messaging-bills', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('credit_topups')
+      const { data } = await supabase.from('messaging_monthly_bills')
         .select('*').eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false }).limit(20)
+        .order('month', { ascending: false }).limit(12)
       return data || []
     },
     enabled: !!tenantId,
   })
 
-  // ── Notification settings JSONB (from tenants) ──
+  // ── Notification trigger settings ──
   const { data: tenant } = useQuery({
     queryKey: ['tenant-notif', tenantId],
     queryFn: async () => {
@@ -2625,9 +2631,8 @@ function NotificationsSection({ tenantId, userId, userName }) {
     enabled: !!tenantId,
   })
 
-  // Default settings shape
   const defaults = {
-    receipt:           { mode: 'ask' },         // 'auto_email' | 'auto_print' | 'ask' | 'off'
+    receipt:           { mode: 'ask' },
     invoice:           { mode: 'auto_email' },
     estimate:          { mode: 'auto_email' },
     payment_reminder:  { mode: 'off', days_before: 3 },
@@ -2649,123 +2654,118 @@ function NotificationsSection({ tenantId, userId, userName }) {
     qc.invalidateQueries({ queryKey: ['tenant-notif', tenantId] })
   }
 
-  const emailLow = (credits?.email_balance ?? 0) <= (credits?.email_low_threshold ?? 10)
-  const smsLow   = (credits?.sms_balance ?? 0)   <= (credits?.sms_low_threshold ?? 10)
-  const emailOut = (credits?.email_balance ?? 0) <= 0
-  const smsOut   = (credits?.sms_balance ?? 0)   <= 0
+  // Derived values
+  const eUsed = m?.email_used_month || 0
+  const eQuota = m?.plan_email_quota || 500
+  const eOverage = m?.email_overage_count || 0
+  const eRate = (m?.email_per_overage_cents || 5) / 100
+  const eOverageBill = (eOverage * (m?.email_per_overage_cents || 5)) / 100
+  const eRemaining = Math.max(0, eQuota - eUsed)
+  const ePct = Math.min(100, (eUsed / eQuota) * 100)
+  const eCap = m?.email_overage_cap || 2000
+
+  const sUsed = m?.sms_used_month || 0
+  const sQuota = m?.plan_sms_quota || 100
+  const sOverage = m?.sms_overage_count || 0
+  const sRate = (m?.sms_per_overage_cents || 5) / 100
+  const sOverageBill = (sOverage * (m?.sms_per_overage_cents || 5)) / 100
+  const sRemaining = Math.max(0, sQuota - sUsed)
+  const sPct = Math.min(100, (sUsed / sQuota) * 100)
+  const sCap = m?.sms_overage_cap || 2000
+
+  const totalBill = eOverageBill + sOverageBill
+  const monthLabel = format(new Date(), 'MMMM yyyy')
 
   return (
     <div className="max-w-[920px]">
       <SectionTitle>📨 Notifications & Messaging</SectionTitle>
       <p className="text-[12px] text-[#666] mb-4">
-        Email and SMS notifications across the entire app. Top up credits, configure when each is sent.
+        Free monthly quota included. Overage at <b>${eRate.toFixed(2)}/email</b> and <b>${sRate.toFixed(2)}/SMS</b>.
+        SMS templates are locked to a single segment to prevent multi-charge.
       </p>
 
-      {/* ── Credit balance summary ── */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        {/* Email */}
-        <div className="rounded-2xl overflow-hidden" style={{border:'2px solid ' + (emailOut?'#dc2626':emailLow?'#f59e0b':'#10b981')}}>
-          <div className="px-4 py-3 flex items-center justify-between"
-            style={{background: emailOut?'#fef2f2':emailLow?'#fffbeb':'#f0fdf4'}}>
-            <div className="flex items-center gap-2">
-              <span className="text-[24px]">📧</span>
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#666'}}>Email Credits</div>
-                <div className="text-[28px] font-bold font-mono" style={{color: emailOut?'#dc2626':emailLow?'#92400e':'#15803d'}}>
-                  {credits?.email_balance ?? 0}
-                </div>
-              </div>
-            </div>
-            <button onClick={()=>setTopupModal('email')}
-              className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-none text-white"
-              style={{background:'#006AFF'}}>
-              💰 Top Up
-            </button>
+      {/* ── Month header + total bill ── */}
+      <div className="rounded-2xl p-4 mb-4"
+        style={{background:'linear-gradient(135deg,#1F1F1F 0%,#3a3a3a 100%)', color:'#fff'}}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider opacity-70">This Month</div>
+            <div className="text-[18px] font-bold">{monthLabel}</div>
           </div>
-          <div className="px-4 py-2 text-[11px] flex items-center justify-between" style={{background:'#fff', borderTop:'1px solid #e5e5e5'}}>
-            <span style={{color:'#666'}}>This month:</span>
-            <span className="font-mono font-bold">{credits?.email_used_month ?? 0} sent</span>
-          </div>
-          <div className="px-4 py-1.5 text-[10px] flex items-center justify-between" style={{background:'#fafafa'}}>
-            <span style={{color:'#999'}}>Lifetime:</span>
-            <span className="font-mono text-[#666]">{credits?.email_used_lifetime ?? 0} total</span>
-          </div>
-          {emailLow && !emailOut && (
-            <div className="px-4 py-2 text-[10px]" style={{background:'#fef3c7', color:'#92400e', borderTop:'1px solid #fde047'}}>
-              ⚠️ Low — top up to avoid running out
+          <div className="text-right">
+            <div className="text-[11px] uppercase tracking-wider opacity-70">Overage bill</div>
+            <div className="text-[28px] font-bold font-mono" style={{color: totalBill > 0 ? '#fde047' : '#a3e635'}}>
+              ${totalBill.toFixed(2)}
             </div>
-          )}
-          {emailOut && (
-            <div className="px-4 py-2 text-[10px]" style={{background:'#fee2e2', color:'#991b1b', borderTop:'1px solid #fca5a5'}}>
-              ❌ Out of credits — emails are disabled
-            </div>
-          )}
+          </div>
         </div>
+        {totalBill > 0 && (
+          <div className="text-[11px] opacity-80">
+            Will be billed at end of {monthLabel} • {eOverage} email + {sOverage} SMS over quota
+          </div>
+        )}
+        {totalBill === 0 && (
+          <div className="text-[11px] opacity-80">✓ Within free quota — no charges</div>
+        )}
+      </div>
 
-        {/* SMS */}
-        <div className="rounded-2xl overflow-hidden" style={{border:'2px solid ' + (smsOut?'#dc2626':smsLow?'#f59e0b':'#10b981')}}>
-          <div className="px-4 py-3 flex items-center justify-between"
-            style={{background: smsOut?'#fef2f2':smsLow?'#fffbeb':'#f0fdf4'}}>
-            <div className="flex items-center gap-2">
-              <span className="text-[24px]">💬</span>
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#666'}}>SMS Credits</div>
-                <div className="text-[28px] font-bold font-mono" style={{color: smsOut?'#dc2626':smsLow?'#92400e':'#15803d'}}>
-                  {credits?.sms_balance ?? 0}
-                </div>
-              </div>
+      {/* ── Quota cards ── */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <QuotaCard
+          icon="📧" name="Email"
+          used={eUsed} quota={eQuota} pct={ePct}
+          overage={eOverage} rate={eRate} bill={eOverageBill}
+          remaining={eRemaining} cap={eCap}
+          onEditCap={() => setCapModal('email')}
+        />
+        <QuotaCard
+          icon="💬" name="SMS"
+          used={sUsed} quota={sQuota} pct={sPct}
+          overage={sOverage} rate={sRate} bill={sOverageBill}
+          remaining={sRemaining} cap={sCap}
+          onEditCap={() => setCapModal('sms')}
+        />
+      </div>
+
+      {/* ── SMS Templates section ── */}
+      <div className="rounded-xl p-3 mb-5"
+        style={{background:'#fffbeb', border:'1px solid #fde68a'}}>
+        <div className="flex items-start gap-3">
+          <span className="text-[20px]">🔒</span>
+          <div className="flex-1">
+            <div className="text-[12px] font-bold text-[#92400e]">SMS Templates — Locked to Single Segment</div>
+            <div className="text-[11px] text-[#92400e]/80 mt-0.5">
+              English templates limited to 160 chars (GSM-7). Chinese to 70 chars (UCS-2).
+              Anything over gets rejected to prevent multi-charge.
             </div>
-            <button onClick={()=>setTopupModal('sms')}
-              className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-none text-white"
-              style={{background:'#006AFF'}}>
-              💰 Top Up
+            <button onClick={()=>setTemplateModal('all')}
+              className="mt-2 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
+              style={{background:'#92400e'}}>
+              📝 Edit SMS Templates
             </button>
           </div>
-          <div className="px-4 py-2 text-[11px] flex items-center justify-between" style={{background:'#fff', borderTop:'1px solid #e5e5e5'}}>
-            <span style={{color:'#666'}}>This month:</span>
-            <span className="font-mono font-bold">{credits?.sms_used_month ?? 0} sent</span>
-          </div>
-          <div className="px-4 py-1.5 text-[10px] flex items-center justify-between" style={{background:'#fafafa'}}>
-            <span style={{color:'#999'}}>Lifetime:</span>
-            <span className="font-mono text-[#666]">{credits?.sms_used_lifetime ?? 0} total</span>
-          </div>
-          {smsLow && !smsOut && (
-            <div className="px-4 py-2 text-[10px]" style={{background:'#fef3c7', color:'#92400e', borderTop:'1px solid #fde047'}}>
-              ⚠️ Low — top up to avoid running out
-            </div>
-          )}
-          {smsOut && (
-            <div className="px-4 py-2 text-[10px]" style={{background:'#fee2e2', color:'#991b1b', borderTop:'1px solid #fca5a5'}}>
-              ❌ Out of credits — SMS is disabled
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── Notification triggers ── */}
+      {/* ── Triggers ── */}
       <div className="text-[13px] font-bold mb-2">🔔 Where & When to Send</div>
       <p className="text-[11px] text-[#666] mb-3">
-        Configure each trigger. Each enabled trigger uses 1 credit per send.
+        Each enabled trigger sends 1 message per event. Counts toward your monthly quota.
       </p>
 
       <div className="space-y-2.5 mb-6">
         <TriggerRow
-          icon="🧾" title="Receipt"
-          desc="When customer completes checkout"
-          channels="📧 📱"
+          icon="🧾" title="Receipt" desc="When customer completes checkout" channels="📧 📱"
           options={[
-            ['ask',          'Ask customer (default)'],
-            ['auto_email',   'Auto-email if member has email'],
-            ['off',          'Off — print only'],
+            ['ask',        'Ask customer (default)'],
+            ['auto_email', 'Auto-email if member has email'],
+            ['off',        'Off — print only'],
           ]}
           value={settings.receipt.mode}
           onChange={v => updateSetting('receipt', { mode: v })}
         />
-
         <TriggerRow
-          icon="📄" title="B2B Invoice"
-          desc="When you create / send a wholesale invoice"
-          channels="📧"
+          icon="📄" title="B2B Invoice" desc="When you create / send a wholesale invoice" channels="📧"
           options={[
             ['auto_email', 'Auto-email when created'],
             ['ask',        'Ask each time'],
@@ -2774,11 +2774,8 @@ function NotificationsSection({ tenantId, userId, userName }) {
           value={settings.invoice.mode}
           onChange={v => updateSetting('invoice', { mode: v })}
         />
-
         <TriggerRow
-          icon="📝" title="B2B Estimate"
-          desc="When you create / send a quote"
-          channels="📧"
+          icon="📝" title="B2B Estimate" desc="When you create / send a quote" channels="📧"
           options={[
             ['auto_email', 'Auto-email when created'],
             ['ask',        'Ask each time'],
@@ -2787,15 +2784,9 @@ function NotificationsSection({ tenantId, userId, userName }) {
           value={settings.estimate.mode}
           onChange={v => updateSetting('estimate', { mode: v })}
         />
-
         <TriggerRow
-          icon="💰" title="Payment Reminder"
-          desc="For unpaid B2B invoices before due date"
-          channels="📧 📱"
-          options={[
-            ['off',  'Off'],
-            ['on',   'Send reminder before due'],
-          ]}
+          icon="💰" title="Payment Reminder" desc="For unpaid B2B invoices before due date" channels="📧 📱"
+          options={[['off','Off'],['on','Send reminder before due']]}
           value={settings.payment_reminder.mode}
           onChange={v => updateSetting('payment_reminder', { mode: v })}
           extra={settings.payment_reminder.mode !== 'off' && (
@@ -2809,15 +2800,9 @@ function NotificationsSection({ tenantId, userId, userName }) {
             </div>
           )}
         />
-
         <TriggerRow
-          icon="🎂" title="Birthday Coupon"
-          desc="Auto-send loyalty members a coupon on their birthday"
-          channels="📧 📱"
-          options={[
-            ['off',   'Off'],
-            ['on',    'Send on birthday'],
-          ]}
+          icon="🎂" title="Birthday Coupon" desc="Auto-send loyalty members a coupon" channels="📧 📱"
+          options={[['off','Off'],['on','Send on birthday']]}
           value={settings.birthday_coupon.mode}
           onChange={v => updateSetting('birthday_coupon', { mode: v })}
           extra={settings.birthday_coupon.mode !== 'off' && (
@@ -2827,31 +2812,17 @@ function NotificationsSection({ tenantId, userId, userName }) {
                 onChange={e => updateSetting('birthday_coupon', { days_before: parseInt(e.target.value)||0 })}
                 className="w-14 rounded px-2 py-1 text-[12px] text-center font-mono"
                 style={{border:'1px solid #80B2FF'}}/>
-              <span className="text-[11px] text-[#666]">days before birthday (0 = on the day)</span>
+              <span className="text-[11px] text-[#666]">days before birthday</span>
             </div>
           )}
         />
-
-        <TriggerRow
-          icon="📦" title="Order Ready"
-          desc="Customer pickup — 'your order is ready' SMS"
-          channels="📱"
-          options={[
-            ['off',  'Off'],
-            ['on',   'Manual button on each order'],
-          ]}
+        <TriggerRow icon="📦" title="Order Ready" desc="'Your order is ready' SMS" channels="📱"
+          options={[['off','Off'],['on','Manual button on each order']]}
           value={settings.order_ready.mode}
           onChange={v => updateSetting('order_ready', { mode: v })}
         />
-
-        <TriggerRow
-          icon="📦" title="Low Stock Alert"
-          desc="Email owner when any item drops below threshold"
-          channels="📧"
-          options={[
-            ['off',  'Off'],
-            ['on',   'Daily check, email if low'],
-          ]}
+        <TriggerRow icon="📦" title="Low Stock Alert" desc="Email owner when items drop below threshold" channels="📧"
+          options={[['off','Off'],['on','Daily check, email if low']]}
           value={settings.low_stock_alert.mode}
           onChange={v => updateSetting('low_stock_alert', { mode: v })}
           extra={settings.low_stock_alert.mode !== 'off' && (
@@ -2864,15 +2835,8 @@ function NotificationsSection({ tenantId, userId, userName }) {
             </div>
           )}
         />
-
-        <TriggerRow
-          icon="📊" title="Daily Summary Report"
-          desc="Email today's totals to the admin at end of day"
-          channels="📧"
-          options={[
-            ['off',  'Off'],
-            ['on',   'Email automatically'],
-          ]}
+        <TriggerRow icon="📊" title="Daily Summary Report" desc="Email today's totals at end of day" channels="📧"
+          options={[['off','Off'],['on','Email automatically']]}
           value={settings.daily_summary.mode}
           onChange={v => updateSetting('daily_summary', { mode: v })}
           extra={settings.daily_summary.mode !== 'off' && (
@@ -2892,28 +2856,13 @@ function NotificationsSection({ tenantId, userId, userName }) {
             </div>
           )}
         />
-
-        <TriggerRow
-          icon="⭐" title="Loyalty Update"
-          desc="Notify member when they earn or redeem points"
-          channels="📧 📱"
-          options={[
-            ['off',  'Off'],
-            ['earn_only', 'Only when they earn'],
-            ['both', 'Both earn & redeem'],
-          ]}
+        <TriggerRow icon="⭐" title="Loyalty Update" desc="Notify member when earning / redeeming" channels="📧 📱"
+          options={[['off','Off'],['earn_only','Only when they earn'],['both','Both earn & redeem']]}
           value={settings.loyalty_update.mode}
           onChange={v => updateSetting('loyalty_update', { mode: v })}
         />
-
-        <TriggerRow
-          icon="🚨" title="Cash Variance Alert"
-          desc="Email when shift closes with a variance > $5"
-          channels="📧"
-          options={[
-            ['off',  'Off'],
-            ['on',   'Email on every variance'],
-          ]}
+        <TriggerRow icon="🚨" title="Cash Variance Alert" desc="When shift closes with variance > $5" channels="📧 📱"
+          options={[['off','Off'],['on','Email on every variance']]}
           value={settings.cash_variance.mode}
           onChange={v => updateSetting('cash_variance', { mode: v })}
           extra={settings.cash_variance.mode !== 'off' && (
@@ -2926,52 +2875,52 @@ function NotificationsSection({ tenantId, userId, userName }) {
             </div>
           )}
         />
-
-        <TriggerRow
-          icon="👋" title="Welcome New Member"
-          desc="Send a welcome email when a customer signs up"
-          channels="📧"
-          options={[
-            ['off',  'Off'],
-            ['on',   'Send on first signup'],
-          ]}
+        <TriggerRow icon="👋" title="Welcome New Member" desc="Send welcome email on signup" channels="📧"
+          options={[['off','Off'],['on','Send on first signup']]}
           value={settings.welcome_member.mode}
           onChange={v => updateSetting('welcome_member', { mode: v })}
         />
       </div>
 
-      {/* ── Topup history ── */}
-      {topups.length > 0 && (
+      {/* ── Recent monthly bills ── */}
+      {bills.length > 0 && (
         <>
-          <div className="text-[13px] font-bold mb-2">📜 Top-up History</div>
+          <div className="text-[13px] font-bold mb-2">📜 Past Months</div>
           <div className="rounded-xl overflow-hidden mb-4" style={{border:'1px solid #E5E5E5'}}>
             <table className="w-full text-[12px]">
               <thead style={{background:'#FAFAFA'}}>
                 <tr>
-                  <th className="text-left px-3 py-2 font-bold">When</th>
-                  <th className="text-left px-3 py-2 font-bold">Channel</th>
-                  <th className="text-right px-3 py-2 font-bold">Credits</th>
-                  <th className="text-right px-3 py-2 font-bold">Paid</th>
-                  <th className="text-left px-3 py-2 font-bold">Method</th>
-                  <th className="text-left px-3 py-2 font-bold">Added by</th>
+                  <th className="text-left px-3 py-2 font-bold">Month</th>
+                  <th className="text-right px-3 py-2 font-bold">Email used</th>
+                  <th className="text-right px-3 py-2 font-bold">Email overage</th>
+                  <th className="text-right px-3 py-2 font-bold">SMS used</th>
+                  <th className="text-right px-3 py-2 font-bold">SMS overage</th>
+                  <th className="text-right px-3 py-2 font-bold">Total</th>
+                  <th className="text-left px-3 py-2 font-bold">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {topups.map(t => (
-                  <tr key={t.id} className="border-t border-slate-100">
-                    <td className="px-3 py-2 font-mono text-[11px] text-[#666]">{format(new Date(t.created_at), 'MMM d, h:mm a')}</td>
-                    <td className="px-3 py-2">{t.channel === 'email' ? '📧 Email' : '💬 SMS'}</td>
-                    <td className="px-3 py-2 text-right font-mono font-bold" style={{color:'#15803d'}}>+{t.credits_added}</td>
-                    <td className="px-3 py-2 text-right font-mono">
-                      {t.price_paid_cents > 0 ? `$${(t.price_paid_cents/100).toFixed(2)}` : <span className="text-[#999]">free</span>}
+                {bills.map(b => (
+                  <tr key={b.id} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-bold">{format(new Date(b.month), 'MMM yyyy')}</td>
+                    <td className="px-3 py-2 text-right font-mono">{b.email_used}/{b.email_quota}</td>
+                    <td className="px-3 py-2 text-right font-mono" style={{color: b.email_overage > 0 ? '#dc2626' : '#999'}}>
+                      {b.email_overage > 0 ? `+${b.email_overage} ($${(b.email_overage_amount_cents/100).toFixed(2)})` : '—'}
                     </td>
-                    <td className="px-3 py-2 text-[11px]">
-                      {t.payment_method === 'signup_bonus' ? '🎁 Bonus'
-                       : t.payment_method === 'manual' ? '✋ Manual'
-                       : t.payment_method === 'card' ? '💳 Card'
-                       : t.payment_method}
+                    <td className="px-3 py-2 text-right font-mono">{b.sms_used}/{b.sms_quota}</td>
+                    <td className="px-3 py-2 text-right font-mono" style={{color: b.sms_overage > 0 ? '#dc2626' : '#999'}}>
+                      {b.sms_overage > 0 ? `+${b.sms_overage} ($${(b.sms_overage_amount_cents/100).toFixed(2)})` : '—'}
                     </td>
-                    <td className="px-3 py-2 text-[11px]">{t.added_by_name || '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono font-bold">${(b.total_amount_cents/100).toFixed(2)}</td>
+                    <td className="px-3 py-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{
+                          background: b.status==='paid'?'#dcfce7':b.status==='unpaid'?'#fef3c7':'#f1f5f9',
+                          color: b.status==='paid'?'#15803d':b.status==='unpaid'?'#92400e':'#64748b',
+                        }}>
+                        {b.status.toUpperCase()}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -2980,19 +2929,76 @@ function NotificationsSection({ tenantId, userId, userName }) {
         </>
       )}
 
-      {topupModal && (
-        <TopUpModal
-          channel={topupModal}
-          tenantId={tenantId}
-          userId={userId}
-          userName={userName}
-          onClose={() => setTopupModal(null)}
-          onDone={() => {
-            qc.invalidateQueries({ queryKey:['tenant-credits', tenantId] })
-            qc.invalidateQueries({ queryKey:['credit-topups', tenantId] })
-            setTopupModal(null)
-          }}
-        />
+      {templateModal && (
+        <SmsTemplatesModal tenantId={tenantId} onClose={()=>setTemplateModal(null)}/>
+      )}
+      {capModal && (
+        <CapModal channel={capModal} tenantId={tenantId} current={m}
+          onClose={()=>setCapModal(null)}
+          onSave={() => { qc.invalidateQueries({queryKey:['tenant-messaging',tenantId]}); setCapModal(null) }}/>
+      )}
+    </div>
+  )
+}
+
+
+function QuotaCard({ icon, name, used, quota, pct, overage, rate, bill, remaining, cap, onEditCap }) {
+  // Color based on usage / overage state
+  const overCap = overage >= cap
+  const status = overCap ? 'over'
+    : overage > 0 ? 'overage'
+    : pct >= 90 ? 'nearly'
+    : pct >= 70 ? 'warning'
+    : 'safe'
+  const borderColor = {safe:'#10b981', warning:'#f59e0b', nearly:'#ef4444', overage:'#9333ea', over:'#7f1d1d'}[status]
+  const barFill = {safe:'#10b981', warning:'#f59e0b', nearly:'#ef4444', overage:'#9333ea', over:'#7f1d1d'}[status]
+  const bgTint = {safe:'#f0fdf4', warning:'#fffbeb', nearly:'#fef2f2', overage:'#faf5ff', over:'#fef2f2'}[status]
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{border:`2px solid ${borderColor}`}}>
+      <div className="px-4 py-3" style={{background: bgTint}}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[20px]">{icon}</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#666]">{name}</span>
+          </div>
+          <span className="text-[10px] font-mono text-[#666]">{used}/{quota}</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="rounded-full h-2 overflow-hidden mb-2" style={{background:'#e5e5e5'}}>
+          <div className="h-full transition-all" style={{width:`${pct}%`, background: barFill}}/>
+        </div>
+
+        <div className="flex justify-between text-[11px]">
+          <span style={{color:'#666'}}>
+            {remaining > 0 ? `${remaining} left in free quota` : 'Free quota used'}
+          </span>
+          <span className="font-bold" style={{color: borderColor}}>
+            {pct.toFixed(0)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Overage row */}
+      <div className="px-4 py-2 text-[11px]" style={{background:'#fff', borderTop:'1px solid #e5e5e5'}}>
+        <div className="flex justify-between items-baseline">
+          <span style={{color:'#666'}}>Overage this month:</span>
+          <span className="font-mono font-bold" style={{color: overage > 0 ? '#9333ea' : '#999'}}>
+            {overage > 0 ? `+${overage} = $${bill.toFixed(2)}` : '0'}
+          </span>
+        </div>
+      </div>
+      <div className="px-4 py-1.5 text-[10px] flex justify-between items-center" style={{background:'#fafafa'}}>
+        <span style={{color:'#999'}}>Hard cap: {cap} overage (${(cap*rate).toFixed(0)}/mo max)</span>
+        <button onClick={onEditCap}
+          className="bg-transparent border-none cursor-pointer text-[10px] underline"
+          style={{color:'#006AFF'}}>edit</button>
+      </div>
+      {overCap && (
+        <div className="px-4 py-2 text-[10px]" style={{background:'#fee2e2', color:'#991b1b', borderTop:'1px solid #fca5a5'}}>
+          ❌ Hard cap reached — {name} sending is blocked. Raise the cap to continue.
+        </div>
       )}
     </div>
   )
@@ -3032,43 +3038,24 @@ function TriggerRow({ icon, title, desc, channels, options, value, onChange, ext
 }
 
 
-function TopUpModal({ channel, tenantId, userId, userName, onClose, onDone }) {
-  // Pre-defined packages
-  const PACKAGES = channel === 'email' ? [
-    { credits: 100,  price: 500,  badge: null },
-    { credits: 500,  price: 1900, badge: '⭐ Best Value' },
-    { credits: 2000, price: 5900, badge: null },
-    { credits: 10000,price: 19900,badge: 'Bulk' },
-  ] : [
-    { credits: 50,   price: 500,  badge: null },
-    { credits: 200,  price: 1700, badge: '⭐ Best Value' },
-    { credits: 500,  price: 3900, badge: null },
-    { credits: 2000, price: 14900,badge: 'Bulk' },
-  ]
-
-  const [selected, setSelected] = useState(PACKAGES[1])
+// ── Cap edit modal — change hard cap for email or sms ──
+function CapModal({ channel, tenantId, current, onClose, onSave }) {
+  const isEmail = channel === 'email'
+  const field = isEmail ? 'email_overage_cap' : 'sms_overage_cap'
+  const rate = isEmail ? (current?.email_per_overage_cents||5) : (current?.sms_per_overage_cents||5)
+  const [cap, setCap] = useState(current?.[field] || 2000)
   const [busy, setBusy] = useState(false)
 
-  const handleAddManual = async () => {
-    if (!window.confirm(`Manually add ${selected.credits} ${channel} credits?\n\nThis is for Admin / internal use — no payment will be charged.`)) return
+  const maxBill = (cap * rate / 100).toFixed(0)
+
+  const save = async () => {
     setBusy(true)
-    const { data, error } = await supabase.rpc('fn_add_credits', {
-      p_tenant_id: tenantId,
-      p_channel: channel,
-      p_credits: selected.credits,
-      p_price_cents: 0,
-      p_method: 'manual',
-      p_notes: 'Manual top-up from Settings',
-      p_added_by_id: userId,
-      p_added_by_name: userName,
-    })
+    const { error } = await supabase.from('tenant_messaging')
+      .update({ [field]: cap }).eq('tenant_id', tenantId)
     setBusy(false)
-    if (error || !data?.success) {
-      toast.error(data?.message || error?.message || 'Top-up failed')
-      return
-    }
-    toast.success(`✓ +${selected.credits} ${channel} credits (new balance: ${data.new_balance})`)
-    onDone()
+    if (error) { toast.error(error.message); return }
+    toast.success(`✓ ${isEmail?'Email':'SMS'} overage cap updated`)
+    onSave()
   }
 
   return (
@@ -3076,76 +3063,193 @@ function TopUpModal({ channel, tenantId, userId, userName, onClose, onDone }) {
       style={{background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)'}}
       onClick={onClose}>
       <div className="rounded-3xl overflow-hidden shadow-2xl w-full"
-        style={{maxWidth:'460px', background:'#fff'}}
+        style={{maxWidth:'420px', background:'#fff'}}
         onClick={e=>e.stopPropagation()}>
-
         <div className="px-5 py-4 flex items-center justify-between"
-          style={{background:'linear-gradient(135deg, #006AFF 0%, #003a8c 100%)'}}>
+          style={{background:'linear-gradient(135deg,#1F1F1F 0%,#3a3a3a 100%)'}}>
           <div>
-            <div className="text-[16px] font-bold text-white">
-              💰 Top Up {channel === 'email' ? '📧 Email' : '💬 SMS'} Credits
+            <div className="text-[16px] font-bold text-white">🛡️ {isEmail?'Email':'SMS'} Overage Cap</div>
+            <div className="text-[10px] opacity-70 text-white mt-0.5">Maximum overage before sending is blocked</div>
+          </div>
+          <button onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px]">✕</button>
+        </div>
+        <div className="p-5">
+          <div className="text-[11px] text-[#666] mb-2">Maximum extra messages allowed beyond your free monthly quota.</div>
+          <input type="number" min="0" max="100000" value={cap}
+            onChange={e=>setCap(parseInt(e.target.value)||0)}
+            className="w-full rounded-xl px-4 py-3 text-[24px] font-bold font-mono text-center"
+            style={{border:'2px solid #80B2FF'}}/>
+          <div className="rounded-xl mt-3 px-4 py-3" style={{background:'#fffbeb', border:'1px solid #fde68a'}}>
+            <div className="text-[11px] text-[#92400e]">
+              <b>Max bill per month:</b> ${maxBill}
             </div>
-            <div className="text-[10px] text-blue-100 mt-0.5">Choose a package</div>
+            <div className="text-[10px] text-[#92400e]/80 mt-0.5">
+              ({cap} × ${(rate/100).toFixed(2)} per overage)
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button onClick={onClose}
+              className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-2"
+              style={{background:'#fff', borderColor:'#e5e5e5', color:'#666'}}>
+              Cancel
+            </button>
+            <button onClick={save} disabled={busy}
+              className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
+              style={{background:'#006AFF'}}>
+              {busy ? '⏳' : '✓ Save Cap'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ── SMS template editor — character counting with hard limit ──
+function SmsTemplatesModal({ tenantId, onClose }) {
+  const qc = useQueryClient()
+  const { data: rows = [] } = useQuery({
+    queryKey: ['sms-templates', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('sms_templates')
+        .select('*').eq('tenant_id', tenantId)
+        .order('trigger_type').order('language')
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-3"
+      style={{background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)'}}
+      onClick={onClose}>
+      <div className="rounded-3xl overflow-hidden shadow-2xl w-full flex flex-col"
+        style={{maxWidth:'640px', maxHeight:'90vh', background:'#fff'}}
+        onClick={e=>e.stopPropagation()}>
+        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
+          style={{background:'linear-gradient(135deg,#92400e 0%,#451a03 100%)'}}>
+          <div>
+            <div className="text-[16px] font-bold text-white">📝 SMS Templates</div>
+            <div className="text-[10px] text-amber-100 mt-0.5">Locked to single segment — can't exceed</div>
           </div>
           <button onClick={onClose}
             className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px]">✕</button>
         </div>
 
-        <div className="p-5">
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {PACKAGES.map(pkg => {
-              const isSelected = selected.credits === pkg.credits
-              const perUnit = (pkg.price / 100 / pkg.credits)
-              return (
-                <button key={pkg.credits} onClick={() => setSelected(pkg)}
-                  className="rounded-2xl py-3 px-2 cursor-pointer border-2 transition-all active:scale-95 relative"
-                  style={isSelected
-                    ? {background:'linear-gradient(135deg, #E6F0FF 0%, #c6dbff 100%)', borderColor:'#006AFF'}
-                    : {background:'#fff', borderColor:'#e5e5e5'}}>
-                  {pkg.badge && (
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white whitespace-nowrap"
-                      style={{background:'#f59e0b'}}>
-                      {pkg.badge}
-                    </div>
-                  )}
-                  <div className="text-[20px] font-bold" style={{color: isSelected ? '#006AFF' : '#1f1f1f'}}>
-                    {pkg.credits.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#666] mb-1">{channel}s</div>
-                  <div className="text-[18px] font-bold font-mono" style={{color: isSelected ? '#006AFF' : '#1f1f1f'}}>
-                    ${(pkg.price/100).toFixed(2)}
-                  </div>
-                  <div className="text-[9px] text-[#999] font-mono mt-0.5">
-                    {perUnit < 0.01 ? `<$0.01 each` : `$${perUnit.toFixed(3)} each`}
-                  </div>
-                </button>
-              )
-            })}
+        <div className="p-4 overflow-y-auto flex-1">
+          <div className="rounded-xl p-3 mb-4 text-[11px]"
+            style={{background:'#fffbeb', border:'1px solid #fde68a', color:'#92400e'}}>
+            <b>Available variables:</b> {'{store} {name} {order} {invoice} {amt} {date} {link} {code} {pct} {pts} {employee}'}
           </div>
 
-          <div className="rounded-xl px-4 py-3 mb-4" style={{background:'#f8fafc', border:'1px solid #e5e5e5'}}>
-            <div className="text-[11px] text-[#666] mb-1">Selected</div>
-            <div className="flex justify-between items-baseline">
-              <span className="text-[16px] font-bold">{selected.credits.toLocaleString()} {channel}s</span>
-              <span className="text-[20px] font-bold font-mono" style={{color:'#006AFF'}}>${(selected.price/100).toFixed(2)}</span>
-            </div>
-          </div>
+          {rows.length === 0 ? (
+            <div className="text-center py-8 text-[12px] text-[#999]">No templates yet — run the messaging SQL first</div>
+          ) : (
+            rows.map(row => (
+              <TemplateEditor key={row.id} row={row}
+                onSave={() => qc.invalidateQueries({queryKey:['sms-templates',tenantId]})}/>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
-          <div className="space-y-2">
-            <button disabled
-              className="w-full rounded-xl py-3 text-[13px] font-bold text-white border-none disabled:opacity-40"
-              style={{background:'linear-gradient(135deg, #006AFF 0%, #003a8c 100%)'}}>
-              💳 Pay with Card — Coming Soon
-            </button>
-            <button onClick={handleAddManual} disabled={busy}
-              className="w-full rounded-xl py-3 text-[12px] font-bold cursor-pointer border-2 disabled:opacity-40"
-              style={{background:'#fff', borderColor:'#10b981', color:'#15803d'}}>
-              {busy ? '⏳ Adding...' : '✋ Add Manually (Admin / Test)'}
-            </button>
-            <div className="text-[10px] text-[#999] text-center mt-1">
-              Card payment requires Stripe setup. Manual top-up is for testing & internal use.
-            </div>
+
+function TemplateEditor({ row, onSave }) {
+  const [text, setText] = useState(row.template_text)
+  const [busy, setBusy] = useState(false)
+
+  const rendered = renderTemplate(text, SAMPLE_VARS)
+  const analysis = analyzeSms(rendered, 1)
+  const status = segmentStatus(analysis, 1)
+
+  const colors = {
+    safe:  { fg:'#15803d', bg:'#f0fdf4', bar:'#10b981' },
+    tight: { fg:'#92400e', bg:'#fffbeb', bar:'#f59e0b' },
+    over:  { fg:'#991b1b', bg:'#fef2f2', bar:'#dc2626' },
+  }[status]
+
+  const pct = Math.min(100, (analysis.length / analysis.maxSingle) * 100)
+
+  const save = async () => {
+    if (analysis.isOverLimit) {
+      toast.error('Template exceeds single SMS limit — shorten it first')
+      return
+    }
+    setBusy(true)
+    const { error } = await supabase.from('sms_templates')
+      .update({ template_text: text, updated_at: new Date().toISOString() })
+      .eq('id', row.id)
+    setBusy(false)
+    if (error) { toast.error(error.message); return }
+    toast.success(`✓ ${row.trigger_type} (${row.language}) template saved`)
+    onSave()
+  }
+
+  const reset = () => setText(row.template_text)
+
+  const triggerLabels = {
+    receipt:'🧾 Receipt', order_ready:'📦 Order Ready',
+    payment_reminder:'💰 Payment Reminder', birthday_coupon:'🎂 Birthday',
+    loyalty_update:'⭐ Loyalty', cash_variance:'🚨 Cash Variance',
+  }
+
+  return (
+    <div className="rounded-xl mb-3 overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+      <div className="px-3 py-2 flex items-center justify-between"
+        style={{background:'#FAFAFA'}}>
+        <span className="text-[12px] font-bold">
+          {triggerLabels[row.trigger_type] || row.trigger_type}
+          <span className="ml-2 text-[10px] font-normal px-1.5 py-0.5 rounded"
+            style={{background: row.language==='en'?'#dbeafe':'#fce7f3', color: row.language==='en'?'#1e40af':'#9f1239'}}>
+            {row.language === 'en' ? 'English' : '中文'}
+          </span>
+        </span>
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded"
+          style={{background: colors.bg, color: colors.fg}}>
+          {analysis.length}/{analysis.maxSingle} {analysis.encoding}
+        </span>
+      </div>
+
+      <div className="p-3">
+        <textarea value={text} onChange={e=>setText(e.target.value)} rows={2}
+          className="w-full rounded-lg px-3 py-2 text-[12px] font-mono resize-none"
+          style={{border: '2px solid ' + (analysis.isOverLimit ? '#dc2626' : '#80B2FF')}}/>
+
+        {/* Progress bar */}
+        <div className="rounded-full h-1.5 mt-2 overflow-hidden" style={{background:'#e5e5e5'}}>
+          <div className="h-full transition-all" style={{width:`${pct}%`, background: colors.bar}}/>
+        </div>
+
+        {/* Preview */}
+        <div className="text-[10px] text-[#999] mt-2">Preview with sample values:</div>
+        <div className="text-[11px] font-mono mt-0.5 rounded-lg px-2 py-1.5"
+          style={{background: colors.bg, color: colors.fg, border: `1px solid ${colors.bar}33`}}>
+          {rendered || <span className="text-[#999]">(empty)</span>}
+        </div>
+
+        {analysis.isOverLimit && (
+          <div className="text-[10px] mt-1.5 px-2 py-1 rounded"
+            style={{background:'#fee2e2', color:'#991b1b'}}>
+            ❌ Exceeds single SMS — would charge {analysis.segments}× — can't save
           </div>
+        )}
+
+        <div className="flex gap-2 mt-2">
+          <button onClick={reset}
+            className="rounded-lg px-3 py-1.5 text-[11px] cursor-pointer border-2"
+            style={{background:'#fff', borderColor:'#e5e5e5', color:'#666'}}>
+            Reset
+          </button>
+          <button onClick={save} disabled={busy || analysis.isOverLimit || text === row.template_text}
+            className="flex-1 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
+            style={{background:'#006AFF'}}>
+            {busy ? '⏳' : '✓ Save'}
+          </button>
         </div>
       </div>
     </div>

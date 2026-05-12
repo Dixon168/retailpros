@@ -888,6 +888,31 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
   const [done,  setDone]  = useState({ printChoice: null, emailed: false, smsed: false })
   const [showEmailKB, setShowEmailKB] = useState(false)
   const [showPhoneKB, setShowPhoneKB] = useState(false)
+  const [quota, setQuota] = useState(null)  // { email_used, email_quota, sms_used, sms_quota, e_rate, s_rate }
+
+  // Fetch quota status once on mount so we can show overage warnings
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { data } = await supabase.from('tenant_messaging')
+          .select('email_used_month, plan_email_quota, sms_used_month, plan_sms_quota, email_per_overage_cents, sms_per_overage_cents')
+          .eq('tenant_id', tenantId).maybeSingle()
+        if (alive && data) setQuota({
+          email_used: data.email_used_month, email_quota: data.plan_email_quota,
+          sms_used:   data.sms_used_month,   sms_quota:   data.plan_sms_quota,
+          e_rate: data.email_per_overage_cents / 100,
+          s_rate: data.sms_per_overage_cents / 100,
+        })
+      } catch {}
+    })()
+    return () => { alive = false }
+  }, [tenantId])
+
+  // True if THIS send would be an overage
+  const emailIsOverage = quota && (quota.email_used >= quota.email_quota)
+  const smsIsOverage   = quota && (quota.sms_used >= quota.sms_quota)
 
   const handlePrint = () => {
     printReceipt(html, settings.copies || 1)
@@ -994,7 +1019,20 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
 
             {settings.enableEmail && (
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{color:'#666666'}}>Email Receipt</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{color:'#666666'}}>Email Receipt</div>
+                  {quota && (
+                    emailIsOverage
+                      ? <div className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{background:'#faf5ff', color:'#9333ea'}}>
+                          ⚠️ +${quota.e_rate.toFixed(2)} overage
+                        </div>
+                      : <div className="text-[10px] px-2 py-0.5 rounded-full"
+                          style={{background:'#f0fdf4', color:'#15803d'}}>
+                          ✓ Free ({quota.email_quota - quota.email_used} left)
+                        </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowEmailKB(true)} disabled={busy}
                     className="flex-1 rounded-lg px-4 py-3 text-left cursor-pointer disabled:opacity-50"
@@ -1017,7 +1055,20 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
 
             {settings.enableSms && (
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{color:'#666666'}}>SMS Receipt</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{color:'#666666'}}>SMS Receipt</div>
+                  {quota && (
+                    smsIsOverage
+                      ? <div className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{background:'#faf5ff', color:'#9333ea'}}>
+                          ⚠️ +${quota.s_rate.toFixed(2)} overage
+                        </div>
+                      : <div className="text-[10px] px-2 py-0.5 rounded-full"
+                          style={{background:'#f0fdf4', color:'#15803d'}}>
+                          ✓ Free ({quota.sms_quota - quota.sms_used} left)
+                        </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowPhoneKB(true)} disabled={busy}
                     className="flex-1 rounded-lg px-4 py-3 text-left cursor-pointer disabled:opacity-50"
