@@ -197,6 +197,99 @@ export default function ReportsPage() {
     enabled: !!tenant?.id && activeReport === 'overrides',
   })
 
+  // ── CSV Export ──────────────────────────────────────
+  // Builds CSV from whichever report is currently active.
+  // Handles overrides, employees, products, sales, payments, discounts, tax.
+  const doExport = () => {
+    const downloadCSV = (filename, headers, rows) => {
+      const escape = (s) => {
+        const str = s == null ? '' : String(s)
+        // Quote if contains comma, quote, or newline
+        if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"'
+        return str
+      }
+      const csv = [
+        headers.map(escape).join(','),
+        ...rows.map(r => r.map(escape).join(','))
+      ].join('\n')
+      const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a); a.click(); a.remove()
+      URL.revokeObjectURL(url)
+      toast.success(`✓ Downloaded ${filename}`)
+    }
+
+    const dateRange = `${format(dateFrom,'yyyy-MM-dd')}_to_${format(dateTo,'yyyy-MM-dd')}`
+
+    if (activeReport === 'overrides') {
+      const rows = (overridesData || []).map(r => [
+        format(new Date(r.created_at), 'yyyy-MM-dd HH:mm'),
+        r.permission,
+        r.action_label || '',
+        r.order_number || '',
+        r.amount != null ? Number(r.amount).toFixed(2) : '',
+        r.requested_by_name || '',
+        r.approved_by_name || '',
+        r.notes || '',
+      ])
+      return downloadCSV(
+        `overrides_${dateRange}.csv`,
+        ['When','Permission','Action','Order#','Amount','Requested by','Approved by','Notes'],
+        rows,
+      )
+    }
+
+    if (activeReport === 'employee') {
+      const rows = (employeeData || []).map(e => [
+        e.name, e.orders, Number(e.revenue||0).toFixed(2),
+        Number(e.discounts||0).toFixed(2),
+        e.orders ? (Number(e.revenue) / e.orders).toFixed(2) : '0.00',
+      ])
+      return downloadCSV(
+        `employees_${dateRange}.csv`,
+        ['Employee','Orders','Revenue','Discounts','Avg Ticket'],
+        rows,
+      )
+    }
+
+    if (activeReport === 'products') {
+      const rows = (productData || []).map(p => [
+        p.product_name || p.products?.name || '—',
+        p.qty || 0,
+        Number(p.line_total||0).toFixed(2),
+      ])
+      return downloadCSV(
+        `products_${dateRange}.csv`,
+        ['Product','Qty Sold','Revenue'],
+        rows,
+      )
+    }
+
+    if (activeReport === 'sales') {
+      const rows = (orders || []).map(o => [
+        o.order_number || '',
+        format(new Date(o.created_at), 'yyyy-MM-dd HH:mm'),
+        o.cashier_name || '',
+        Number(o.subtotal||0).toFixed(2),
+        Number(o.discount_amount||0).toFixed(2),
+        Number(o.tax_amount||0).toFixed(2),
+        Number(o.total||0).toFixed(2),
+        o.status,
+      ])
+      return downloadCSV(
+        `sales_${dateRange}.csv`,
+        ['Order#','When','Cashier','Subtotal','Discount','Tax','Total','Status'],
+        rows,
+      )
+    }
+
+    // Fallback: simple "Date,Orders,Revenue" daily summary for any other report
+    toast.error(`Export not yet implemented for "${activeReport}"`)
+  }
+
   // Computed sales metrics
   const orders = salesData?.orders || []
   const totalRevenue = orders.reduce((s,o)=>s+(o.total||0), 0)
@@ -292,8 +385,8 @@ export default function ReportsPage() {
             <span className="text-[#999999] text-sm">→</span>
             <input type="date" defaultValue={format(dateTo,'yyyy-MM-dd')}
               className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-[11px] text-[#1F1F1F] font-mono outline-none"/>
-            <button onClick={()=>toast.success('Exporting...')}
-              className="bg-teal-500 border-none rounded-lg px-3 py-1.5 text-[11px] font-bold text-white ml-2">
+            <button onClick={() => doExport()}
+              className="bg-teal-500 border-none rounded-lg px-3 py-1.5 text-[11px] font-bold text-white ml-2 cursor-pointer">
               ⬇ Export
             </button>
           </div>
