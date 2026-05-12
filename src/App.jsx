@@ -131,7 +131,7 @@ export default function App() {
         </Routes>
       </BrowserRouter>
 
-      <Toaster position="bottom-center" toastOptions={{
+      <Toaster position="top-right" toastOptions={{
         style: {
           background: '#fff', color: '#1F1F1F',
           border: '1px solid #e2e8f0', borderRadius: '12px',

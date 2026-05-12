@@ -133,6 +133,7 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
   const fileRef = useRef()
   const [saving,    setSaving]    = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [saveError, setSaveError] = useState(null)  // inline error banner — visible inside modal
   const [form, setForm] = useState({
     id:               initial.id               || null,
     name:             initial.name             || '',
@@ -249,9 +250,39 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     finally { setUploading(false) }
   }
 
+  const addCategory = async () => {
+    const name = newCatName.trim()
+    if (!name) { toast.error('Category name required'); return }
+    try {
+      const { data, error } = await supabase.from('categories')
+        .insert({ tenant_id: tenantId, name, color: '#006AFF', sort_order: (categories?.length||0) + 1 })
+        .select().single()
+      if (error) throw error
+      if (data) {
+        setSelCatId(data.id)
+        qc.invalidateQueries({ queryKey: ['categories-full'] })
+        qc.invalidateQueries({ queryKey: ['categories'] })
+        toast.success(`✓ Category "${data.name}" added`)
+      }
+      setShowAddCat(false); setNewCatName('')
+    } catch (err) {
+      console.error('[addCategory] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      toast.error(`Failed to add category: ${err?.message || 'Unknown error'}${detail ? ' — ' + detail : ''}`,
+        { duration: 6000 })
+    }
+  }
+
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Product name required'); return }
-    if (!form.price)       { toast.error('Selling price required'); return }
+    setSaveError(null)
+    if (!form.name.trim()) {
+      const msg = 'Product name is required'
+      setSaveError(msg); toast.error(msg); return
+    }
+    if (!form.price || parseFloat(form.price) <= 0) {
+      const msg = 'Selling price is required (must be greater than $0)'
+      setSaveError(msg); toast.error(msg); return
+    }
 
     // Check dup SKU/UPC
     if (form.sku?.trim()) {
@@ -331,14 +362,16 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
         }
       }
       toast.success(form.id ? 'Product updated ✓' : 'Product added ✓')
+      setSaveError(null)
       onSave?.()
     } catch(err) {
       // Surface every available detail so we can debug column/RLS/constraint issues
       console.error('[ProductForm save] failed:', err)
       const detail = err?.details || err?.hint || ''
       const code   = err?.code ? ` [${err.code}]` : ''
-      toast.error(`Save failed${code}: ${err?.message || 'Unknown error'}${detail ? ` — ${detail}` : ''}`,
-        { duration: 8000 })
+      const msg = `Save failed${code}: ${err?.message || 'Unknown error'}${detail ? ` — ${detail}` : ''}`
+      setSaveError(msg)
+      toast.error(msg, { duration: 8000 })
     }
     finally { setSaving(false) }
   }
@@ -363,6 +396,22 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
             ✕
           </button>
         </div>
+
+        {/* ── Inline save error banner — sticks at top of modal so the cashier
+            can't miss it. Appears below header + above content. Cleared on
+            successful save or when re-validating. ── */}
+        {saveError && (
+          <div className="px-6 py-3 flex items-start gap-3" style={{background:'#fef2f2', borderBottom:'1px solid #fecaca'}}>
+            <span className="text-[20px] flex-shrink-0">❌</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] font-bold text-[#991b1b]">Save failed</div>
+              <div className="text-[11px] text-[#991b1b] mt-0.5 break-words">{saveError}</div>
+            </div>
+            <button onClick={() => setSaveError(null)}
+              className="w-6 h-6 rounded-full bg-transparent border-none cursor-pointer text-[14px] flex-shrink-0"
+              style={{color:'#991b1b'}}>✕</button>
+          </div>
+        )}
 
         <div className="px-6 py-5 flex flex-col gap-4">
 
@@ -996,21 +1045,15 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               <div className="text-[15px] font-bold mb-3">✚ Add Main Category</div>
               <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} autoFocus
                 placeholder="Category name..." onKeyDown={async e=>{
-                  if(e.key==='Enter'&&newCatName.trim()){
-                    const {data}=await supabase.from('categories').insert({tenant_id:tenantId,name:newCatName.trim(),color:'#006AFF',sort_order:categories.length+1}).select().single()
-                    if(data){setSelCatId(data.id);qc.invalidateQueries(['categories-full'])}
-                    setShowAddCat(false);setNewCatName('')
-                  }}}
+                  if(e.key==='Enter'&&newCatName.trim()){ await addCategory() }
+                }}
                 className="w-full rounded-xl px-4 py-2.5 text-[13px] outline-none mb-3"
                 style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
               <div className="flex gap-2">
                 <button onClick={()=>{setShowAddCat(false);setNewCatName('')}}
                   className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
-                <button disabled={!newCatName.trim()} onClick={async()=>{
-                  const {data}=await supabase.from('categories').insert({tenant_id:tenantId,name:newCatName.trim(),color:'#006AFF',sort_order:categories.length+1}).select().single()
-                  if(data){setSelCatId(data.id);qc.invalidateQueries(['categories-full'])}
-                  setShowAddCat(false);setNewCatName('')
-                }} className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                <button disabled={!newCatName.trim()} onClick={addCategory}
+                  className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
                   style={{background:'#006AFF'}}>✓ Add</button>
               </div>
             </div>
