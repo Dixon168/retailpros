@@ -73,7 +73,7 @@ function Toggle({ checked, onChange, label, desc }) {
   )
 }
 
-export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
+export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }) {
   const qc = useQueryClient()
   const [tab, setTab]           = useState('info')
   const [showReceive, setShowReceive] = useState(false)
@@ -273,12 +273,18 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
   const { data: categories=[] } = useQuery({
     queryKey: ['categories-full', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('categories')
+      const { data, error } = await supabase.from('categories')
         .select('id,name,color,subcategories(id,name,sort_order)')
         .eq('tenant_id', tenantId).order('sort_order')
+      if (error) {
+        console.error('[ProductDetailInline categories query failed]', error)
+        toast.error(`Couldn't load categories: ${error.message}`)
+        return []
+      }
       return data || []
     },
     enabled: !!tenantId,
+    refetchOnMount: 'always',
   })
   const { data: taxRates=[] } = useQuery({
     queryKey: ['tax-rates', tenantId],
@@ -1189,12 +1195,12 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
       {/* Modals & Numpads */}
       {showReceive && (
-        <ReceiveModal product={p} tenantId={tenantId}
+        <ReceiveModal product={p} tenantId={tenantId} storeId={storeId}
           onSave={() => { qc.invalidateQueries(['product-receives',p.id]); onRefresh(); setShowReceive(false) }}
           onClose={() => setShowReceive(false)}/>
       )}
       {showAdjust && (
-        <AdjustModal product={p} tenantId={tenantId}
+        <AdjustModal product={p} tenantId={tenantId} storeId={storeId}
           onSave={() => { qc.invalidateQueries(['product-adjustments',p.id]); onRefresh(); setShowAdjust(false) }}
           onClose={() => setShowAdjust(false)}/>
       )}

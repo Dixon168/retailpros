@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 const REASONS = ['Damaged','Expired','Theft/Shrinkage','Received without PO','Count correction','Transfer out','Transfer in','Other']
 
-export function AdjustModal({ product: p, tenantId, onSave, onClose }) {
+export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) {
   const [qty,        setQty]        = useState('')
   const [reason,     setReason]     = useState('')
   const [saving,     setSaving]     = useState(false)
@@ -18,17 +18,24 @@ export function AdjustModal({ product: p, tenantId, onSave, onClose }) {
     if (!reason.trim()) { toast.error('Enter a reason'); return }
     setSaving(true)
     try {
+      // Look up the inventory record for THIS store specifically (each store
+      // has its own ledger).
       const { data: inv } = await supabase.from('inventory')
-        .select('id,quantity').eq('product_id', p.id).maybeSingle()
+        .select('id,quantity')
+        .eq('product_id', p.id)
+        .eq('store_id', storeId || '')
+        .maybeSingle()
       const currentQty = inv?.quantity || 0
       const newQty = Math.max(0, currentQty + adjustQty)
       if (inv) {
         await supabase.from('inventory').update({ quantity: newQty, updated_at: new Date().toISOString() }).eq('id', inv.id)
       } else {
-        await supabase.from('inventory').insert({ tenant_id: tenantId, product_id: p.id, quantity: newQty })
+        await supabase.from('inventory').insert({
+          tenant_id: tenantId, store_id: storeId || null, product_id: p.id, quantity: newQty
+        })
       }
       await supabase.from('inventory_adjustments').insert({
-        tenant_id: tenantId, product_id: p.id,
+        tenant_id: tenantId, store_id: storeId || null, product_id: p.id,
         qty_change: adjustQty, qty_before: currentQty, qty_after: newQty, reason
       })
       toast.success(`Inventory adjusted: ${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`)

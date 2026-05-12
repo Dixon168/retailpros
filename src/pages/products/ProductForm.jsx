@@ -120,7 +120,7 @@ function Toggle({ checked, onChange, label, desc }) {
   )
 }
 
-export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
+export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) {
   const [upcLooking,  setUpcLooking]  = useState(false)
   const [genDesc,     setGenDesc]     = useState(false)
   const upcRef = useRef(null)
@@ -184,12 +184,23 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
   const { data: categories=[] } = useQuery({
     queryKey: ['categories-full', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.from('categories')
+      // Use 'left' join so categories with no subcategories still come back.
+      // Log any error so we can see RLS / missing column / FK issues.
+      const { data, error } = await supabase.from('categories')
         .select('id,name,emoji,color,sort_order,subcategories(id,name,sort_order)')
-        .eq('tenant_id', tenantId).order('sort_order')
+        .eq('tenant_id', tenantId)
+        .order('sort_order')
+      if (error) {
+        console.error('[ProductForm categories query failed]', error)
+        toast.error(`Couldn't load categories: ${error.message}`)
+        return []
+      }
       return data || []
     },
     enabled: !!tenantId,
+    refetchOnMount: 'always',  // Always re-pull when the form opens so new
+                                // categories created in Back Office show up
+                                // immediately.
   })
   const { data: taxRates=[] } = useQuery({
     queryKey: ['tax-rates', tenantId],
@@ -374,9 +385,15 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
         if (error) throw error
         productId = data?.id
         if (productId && form.track_inventory) {
+          // store_id is critical — POS filters inventory by store, so an
+          // inventory row without store_id appears as 'out of stock' in
+          // every store. Always tag with current store.
           await supabase.from('inventory').insert({
-            tenant_id: tenantId, product_id: productId,
-            quantity: parseFloat(form.qty)||0, avg_cost: parseFloat(form.cost)||0,
+            tenant_id: tenantId,
+            store_id:  storeId || null,
+            product_id: productId,
+            quantity: parseFloat(form.qty)||0,
+            avg_cost: parseFloat(form.cost)||0,
           })
         }
       }

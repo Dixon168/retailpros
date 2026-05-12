@@ -197,6 +197,7 @@ export default function SmartReceivePage() {
         // Create inventory record
         await supabase.from('inventory').insert({
           tenant_id: tenant.id,
+          store_id:  store?.id || null,
           product_id: productId,
           quantity: 0,
           avg_cost: parseFloat(form.cost) || 0,
@@ -204,12 +205,17 @@ export default function SmartReceivePage() {
         toast.success(`✓ New product created: ${form.name}`)
       }
 
-      // Receive inventory
+      // Receive inventory — must filter by store_id so each store has its
+      // own inventory ledger. If a row doesn't exist for this store yet,
+      // create one (covers products imported earlier without store_id).
       const qty  = parseFloat(form.qty)
       const cost = parseFloat(form.cost) || 0
 
       const { data: inv } = await supabase.from('inventory')
-        .select('id,quantity,avg_cost').eq('product_id', productId).maybeSingle()
+        .select('id,quantity,avg_cost')
+        .eq('product_id', productId)
+        .eq('store_id', store?.id || '')
+        .maybeSingle()
 
       if (inv) {
         const newQty     = (inv.quantity||0) + qty
@@ -217,10 +223,20 @@ export default function SmartReceivePage() {
         await supabase.from('inventory').update({
           quantity: newQty, avg_cost: newAvgCost, updated_at: new Date().toISOString()
         }).eq('id', inv.id)
+      } else {
+        // No inventory record for this store — create one
+        await supabase.from('inventory').insert({
+          tenant_id: tenant.id,
+          store_id:  store?.id || null,
+          product_id: productId,
+          quantity: qty,
+          avg_cost: cost,
+        })
       }
 
       await supabase.from('inventory_receives').insert({
         tenant_id:  tenant.id,
+        store_id:   store?.id || null,
         product_id: productId,
         vendor_id:  form.vendor_id || null,
         qty,
@@ -228,7 +244,9 @@ export default function SmartReceivePage() {
         notes: form.notes || null,
       })
 
-      qc.invalidateQueries(['products'])
+      qc.invalidateQueries({ queryKey:['products'] })
+      qc.invalidateQueries({ queryKey:['pos-products'] })
+      qc.invalidateQueries({ queryKey:['inventory'] })
       toast.success(`✓ Received ${qty} ${form.unit} of ${form.name}`)
       setStep('done')
     } catch(err) {

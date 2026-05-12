@@ -352,7 +352,7 @@ export default function ProductsPage() {
                     {expandedId === p.id && (
                       <tr key={p.id+'-detail'}>
                         <td colSpan={11} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
-                          <ProductDetailInline product={p} tenantId={tenant?.id}
+                          <ProductDetailInline product={p} tenantId={tenant?.id} storeId={store?.id}
                             onRefresh={() => { qc.invalidateQueries(['products']); qc.invalidateQueries(['pos-products']);const id=expandedId;setExpandedId(null);setTimeout(()=>setExpandedId(id),100) }}/>
                         </td>
                       </tr>
@@ -387,7 +387,7 @@ export default function ProductsPage() {
 
       {/* Modals */}
       {showForm && (
-        <ProductForm initial={editProduct||{}} tenantId={tenant?.id}
+        <ProductForm initial={editProduct||{}} tenantId={tenant?.id} storeId={store?.id}
           onSave={() => { qc.invalidateQueries(['products']); setShowForm(false); setEditProduct(null) }}
           onClose={() => { setShowForm(false); setEditProduct(null) }}/>
       )}

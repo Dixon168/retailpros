@@ -519,7 +519,7 @@ export default function POSPage() {
     )}
 
     {editingProduct && (
-      <ProductForm initial={editingProduct} tenantId={tenant?.id}
+      <ProductForm initial={editingProduct} tenantId={tenant?.id} storeId={store?.id}
         onSave={() => {
           qc.invalidateQueries({ queryKey:['pos-products'] })
           setEditingProduct(null)
