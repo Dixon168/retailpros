@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { APP_VERSION_LABEL, APP_COPYRIGHT } from '@/lib/version'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -122,6 +123,11 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In →'}
           </button>
         </form>
+
+        {/* Software branding — subtle, bottom of login card */}
+        <div className="text-center pt-4 border-t border-slate-100 text-[10px] text-slate-400">
+          {APP_VERSION_LABEL} · {APP_COPYRIGHT}
+        </div>
       </div>
     </div>
   )

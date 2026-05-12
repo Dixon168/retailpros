@@ -33,6 +33,7 @@ import { logOverride } from '@/lib/auditOverride'
 import { ProductForm } from '@/pages/products/ProductForm'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
 import { getDisplaySync, EVT } from '@/lib/displaySync'
+import { APP_VERSION } from '@/lib/version'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
@@ -260,9 +261,17 @@ export default function POSPage() {
       <div className="flex items-center justify-between px-4 py-0 flex-shrink-0"
         style={{height:'44px', background:'#1F1F1F', borderBottom:'1px solid #2A2A2A'}}>
         <div className="flex items-center gap-3">
-          <div className="text-[15px] font-bold tracking-tight text-white">RetailPOS</div>
+          <div className="flex items-center gap-1.5">
+            <div className="text-[15px] font-bold tracking-tight text-white">RetailPOS</div>
+            <span className="text-[8px] font-mono px-1 py-0.5 rounded" style={{background:'rgba(0,106,255,0.25)', color:'#80B2FF'}}>
+              v{APP_VERSION}
+            </span>
+          </div>
           <div className="w-px h-4 bg-slate-600"/>
-          <div className="text-[12px] text-slate-400">{store?.name || 'Main Store'}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[14px]">🏪</span>
+            <span className="text-[13px] font-bold text-white">{store?.name || 'Main Store'}</span>
+          </div>
           <div className="w-px h-4 bg-slate-600"/>
           <div className="text-[12px] text-slate-400">{user?.name}</div>
         </div>

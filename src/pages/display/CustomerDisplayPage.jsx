@@ -15,6 +15,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { getDisplaySync, EVT } from '@/lib/displaySync'
+import { APP_VERSION } from '@/lib/version'
 
 const T = {
   en: {
@@ -217,31 +218,43 @@ function IdleScreen({ t, promos, promoIdx, storeName, now }) {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="h-full flex flex-col items-center justify-center px-8 text-center">
+    <div className="h-full flex flex-col items-center justify-center px-8 text-center relative">
       {promos.length > 0 ? (
-        <div className="w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl mb-8"
+        <div className="w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl mb-6"
           style={{aspectRatio:'16/9'}}>
           <img src={promos[promoIdx]} alt="" className="w-full h-full object-cover transition-opacity"/>
         </div>
       ) : (
-        <div className="text-[120px] mb-4">👋</div>
+        <div className="text-[100px] mb-2">👋</div>
       )}
 
-      <div className="text-[48px] font-black mb-2" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
+      <div className="text-[64px] font-black mb-1 leading-tight" style={{color:'#1F1F1F', fontFamily:'Righteous, sans-serif'}}>
+        {storeName}
+      </div>
+      <div className="text-[28px] font-bold mb-2" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
         {t.welcome}
       </div>
-      <div className="text-[20px] text-[#666] mb-1">
-        {greeting} · {storeName}
-      </div>
+      <div className="text-[16px] text-[#666] mb-1">{greeting}</div>
       <div className="text-[14px] text-[#999]">
         {now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})} · {now.toLocaleDateString()}
       </div>
 
-      <div className="mt-8 text-[14px] text-[#94a3b8]">
+      <div className="mt-6 text-[14px] text-[#94a3b8]">
         {t.ask_associate}
+      </div>
+
+      {/* Powered-by footer (very subtle, doesn't compete with store branding) */}
+      <div className="absolute bottom-3 left-0 right-0 text-center text-[9px] font-mono"
+        style={{color:'#cbd5e1'}}>
+        Powered by RetailPOS · v{appVersion()}
       </div>
     </div>
   )
+}
+
+// Lightweight helper — version pulled from /lib/version on the side
+function appVersion() {
+  try { return APP_VERSION } catch { return '1.0.0' }
 }
 
 

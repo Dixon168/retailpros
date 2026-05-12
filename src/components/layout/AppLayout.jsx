@@ -2,6 +2,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import { APP_VERSION_LABEL } from '@/lib/version'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import NetworkStatusDot from '@/components/NetworkStatusDot'
 import { LangSwitcher } from '@/components/ui/LangSwitcher'
@@ -78,7 +79,7 @@ const NAV_GROUPS = [
 
 export default function AppLayout() {
   const navigate = useNavigate()
-  const { user, store, signOut } = useAuthStore()
+  const { user, tenant, store, signOut } = useAuthStore()
   const [showShiftOpen,  setShowShiftOpen]  = useState(false)
   const [showShiftClose, setShowShiftClose] = useState(false)
   const [collapsed,      setCollapsed]      = useState(false)
@@ -111,6 +112,19 @@ export default function AppLayout() {
             {collapsed ? '›' : '‹'}
           </button>
         </div>
+
+        {/* Store-name banner — shows which store the user is currently working in */}
+        {!collapsed && store?.name && (
+          <div className="px-3 py-2.5 border-b" style={{borderColor:'#2A2A2A', background:'#161616'}}>
+            <div className="text-[8px] uppercase tracking-widest mb-0.5" style={{color:'#666'}}>Current Store</div>
+            <div className="text-[12px] font-bold text-white truncate flex items-center gap-1">
+              🏪 {store.name}
+            </div>
+            {tenant?.name && tenant.name !== store.name && (
+              <div className="text-[9px] truncate mt-0.5" style={{color:'#999'}}>{tenant.name}</div>
+            )}
+          </div>
+        )}
 
         {/* Nav groups */}
         <nav className="flex-1 overflow-y-auto py-2">
@@ -187,6 +201,15 @@ export default function AppLayout() {
             )}
           </div>
         </div>
+
+        {/* Software version footer — bottom of sidebar */}
+        {!collapsed && (
+          <div className="px-3 py-2 text-center" style={{borderTop:'1px solid #2A2A2A', background:'#161616'}}>
+            <div className="text-[9px] font-mono" style={{color:'#666'}}>
+              {APP_VERSION_LABEL}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Main Content ── */}

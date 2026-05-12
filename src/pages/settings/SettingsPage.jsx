@@ -10,6 +10,7 @@ import { PERMISSION_GROUPS, ALL_PERMISSIONS } from '@/lib/permissions'
 import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { logOverride } from '@/lib/auditOverride'
 import { analyzeSms, renderTemplate, segmentStatus, SAMPLE_VARS } from '@/lib/smsLength'
+import { APP_NAME, APP_VERSION, APP_COPYRIGHT } from '@/lib/version'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -196,6 +197,23 @@ function StoreSection({ store, tenant }) {
         </div>
       </Card>
       <SaveBtn onClick={save}/>
+
+      {/* About — software info */}
+      <Card>
+        <CardTitle>About</CardTitle>
+        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[12px]">
+          <span className="text-[#666]">Software</span>
+          <span className="font-semibold text-right">{APP_NAME}</span>
+          <span className="text-[#666]">Version</span>
+          <span className="font-mono text-right">v{APP_VERSION}</span>
+          <span className="text-[#666]">Copyright</span>
+          <span className="text-right text-[#666]">{APP_COPYRIGHT}</span>
+          <span className="text-[#666]">Store ID</span>
+          <span className="font-mono text-right text-[#999] text-[10px]">{store?.id}</span>
+          <span className="text-[#666]">Tenant ID</span>
+          <span className="font-mono text-right text-[#999] text-[10px]">{tenant?.id}</span>
+        </div>
+      </Card>
     </div>
   )
 }
