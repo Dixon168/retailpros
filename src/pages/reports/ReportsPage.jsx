@@ -17,6 +17,7 @@ const REPORT_NAV = [
   { id:'aging',     icon:'📋', label:'Accounts Receivable',  group:'Financial' },
   { id:'shift',     icon:'🖥️', label:'Station & Shift',      group:'Operations' },
   { id:'employee',  icon:'👤', label:'Employee Report',      group:'Operations' },
+  { id:'overrides', icon:'🔐', label:'Manager Overrides',    group:'Operations' },
   { id:'inventory', icon:'📦', label:'Inventory Report',     group:'Operations' },
 ]
 
@@ -176,6 +177,24 @@ export default function ReportsPage() {
       return Object.values(byEmployee).sort((a,b)=>b.revenue-a.revenue)
     },
     enabled: !!tenant?.id && activeReport === 'employee',
+  })
+
+  // ── Manager Overrides report ──
+  const { data: overridesData } = useQuery({
+    queryKey: ['report-overrides', tenant?.id, dateFrom, dateTo, filterCashier],
+    queryFn: async () => {
+      let q = supabase.from('override_approvals')
+        .select('*')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dateFrom.toISOString())
+        .lte('created_at', dateTo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(500)
+      if (filterCashier !== 'all') q = q.eq('requested_by_user_id', filterCashier)
+      const { data } = await q
+      return data || []
+    },
+    enabled: !!tenant?.id && activeReport === 'overrides',
   })
 
   // Computed sales metrics
@@ -530,6 +549,11 @@ export default function ReportsPage() {
             </div>
           )}
 
+          {/* ── MANAGER OVERRIDES ── */}
+          {activeReport === 'overrides' && (
+            <OverridesReport rows={overridesData || []} dateFrom={dateFrom} dateTo={dateTo}/>
+          )}
+
           {/* ── PRODUCT SALES (Phase 10) ── */}
           {activeReport === 'products' && (
             <ProductReport items={productData || []} dateFrom={dateFrom} dateTo={dateTo}/>
@@ -573,6 +597,222 @@ export default function ReportsPage() {
 // ════════════════════════════════════════════════════════════════════
 
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+// ── MANAGER OVERRIDES REPORT ──────────────────────────────────────
+// Shows every time a cashier needed manager PIN approval, grouped by
+// approver + permission so you can spot patterns (e.g. one cashier
+// asking for refund overrides 20 times a day).
+function OverridesReport({ rows, dateFrom, dateTo }) {
+  const total = rows.length
+  const totalAmt = rows.reduce((s,r) => s + Number(r.amount||0), 0)
+
+  // Group by permission
+  const byPerm = {}
+  rows.forEach(r => {
+    if (!byPerm[r.permission]) byPerm[r.permission] = { count:0, amt:0 }
+    byPerm[r.permission].count++
+    byPerm[r.permission].amt += Number(r.amount||0)
+  })
+  const permList = Object.entries(byPerm).sort((a,b) => b[1].count - a[1].count)
+
+  // Group by approver
+  const byApprover = {}
+  rows.forEach(r => {
+    const k = r.approved_by_name || 'Unknown'
+    if (!byApprover[k]) byApprover[k] = { count:0, amt:0 }
+    byApprover[k].count++
+    byApprover[k].amt += Number(r.amount||0)
+  })
+  const approverList = Object.entries(byApprover).sort((a,b) => b[1].count - a[1].count)
+
+  // Group by requester
+  const byRequester = {}
+  rows.forEach(r => {
+    const k = r.requested_by_name || 'Unknown'
+    if (!byRequester[k]) byRequester[k] = { count:0, amt:0 }
+    byRequester[k].count++
+    byRequester[k].amt += Number(r.amount||0)
+  })
+  const requesterList = Object.entries(byRequester).sort((a,b) => b[1].count - a[1].count)
+
+  const fmt = (n) => '$' + Number(n||0).toFixed(2)
+  const fmtDT = (s) => format(new Date(s), 'MMM d, h:mm a')
+
+  // Pretty label per permission
+  const PERM_LABEL = {
+    'pos.refund': '↩️ Refund',
+    'pos.void': '🚫 Void',
+    'pos.discount': '✂️ Discount',
+    'pos.price_override': '💲 Price Override',
+    'pos.close_shift': '🌙 Close Shift',
+    'pos.tax_exempt': '🏛️ Tax Exempt',
+    'pos.surcharge': '💼 Surcharge',
+    'pos.gift_card': '🎁 Gift Card',
+    'pos.points_redeem': '⭐ Points Redeem',
+  }
+  const labelFor = (p) => PERM_LABEL[p] || p
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <div className="text-[18px] font-bold mb-1">🔐 Manager Overrides</div>
+        <div className="text-[11px] text-[#666666]">
+          Every action that needed manager PIN approval · {format(dateFrom,'MMM d')} – {format(dateTo,'MMM d, yyyy')}
+        </div>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-4 gap-3">
+        <KpiCard label="Total Overrides"  value={total}                color="#9333ea"/>
+        <KpiCard label="Total $ Affected" value={fmt(totalAmt)}        color="#dc2626"/>
+        <KpiCard label="Unique Approvers" value={approverList.length}  color="#0891b2"/>
+        <KpiCard label="Unique Requesters" value={requesterList.length} color="#f59e0b"/>
+      </div>
+
+      {total === 0 && (
+        <div className="text-center py-12 text-[#999]">
+          <div className="text-[40px] mb-2 opacity-30">🔐</div>
+          <div className="text-[13px]">No manager overrides in this period</div>
+          <div className="text-[11px] mt-1 opacity-70">When a cashier needs approval, it'll show up here</div>
+        </div>
+      )}
+
+      {total > 0 && <>
+        {/* By Permission */}
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">By Action Type</div>
+          <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+            <table className="w-full text-[12px]">
+              <thead style={{background:'#FAFAFA'}}>
+                <tr>
+                  <th className="text-left px-3 py-2 font-bold">Action</th>
+                  <th className="text-right px-3 py-2 font-bold">Count</th>
+                  <th className="text-right px-3 py-2 font-bold">Total $</th>
+                  <th className="text-right px-3 py-2 font-bold">Avg $</th>
+                </tr>
+              </thead>
+              <tbody>
+                {permList.map(([perm, s]) => (
+                  <tr key={perm} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-semibold">{labelFor(perm)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{s.count}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(s.amt)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-[#666]">{fmt(s.amt / s.count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* By Approver & Requester side by side */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">By Approver (who unlocked)</div>
+            <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+              <table className="w-full text-[12px]">
+                <thead style={{background:'#FAFAFA'}}>
+                  <tr>
+                    <th className="text-left px-3 py-2 font-bold">Manager</th>
+                    <th className="text-right px-3 py-2 font-bold">Count</th>
+                    <th className="text-right px-3 py-2 font-bold">Total $</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approverList.map(([name, s]) => (
+                    <tr key={name} className="border-t border-slate-100">
+                      <td className="px-3 py-2 font-semibold flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white"
+                          style={{background:'#9333ea'}}>{name.charAt(0).toUpperCase()}</span>
+                        {name}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">{s.count}</td>
+                      <td className="px-3 py-2 text-right font-mono">{fmt(s.amt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">By Requester (who asked)</div>
+            <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+              <table className="w-full text-[12px]">
+                <thead style={{background:'#FAFAFA'}}>
+                  <tr>
+                    <th className="text-left px-3 py-2 font-bold">Cashier</th>
+                    <th className="text-right px-3 py-2 font-bold">Count</th>
+                    <th className="text-right px-3 py-2 font-bold">Total $</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requesterList.map(([name, s]) => (
+                    <tr key={name} className="border-t border-slate-100">
+                      <td className="px-3 py-2 font-semibold flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white"
+                          style={{background:'#f59e0b'}}>{name.charAt(0).toUpperCase()}</span>
+                        {name}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">{s.count}</td>
+                      <td className="px-3 py-2 text-right font-mono">{fmt(s.amt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Full chronological log */}
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">All Overrides — Newest First</div>
+          <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+            <table className="w-full text-[12px]">
+              <thead style={{background:'#FAFAFA'}}>
+                <tr>
+                  <th className="text-left px-3 py-2 font-bold">When</th>
+                  <th className="text-left px-3 py-2 font-bold">Action</th>
+                  <th className="text-left px-3 py-2 font-bold">Order#</th>
+                  <th className="text-right px-3 py-2 font-bold">Amount</th>
+                  <th className="text-left px-3 py-2 font-bold">Requested</th>
+                  <th className="text-left px-3 py-2 font-bold">Approved</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr key={r.id} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-mono text-[11px] text-[#666]">{fmtDT(r.created_at)}</td>
+                    <td className="px-3 py-2 font-semibold">{labelFor(r.permission)}</td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-[#666]">{r.order_number || '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono">{r.amount ? fmt(r.amount) : '—'}</td>
+                    <td className="px-3 py-2 text-[11px]">{r.requested_by_name || '—'}</td>
+                    <td className="px-3 py-2 text-[11px] font-semibold" style={{color:'#9333ea'}}>🔐 {r.approved_by_name || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.length === 500 && (
+            <div className="text-[10px] text-[#999] mt-2 text-center">
+              Showing first 500 — narrow the date range to see more
+            </div>
+          )}
+        </div>
+      </>}
+    </div>
+  )
+}
+
+function KpiCard({ label, value, color }) {
+  return (
+    <div className="rounded-xl px-4 py-3" style={{background:'#fff', border:`1px solid ${color}33`}}>
+      <div className="text-[10px] font-bold uppercase tracking-wider text-[#666]">{label}</div>
+      <div className="text-[20px] font-bold font-mono mt-1" style={{color}}>{value}</div>
+    </div>
+  )
+}
+
 
 // ── PRODUCT SALES REPORT ──────────────────────────────────────────
 function ProductReport({ items, dateFrom, dateTo }) {
