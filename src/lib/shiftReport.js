@@ -36,7 +36,7 @@ export async function buildShiftSummary({
   // not have it; we filter by date + tenant for the broad set, then by
   // terminal_id when set.)
   let ordersQ = supabase.from('orders')
-    .select('id, order_number, status, subtotal, total, tax_amount, discount_amount, coupon_discount, points_redeemed, terminal_id, created_at, voided_at, cashier_id')
+    .select('id, order_number, status, subtotal, total, tax_amount, discount_amount, coupon_discount, points_redeemed, terminal_id, created_at, voided_at, cashier_id, voided_by, voided_by_name, voided_approved_by_name, refunded_approved_by_name')
     .eq('tenant_id', tenantId)
     .gte('created_at', openedAt)
     .lte('created_at', closedAt)
@@ -76,6 +76,14 @@ export async function buildShiftSummary({
     .select('id, user_id, clock_in_at, clock_out_at, users(name)')
     .eq('tenant_id', tenantId)
     .or(`and(clock_in_at.gte.${openedAt},clock_in_at.lte.${closedAt}),and(clock_out_at.gte.${openedAt},clock_out_at.lte.${closedAt})`)
+    .then(r => ({ data: r.data || [] }))
+
+  // Manager override approvals during the shift
+  const { data: overrideApprovals = [] } = await supabase.from('override_approvals')
+    .select('id, permission, action_label, requested_by_name, approved_by_name, order_number, amount, created_at')
+    .eq('tenant_id', tenantId)
+    .gte('created_at', openedAt)
+    .lte('created_at', closedAt)
     .then(r => ({ data: r.data || [] }))
 
   const grossSales   = sales.reduce((s, o) => s + Number(o.total || 0), 0)
@@ -157,7 +165,7 @@ export async function buildShiftSummary({
     at: o.created_at,
     icon:'↩️', kind:'refund',
     who: nameOf(o.cashier_id),
-    detail: `Refunded order · ${'$'+Math.abs(Number(o.total||0)).toFixed(2)}`,
+    detail: `Refunded order · ${'$'+Math.abs(Number(o.total||0)).toFixed(2)}${o.refunded_approved_by_name ? ' · 🔐 '+o.refunded_approved_by_name : ''}`,
     order_id: o.id,
   }))
   // Voids
@@ -165,7 +173,7 @@ export async function buildShiftSummary({
     at: o.voided_at || o.created_at,
     icon:'🚫', kind:'void',
     who: nameOf(o.voided_by, o.voided_by_name),
-    detail: `Voided #${o.order_number} · $${Number(o.total||0).toFixed(2)}`,
+    detail: `Voided #${o.order_number} · $${Number(o.total||0).toFixed(2)}${o.voided_approved_by_name ? ' · 🔐 '+o.voided_approved_by_name : ''}`,
     order_id: o.id,
   }))
   // Order adjustments (other than voids which we already have)
@@ -211,6 +219,17 @@ export async function buildShiftSummary({
       detail: `Closed shift · counted $${Number(shift.closing_amount||0).toFixed(2)}`,
     })
   }
+  // Manager overrides — only add the ones NOT already represented by a
+  // void/refund row (those already show 🔐 inline). E.g. price overrides.
+  overrideApprovals.forEach(oa => {
+    if (oa.permission === 'pos.void' || oa.permission === 'pos.refund') return
+    activity.push({
+      at: oa.created_at,
+      icon:'🔐', kind:'override',
+      who: oa.requested_by_name || 'Unknown',
+      detail: `${oa.action_label || oa.permission} — approved by ${oa.approved_by_name}${oa.amount ? ` · $${Number(oa.amount).toFixed(2)}` : ''}`,
+    })
+  })
   // Sort chronologically
   activity.sort((a,b) => new Date(a.at) - new Date(b.at))
 

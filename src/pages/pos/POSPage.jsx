@@ -29,6 +29,7 @@ import { useTerminalStore } from '@/stores/terminalStore'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import PinKeypadModal from '@/components/pos/PinKeypadModal'
 import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
+import { logOverride } from '@/lib/auditOverride'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
@@ -67,8 +68,16 @@ export default function POSPage() {
       setOverride({
         permission, action: actionLabel,
         onApprove: (approver) => {
-          // We could log who approved; for now toast it so the cashier sees it
           toast.success(`✓ Approved by ${approver.name}`)
+          // Audit log — fire-and-forget
+          logOverride({
+            tenantId: tenant?.id, storeId: store?.id, terminalId: terminal?.id,
+            permission, actionLabel,
+            requestedBy: activeEmployee
+              ? { id: activeEmployee.id, name: activeEmployee.name }
+              : { id: user?.id, name: user?.name },
+            approver,
+          })
           fn(approver)
         },
       })

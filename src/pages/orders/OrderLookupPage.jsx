@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
 import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
+import { logOverride } from '@/lib/auditOverride'
 import { useCartStore } from '@/stores/cartStore'
 import { format, subDays, startOfDay, endOfDay } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -216,7 +217,12 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
           🟣 Fully Refunded
           {order.refunded_at && (
             <div className="text-[10px] text-slate-400 mt-1">
-              {format(new Date(order.refunded_at),'MMM d, h:mm a')} · {order.refunded_by_name}
+              {format(new Date(order.refunded_at),'MMM d, h:mm a')} · by {order.refunded_by_name}
+            </div>
+          )}
+          {order.refunded_approved_by_name && (
+            <div className="text-[10px] mt-1" style={{color:'#9333ea'}}>
+              🔐 Approved by <b>{order.refunded_approved_by_name}</b>
             </div>
           )}
         </div>
@@ -227,6 +233,16 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
         <div className="rounded-xl p-3 text-center text-[11px]"
           style={{background:'#f1f5f9',border:'1px solid #e2e8f0',color:'#64748b'}}>
           🚫 Order Voided — no further action available
+          {order.voided_at && (
+            <div className="text-[10px] text-slate-400 mt-1">
+              {format(new Date(order.voided_at),'MMM d, h:mm a')} · by {order.voided_by_name}
+            </div>
+          )}
+          {order.voided_approved_by_name && (
+            <div className="text-[10px] mt-1" style={{color:'#9333ea'}}>
+              🔐 Approved by <b>{order.voided_approved_by_name}</b>
+            </div>
+          )}
         </div>
       )}
 
@@ -284,14 +300,25 @@ export default function OrderLookupPage() {
   const qc = useQueryClient()
   const [override, setOverride] = useState(null)
 
-  const guard = (permission, actionLabel, fn) => {
+  const guard = (permission, actionLabel, fn, extra = {}) => {
     const v = can(permission)
-    if (v === 'allow') return fn()
+    if (v === 'allow') return fn(null)
     if (v === 'prompt') {
       setOverride({
         permission, action: actionLabel,
         onApprove: (approver) => {
           toast.success(`✓ Approved by ${approver.name}`)
+          logOverride({
+            tenantId: tenant?.id,
+            permission, actionLabel,
+            requestedBy: activeEmployee
+              ? { id: activeEmployee.id, name: activeEmployee.name }
+              : { id: user?.id, name: user?.name },
+            approver,
+            orderId: extra.orderId,
+            orderNumber: extra.orderNumber,
+            amount: extra.amount,
+          })
           fn(approver)
         },
       })
@@ -400,7 +427,7 @@ export default function OrderLookupPage() {
     }
   }
 
-  const handleVoid = async (o) => {
+  const handleVoid = async (o, approver) => {
     const payMethods = o.order_payments || []
     const total = parseFloat(o.grand_total || 0)
     const hasCash = payMethods.some(p => p.method === 'cash')
@@ -413,16 +440,21 @@ export default function OrderLookupPage() {
     if (hasCard) msg += `\n💳 Card — authorization will be voided at terminal`
     if (hasMember) msg += `\n🏷️ VIP Card — balance will be restored to customer`
     msg += `\n\nThis void will be recorded on TODAY's report (${new Date().toLocaleDateString()})`
+    if (approver) msg += `\n\nApproved by: ${approver.name}`
 
     if (!window.confirm(msg)) return
 
     try {
-      // 1. Mark order as voided
+      // 1. Mark order as voided — include approver if any
       await supabase.from('orders').update({
         status: 'voided',
         voided_at: new Date().toISOString(),
         voided_by: effCashierId,
         voided_by_name: effCashierName,
+        ...(approver && {
+          voided_approved_by:      approver.id,
+          voided_approved_by_name: approver.name,
+        }),
       }).eq('id', o.id)
 
       // 2. Create adjustment record on TODAY (not original date)
@@ -434,9 +466,13 @@ export default function OrderLookupPage() {
           type:           'void',
           amount:         -parseFloat(p.amount || 0),
           payment_method: p.method,
-          reason:         `Void of order ${o.order_number} (original: ${new Date(o.created_at).toLocaleDateString()})`,
+          reason:         `Void of order ${o.order_number} (original: ${new Date(o.created_at).toLocaleDateString()})${approver?` · approved by ${approver.name}`:''}`,
           staff_id:       effCashierId,
           staff_name:     effCashierName,
+          ...(approver && {
+            approved_by:      approver.id,
+            approved_by_name: approver.name,
+          }),
         })
       }
 
@@ -626,8 +662,17 @@ export default function OrderLookupPage() {
                   await cancelHeldOrder({ heldOrderId: selected.id, tenantId: tenant.id })
                   setSelected(null); toast.success('Cancelled')
                 }}
-                onVoid={() => guard('pos.void', 'void this order', () => handleVoid(selected))}
-                onRefund={() => guard('pos.refund', 'process this refund', () => { window.location.href = '/pos?refund=' + selected.id })}
+                onVoid={() => guard('pos.void', 'void this order',
+                  (approver) => handleVoid(selected, approver),
+                  { orderId: selected.id, orderNumber: selected.order_number, amount: selected.grand_total||selected.total })}
+                onRefund={() => guard('pos.refund', 'process this refund',
+                  (approver) => {
+                    if (approver) {
+                      sessionStorage.setItem('refundApprover', JSON.stringify({ id: approver.id, name: approver.name }))
+                    }
+                    window.location.href = '/pos?refund=' + selected.id
+                  },
+                  { orderId: selected.id, orderNumber: selected.order_number, amount: selected.grand_total||selected.total })}
               />
             </div>
           )}

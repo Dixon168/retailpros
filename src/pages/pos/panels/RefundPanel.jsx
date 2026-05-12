@@ -42,6 +42,18 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
   const { activeEmployee } = useEmployeeStore()
   const effCashierId   = activeEmployee?.id   || user?.id
   const effCashierName = activeEmployee?.name || user?.name
+
+  // If this refund was approved via a manager-override on the Order Lookup
+  // page, the approver info will be in sessionStorage. Consume it once.
+  const [approver] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem('refundApprover')
+      if (!raw) return null
+      sessionStorage.removeItem('refundApprover')
+      return JSON.parse(raw)
+    } catch { return null }
+  })
+
   const { addProduct }   = useCartStore()
   const qc               = useQueryClient()
 
@@ -201,6 +213,10 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
           refunded_at: new Date().toISOString(),
           refunded_by: effCashierId,
           refunded_by_name: effCashierName,
+          ...(approver && {
+            refunded_approved_by:      approver.id,
+            refunded_approved_by_name: approver.name,
+          }),
         })
         .eq('id', selectedOrder.id)
 
@@ -218,6 +234,10 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
         })),
         refunded_by: effCashierId,
         refunded_by_name: effCashierName,
+        ...(approver && {
+          approved_by:      approver.id,
+          approved_by_name: approver.name,
+        }),
       })
 
       // Add negative items to cart
@@ -443,6 +463,13 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                   className="text-slate-400 bg-transparent border-none cursor-pointer text-[14px]">‹ Back</button>
                 <div className="text-[14px] font-bold text-slate-700">Return by Invoice</div>
               </div>
+
+              {approver && (
+                <div className="rounded-xl px-3 py-2 text-[11px]"
+                  style={{background:'#faf5ff', border:'1px solid #e9d5ff', color:'#7c2d92'}}>
+                  🔐 <b>Manager Override active:</b> approved by {approver.name} — this refund will be logged with their authorization
+                </div>
+              )}
 
               {/* Step 1: Search invoice */}
               {!selectedOrder && (
