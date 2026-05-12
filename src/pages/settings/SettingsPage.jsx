@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { paxGetStatus } from '@/lib/pax'
+import { PERMISSION_GROUPS, ALL_PERMISSIONS } from '@/lib/permissions'
 import toast from 'react-hot-toast'
 
 const SECTIONS = [
@@ -15,7 +16,8 @@ const SECTIONS = [
   { id:'tax',       icon:'🧾', label:'Tax Rates',         role:'owner' },
   { id:'coupons',   icon:'🎫', label:'Coupons',           role:'owner' },
   { id:'discounts', icon:'🏷️', label:'Discount Tiers',    role:'owner' },
-  { id:'users',     icon:'👤', label:'Users',             role:'manager' },
+  { id:'users',     icon:'👤', label:'Employees',          role:'manager' },
+  { id:'roles',     icon:'🛡️', label:'Roles & Permissions',role:'owner' },
   { id:'payment',   icon:'💳', label:'Payment Config',    role:'owner' },
   { id:'billing',   icon:'💰', label:'Subscription',      role:'owner' },
   { id:'language',  icon:'🌐', label:'Language & Region', role:'owner' },
@@ -59,6 +61,7 @@ export default function SettingsPage() {
         {active === 'coupons'   && <CouponsSection tenantId={tenant?.id} userId={user?.id}/>}
         {active === 'discounts' && <DiscountsSection tenantId={tenant?.id}/>}
         {active === 'users'     && <UsersSection tenantId={tenant?.id}/>}
+        {active === 'roles'     && <RolesSection tenantId={tenant?.id} userId={user?.id}/>}
         {active === 'payment'   && <PaymentSection tenantId={tenant?.id}/>}
         {active === 'billing'   && <BillingSection tenant={tenant}/>}
         {active === 'language'  && <LanguageSection/>}
@@ -1129,6 +1132,20 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
   const isNew = !!employee._new
 
+  // Load available roles dynamically (system + any custom roles)
+  const { data: availableRoles = [] } = useQuery({
+    queryKey: ['roles-list', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('roles')
+        .select('id, name, description, is_system')
+        .eq('tenant_id', tenantId)
+        .order('is_system', { ascending: false })
+        .order('name')
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
+
   const save = async () => {
     if (!form.name?.trim()) { toast.error('Name required'); return }
     if (form.pin && !/^\d{3,8}$/.test(form.pin)) { toast.error('PIN must be 3–8 digits'); return }
@@ -1226,21 +1243,27 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
           <SLabel>Role</SLabel>
-          <div className="grid grid-cols-3 gap-1.5">
-            {['cashier','manager','owner'].map(r => (
-              <button key={r} onClick={()=>set('role', r)}
-                className="rounded-lg py-2 text-[11px] font-bold cursor-pointer border-2 capitalize"
-                style={form.role===r
-                  ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
-                  : {background:'#fff', color:'#64748b', borderColor:'#e2e8f0'}}>
-                {r}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-1.5">
+            {availableRoles.map(r => {
+              const key = r.name.toLowerCase()
+              const selected = (form.role || '').toLowerCase() === key
+              return (
+                <button key={r.id} onClick={()=>set('role', key)}
+                  className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-2"
+                  style={selected
+                    ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                    : {background:'#fff', color:'#64748b', borderColor:'#e2e8f0'}}>
+                  {r.name}
+                  {!r.is_system && <span className="ml-1 opacity-60">·custom</span>}
+                </button>
+              )
+            })}
+            {availableRoles.length === 0 && (
+              <div className="text-[10px] text-[#999]">Loading roles…</div>
+            )}
           </div>
           <div className="text-[10px] text-[#666] mt-1">
-            {form.role === 'owner'   && 'Full access, including all settings & payroll'}
-            {form.role === 'manager' && 'POS + reports + employees + most settings'}
-            {form.role === 'cashier' && 'POS + clock-in only; can\'t change settings'}
+            {availableRoles.find(r => r.name.toLowerCase() === (form.role||'').toLowerCase())?.description || 'Pick a role — manage roles in 🛡️ Roles & Permissions'}
           </div>
         </div>
         <div>
@@ -1289,6 +1312,334 @@ function SLabel({ children }) {
   return <div className="text-[10px] font-bold text-[#1F1F1F] uppercase tracking-wider mb-1">{children}</div>
 }
 
+
+// ════════════════════════════════════════════════════════
+// 🛡️ RolesSection — manage roles and their permissions
+// ════════════════════════════════════════════════════════
+function RolesSection({ tenantId, userId }) {
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(null) // role obj or 'new' placeholder
+  const [creating, setCreating] = useState(false)
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('roles')
+        .select('*').eq('tenant_id', tenantId)
+        .order('is_system', { ascending: false })
+        .order('name')
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
+
+  // Count employees in each role so we don't allow deleting roles in use
+  const { data: roleCounts = {} } = useQuery({
+    queryKey: ['role-counts', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('users')
+        .select('role').eq('tenant_id', tenantId)
+      const counts = {}
+      ;(data||[]).forEach(u => {
+        const k = (u.role||'').toLowerCase()
+        counts[k] = (counts[k]||0) + 1
+      })
+      return counts
+    },
+    enabled: !!tenantId,
+  })
+
+  const startNew = () => {
+    setEditing({
+      name:'', description:'', is_system:false,
+      max_discount_pct: 0,
+      permissions: { 'pos.access':true },  // sane default
+    })
+    setCreating(true)
+  }
+  const startEdit = (r) => { setEditing({...r}); setCreating(false) }
+  const cancel    = () => { setEditing(null); setCreating(false) }
+
+  const save = async () => {
+    if (!editing.name?.trim()) { toast.error('Role name required'); return }
+    const payload = {
+      name: editing.name.trim(),
+      description: editing.description?.trim() || null,
+      max_discount_pct: parseInt(editing.max_discount_pct) || 0,
+      permissions: editing.permissions || {},
+    }
+    let error
+    if (creating) {
+      const r = await supabase.from('roles').insert({ ...payload, tenant_id: tenantId, is_system: false })
+      error = r.error
+    } else {
+      // System roles: only permissions + max_discount_pct can change, not name
+      const updateFields = editing.is_system
+        ? { permissions: payload.permissions, max_discount_pct: payload.max_discount_pct, description: payload.description }
+        : payload
+      const r = await supabase.from('roles').update(updateFields).eq('id', editing.id)
+      error = r.error
+    }
+    if (error) {
+      if (error.code === '23505') toast.error('A role with that name already exists')
+      else toast.error('Save failed: ' + error.message)
+      return
+    }
+    qc.invalidateQueries({ queryKey:['roles'] })
+    qc.invalidateQueries({ queryKey:['roles-list'] })
+    toast.success(creating ? '✓ Role created' : '✓ Saved')
+    cancel()
+  }
+
+  const remove = async (r) => {
+    if (r.is_system) { toast.error('System roles cannot be deleted'); return }
+    const inUse = roleCounts[r.name.toLowerCase()] || 0
+    if (inUse > 0) { toast.error(`${inUse} employee(s) still use this role. Reassign them first.`); return }
+    if (!window.confirm(`Delete role "${r.name}"? This can't be undone.`)) return
+    const { error } = await supabase.from('roles').delete().eq('id', r.id)
+    if (error) { toast.error(error.message); return }
+    qc.invalidateQueries({ queryKey:['roles'] })
+    qc.invalidateQueries({ queryKey:['roles-list'] })
+    toast.success('Deleted')
+  }
+
+  // Owner is special — should always have everything
+  const isProtected = (r) => r.is_system && r.name.toLowerCase() === 'owner'
+
+  return (
+    <div className="max-w-[920px]">
+      <div className="flex justify-between items-center mb-2">
+        <SectionTitle className="mb-0">🛡️ Roles & Permissions</SectionTitle>
+        {!editing && (
+          <button onClick={startNew}
+            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer">
+            + Add Custom Role
+          </button>
+        )}
+      </div>
+      <p className="text-[12px] text-[#666666] mb-4">
+        Roles bundle permissions together. Assign one to each employee. System roles
+        (Owner / Manager / Cashier) can be edited but not deleted. Owner always has full access.
+      </p>
+
+      {editing && (
+        <RoleEditor role={editing} setRole={setEditing}
+          onSave={save} onCancel={cancel} creating={creating}
+          isProtected={isProtected(editing)}/>
+      )}
+
+      {!editing && (
+        <div className="space-y-2.5">
+          {roles.map(r => {
+            const inUse = roleCounts[r.name.toLowerCase()] || 0
+            const permCount = Object.values(r.permissions || {}).filter(Boolean).length
+            return (
+              <div key={r.id} className="bg-[#FFFFFF] rounded-xl p-4"
+                style={{border: r.is_system ? '1.5px solid #80B2FF' : '1px solid #E5E5E5'}}>
+                <div className="flex items-center gap-3">
+                  <div className="text-[20px]">🛡️</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="text-[14px] font-bold">{r.name}</div>
+                      {r.is_system
+                        ? <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>SYSTEM</span>
+                        : <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#fef3c7', color:'#92400e'}}>CUSTOM</span>}
+                      {inUse > 0 && (
+                        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#dcfce7', color:'#15803d'}}>
+                          {inUse} employee{inUse>1?'s':''}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-[#666] mt-0.5">
+                      {r.description || <span className="opacity-60">No description</span>}
+                    </div>
+                    <div className="text-[10px] text-[#999] mt-1 font-mono">
+                      {permCount} / {ALL_PERMISSIONS.length} permissions enabled
+                      {' · '}max discount: {r.max_discount_pct}%
+                    </div>
+                  </div>
+                  <button onClick={() => startEdit(r)}
+                    className="rounded-md px-3 py-1.5 text-[11px] font-bold cursor-pointer"
+                    style={{background:'#F1F5F9', color:'#475569', border:'1px solid #E5E5E5'}}>
+                    Edit
+                  </button>
+                  {!r.is_system && (
+                    <button onClick={() => remove(r)}
+                      className="rounded-md px-2 py-1.5 text-[12px] cursor-pointer"
+                      style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FCA5A5'}}>
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+          {roles.length === 0 && (
+            <div className="text-center py-8 text-[#999]">
+              <div className="text-[40px] mb-2 opacity-30">🛡️</div>
+              <div className="text-[13px]">No roles yet. Run B2C_ROLES_PERMISSIONS.sql to seed the system roles.</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) {
+  const set = (k, v) => setRole(p => ({...p, [k]: v}))
+  const setPerm = (key, val) => setRole(p => ({...p, permissions: {...(p.permissions||{}), [key]: val}}))
+
+  const isOwner = isProtected
+  const togglePerm = (key) => {
+    if (isOwner) return  // Owner always gets everything
+    setPerm(key, !role.permissions?.[key])
+  }
+  const allInGroup = (group, val) => {
+    if (isOwner) return
+    const next = {...(role.permissions||{})}
+    group.items.forEach(([k]) => { next[k] = val })
+    setRole(p => ({...p, permissions: next}))
+  }
+
+  return (
+    <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4" style={{border:'2px solid #006AFF'}}>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <div className="text-[15px] font-bold text-[#006AFF]">
+            {creating ? '➕ New Role' : `✏️ Edit Role: ${role.name}`}
+          </div>
+          {isOwner && (
+            <div className="text-[10px] text-[#92400e] mt-1 rounded px-2 py-1 inline-block" style={{background:'#fef3c7'}}>
+              ⚠️ Owner role always has full access — permissions cannot be reduced
+            </div>
+          )}
+        </div>
+        <button onClick={onCancel}
+          className="w-8 h-8 rounded-full border-none cursor-pointer text-[14px]"
+          style={{background:'#F1F5F9', color:'#64748b'}}>✕</button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div>
+          <SLabel>Role name {role.is_system && <span className="text-[#999] font-normal">(system role, locked)</span>}</SLabel>
+          <input value={role.name||''} onChange={e=>set('name', e.target.value)}
+            disabled={role.is_system}
+            placeholder="e.g. Floor Supervisor"
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{border:'1.5px solid #80B2FF', background: role.is_system?'#f1f5f9':'#fff'}}/>
+        </div>
+        <div className="col-span-2">
+          <SLabel>Description</SLabel>
+          <input value={role.description||''} onChange={e=>set('description', e.target.value)}
+            placeholder="When to assign this role"
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+        </div>
+      </div>
+
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        <div>
+          <SLabel>Max discount this role can apply</SLabel>
+          <div className="flex items-center gap-2">
+            <input type="range" min="0" max="100" step="5"
+              value={role.max_discount_pct||0}
+              onChange={e=>set('max_discount_pct', parseInt(e.target.value))}
+              disabled={isOwner}
+              className="flex-1 cursor-pointer"/>
+            <div className="rounded-md px-3 py-1.5 text-[13px] font-mono font-bold w-[60px] text-center"
+              style={{background:'#E6F0FF', color:'#006AFF'}}>
+              {isOwner ? '100' : (role.max_discount_pct||0)}%
+            </div>
+          </div>
+          <div className="text-[10px] text-[#666] mt-1">
+            Cap on % off a cashier with this role can give. 0 = none.
+          </div>
+        </div>
+      </div>
+
+      {/* Permission groups */}
+      <div className="space-y-3">
+        {PERMISSION_GROUPS.map(group => {
+          const totalInGroup = group.items.length
+          const enabledInGroup = group.items.filter(([k]) => isOwner ? true : !!role.permissions?.[k]).length
+          const allOn  = enabledInGroup === totalInGroup
+          const allOff = enabledInGroup === 0
+          return (
+            <div key={group.id} className="rounded-xl overflow-hidden"
+              style={{border:'1px solid #E5E5E5'}}>
+              <div className="px-4 py-2.5 flex items-center justify-between"
+                style={{background:'#FAFAFA', borderBottom:'1px solid #E5E5E5'}}>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-[18px]">{group.icon}</span>
+                  <div>
+                    <div className="text-[13px] font-bold">{group.title}</div>
+                    <div className="text-[10px] text-[#666]">{group.description}</div>
+                  </div>
+                </div>
+                <div className="text-[11px] text-[#666] font-mono mr-3">{enabledInGroup}/{totalInGroup}</div>
+                {!isOwner && (
+                  <div className="flex gap-1">
+                    <button onClick={()=>allInGroup(group, true)} disabled={allOn}
+                      className="rounded px-2 py-1 text-[10px] cursor-pointer disabled:opacity-40"
+                      style={{background:'#dcfce7', color:'#15803d', border:'1px solid #86efac'}}>All</button>
+                    <button onClick={()=>allInGroup(group, false)} disabled={allOff}
+                      className="rounded px-2 py-1 text-[10px] cursor-pointer disabled:opacity-40"
+                      style={{background:'#fef2f2', color:'#991b1b', border:'1px solid #fecaca'}}>None</button>
+                  </div>
+                )}
+              </div>
+              <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                {group.items.map(item => {
+                  const [key, label, desc, opts] = item
+                  const sensitive = opts?.sensitive
+                  const checked = isOwner ? true : !!role.permissions?.[key]
+                  return (
+                    <label key={key}
+                      className="flex items-start gap-2 cursor-pointer rounded-lg px-3 py-2 transition-colors"
+                      style={{
+                        background: checked ? '#E6F0FF' : '#fff',
+                        border: `1px solid ${checked ? '#80B2FF' : '#E5E5E5'}`,
+                        opacity: isOwner ? 0.85 : 1,
+                      }}>
+                      <input type="checkbox"
+                        checked={checked}
+                        disabled={isOwner}
+                        onChange={() => togglePerm(key)}
+                        className="mt-0.5 cursor-pointer flex-shrink-0"/>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-semibold flex items-center gap-1.5">
+                          <span style={{color: checked ? '#006AFF' : '#1F1F1F'}}>{label}</span>
+                          {sensitive && <span title="Sensitive permission — be cautious assigning"
+                            className="text-[9px] rounded px-1.5 py-0.5 font-bold"
+                            style={{background:'#fef2f2', color:'#dc2626'}}>!</span>}
+                        </div>
+                        {desc && <div className="text-[10px] text-[#666] mt-0.5">{desc}</div>}
+                        <div className="text-[9px] font-mono text-[#999] mt-0.5">{key}</div>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="flex gap-2 mt-5">
+        <button onClick={onCancel}
+          className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer"
+          style={{background:'#fff', color:'#666', border:'1px solid #E5E5E5'}}>Cancel</button>
+        <button onClick={onSave}
+          className="flex-1 rounded-lg py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
+          style={{background:'#006AFF'}}>
+          {creating ? '+ Create Role' : '✓ Save Changes'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 
 // ── Payment Config ──

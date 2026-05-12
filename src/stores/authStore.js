@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import toast from 'react-hot-toast'
 
 let currentSessionToken = null
@@ -125,10 +126,23 @@ export const useAuthStore = create(
       can: (permission) => {
         const { user } = get()
         if (!user) return false
+
+        // PIN-signed-in employee takes priority (their permissions come
+        // pre-resolved from fn_user_permissions which merges role + per-user)
+        const emp = useEmployeeStore.getState().activeEmployee
+        if (emp?.permissions && Object.keys(emp.permissions).length > 0) {
+          if (emp.role?.toLowerCase() === 'owner') return true
+          return emp.permissions[permission] === true
+        }
+
+        // Otherwise fall back to tenant-owner login defaults
         if (user.role === 'owner') return true
         if (user.role === 'manager') {
           const mp = ['can_discount','can_refund','can_void','can_view_reports',
-            'can_manage_products','can_manage_customers','can_send_invoice','can_open_drawer']
+            'can_manage_products','can_manage_customers','can_send_invoice','can_open_drawer',
+            'pos.access','pos.discount','pos.refund','pos.void','pos.coupon',
+            'pos.points_redeem','pos.gift_card','pos.hold_recall','pos.open_shift','pos.close_shift',
+            'reports.view','inventory.products','customers.manage']
           if (mp.includes(permission)) return true
         }
         return user.permissions?.[permission] === true
@@ -137,14 +151,28 @@ export const useAuthStore = create(
       canAccessSettings: (section) => {
         const { user } = get()
         if (!user) return false
+
+        const emp = useEmployeeStore.getState().activeEmployee
+        if (emp?.permissions) {
+          if (emp.role?.toLowerCase() === 'owner') return true
+          const key = `settings.${section}`
+          if (emp.permissions[key] != null) return emp.permissions[key] === true
+          return false
+        }
+
         if (user.role === 'owner') return true
-        if (user.role === 'manager') return ['store','users'].includes(section)
+        if (user.role === 'manager') return ['store','users','coupons','loyalty','memberlevels'].includes(section)
         return false
       },
 
       maxDiscountPct: () => {
         const { user } = get()
         if (!user) return 0
+        const emp = useEmployeeStore.getState().activeEmployee
+        if (emp) {
+          if (emp.role?.toLowerCase() === 'owner') return 100
+          return Number(emp.max_discount_pct ?? 0)
+        }
         if (user.role === 'owner' || user.role === 'manager') return 100
         return user.permissions?.max_discount_pct || 0
       },
