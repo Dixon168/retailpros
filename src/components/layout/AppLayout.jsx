@@ -16,6 +16,7 @@ const NAV_GROUPS = [
     items: [
       { to:'/backoffice', icon:'🏠', label:'Dashboard' },
       { to:'/reports',    icon:'📊', label:'Reports' },
+      { to:'/payroll',    icon:'💰', label:'Payroll' },
     ]
   },
 

@@ -997,11 +997,11 @@ function DiscountsSection({ tenantId }) {
   )
 }
 
-// ── Users ──
+// ── Users / Employees (full implementation) ──
 function UsersSection({ tenantId }) {
   const qc = useQueryClient()
-  const { checkUserQuota } = useAuthStore()
-  const [showForm, setShowForm] = useState(false)
+  const { checkUserQuota, user: me } = useAuthStore()
+  const [editing, setEditing] = useState(null) // user obj or 'new'
 
   const { data: users = [] } = useQuery({
     queryKey: ['users-settings', tenantId],
@@ -1027,44 +1027,54 @@ function UsersSection({ tenantId }) {
     manager: { bg:'rgba(59,130,246,0.1)', color:'#3b82f6' },
     cashier: { bg:'rgba(16,185,129,0.1)', color:'#10b981' },
   }
-  const AVATAR_COLORS = [
-    '#3b82f6',
-    '#10b981',
-    '#006AFF',
-    '#ec4899',
-    '#06b6d4',
-  ]
+  const AVATAR_COLORS = ['#3b82f6','#10b981','#006AFF','#ec4899','#06b6d4']
+
+  const newEmployee = () => {
+    setEditing({
+      _new: true,
+      name:'', email:'', phone:'', role:'cashier', pin:'',
+      employee_code:'', hourly_rate:0, is_active:true,
+    })
+  }
+
+  const toggleActive = async (u) => {
+    const { error } = await supabase.from('users').update({ is_active: !u.is_active }).eq('id', u.id)
+    if (error) { toast.error('Failed: ' + error.message); return }
+    qc.invalidateQueries({ queryKey:['users-settings'] })
+    toast.success(u.is_active ? 'Employee deactivated' : 'Employee reactivated')
+  }
 
   return (
-    <div className="max-w-[640px]">
+    <div className="max-w-[760px]">
       <div className="flex justify-between items-center mb-2">
-        <SectionTitle className="mb-0">👤 Users & Permissions</SectionTitle>
-        <button
-          onClick={async () => {
+        <SectionTitle className="mb-0">👤 Employees</SectionTitle>
+        <button onClick={async () => {
             const q = await checkUserQuota()
-            if (!q?.allowed) {
-              toast.error(q?.message || 'User limit reached. Please upgrade.')
-              return
-            }
-            setShowForm(true)
+            if (!q?.allowed) { toast.error(q?.message || 'User limit reached'); return }
+            newEmployee()
           }}
-          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
-          + Invite User
+          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer">
+          + Add Employee
         </button>
       </div>
+      <p className="text-[12px] text-[#666666] mb-4">
+        Employees clock in/out at any POS terminal using their PIN. Hourly rate is used for payroll reports.
+      </p>
 
-      {/* Quota bar */}
       {quota && (
-        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[10px] px-4 py-2.5 mb-5
-          flex items-center gap-3">
+        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[10px] px-4 py-2.5 mb-4 flex items-center gap-3">
           <div className="flex-1 h-1.5 bg-[#F5F5F5] rounded overflow-hidden">
             <div className="h-full rounded transition-all bg-[#006AFF]"
               style={{ width: `${Math.min(100, quota.current / quota.max * 100)}%` }}/>
           </div>
-          <span className="text-[11px] font-mono text-[#666666]">
-            {quota.current} / {quota.max} users
-          </span>
+          <span className="text-[11px] font-mono text-[#666666]">{quota.current} / {quota.max} users</span>
         </div>
+      )}
+
+      {editing && (
+        <EmployeeForm employee={editing} tenantId={tenantId} editorId={me?.id}
+          onClose={() => setEditing(null)}
+          onSaved={() => { qc.invalidateQueries({ queryKey:['users-settings'] }); setEditing(null) }}/>
       )}
 
       {users.map((u, i) => {
@@ -1072,36 +1082,214 @@ function UsersSection({ tenantId }) {
         return (
           <Card key={u.id} className="mb-2.5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[10px] flex items-center justify-center
-                text-[14px] font-bold text-white flex-shrink-0"
-                style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
-                {u.name?.charAt(0)}
+              <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0"
+                style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length], opacity: u.is_active?1:0.4 }}>
+                {u.name?.charAt(0)?.toUpperCase()}
               </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-bold">{u.name}</div>
-                <div className="text-[10px] font-mono text-[#999999] mt-0.5">
-                  {u.email}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="text-[13px] font-bold" style={{textDecoration: u.is_active?'none':'line-through', opacity: u.is_active?1:0.6}}>{u.name}</div>
+                  {u.pin && <span className="rounded px-1.5 py-0.5 text-[9px] font-mono font-bold" style={{background:'#1F1F1F', color:'#fff'}}>PIN ••••</span>}
+                  {!u.is_active && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#FEE2E2', color:'#DC2626'}}>INACTIVE</span>}
+                </div>
+                <div className="text-[10px] text-[#999999] mt-0.5 flex gap-3 flex-wrap">
+                  {u.employee_code && <span className="font-mono">{u.employee_code}</span>}
+                  {u.email && <span>{u.email}</span>}
+                  {u.hourly_rate > 0 && <span className="font-mono text-[#16a34a]">${Number(u.hourly_rate).toFixed(2)}/hr</span>}
                 </div>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded capitalize"
-                style={{ background: rs.bg, color: rs.color }}>{u.role}</span>
-              <div className="flex gap-2">
-                <button onClick={() => toast.success('Edit user')}
-                  className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md
-                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
-                    transition-all">Edit</button>
-                <button onClick={() => toast.success('Set PIN')}
-                  className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md
-                    px-2.5 py-1 text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
-                    transition-all">PIN</button>
-              </div>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded capitalize" style={{ background: rs.bg, color: rs.color }}>{u.role}</span>
+              <button onClick={() => setEditing(u)}
+                className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md px-3 py-1.5 text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all cursor-pointer">
+                Edit
+              </button>
+              <button onClick={() => toggleActive(u)}
+                className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md px-2 py-1.5 text-[#666666] hover:border-red-500/30 hover:text-red-500 transition-all cursor-pointer">
+                {u.is_active ? '⏸' : '▶'}
+              </button>
             </div>
           </Card>
         )
       })}
+
+      {users.length === 0 && (
+        <div className="text-center py-8 text-[#999]">
+          <div className="text-[40px] mb-2 opacity-30">👤</div>
+          <div className="text-[13px]">No employees yet. Click <b>+ Add Employee</b> to add your first one.</div>
+        </div>
+      )}
     </div>
   )
 }
+
+
+function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
+  const [form, setForm] = useState({ ...employee })
+  const [saving, setSaving] = useState(false)
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const isNew = !!employee._new
+
+  const save = async () => {
+    if (!form.name?.trim()) { toast.error('Name required'); return }
+    if (form.pin && !/^\d{3,8}$/.test(form.pin)) { toast.error('PIN must be 3–8 digits'); return }
+    if (form.hourly_rate != null && form.hourly_rate < 0) { toast.error('Hourly rate must be ≥ 0'); return }
+
+    setSaving(true)
+    let error
+    if (isNew) {
+      // Create new user. Server-side fn_check_user_quota guards count.
+      const payload = {
+        tenant_id: tenantId,
+        name: form.name.trim(),
+        email: form.email?.trim() || null,
+        phone: form.phone?.trim() || null,
+        role: form.role || 'cashier',
+        pin: form.pin?.trim() || null,
+        employee_code: form.employee_code?.trim() || null,
+        hourly_rate: parseFloat(form.hourly_rate) || 0,
+        is_active: form.is_active !== false,
+        id: crypto.randomUUID(),  // local UUID; not linked to Supabase auth
+      }
+      const r = await supabase.from('users').insert(payload)
+      error = r.error
+    } else {
+      const { id } = form
+      const payload = {
+        name: form.name.trim(),
+        email: form.email?.trim() || null,
+        phone: form.phone?.trim() || null,
+        role: form.role,
+        pin: form.pin?.trim() || null,
+        employee_code: form.employee_code?.trim() || null,
+        hourly_rate: parseFloat(form.hourly_rate) || 0,
+        is_active: form.is_active,
+      }
+      const r = await supabase.from('users').update(payload).eq('id', id)
+      error = r.error
+    }
+    setSaving(false)
+    if (error) {
+      if (error.code === '23505' && error.message.includes('pin')) {
+        toast.error('That PIN is already in use by another employee')
+      } else {
+        toast.error('Save failed: ' + error.message)
+      }
+      return
+    }
+    toast.success(isNew ? '✓ Employee added' : '✓ Updated')
+    onSaved()
+  }
+
+  return (
+    <Card className="mb-4" style={{background:'#E6F0FF', border:'2px solid #006AFF'}}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[13px] font-bold text-[#006AFF]">
+          {isNew ? '➕ New Employee' : `✏️ Edit: ${employee.name}`}
+        </div>
+        <button onClick={onClose} className="text-[14px] cursor-pointer bg-transparent border-none text-[#666]">✕</button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <SLabel>Name *</SLabel>
+          <input value={form.name} onChange={e=>set('name', e.target.value)}
+            placeholder="John Smith"
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+        </div>
+        <div>
+          <SLabel>Employee code</SLabel>
+          <input value={form.employee_code || ''} onChange={e=>set('employee_code', e.target.value.toUpperCase())}
+            placeholder="EMP-001"
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
+            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <SLabel>Email</SLabel>
+          <input value={form.email || ''} onChange={e=>set('email', e.target.value)} type="email"
+            placeholder="optional"
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
+            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+        </div>
+        <div>
+          <SLabel>Phone</SLabel>
+          <input value={form.phone || ''} onChange={e=>set('phone', e.target.value)}
+            placeholder="(555) 555-5555"
+            className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
+            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <SLabel>Role</SLabel>
+          <div className="grid grid-cols-3 gap-1.5">
+            {['cashier','manager','owner'].map(r => (
+              <button key={r} onClick={()=>set('role', r)}
+                className="rounded-lg py-2 text-[11px] font-bold cursor-pointer border-2 capitalize"
+                style={form.role===r
+                  ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                  : {background:'#fff', color:'#64748b', borderColor:'#e2e8f0'}}>
+                {r}
+              </button>
+            ))}
+          </div>
+          <div className="text-[10px] text-[#666] mt-1">
+            {form.role === 'owner'   && 'Full access, including all settings & payroll'}
+            {form.role === 'manager' && 'POS + reports + employees + most settings'}
+            {form.role === 'cashier' && 'POS + clock-in only; can\'t change settings'}
+          </div>
+        </div>
+        <div>
+          <SLabel>Hourly rate</SLabel>
+          <div className="flex items-center rounded-lg px-3"
+            style={{border:'1.5px solid #80B2FF', background:'#fff'}}>
+            <span className="text-[14px] text-[#666] mr-1">$</span>
+            <input type="number" step="0.25" min="0" value={form.hourly_rate||0}
+              onChange={e=>set('hourly_rate', e.target.value)}
+              className="flex-1 py-2 text-[13px] outline-none border-none bg-transparent font-mono"/>
+            <span className="text-[11px] text-[#666] ml-1">/hr</span>
+          </div>
+          <div className="text-[10px] text-[#666] mt-1">Used for payroll calculation</div>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <SLabel>PIN <span className="text-[#666] font-normal">(3–8 digits — used for clock-in)</span></SLabel>
+        <input value={form.pin || ''} onChange={e=>set('pin', e.target.value.replace(/\D/g,''))}
+          placeholder="e.g. 1234"
+          inputMode="numeric" maxLength={8}
+          className="w-full rounded-lg px-3 py-2 text-[16px] outline-none font-mono font-bold tracking-widest text-center"
+          style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#006AFF'}}/>
+      </div>
+
+      <label className="flex items-center gap-2 cursor-pointer mb-3">
+        <input type="checkbox" checked={form.is_active !== false} onChange={e=>set('is_active', e.target.checked)}/>
+        <span className="text-[12px] font-semibold">Active (can clock in)</span>
+      </label>
+
+      <div className="flex gap-2">
+        <button onClick={onClose}
+          className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer"
+          style={{background:'#fff', color:'#666', border:'1px solid #E5E5E5'}}>Cancel</button>
+        <button onClick={save} disabled={saving}
+          className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer border-none disabled:opacity-50"
+          style={{background:'#006AFF', color:'#fff'}}>
+          {saving ? 'Saving…' : isNew ? '+ Add Employee' : '✓ Save Changes'}
+        </button>
+      </div>
+    </Card>
+  )
+}
+
+function SLabel({ children }) {
+  return <div className="text-[10px] font-bold text-[#1F1F1F] uppercase tracking-wider mb-1">{children}</div>
+}
+
+
 
 // ── Payment Config ──
 function PaymentSection({ tenantId }) {

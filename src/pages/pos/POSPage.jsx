@@ -26,6 +26,8 @@ import GiftCardPanel from '@/components/pos/GiftCardPanel'
 import { OpenShiftModal } from '@/components/pos/ShiftModal'
 import CloseShiftFlow from '@/components/pos/CloseShiftFlow'
 import { useTerminalStore } from '@/stores/terminalStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
+import PinKeypadModal from '@/components/pos/PinKeypadModal'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
@@ -47,7 +49,9 @@ export default function POSPage() {
   const [showOpenItem,   setShowOpenItem]   = useState(false)
   const [showOpenShift,  setShowOpenShift]  = useState(false)
   const [showCloseShift, setShowCloseShift] = useState(false)
+  const [pinMode,        setPinMode]        = useState(null)  // 'signin' | 'clockin' | 'clockout' | null
   const { currentShift, shiftOpen, terminal } = useTerminalStore()
+  const { activeEmployee, clockedIn, clockedInAt, signOut } = useEmployeeStore()
   const [time,           setTime]           = useState(new Date())
 
   useEffect(() => {
@@ -161,6 +165,45 @@ export default function POSPage() {
             {time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
           </div>
           <LangSwitcher/>
+
+          {/* Employee signed in (PIN auth — separate from clock state) */}
+          {activeEmployee ? (
+            <button onClick={() => {
+              if (confirm(`Sign out ${activeEmployee.name}?\n\nThis only signs out of the app — it does NOT clock you out.`)) {
+                signOut()
+                toast.success('Signed out')
+              }
+            }}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(59,130,246,0.15)', borderColor:'rgba(59,130,246,0.45)', color:'#60a5fa'}}
+              title={`Signed in: ${activeEmployee.name}\nTap to sign out`}>
+              👤 {activeEmployee.name.split(' ')[0]}
+            </button>
+          ) : (
+            <button onClick={() => setPinMode('signin')}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(59,130,246,0.15)', borderColor:'rgba(59,130,246,0.45)', color:'#60a5fa'}}>
+              👤 Sign In
+            </button>
+          )}
+
+          {/* Clock In / Out — totally independent from sign-in */}
+          {clockedIn ? (
+            <button onClick={() => setPinMode('clockout')}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(16,185,129,0.15)', borderColor:'rgba(16,185,129,0.45)', color:'#34d399'}}
+              title={clockedInAt ? `Clocked in since ${new Date(clockedInAt).toLocaleTimeString()}` : 'Clocked in'}>
+              <span className="w-2 h-2 rounded-full" style={{background:'#10b981', boxShadow:'0 0 6px #10b981'}}/>
+              ⏰ Clocked In
+            </button>
+          ) : (
+            <button onClick={() => setPinMode('clockin')}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(168,85,247,0.15)', borderColor:'rgba(168,85,247,0.45)', color:'#c084fc'}}>
+              ⏰ Clock In
+            </button>
+          )}
+
           {shiftOpen ? (
             <button onClick={() => setShowCloseShift(true)}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
@@ -281,6 +324,11 @@ export default function POSPage() {
     {showGiftCard && <GiftCardPanel onClose={() => setShowGiftCard(false)}/>}
 
     {showOpenShift && <OpenShiftModal onClose={() => setShowOpenShift(false)}/>}
+
+    {pinMode && (
+      <PinKeypadModal mode={pinMode}
+        onClose={() => setPinMode(null)}/>
+    )}
 
     {showCloseShift && (
       <CloseShiftFlow

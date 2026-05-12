@@ -30,6 +30,7 @@ import CategoriesPage from '@/pages/categories/CategoriesPage'
 import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
 import CompanyDetailPage from '@/pages/business/CompanyDetailPage'
 import BarcodePage from '@/pages/barcode/BarcodePage'
+import PayrollPage from '@/pages/payroll/PayrollPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 30, networkMode: 'offlineFirst' } }
@@ -114,6 +115,7 @@ export default function App() {
             <Route path="/business/:id"  element={<CompanyDetailPage />} />
             <Route path="/reports"    element={<ReportsPage />} />
             <Route path="/barcode"    element={<BarcodePage />} />
+            <Route path="/payroll"    element={<PayrollPage />} />
             <Route path="/settings"   element={<SettingsPage />} />
           </Route>
           <Route path="/" element={<Navigate to="/pos" replace />} />
