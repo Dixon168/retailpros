@@ -208,45 +208,19 @@ export default function POSPage() {
           )}
 
           {shiftOpen ? (
-            <button onClick={() => {
-                if (!can('pos.close_shift')) {
-                  toast.error("You don't have permission to close shift — ask a manager")
-                  return
-                }
-                setShowCloseShift(true)
-              }}
-              title={can('pos.close_shift')
-                ? `Shift open since ${new Date(currentShift?.opened_at).toLocaleTimeString()}\nFloat: $${Number(currentShift?.opening_amount||0).toFixed(2)}`
-                : 'No permission: pos.close_shift'}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold border transition-all"
-              style={{
-                background: can('pos.close_shift') ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
-                borderColor: can('pos.close_shift') ? 'rgba(34,197,94,0.45)' : 'rgba(100,116,139,0.4)',
-                color: can('pos.close_shift') ? '#4ade80' : '#94a3b8',
-                cursor: can('pos.close_shift') ? 'pointer' : 'not-allowed',
-                opacity: can('pos.close_shift') ? 1 : 0.7,
-              }}>
-              <span className="w-2 h-2 rounded-full" style={{background: can('pos.close_shift')?'#22c55e':'#64748b', boxShadow: can('pos.close_shift')?'0 0 6px #22c55e':'none'}}/>
-              Shift Open {!can('pos.close_shift') && '🔒'}
+            <button onClick={() => setShowCloseShift(true)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(34,197,94,0.15)', borderColor:'rgba(34,197,94,0.45)', color:'#4ade80'}}
+              title={`Shift open since ${new Date(currentShift?.opened_at).toLocaleTimeString()}\nFloat: $${Number(currentShift?.opening_amount||0).toFixed(2)}`}>
+              <span className="w-2 h-2 rounded-full" style={{background:'#22c55e', boxShadow:'0 0 6px #22c55e'}}/>
+              Shift Open
             </button>
           ) : (
-            <button onClick={() => {
-                if (!can('pos.open_shift')) {
-                  toast.error("You don't have permission to open shift — ask a manager")
-                  return
-                }
-                setShowOpenShift(true)
-              }}
-              title={can('pos.open_shift') ? 'Click to open shift and enter opening cash float' : 'No permission: pos.open_shift'}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold border transition-all"
-              style={{
-                background: can('pos.open_shift') ? 'rgba(234,88,12,0.15)' : 'rgba(100,116,139,0.15)',
-                borderColor: can('pos.open_shift') ? 'rgba(234,88,12,0.45)' : 'rgba(100,116,139,0.4)',
-                color: can('pos.open_shift') ? '#fb923c' : '#94a3b8',
-                cursor: can('pos.open_shift') ? 'pointer' : 'not-allowed',
-                opacity: can('pos.open_shift') ? 1 : 0.7,
-              }}>
-              ☀️ Open Shift {!can('pos.open_shift') && '🔒'}
+            <button onClick={() => setShowOpenShift(true)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(234,88,12,0.15)', borderColor:'rgba(234,88,12,0.45)', color:'#fb923c'}}
+              title="Click to open shift and enter opening cash float">
+              ☀️ Open Shift
             </button>
           )}
           <button onClick={() => window.location.href='/backoffice'}
