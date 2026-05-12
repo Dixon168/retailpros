@@ -269,6 +269,7 @@ export default function PaymentPanel() {
   const [adjTab,    setAdjTab]    = useState(null)
   const [discMode,  setDiscMode]  = useState('pct')
   const [showAdjPad,setShowAdjPad]= useState(false)
+  const [showTipModal, setShowTipModal] = useState(false)
   const [showPointsPad, setShowPointsPad] = useState(false)
   const [showCouponPad, setShowCouponPad] = useState(false)
   const [selMethod, setSelMethod] = useState('cash')
@@ -564,7 +565,10 @@ export default function PaymentPanel() {
                 ['fee', '💼','Surcharge','#006AFF','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
               ].map(([id,icon,label,col,bg,applied])=>(
                 <button key={id}
-                  onClick={()=>{ setAdjTab(id); setShowAdjPad(true) }}
+                  onClick={()=>{
+                    if (id === 'tip') { setShowTipModal(true); return }
+                    setAdjTab(id); setShowAdjPad(true)
+                  }}
                   className="flex flex-col items-center py-3 rounded-xl cursor-pointer border-2 transition-all"
                   style={applied?{background:bg,borderColor:col}:{background:'#f8fafc',borderColor:'#e2e8f0'}}>
                   <span className="text-[20px]">{icon}</span>
@@ -781,6 +785,14 @@ export default function PaymentPanel() {
       </div>
 
       {showAdjPad && <DiscountNumPad adjTab={adjTab} discMode={discMode} setDiscMode={setDiscMode} onConfirm={applyAdj} onClose={()=>setShowAdjPad(false)}/>}
+      {showTipModal && (
+        <TipModal
+          subtotal={subtotal}
+          currentTip={tip}
+          onApply={(amt) => { setTip(amt); setShowTipModal(false) }}
+          onClose={() => setShowTipModal(false)}
+        />
+      )}
       {showPointsPad && (
         <PointsRedeemNumPad
           customerPts={customerPts}
@@ -1026,5 +1038,161 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
           title="Customer Phone" placeholder="(555) 123-4567" formatPhone={true}/>
       )}
     </>
+  )
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// 🙏 TipModal — preset % buttons + custom $ entry
+// ════════════════════════════════════════════════════════════════
+// Big-key Square-style tip selector. Defaults: 15% / 18% / 20% +
+// custom $ + No tip. Calculates the $ amount live from the subtotal
+// so the cashier and customer both see what the gratuity will be.
+function TipModal({ subtotal, currentTip, onApply, onClose }) {
+  // Presets
+  const PRESETS = [15, 18, 20, 25]
+
+  const [mode, setMode] = useState(currentTip > 0 ? 'custom' : 'preset')
+  const [pct,  setPct]  = useState(18)
+  const [customStr, setCustomStr] = useState(currentTip > 0 ? currentTip.toFixed(2) : '')
+
+  // Compute the $ value to apply based on current mode
+  const presetAmt = +(subtotal * (pct / 100)).toFixed(2)
+  const customAmt = parseFloat(customStr) || 0
+  const tipAmt = mode === 'preset' ? presetAmt : customAmt
+
+  const press = (k) => {
+    if (k === '.') {
+      if (!customStr.includes('.')) setCustomStr(p => (p || '0') + '.')
+    } else if (k === '⌫') {
+      setCustomStr(p => p.slice(0, -1))
+    } else {
+      // Limit to two decimal places
+      const parts = (customStr + k).split('.')
+      if (parts[1] && parts[1].length > 2) return
+      setCustomStr(p => p + k)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[420] flex items-center justify-center p-3"
+      style={{background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)'}}
+      onClick={onClose}>
+      <div className="rounded-3xl overflow-hidden shadow-2xl w-full"
+        style={{maxWidth:'440px', background:'#fff'}}
+        onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="px-5 py-4 flex items-center justify-between"
+          style={{background:'linear-gradient(135deg, #ca8a04 0%, #92400e 100%)'}}>
+          <div>
+            <div className="text-[16px] font-bold text-white">🙏 Add Gratuity</div>
+            <div className="text-[11px] text-amber-100 mt-0.5">
+              Subtotal: ${subtotal.toFixed(2)}
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px]">✕</button>
+        </div>
+
+        <div className="px-5 py-4">
+          {/* Mode tabs */}
+          <div className="flex gap-2 mb-4">
+            <button onClick={()=>setMode('preset')}
+              className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer border-2 transition-all"
+              style={mode==='preset'
+                ? {background:'#fffbeb', borderColor:'#ca8a04', color:'#92400e'}
+                : {background:'#fff', borderColor:'#e2e8f0', color:'#94a3b8'}}>
+              % Percentage
+            </button>
+            <button onClick={()=>setMode('custom')}
+              className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer border-2 transition-all"
+              style={mode==='custom'
+                ? {background:'#fffbeb', borderColor:'#ca8a04', color:'#92400e'}
+                : {background:'#fff', borderColor:'#e2e8f0', color:'#94a3b8'}}>
+              $ Custom
+            </button>
+          </div>
+
+          {mode === 'preset' && (
+            <>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {PRESETS.map(p => {
+                  const amt = (subtotal * (p / 100)).toFixed(2)
+                  const selected = pct === p
+                  return (
+                    <button key={p} onClick={()=>setPct(p)}
+                      className="rounded-2xl py-4 cursor-pointer border-2 transition-all active:scale-95"
+                      style={selected
+                        ? {background:'linear-gradient(135deg, #fef3c7 0%, #fde047 100%)', borderColor:'#ca8a04'}
+                        : {background:'#fff', borderColor:'#e5e5e5'}}>
+                      <div className="text-[24px] font-bold" style={{color: selected ? '#92400e' : '#1F1F1F'}}>
+                        {p}%
+                      </div>
+                      <div className="text-[12px] font-mono mt-1" style={{color: selected ? '#92400e' : '#666'}}>
+                        ${amt}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="rounded-xl px-4 py-3 mb-3 flex justify-between items-center"
+                style={{background:'#fffbeb', border:'1px solid #fde68a'}}>
+                <span className="text-[12px] font-bold text-[#92400e]">Tip amount</span>
+                <span className="text-[20px] font-bold font-mono text-[#92400e]">${presetAmt.toFixed(2)}</span>
+              </div>
+            </>
+          )}
+
+          {mode === 'custom' && (
+            <>
+              <div className="rounded-2xl px-4 py-5 mb-3 text-center"
+                style={{background:'#fffbeb', border:'2px solid #fde68a'}}>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#92400e] mb-1">Custom Tip</div>
+                <div className="text-[36px] font-bold font-mono text-[#92400e]">
+                  ${customStr || '0'}
+                  {!customStr && <span className="text-[14px] text-[#ca8a04]/50 ml-1">.00</span>}
+                </div>
+                {subtotal > 0 && customAmt > 0 && (
+                  <div className="text-[10px] text-[#ca8a04] mt-1">
+                    ≈ {((customAmt / subtotal) * 100).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {['1','2','3','4','5','6','7','8','9','.','0','⌫'].map(k => (
+                  <button key={k} onClick={()=>press(k)}
+                    className="rounded-xl text-[20px] font-bold cursor-pointer border-2 active:scale-95"
+                    style={{
+                      background: k === '⌫' ? '#fff1f2' : '#f8fafc',
+                      borderColor: k === '⌫' ? '#fecdd3' : '#e5e5e5',
+                      color: k === '⌫' ? '#ef4444' : '#1f1f1f',
+                      height:'52px',
+                    }}>
+                    {k}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button onClick={()=>{ onApply(0); }}
+              className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-2"
+              style={{background:'#fff', borderColor:'#e5e5e5', color:'#666'}}>
+              No Tip
+            </button>
+            <button onClick={()=>onApply(tipAmt)} disabled={tipAmt <= 0 && mode === 'custom'}
+              className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+              style={{background:'linear-gradient(135deg, #ca8a04 0%, #92400e 100%)'}}>
+              ✓ Apply ${tipAmt.toFixed(2)}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
