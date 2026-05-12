@@ -26,6 +26,7 @@ const SECTIONS = [
   { id:'language',  icon:'🌐', label:'Language & Region', role:'owner' },
   { id:'loyalty',   icon:'💎', label:'Loyalty & Points',   role:'owner' },
   { id:'memberlevels', icon:'🏅', label:'Member Levels', role:'owner' },
+  { id:'notifications', icon:'📨', label:'Notifications', role:'owner' },
   { id:'api',       icon:'🤖', label:'API & Integrations', role:'owner' },
 ]
 
@@ -114,6 +115,7 @@ export default function SettingsPage() {
         {active === 'language'  && <LanguageSection/>}
         {active === 'loyalty'   && <LoyaltySettingsSection tenant={tenant}/>}
         {active === 'memberlevels' && <MemberLevelsSection tenantId={tenant?.id}/>}
+        {active === 'notifications' && <NotificationsSection tenantId={tenant?.id} userId={user?.id} userName={user?.name}/>}
         {active === 'api'       && <APISection tenantId={tenant?.id}/>}
       </div>
 
@@ -2565,6 +2567,584 @@ function PrintingSection() {
           <div className="mt-3 rounded-[8px] px-3 py-2.5 text-[12px]"
             style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666666'}}>
             Preview updates as you change settings on the left.
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// 📨 NotificationsSection — credit balance, top-ups, trigger rules
+// ════════════════════════════════════════════════════════════════════
+// Single place to see: where Email/SMS messages are used, how many
+// credits are left, monthly usage, and how to configure each trigger.
+// All trigger toggles are stored on tenants.notification_settings JSONB.
+
+function NotificationsSection({ tenantId, userId, userName }) {
+  const qc = useQueryClient()
+  const [topupModal, setTopupModal] = useState(null) // 'email' | 'sms' | null
+
+  // ── Credit balance ──
+  const { data: credits } = useQuery({
+    queryKey: ['tenant-credits', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('tenant_credits')
+        .select('*').eq('tenant_id', tenantId).maybeSingle()
+      return data || {
+        email_balance: 0, sms_balance: 0,
+        email_used_lifetime: 0, sms_used_lifetime: 0,
+        email_used_month: 0, sms_used_month: 0,
+        email_low_threshold: 10, sms_low_threshold: 10,
+      }
+    },
+    enabled: !!tenantId,
+  })
+
+  // ── Recent topups (for history) ──
+  const { data: topups = [] } = useQuery({
+    queryKey: ['credit-topups', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('credit_topups')
+        .select('*').eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false }).limit(20)
+      return data || []
+    },
+    enabled: !!tenantId,
+  })
+
+  // ── Notification settings JSONB (from tenants) ──
+  const { data: tenant } = useQuery({
+    queryKey: ['tenant-notif', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('tenants')
+        .select('notification_settings').eq('id', tenantId).single()
+      return data
+    },
+    enabled: !!tenantId,
+  })
+
+  // Default settings shape
+  const defaults = {
+    receipt:           { mode: 'ask' },         // 'auto_email' | 'auto_print' | 'ask' | 'off'
+    invoice:           { mode: 'auto_email' },
+    estimate:          { mode: 'auto_email' },
+    payment_reminder:  { mode: 'off', days_before: 3 },
+    birthday_coupon:   { mode: 'off', days_before: 5 },
+    order_ready:       { mode: 'off' },
+    low_stock_alert:   { mode: 'off', email_to: '' },
+    daily_summary:     { mode: 'off', hour: 23, email_to: '' },
+    loyalty_update:    { mode: 'off' },
+    cash_variance:     { mode: 'off', email_to: '' },
+    welcome_member:    { mode: 'off' },
+  }
+  const settings = { ...defaults, ...(tenant?.notification_settings || {}) }
+
+  const updateSetting = async (key, patch) => {
+    const next = { ...settings, [key]: { ...settings[key], ...patch } }
+    const { error } = await supabase.from('tenants')
+      .update({ notification_settings: next }).eq('id', tenantId)
+    if (error) { toast.error(error.message); return }
+    qc.invalidateQueries({ queryKey: ['tenant-notif', tenantId] })
+  }
+
+  const emailLow = (credits?.email_balance ?? 0) <= (credits?.email_low_threshold ?? 10)
+  const smsLow   = (credits?.sms_balance ?? 0)   <= (credits?.sms_low_threshold ?? 10)
+  const emailOut = (credits?.email_balance ?? 0) <= 0
+  const smsOut   = (credits?.sms_balance ?? 0)   <= 0
+
+  return (
+    <div className="max-w-[920px]">
+      <SectionTitle>📨 Notifications & Messaging</SectionTitle>
+      <p className="text-[12px] text-[#666] mb-4">
+        Email and SMS notifications across the entire app. Top up credits, configure when each is sent.
+      </p>
+
+      {/* ── Credit balance summary ── */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        {/* Email */}
+        <div className="rounded-2xl overflow-hidden" style={{border:'2px solid ' + (emailOut?'#dc2626':emailLow?'#f59e0b':'#10b981')}}>
+          <div className="px-4 py-3 flex items-center justify-between"
+            style={{background: emailOut?'#fef2f2':emailLow?'#fffbeb':'#f0fdf4'}}>
+            <div className="flex items-center gap-2">
+              <span className="text-[24px]">📧</span>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#666'}}>Email Credits</div>
+                <div className="text-[28px] font-bold font-mono" style={{color: emailOut?'#dc2626':emailLow?'#92400e':'#15803d'}}>
+                  {credits?.email_balance ?? 0}
+                </div>
+              </div>
+            </div>
+            <button onClick={()=>setTopupModal('email')}
+              className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-none text-white"
+              style={{background:'#006AFF'}}>
+              💰 Top Up
+            </button>
+          </div>
+          <div className="px-4 py-2 text-[11px] flex items-center justify-between" style={{background:'#fff', borderTop:'1px solid #e5e5e5'}}>
+            <span style={{color:'#666'}}>This month:</span>
+            <span className="font-mono font-bold">{credits?.email_used_month ?? 0} sent</span>
+          </div>
+          <div className="px-4 py-1.5 text-[10px] flex items-center justify-between" style={{background:'#fafafa'}}>
+            <span style={{color:'#999'}}>Lifetime:</span>
+            <span className="font-mono text-[#666]">{credits?.email_used_lifetime ?? 0} total</span>
+          </div>
+          {emailLow && !emailOut && (
+            <div className="px-4 py-2 text-[10px]" style={{background:'#fef3c7', color:'#92400e', borderTop:'1px solid #fde047'}}>
+              ⚠️ Low — top up to avoid running out
+            </div>
+          )}
+          {emailOut && (
+            <div className="px-4 py-2 text-[10px]" style={{background:'#fee2e2', color:'#991b1b', borderTop:'1px solid #fca5a5'}}>
+              ❌ Out of credits — emails are disabled
+            </div>
+          )}
+        </div>
+
+        {/* SMS */}
+        <div className="rounded-2xl overflow-hidden" style={{border:'2px solid ' + (smsOut?'#dc2626':smsLow?'#f59e0b':'#10b981')}}>
+          <div className="px-4 py-3 flex items-center justify-between"
+            style={{background: smsOut?'#fef2f2':smsLow?'#fffbeb':'#f0fdf4'}}>
+            <div className="flex items-center gap-2">
+              <span className="text-[24px]">💬</span>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#666'}}>SMS Credits</div>
+                <div className="text-[28px] font-bold font-mono" style={{color: smsOut?'#dc2626':smsLow?'#92400e':'#15803d'}}>
+                  {credits?.sms_balance ?? 0}
+                </div>
+              </div>
+            </div>
+            <button onClick={()=>setTopupModal('sms')}
+              className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-none text-white"
+              style={{background:'#006AFF'}}>
+              💰 Top Up
+            </button>
+          </div>
+          <div className="px-4 py-2 text-[11px] flex items-center justify-between" style={{background:'#fff', borderTop:'1px solid #e5e5e5'}}>
+            <span style={{color:'#666'}}>This month:</span>
+            <span className="font-mono font-bold">{credits?.sms_used_month ?? 0} sent</span>
+          </div>
+          <div className="px-4 py-1.5 text-[10px] flex items-center justify-between" style={{background:'#fafafa'}}>
+            <span style={{color:'#999'}}>Lifetime:</span>
+            <span className="font-mono text-[#666]">{credits?.sms_used_lifetime ?? 0} total</span>
+          </div>
+          {smsLow && !smsOut && (
+            <div className="px-4 py-2 text-[10px]" style={{background:'#fef3c7', color:'#92400e', borderTop:'1px solid #fde047'}}>
+              ⚠️ Low — top up to avoid running out
+            </div>
+          )}
+          {smsOut && (
+            <div className="px-4 py-2 text-[10px]" style={{background:'#fee2e2', color:'#991b1b', borderTop:'1px solid #fca5a5'}}>
+              ❌ Out of credits — SMS is disabled
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Notification triggers ── */}
+      <div className="text-[13px] font-bold mb-2">🔔 Where & When to Send</div>
+      <p className="text-[11px] text-[#666] mb-3">
+        Configure each trigger. Each enabled trigger uses 1 credit per send.
+      </p>
+
+      <div className="space-y-2.5 mb-6">
+        <TriggerRow
+          icon="🧾" title="Receipt"
+          desc="When customer completes checkout"
+          channels="📧 📱"
+          options={[
+            ['ask',          'Ask customer (default)'],
+            ['auto_email',   'Auto-email if member has email'],
+            ['off',          'Off — print only'],
+          ]}
+          value={settings.receipt.mode}
+          onChange={v => updateSetting('receipt', { mode: v })}
+        />
+
+        <TriggerRow
+          icon="📄" title="B2B Invoice"
+          desc="When you create / send a wholesale invoice"
+          channels="📧"
+          options={[
+            ['auto_email', 'Auto-email when created'],
+            ['ask',        'Ask each time'],
+            ['off',        'Off — manual only'],
+          ]}
+          value={settings.invoice.mode}
+          onChange={v => updateSetting('invoice', { mode: v })}
+        />
+
+        <TriggerRow
+          icon="📝" title="B2B Estimate"
+          desc="When you create / send a quote"
+          channels="📧"
+          options={[
+            ['auto_email', 'Auto-email when created'],
+            ['ask',        'Ask each time'],
+            ['off',        'Off'],
+          ]}
+          value={settings.estimate.mode}
+          onChange={v => updateSetting('estimate', { mode: v })}
+        />
+
+        <TriggerRow
+          icon="💰" title="Payment Reminder"
+          desc="For unpaid B2B invoices before due date"
+          channels="📧 📱"
+          options={[
+            ['off',  'Off'],
+            ['on',   'Send reminder before due'],
+          ]}
+          value={settings.payment_reminder.mode}
+          onChange={v => updateSetting('payment_reminder', { mode: v })}
+          extra={settings.payment_reminder.mode !== 'off' && (
+            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+              <span className="text-[11px] text-[#666]">Send</span>
+              <input type="number" min="1" max="30" value={settings.payment_reminder.days_before||3}
+                onChange={e => updateSetting('payment_reminder', { days_before: parseInt(e.target.value)||3 })}
+                className="w-14 rounded px-2 py-1 text-[12px] text-center font-mono"
+                style={{border:'1px solid #80B2FF'}}/>
+              <span className="text-[11px] text-[#666]">days before due date</span>
+            </div>
+          )}
+        />
+
+        <TriggerRow
+          icon="🎂" title="Birthday Coupon"
+          desc="Auto-send loyalty members a coupon on their birthday"
+          channels="📧 📱"
+          options={[
+            ['off',   'Off'],
+            ['on',    'Send on birthday'],
+          ]}
+          value={settings.birthday_coupon.mode}
+          onChange={v => updateSetting('birthday_coupon', { mode: v })}
+          extra={settings.birthday_coupon.mode !== 'off' && (
+            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+              <span className="text-[11px] text-[#666]">Send</span>
+              <input type="number" min="0" max="14" value={settings.birthday_coupon.days_before||5}
+                onChange={e => updateSetting('birthday_coupon', { days_before: parseInt(e.target.value)||0 })}
+                className="w-14 rounded px-2 py-1 text-[12px] text-center font-mono"
+                style={{border:'1px solid #80B2FF'}}/>
+              <span className="text-[11px] text-[#666]">days before birthday (0 = on the day)</span>
+            </div>
+          )}
+        />
+
+        <TriggerRow
+          icon="📦" title="Order Ready"
+          desc="Customer pickup — 'your order is ready' SMS"
+          channels="📱"
+          options={[
+            ['off',  'Off'],
+            ['on',   'Manual button on each order'],
+          ]}
+          value={settings.order_ready.mode}
+          onChange={v => updateSetting('order_ready', { mode: v })}
+        />
+
+        <TriggerRow
+          icon="📦" title="Low Stock Alert"
+          desc="Email owner when any item drops below threshold"
+          channels="📧"
+          options={[
+            ['off',  'Off'],
+            ['on',   'Daily check, email if low'],
+          ]}
+          value={settings.low_stock_alert.mode}
+          onChange={v => updateSetting('low_stock_alert', { mode: v })}
+          extra={settings.low_stock_alert.mode !== 'off' && (
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <input type="email" value={settings.low_stock_alert.email_to||''}
+                onChange={e => updateSetting('low_stock_alert', { email_to: e.target.value })}
+                placeholder="Send to: owner@store.com"
+                className="w-full rounded px-2 py-1.5 text-[12px]"
+                style={{border:'1px solid #80B2FF'}}/>
+            </div>
+          )}
+        />
+
+        <TriggerRow
+          icon="📊" title="Daily Summary Report"
+          desc="Email today's totals to the admin at end of day"
+          channels="📧"
+          options={[
+            ['off',  'Off'],
+            ['on',   'Email automatically'],
+          ]}
+          value={settings.daily_summary.mode}
+          onChange={v => updateSetting('daily_summary', { mode: v })}
+          extra={settings.daily_summary.mode !== 'off' && (
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
+              <input type="email" value={settings.daily_summary.email_to||''}
+                onChange={e => updateSetting('daily_summary', { email_to: e.target.value })}
+                placeholder="Send to: owner@store.com"
+                className="rounded px-2 py-1.5 text-[12px]"
+                style={{border:'1px solid #80B2FF'}}/>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[#666]">at</span>
+                <input type="time" value={`${String(settings.daily_summary.hour||23).padStart(2,'0')}:00`}
+                  onChange={e => updateSetting('daily_summary', { hour: parseInt(e.target.value.split(':')[0])||23 })}
+                  className="flex-1 rounded px-2 py-1.5 text-[12px]"
+                  style={{border:'1px solid #80B2FF'}}/>
+              </div>
+            </div>
+          )}
+        />
+
+        <TriggerRow
+          icon="⭐" title="Loyalty Update"
+          desc="Notify member when they earn or redeem points"
+          channels="📧 📱"
+          options={[
+            ['off',  'Off'],
+            ['earn_only', 'Only when they earn'],
+            ['both', 'Both earn & redeem'],
+          ]}
+          value={settings.loyalty_update.mode}
+          onChange={v => updateSetting('loyalty_update', { mode: v })}
+        />
+
+        <TriggerRow
+          icon="🚨" title="Cash Variance Alert"
+          desc="Email when shift closes with a variance > $5"
+          channels="📧"
+          options={[
+            ['off',  'Off'],
+            ['on',   'Email on every variance'],
+          ]}
+          value={settings.cash_variance.mode}
+          onChange={v => updateSetting('cash_variance', { mode: v })}
+          extra={settings.cash_variance.mode !== 'off' && (
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <input type="email" value={settings.cash_variance.email_to||''}
+                onChange={e => updateSetting('cash_variance', { email_to: e.target.value })}
+                placeholder="Send alert to: owner@store.com"
+                className="w-full rounded px-2 py-1.5 text-[12px]"
+                style={{border:'1px solid #80B2FF'}}/>
+            </div>
+          )}
+        />
+
+        <TriggerRow
+          icon="👋" title="Welcome New Member"
+          desc="Send a welcome email when a customer signs up"
+          channels="📧"
+          options={[
+            ['off',  'Off'],
+            ['on',   'Send on first signup'],
+          ]}
+          value={settings.welcome_member.mode}
+          onChange={v => updateSetting('welcome_member', { mode: v })}
+        />
+      </div>
+
+      {/* ── Topup history ── */}
+      {topups.length > 0 && (
+        <>
+          <div className="text-[13px] font-bold mb-2">📜 Top-up History</div>
+          <div className="rounded-xl overflow-hidden mb-4" style={{border:'1px solid #E5E5E5'}}>
+            <table className="w-full text-[12px]">
+              <thead style={{background:'#FAFAFA'}}>
+                <tr>
+                  <th className="text-left px-3 py-2 font-bold">When</th>
+                  <th className="text-left px-3 py-2 font-bold">Channel</th>
+                  <th className="text-right px-3 py-2 font-bold">Credits</th>
+                  <th className="text-right px-3 py-2 font-bold">Paid</th>
+                  <th className="text-left px-3 py-2 font-bold">Method</th>
+                  <th className="text-left px-3 py-2 font-bold">Added by</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topups.map(t => (
+                  <tr key={t.id} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-mono text-[11px] text-[#666]">{format(new Date(t.created_at), 'MMM d, h:mm a')}</td>
+                    <td className="px-3 py-2">{t.channel === 'email' ? '📧 Email' : '💬 SMS'}</td>
+                    <td className="px-3 py-2 text-right font-mono font-bold" style={{color:'#15803d'}}>+{t.credits_added}</td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {t.price_paid_cents > 0 ? `$${(t.price_paid_cents/100).toFixed(2)}` : <span className="text-[#999]">free</span>}
+                    </td>
+                    <td className="px-3 py-2 text-[11px]">
+                      {t.payment_method === 'signup_bonus' ? '🎁 Bonus'
+                       : t.payment_method === 'manual' ? '✋ Manual'
+                       : t.payment_method === 'card' ? '💳 Card'
+                       : t.payment_method}
+                    </td>
+                    <td className="px-3 py-2 text-[11px]">{t.added_by_name || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {topupModal && (
+        <TopUpModal
+          channel={topupModal}
+          tenantId={tenantId}
+          userId={userId}
+          userName={userName}
+          onClose={() => setTopupModal(null)}
+          onDone={() => {
+            qc.invalidateQueries({ queryKey:['tenant-credits', tenantId] })
+            qc.invalidateQueries({ queryKey:['credit-topups', tenantId] })
+            setTopupModal(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+
+function TriggerRow({ icon, title, desc, channels, options, value, onChange, extra }) {
+  return (
+    <div className="rounded-xl p-3 transition-all"
+      style={{background:'#fff', border:'1px solid #E5E5E5'}}>
+      <div className="flex items-start gap-3">
+        <span className="text-[24px] mt-0.5">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] font-bold">{title}</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+              style={{background:'#f1f5f9', color:'#64748b'}}>{channels}</span>
+          </div>
+          <div className="text-[11px] text-[#666] mt-0.5">{desc}</div>
+          {extra}
+        </div>
+        <select value={value} onChange={e => onChange(e.target.value)}
+          className="rounded-lg px-2.5 py-1.5 text-[11px] cursor-pointer outline-none font-semibold"
+          style={{
+            border: '1.5px solid ' + (value === 'off' ? '#e5e5e5' : '#80B2FF'),
+            background: value === 'off' ? '#fff' : '#E6F0FF',
+            color: value === 'off' ? '#94a3b8' : '#006AFF',
+            minWidth:'170px',
+          }}>
+          {options.map(([v, label]) => (
+            <option key={v} value={v}>{label}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  )
+}
+
+
+function TopUpModal({ channel, tenantId, userId, userName, onClose, onDone }) {
+  // Pre-defined packages
+  const PACKAGES = channel === 'email' ? [
+    { credits: 100,  price: 500,  badge: null },
+    { credits: 500,  price: 1900, badge: '⭐ Best Value' },
+    { credits: 2000, price: 5900, badge: null },
+    { credits: 10000,price: 19900,badge: 'Bulk' },
+  ] : [
+    { credits: 50,   price: 500,  badge: null },
+    { credits: 200,  price: 1700, badge: '⭐ Best Value' },
+    { credits: 500,  price: 3900, badge: null },
+    { credits: 2000, price: 14900,badge: 'Bulk' },
+  ]
+
+  const [selected, setSelected] = useState(PACKAGES[1])
+  const [busy, setBusy] = useState(false)
+
+  const handleAddManual = async () => {
+    if (!window.confirm(`Manually add ${selected.credits} ${channel} credits?\n\nThis is for Admin / internal use — no payment will be charged.`)) return
+    setBusy(true)
+    const { data, error } = await supabase.rpc('fn_add_credits', {
+      p_tenant_id: tenantId,
+      p_channel: channel,
+      p_credits: selected.credits,
+      p_price_cents: 0,
+      p_method: 'manual',
+      p_notes: 'Manual top-up from Settings',
+      p_added_by_id: userId,
+      p_added_by_name: userName,
+    })
+    setBusy(false)
+    if (error || !data?.success) {
+      toast.error(data?.message || error?.message || 'Top-up failed')
+      return
+    }
+    toast.success(`✓ +${selected.credits} ${channel} credits (new balance: ${data.new_balance})`)
+    onDone()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-3"
+      style={{background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)'}}
+      onClick={onClose}>
+      <div className="rounded-3xl overflow-hidden shadow-2xl w-full"
+        style={{maxWidth:'460px', background:'#fff'}}
+        onClick={e=>e.stopPropagation()}>
+
+        <div className="px-5 py-4 flex items-center justify-between"
+          style={{background:'linear-gradient(135deg, #006AFF 0%, #003a8c 100%)'}}>
+          <div>
+            <div className="text-[16px] font-bold text-white">
+              💰 Top Up {channel === 'email' ? '📧 Email' : '💬 SMS'} Credits
+            </div>
+            <div className="text-[10px] text-blue-100 mt-0.5">Choose a package</div>
+          </div>
+          <button onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px]">✕</button>
+        </div>
+
+        <div className="p-5">
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {PACKAGES.map(pkg => {
+              const isSelected = selected.credits === pkg.credits
+              const perUnit = (pkg.price / 100 / pkg.credits)
+              return (
+                <button key={pkg.credits} onClick={() => setSelected(pkg)}
+                  className="rounded-2xl py-3 px-2 cursor-pointer border-2 transition-all active:scale-95 relative"
+                  style={isSelected
+                    ? {background:'linear-gradient(135deg, #E6F0FF 0%, #c6dbff 100%)', borderColor:'#006AFF'}
+                    : {background:'#fff', borderColor:'#e5e5e5'}}>
+                  {pkg.badge && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white whitespace-nowrap"
+                      style={{background:'#f59e0b'}}>
+                      {pkg.badge}
+                    </div>
+                  )}
+                  <div className="text-[20px] font-bold" style={{color: isSelected ? '#006AFF' : '#1f1f1f'}}>
+                    {pkg.credits.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-[#666] mb-1">{channel}s</div>
+                  <div className="text-[18px] font-bold font-mono" style={{color: isSelected ? '#006AFF' : '#1f1f1f'}}>
+                    ${(pkg.price/100).toFixed(2)}
+                  </div>
+                  <div className="text-[9px] text-[#999] font-mono mt-0.5">
+                    {perUnit < 0.01 ? `<$0.01 each` : `$${perUnit.toFixed(3)} each`}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="rounded-xl px-4 py-3 mb-4" style={{background:'#f8fafc', border:'1px solid #e5e5e5'}}>
+            <div className="text-[11px] text-[#666] mb-1">Selected</div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-[16px] font-bold">{selected.credits.toLocaleString()} {channel}s</span>
+              <span className="text-[20px] font-bold font-mono" style={{color:'#006AFF'}}>${(selected.price/100).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <button disabled
+              className="w-full rounded-xl py-3 text-[13px] font-bold text-white border-none disabled:opacity-40"
+              style={{background:'linear-gradient(135deg, #006AFF 0%, #003a8c 100%)'}}>
+              💳 Pay with Card — Coming Soon
+            </button>
+            <button onClick={handleAddManual} disabled={busy}
+              className="w-full rounded-xl py-3 text-[12px] font-bold cursor-pointer border-2 disabled:opacity-40"
+              style={{background:'#fff', borderColor:'#10b981', color:'#15803d'}}>
+              {busy ? '⏳ Adding...' : '✋ Add Manually (Admin / Test)'}
+            </button>
+            <div className="text-[10px] text-[#999] text-center mt-1">
+              Card payment requires Stripe setup. Manual top-up is for testing & internal use.
+            </div>
           </div>
         </div>
       </div>

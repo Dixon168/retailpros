@@ -868,6 +868,7 @@ export default function PaymentPanel() {
           orderNumber={receiptPrompt.orderNumber}
           settings={receiptPrompt.settings}
           tenantId={tenant?.id}
+          customerId={customer?.id}
           customerEmail={customer?.email}
           customerPhone={customer?.phone}
           onDone={finishAndClose}
@@ -880,7 +881,7 @@ export default function PaymentPanel() {
 // ════════════════════════════════════════════════
 // 🧾 ReceiptPromptModal — Square white-theme style
 // ════════════════════════════════════════════════
-function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEmail, customerPhone, onDone }) {
+function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId, customerEmail, customerPhone, onDone }) {
   const [email, setEmail] = useState(customerEmail || '')
   const [phone, setPhone] = useState(customerPhone || '')
   const [busy,  setBusy]  = useState(false)
@@ -897,12 +898,28 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
 
   const cleanPhone = (p) => String(p||'').replace(/\D/g, '')
 
+  // After successfully sending, if the customer is a member and didn't have
+  // this contact on file yet, save it for next time. Best-effort, silent.
+  const persistContactIfNew = async (field, value) => {
+    if (!customerId || !value) return
+    if (field === 'email' && customerEmail) return  // already had it
+    if (field === 'phone' && customerPhone) return  // already had it
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      await supabase.from('customers').update({ [field]: value }).eq('id', customerId)
+    } catch {}
+  }
+
   const handleEmail = async () => {
     if (!isValidEmail(email)) { toast.error('Invalid email'); return }
     setBusy(true)
     const r = await sendEmailReceipt(email, html, orderNumber, tenantId)
     setBusy(false)
-    if (r.ok) { toast.success(r.msg); setDone(d => ({ ...d, emailed:true })) }
+    if (r.ok) {
+      toast.success(r.msg)
+      setDone(d => ({ ...d, emailed:true }))
+      persistContactIfNew('email', email)
+    }
     else toast.error(r.msg)
   }
 
@@ -912,7 +929,11 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerEma
     setBusy(true)
     const r = await sendSmsReceipt(cleaned, html, orderNumber, tenantId)
     setBusy(false)
-    if (r.ok) { toast.success(r.msg); setDone(d => ({ ...d, smsed:true })) }
+    if (r.ok) {
+      toast.success(r.msg)
+      setDone(d => ({ ...d, smsed:true }))
+      persistContactIfNew('phone', cleaned)
+    }
     else toast.error(r.msg)
   }
 
