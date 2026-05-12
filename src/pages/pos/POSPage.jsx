@@ -1,7 +1,7 @@
 // src/pages/pos/POSPage.jsx
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
@@ -30,11 +30,14 @@ import { useEmployeeStore } from '@/stores/employeeStore'
 import PinKeypadModal from '@/components/pos/PinKeypadModal'
 import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { logOverride } from '@/lib/auditOverride'
+import { ProductForm } from '@/pages/products/ProductForm'
+import { PhotoViewer } from '@/components/ui/ProductPhoto'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
   const navigate    = useNavigate()
   const { user, tenant, store, can } = useAuthStore()
+  const qc = useQueryClient()
   const {
     loadTaxGroups, showSnPanel, showWtPanel, showPricePanel,
     showCustPanel, showDiscPanel, showPayPanel, selectedItemId, items
@@ -54,6 +57,8 @@ export default function POSPage() {
   const [pinMode,        setPinMode]        = useState(null)  // 'signin' | 'clockin' | 'clockout' | null
   const [override,       setOverride]       = useState(null)  // { permission, action, onApprove }
   const [highlightProductId, setHighlightProductId] = useState(null)  // scanned product to flash
+  const [editingProduct,     setEditingProduct]     = useState(null)  // product object opened for full edit
+  const [photoViewProduct,   setPhotoViewProduct]   = useState(null)  // product to zoom (no perm)
 
   /**
    * Run an action that may require permission.
@@ -335,7 +340,37 @@ export default function POSPage() {
           </div>
 
           {/* Product grid */}
-          <ProductGrid products={products} highlightId={highlightProductId}/>
+          <ProductGrid products={products} highlightId={highlightProductId}
+            onPhotoClick={(product) => {
+              const v = can('inventory.products')
+              if (v === 'allow') {
+                setEditingProduct(product)
+                return
+              }
+              if (v === 'prompt') {
+                setOverride({
+                  permission:'inventory.products',
+                  action:`edit "${product.name}"`,
+                  onApprove: (approver) => {
+                    toast.success(`✓ Approved by ${approver.name}`)
+                    logOverride({
+                      tenantId: tenant?.id,
+                      permission:'inventory.products',
+                      actionLabel:`edit product ${product.name} from POS`,
+                      requestedBy: activeEmployee
+                        ? { id: activeEmployee.id, name: activeEmployee.name }
+                        : { id: user?.id, name: user?.name },
+                      approver,
+                      notes: `Product ${product.id}`,
+                    })
+                    setEditingProduct(product)
+                  },
+                })
+                return
+              }
+              // Deny — just let them zoom the photo
+              setPhotoViewProduct(product)
+            }}/>
         </div>
 
         {/* Right: Cart */}
@@ -413,6 +448,21 @@ export default function POSPage() {
         tenantId={tenant?.id}
         onAdd={(item) => { useCartStore.getState().addProduct(item); setShowOpenItem(false) }}
         onClose={() => setShowOpenItem(false)}/>
+    )}
+
+    {editingProduct && (
+      <ProductForm initial={editingProduct} tenantId={tenant?.id}
+        onSave={() => {
+          qc.invalidateQueries({ queryKey:['pos-products'] })
+          setEditingProduct(null)
+          toast.success('✓ Product saved')
+        }}
+        onClose={() => setEditingProduct(null)}/>
+    )}
+
+    {photoViewProduct && (
+      <PhotoViewer product={photoViewProduct}
+        onClose={() => setPhotoViewProduct(null)}/>
     )}
     </div>
   )

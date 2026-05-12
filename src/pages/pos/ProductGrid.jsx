@@ -9,10 +9,17 @@ const TYPE_BADGE = {
   service:    { bg: '#ede9fe', color: '#006AFF', label: 'SVC' },
 }
 
-export default function ProductGrid({ products, highlightId }) {
+export default function ProductGrid({ products, highlightId, onPhotoClick }) {
   const { addProduct } = useCartStore()
   const [photoViewer, setPhotoViewer] = useState(null)
   const cardRefs = useRef({})  // { [productId]: HTMLElement }
+
+  // If parent passes onPhotoClick, that overrides the default zoom behavior.
+  // Otherwise fall back to the built-in PhotoViewer modal (zoom).
+  const handlePhotoClick = (product) => {
+    if (onPhotoClick) onPhotoClick(product)
+    else setPhotoViewer(product)
+  }
 
   // When highlightId changes, scroll the matched card into view.
   // We also re-run on products change so the scroll succeeds even if the
@@ -55,7 +62,7 @@ export default function ProductGrid({ products, highlightId }) {
               highlighted={highlightId === product.id}
               cardRef={el => { cardRefs.current[product.id] = el }}
               onAdd={() => addProduct(product)}
-              onPhotoClick={() => setPhotoViewer(product)}
+              onPhotoClick={() => handlePhotoClick(product)}
             />
           ))}
         </div>
