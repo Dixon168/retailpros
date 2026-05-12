@@ -3,9 +3,12 @@ import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { paxGetStatus } from '@/lib/pax'
 import { PERMISSION_GROUPS, ALL_PERMISSIONS } from '@/lib/permissions'
+import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
+import { logOverride } from '@/lib/auditOverride'
 import toast from 'react-hot-toast'
 
 const SECTIONS = [
@@ -27,9 +30,45 @@ const SECTIONS = [
 ]
 
 export default function SettingsPage() {
-  const { user, tenant, store, canAccessSettings } = useAuthStore()
+  const { user, tenant, store, canAccessSettings, can } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
   const [active, setActive] = useState('store')
+  const [override, setOverride] = useState(null)
+  const [unlockedSections, setUnlockedSections] = useState(new Set())  // sections approved this session
   const visibleSections = SECTIONS.filter(s => canAccessSettings(s.id) || s.role === 'manager')
+
+  // Click a section. If it requires prompt, pop override. Allow → switch.
+  const trySwitch = (sectionId) => {
+    const permKey = `settings.${sectionId}`
+    const v = can(permKey)
+    // If already unlocked this session, just switch
+    if (unlockedSections.has(sectionId) || v === 'allow' || v == null) {
+      setActive(sectionId); return
+    }
+    if (v === 'prompt') {
+      setOverride({
+        permission: permKey,
+        action: `access ${SECTIONS.find(s=>s.id===sectionId)?.label || sectionId} settings`,
+        onApprove: (approver) => {
+          toast.success(`✓ Approved by ${approver.name}`)
+          logOverride({
+            tenantId: tenant?.id,
+            permission: permKey,
+            actionLabel:`open ${sectionId} settings`,
+            requestedBy: activeEmployee
+              ? { id: activeEmployee.id, name: activeEmployee.name }
+              : { id: user?.id, name: user?.name },
+            approver,
+          })
+          setUnlockedSections(prev => new Set([...prev, sectionId]))
+          setActive(sectionId)
+        },
+      })
+      return
+    }
+    // deny
+    toast.error("You don't have permission to access these settings")
+  }
 
   return (
     <div className="flex h-full bg-[#FAFAFA]">
@@ -38,17 +77,25 @@ export default function SettingsPage() {
         <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest px-2 mb-3">
           Settings
         </div>
-        {visibleSections.map(s => (
-          <div key={s.id} onClick={() => setActive(s.id)}
-            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer
-              text-[12px] mb-0.5 transition-all ${
-              active === s.id
-                ? 'bg-[#000000] text-white font-semibold'
-                : 'text-[#1F1F1F] hover:bg-[#F5F5F5]'
-            }`}>
-            <span>{s.icon}</span>{s.label}
-          </div>
-        ))}
+        {visibleSections.map(s => {
+          const v = can(`settings.${s.id}`)
+          const isPrompt = v === 'prompt' && !unlockedSections.has(s.id)
+          const isUnlocked = unlockedSections.has(s.id)
+          return (
+            <div key={s.id} onClick={() => trySwitch(s.id)}
+              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer
+                text-[12px] mb-0.5 transition-all ${
+                active === s.id
+                  ? 'bg-[#000000] text-white font-semibold'
+                  : 'text-[#1F1F1F] hover:bg-[#F5F5F5]'
+              }`}>
+              <span>{s.icon}</span>
+              <span className="flex-1">{s.label}</span>
+              {isPrompt && <span title="Requires manager approval" className="text-[11px]">🔐</span>}
+              {isUnlocked && <span title="Approved this session" className="text-[10px]" style={{color:'#10b981'}}>✓</span>}
+            </div>
+          )
+        })}
       </div>
 
       {/* Content */}
@@ -69,6 +116,14 @@ export default function SettingsPage() {
         {active === 'memberlevels' && <MemberLevelsSection tenantId={tenant?.id}/>}
         {active === 'api'       && <APISection tenantId={tenant?.id}/>}
       </div>
+
+      {override && (
+        <ManagerOverrideModal
+          permission={override.permission}
+          action={override.action}
+          onApprove={override.onApprove}
+          onClose={() => setOverride(null)}/>
+      )}
     </div>
   )
 }
