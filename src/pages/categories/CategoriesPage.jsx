@@ -46,44 +46,86 @@ export default function CategoriesPage() {
   })
 
   const saveCategory = async (form) => {
-    if (form.id) {
-      await supabase.from('categories').update({ name: form.name, emoji: form.emoji, color: form.color, sort_order: parseInt(form.sort_order)||0 }).eq('id', form.id)
-      toast.success('Category updated')
-    } else {
-      await supabase.from('categories').insert({ tenant_id: tenant.id, name: form.name, emoji: form.emoji, color: form.color, sort_order: parseInt(form.sort_order)||0 })
-      toast.success('Category created')
+    if (!form.name?.trim()) { toast.error('Category name required'); return }
+    try {
+      if (form.id) {
+        const { error } = await supabase.from('categories')
+          .update({ name: form.name, emoji: form.emoji, color: form.color, sort_order: parseInt(form.sort_order)||0 })
+          .eq('id', form.id)
+        if (error) throw error
+        toast.success('✓ Category updated')
+      } else {
+        const { error } = await supabase.from('categories')
+          .insert({ tenant_id: tenant.id, name: form.name, emoji: form.emoji, color: form.color, sort_order: parseInt(form.sort_order)||0 })
+        if (error) throw error
+        toast.success('✓ Category created')
+      }
+      qc.invalidateQueries({ queryKey: ['categories-full'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      setShowCatForm(false)
+      setEditItem(null)
+    } catch (err) {
+      console.error('[saveCategory] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      toast.error(`Failed to save category: ${err?.message || 'Unknown error'}${detail ? ' — ' + detail : ''}`,
+        { duration: 6000 })
     }
-    qc.invalidateQueries(['categories-full'])
-    setShowCatForm(false)
-    setEditItem(null)
   }
 
   const saveSubcategory = async (form) => {
-    if (form.id) {
-      await supabase.from('subcategories').update({ name: form.name, emoji: form.emoji, sort_order: parseInt(form.sort_order)||0 }).eq('id', form.id)
-      toast.success('Subcategory updated')
-    } else {
-      await supabase.from('subcategories').insert({ tenant_id: tenant.id, category_id: selectedCat.id, name: form.name, emoji: form.emoji, sort_order: parseInt(form.sort_order)||0 })
-      toast.success('Subcategory created')
+    if (!form.name?.trim()) { toast.error('Subcategory name required'); return }
+    try {
+      if (form.id) {
+        const { error } = await supabase.from('subcategories')
+          .update({ name: form.name, emoji: form.emoji, sort_order: parseInt(form.sort_order)||0 })
+          .eq('id', form.id)
+        if (error) throw error
+        toast.success('✓ Subcategory updated')
+      } else {
+        const { error } = await supabase.from('subcategories')
+          .insert({ tenant_id: tenant.id, category_id: selectedCat.id, name: form.name, emoji: form.emoji, sort_order: parseInt(form.sort_order)||0 })
+        if (error) throw error
+        toast.success('✓ Subcategory created')
+      }
+      qc.invalidateQueries({ queryKey: ['categories-full'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      setShowSubForm(false)
+      setEditItem(null)
+    } catch (err) {
+      console.error('[saveSubcategory] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      toast.error(`Failed to save subcategory: ${err?.message || 'Unknown error'}${detail ? ' — ' + detail : ''}`,
+        { duration: 6000 })
     }
-    qc.invalidateQueries(['categories-full'])
-    setShowSubForm(false)
-    setEditItem(null)
   }
 
   const deleteCategory = async (id) => {
     if (!confirm('Archive this category?')) return
-    await supabase.from('categories').update({ is_active: false }).eq('id', id)
-    if (selectedCat?.id === id) setSelectedCat(null)
-    qc.invalidateQueries(['categories-full'])
-    toast.success('Category archived')
+    try {
+      const { error } = await supabase.from('categories').update({ is_active: false }).eq('id', id)
+      if (error) throw error
+      if (selectedCat?.id === id) setSelectedCat(null)
+      qc.invalidateQueries({ queryKey: ['categories-full'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('✓ Category archived')
+    } catch (err) {
+      console.error('[deleteCategory] failed:', err)
+      toast.error(`Failed to archive: ${err?.message || 'Unknown error'}`, { duration: 6000 })
+    }
   }
 
   const deleteSubcategory = async (id) => {
     if (!confirm('Archive this subcategory?')) return
-    await supabase.from('subcategories').update({ is_active: false }).eq('id', id)
-    qc.invalidateQueries(['categories-full'])
-    toast.success('Subcategory archived')
+    try {
+      const { error } = await supabase.from('subcategories').update({ is_active: false }).eq('id', id)
+      if (error) throw error
+      qc.invalidateQueries({ queryKey: ['categories-full'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('✓ Subcategory archived')
+    } catch (err) {
+      console.error('[deleteSubcategory] failed:', err)
+      toast.error(`Failed to archive: ${err?.message || 'Unknown error'}`, { duration: 6000 })
+    }
   }
 
   const updateProductOrder = async (productId, newOrder) => {

@@ -273,6 +273,33 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
     }
   }
 
+  const addSubcategory = async () => {
+    const name = newSubName.trim()
+    if (!name) { toast.error('Subcategory name required'); return }
+    if (!newSubCatId) { toast.error('Pick a parent category first'); return }
+    try {
+      const parent = categories.find(c => c.id === newSubCatId)
+      const { data, error } = await supabase.from('subcategories')
+        .insert({ tenant_id: tenantId, category_id: newSubCatId, name,
+                  sort_order: (parent?.subcategories?.length || 0) + 1 })
+        .select().single()
+      if (error) throw error
+      if (data) {
+        setSelCatId(newSubCatId)
+        set('subcategory_id', data.id)
+        qc.invalidateQueries({ queryKey: ['categories-full'] })
+        qc.invalidateQueries({ queryKey: ['categories'] })
+        toast.success(`✓ Subcategory "${data.name}" added`)
+      }
+      setShowAddSub(false); setNewSubName(''); setNewSubCatId('')
+    } catch (err) {
+      console.error('[addSubcategory] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      toast.error(`Failed to add subcategory: ${err?.message || 'Unknown error'}${detail ? ' — ' + detail : ''}`,
+        { duration: 6000 })
+    }
+  }
+
   const handleSave = async () => {
     setSaveError(null)
     if (!form.name.trim()) {
@@ -1084,11 +1111,8 @@ export function ProductForm({ initial={}, tenantId, onSave, onClose }) {
               <div className="flex gap-2">
                 <button onClick={()=>{setShowAddSub(false);setNewSubName('');setNewSubCatId('')}}
                   className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
-                <button disabled={!newSubName.trim()||!newSubCatId} onClick={async()=>{
-                  const {data}=await supabase.from('subcategories').insert({tenant_id:tenantId,category_id:newSubCatId,name:newSubName.trim(),sort_order:(categories.find(c=>c.id===newSubCatId)?.subcategories?.length||0)+1}).select().single()
-                  if(data){setSelCatId(newSubCatId);set('subcategory_id',data.id);qc.invalidateQueries(['categories-full'])}
-                  setShowAddSub(false);setNewSubName('');setNewSubCatId('')
-                }} className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                <button disabled={!newSubName.trim()||!newSubCatId} onClick={addSubcategory}
+                  className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
                   style={{background:'#006AFF'}}>✓ Add</button>
               </div>
             </div>

@@ -80,6 +80,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
   const [showAdjust,  setShowAdjust]  = useState(false)
   const [editing,     setEditing]     = useState(false)
   const [saving,      setSaving]      = useState(false)
+  const [saveError,   setSaveError]   = useState(null)  // inline error banner
   const [savedData,   setSavedData]   = useState(null) // holds last saved values for immediate display
   const [numpadField, setNumpadField] = useState(null) // 'price'|'cost'|'vip_price'|'commission_value'
 
@@ -137,9 +138,66 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
   const cancelEdit = () => { setEditing(false); setTagInput('') }
 
+  const addCategory = async () => {
+    const name = newCatName.trim()
+    if (!name) { toast.error('Category name required'); return }
+    try {
+      const { data, error } = await supabase.from('categories')
+        .insert({ tenant_id: tenantId, name, color: '#006AFF', sort_order: (categories?.length||0) + 1 })
+        .select().single()
+      if (error) throw error
+      if (data) {
+        setSelCatId(data.id)
+        qc.invalidateQueries({ queryKey: ['categories-full'] })
+        qc.invalidateQueries({ queryKey: ['categories'] })
+        toast.success(`✓ Category "${data.name}" added`)
+      }
+      setShowAddCat(false); setNewCatName('')
+    } catch (err) {
+      console.error('[ProductDetailInline addCategory] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      toast.error(`Failed to add category: ${err?.message || 'Unknown error'}${detail ? ' — ' + detail : ''}`,
+        { duration: 6000 })
+    }
+  }
+
+  const addSubcategory = async () => {
+    const name = newSubName.trim()
+    if (!name) { toast.error('Subcategory name required'); return }
+    if (!newSubCatId) { toast.error('Pick a parent category first'); return }
+    try {
+      const parent = categories.find(c => c.id === newSubCatId)
+      const { data, error } = await supabase.from('subcategories')
+        .insert({ tenant_id: tenantId, category_id: newSubCatId, name,
+                  sort_order: (parent?.subcategories?.length || 0) + 1 })
+        .select().single()
+      if (error) throw error
+      if (data) {
+        setSelCatId(newSubCatId)
+        setF('subcategory_id', data.id)
+        qc.invalidateQueries({ queryKey: ['categories-full'] })
+        qc.invalidateQueries({ queryKey: ['categories'] })
+        toast.success(`✓ Subcategory "${data.name}" added`)
+      }
+      setShowAddSub(false); setNewSubName(''); setNewSubCatId('')
+    } catch (err) {
+      console.error('[ProductDetailInline addSubcategory] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      toast.error(`Failed to add subcategory: ${err?.message || 'Unknown error'}${detail ? ' — ' + detail : ''}`,
+        { duration: 6000 })
+    }
+  }
+
   const handleSave = async () => {
-    if (!form.name?.trim()) { toast.error('Product name required'); return }
-    if (!form.price)         { toast.error('Price required'); return }
+    setSaveError(null)
+    if (!form.name?.trim()) {
+      const msg = 'Product name is required'
+      setSaveError(msg); toast.error(msg); return
+    }
+    if (!form.price || parseFloat(form.price) <= 0) {
+      const msg = 'Selling price is required (must be greater than $0)'
+      setSaveError(msg); toast.error(msg); return
+    }
     setSaving(true)
     try {
       let type = 'unit'
@@ -147,7 +205,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
       else if (form.prompt_weight) type = 'weight'
       else if (!form.track_inventory) type = 'service'
 
-      await supabase.from('products').update({
+      const { error: updErr } = await supabase.from('products').update({
         name:             form.name.trim(),
         description:      form.description || null,
         sku:              form.sku || null,
@@ -173,23 +231,34 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
         prompt_sales:     form.prompt_sales,
         track_inventory:  form.track_inventory,
       }).eq('id', p.id)
+      if (updErr) throw updErr
 
       // Update tax rates
-      await supabase.from('product_tax_rates').delete().eq('product_id', p.id)
+      const { error: delErr } = await supabase.from('product_tax_rates').delete().eq('product_id', p.id)
+      if (delErr) throw delErr
       if (form.selectedTaxRates?.length > 0) {
-        await supabase.from('product_tax_rates').insert(
+        const { error: insErr } = await supabase.from('product_tax_rates').insert(
           form.selectedTaxRates.map(tax_rate_id => ({ tenant_id: tenantId, product_id: p.id, tax_rate_id }))
         )
+        if (insErr) throw insErr
       }
 
       toast.success('Product updated ✓')
+      setSaveError(null)
       setSavedData({...form, price: parseFloat(form.price), cost: parseFloat(form.cost)})
 
       setEditing(false)
       // Refetch all product queries immediately
       await qc.refetchQueries({ queryKey: ['products'] })
       await qc.refetchQueries({ queryKey: ['pos-products'] })
-    } catch(err) { toast.error(err.message) }
+    } catch(err) {
+      console.error('[ProductDetailInline save] failed:', err)
+      const detail = err?.details || err?.hint || ''
+      const code   = err?.code ? ` [${err.code}]` : ''
+      const msg = `Save failed${code}: ${err?.message || 'Unknown error'}${detail ? ` — ${detail}` : ''}`
+      setSaveError(msg)
+      toast.error(msg, { duration: 8000 })
+    }
     finally { setSaving(false) }
   }
 
@@ -345,6 +414,21 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
 
   return (
     <div style={{background:'#f8fafc', borderTop:`2px solid ${TAB_COLOR[tab]}`}}>
+
+      {/* Inline save error banner — sticks below tab bar so the user
+          sees exactly why a save failed (column missing, RLS, etc.) */}
+      {saveError && (
+        <div className="px-4 py-2.5 flex items-start gap-3" style={{background:'#fef2f2', borderBottom:'1px solid #fecaca'}}>
+          <span className="text-[18px] flex-shrink-0">❌</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-bold text-[#991b1b]">Save failed</div>
+            <div className="text-[11px] text-[#991b1b] mt-0.5 break-words">{saveError}</div>
+          </div>
+          <button onClick={() => setSaveError(null)}
+            className="w-6 h-6 rounded-full bg-transparent border-none cursor-pointer text-[14px] flex-shrink-0"
+            style={{color:'#991b1b'}}>✕</button>
+        </div>
+      )}
 
       {/* ── Tab bar ── */}
       <div className="flex items-center border-b px-3" style={{background:'#fff', borderColor:'#e2e8f0'}}>
@@ -1135,12 +1219,12 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
           <div className="bg-white rounded-2xl w-[300px] p-5 shadow-md" onClick={e=>e.stopPropagation()}>
             <div className="text-[14px] font-bold mb-3">✚ Add Category</div>
             <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} autoFocus placeholder="Category name..."
-              onKeyDown={async e=>{if(e.key==='Enter'&&newCatName.trim()){const{data}=await supabase.from('categories').insert({tenant_id:tenantId,name:newCatName.trim(),color:'#006AFF',sort_order:categories.length+1}).select().single();if(data){setSelCatId(data.id);qc.invalidateQueries(['categories-full'])};setShowAddCat(false);setNewCatName('')}}}
+              onKeyDown={async e=>{ if(e.key==='Enter' && newCatName.trim()) { await addCategory() } }}
               className="w-full rounded-xl px-3 py-2 text-[13px] outline-none mb-3" style={{border:'1.5px solid #e2e8f0'}}/>
             <div className="flex gap-2">
               <button onClick={()=>{setShowAddCat(false);setNewCatName('')}}
                 className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
-              <button disabled={!newCatName.trim()} onClick={async()=>{const{data}=await supabase.from('categories').insert({tenant_id:tenantId,name:newCatName.trim(),color:'#006AFF',sort_order:categories.length+1}).select().single();if(data){setSelCatId(data.id);qc.invalidateQueries(['categories-full'])};setShowAddCat(false);setNewCatName('')}}
+              <button disabled={!newCatName.trim()} onClick={addCategory}
                 className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40" style={{background:'#006AFF'}}>✓ Add</button>
             </div>
           </div>
@@ -1168,7 +1252,7 @@ export function ProductDetailInline({ product: p, tenantId, onRefresh }) {
             <div className="flex gap-2">
               <button onClick={()=>{setShowAddSub(false);setNewSubName('');setNewSubCatId('')}}
                 className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
-              <button disabled={!newSubName.trim()||!newSubCatId} onClick={async()=>{const{data}=await supabase.from('subcategories').insert({tenant_id:tenantId,category_id:newSubCatId,name:newSubName.trim(),sort_order:(categories.find(c=>c.id===newSubCatId)?.subcategories?.length||0)+1}).select().single();if(data){setSelCatId(newSubCatId);setF('subcategory_id',data.id);qc.invalidateQueries(['categories-full'])};setShowAddSub(false);setNewSubName('');setNewSubCatId('')}}
+              <button disabled={!newSubName.trim()||!newSubCatId} onClick={addSubcategory}
                 className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40" style={{background:'#006AFF'}}>✓ Add</button>
             </div>
           </div>
