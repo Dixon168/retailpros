@@ -39,12 +39,13 @@ export default function ManagerOverrideModal({ permission, action, onApprove, on
         throw new Error(pinResult?.message || pinErr?.message || 'Invalid PIN')
       }
       const u = pinResult.user
-      // Owner always passes
+      // Admin/Owner always passes. Otherwise the approver must have 'allow' for this exact permission.
+      const role = u.role?.toLowerCase()
       const v = u.permissions?.[permission]
-      const hasAllow = u.role?.toLowerCase() === 'owner' || v === 'allow' || v === true
+      const hasAllow = role === 'admin' || role === 'owner' || v === 'allow' || v === true
       if (!hasAllow) {
         // The person whose PIN this is doesn't have allow-level access either
-        throw new Error(`${u.name} can't approve this either`)
+        throw new Error(`${u.name} can't approve this — needs a manager`)
       }
       onApprove(u)
       onClose()
@@ -57,11 +58,11 @@ export default function ManagerOverrideModal({ permission, action, onApprove, on
   }
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center"
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-3"
       style={{background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)'}}
       onClick={onClose}>
-      <div className="rounded-3xl overflow-hidden shadow-2xl"
-        style={{width:'380px', background:'#FFFFFF'}}
+      <div className="rounded-3xl overflow-hidden shadow-2xl w-full"
+        style={{maxWidth:'380px', background:'#FFFFFF'}}
         onClick={e=>e.stopPropagation()}>
         <div className="px-5 py-4 flex items-center justify-between"
           style={{background:'linear-gradient(135deg,#7c2d12 0%,#451a03 100%)'}}>

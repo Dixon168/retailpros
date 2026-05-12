@@ -127,11 +127,17 @@ export const useAuthStore = create(
         const { user } = get()
         if (!user) return 'deny'
 
+        // Helper — true if a role label is the global super-admin
+        const isAdminRole = (r) => {
+          const x = (r || '').toLowerCase()
+          return x === 'admin' || x === 'owner'
+        }
+
         // PIN-signed-in employee takes priority (their permissions come
         // pre-resolved from fn_user_permissions which merges role + per-user)
         const emp = useEmployeeStore.getState().activeEmployee
         if (emp?.permissions && Object.keys(emp.permissions).length > 0) {
-          if (emp.role?.toLowerCase() === 'owner') return 'allow'
+          if (isAdminRole(emp.role)) return 'allow'
           const v = emp.permissions[permission]
           if (v === true)  return 'allow'
           if (v === false) return 'deny'
@@ -140,7 +146,7 @@ export const useAuthStore = create(
         }
 
         // Otherwise fall back to tenant-owner login defaults
-        if (user.role === 'owner') return 'allow'
+        if (isAdminRole(user.role)) return 'allow'
         if (user.role === 'manager') {
           const mp = ['can_discount','can_refund','can_void','can_view_reports',
             'can_manage_products','can_manage_customers','can_send_invoice','can_open_drawer',
@@ -158,15 +164,16 @@ export const useAuthStore = create(
       canAccessSettings: (section) => {
         const { user } = get()
         if (!user) return false
+        const isAdminRole = (r) => ['admin','owner'].includes((r||'').toLowerCase())
 
         const emp = useEmployeeStore.getState().activeEmployee
         if (emp?.permissions) {
-          if (emp.role?.toLowerCase() === 'owner') return true
+          if (isAdminRole(emp.role)) return true
           const v = emp.permissions[`settings.${section}`]
           return v === true || v === 'allow' || v === 'prompt'
         }
 
-        if (user.role === 'owner') return true
+        if (isAdminRole(user.role)) return true
         if (user.role === 'manager') return ['store','users','coupons','loyalty','memberlevels'].includes(section)
         return false
       },
@@ -174,12 +181,13 @@ export const useAuthStore = create(
       maxDiscountPct: () => {
         const { user } = get()
         if (!user) return 0
+        const isAdminRole = (r) => ['admin','owner'].includes((r||'').toLowerCase())
         const emp = useEmployeeStore.getState().activeEmployee
         if (emp) {
-          if (emp.role?.toLowerCase() === 'owner') return 100
+          if (isAdminRole(emp.role)) return 100
           return Number(emp.max_discount_pct ?? 0)
         }
-        if (user.role === 'owner' || user.role === 'manager') return 100
+        if (isAdminRole(user.role) || user.role === 'manager') return 100
         return user.permissions?.max_discount_pct || 0
       },
 

@@ -1459,7 +1459,8 @@ function RolesSection({ tenantId, userId }) {
   }
 
   // Owner is special — should always have everything
-  const isProtected = (r) => r.is_system && r.name.toLowerCase() === 'owner'
+  // Owner OR Admin role is the system superuser — can't have its permissions reduced
+  const isProtected = (r) => r.is_system && ['owner','admin'].includes(r.name.toLowerCase())
 
   return (
     <div className="max-w-[920px]">
@@ -1578,7 +1579,7 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
           </div>
           {isOwner && (
             <div className="text-[10px] text-[#92400e] mt-1 rounded px-2 py-1 inline-block" style={{background:'#fef3c7'}}>
-              ⚠️ Owner role always has full access — permissions cannot be reduced
+              ⚠️ {role.name} role always has full access — permissions cannot be reduced
             </div>
           )}
         </div>

@@ -235,6 +235,7 @@ export default function ReportsPage() {
         r.approved_by_name || '',
         r.notes || '',
       ])
+      if (rows.length === 0) { toast.error('No overrides in this date range'); return }
       return downloadCSV(
         `overrides_${dateRange}.csv`,
         ['When','Permission','Action','Order#','Amount','Requested by','Approved by','Notes'],
