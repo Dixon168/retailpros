@@ -4,9 +4,11 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, format } from 'date-fns'
+import { printReceipt } from '@/lib/receipt'
 import toast from 'react-hot-toast'
 
 const REPORT_NAV = [
+  { id:'daily',     icon:'☀️', label:'Daily Summary',        group:'Sales' },
   { id:'sales',     icon:'📈', label:'Sales Overview',      group:'Sales' },
   { id:'products',  icon:'📦', label:'Product Sales',        group:'Sales' },
   { id:'payments',  icon:'💳', label:'Payment Methods',      group:'Sales' },
@@ -195,6 +197,52 @@ export default function ReportsPage() {
       return data || []
     },
     enabled: !!tenant?.id && activeReport === 'overrides',
+  })
+
+  // ── Daily Summary (X-Report) ──
+  // Always uses TODAY's date regardless of the dateFrom picker, but
+  // honors any cashier filter for split-shift reporting.
+  const { data: dailyXReportData } = useQuery({
+    queryKey: ['report-daily', tenant?.id, store?.id, format(new Date(),'yyyy-MM-dd')],
+    queryFn: async () => {
+      const dayStart = startOfDay(new Date())
+      const dayEnd   = endOfDay(new Date())
+      // Orders today
+      let oq = supabase.from('orders')
+        .select('id, order_number, status, subtotal, total, tax_amount, discount_amount, coupon_discount, points_redeemed, cashier_id, cashier_name, terminal_id, created_at, voided_at, refunded_at, refund_status')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString())
+      if (store?.id) oq = oq.eq('store_id', store.id)
+      const { data: orders = [] } = await oq
+
+      const orderIds = orders.map(o => o.id)
+      const { data: payments = [] } = orderIds.length === 0 ? { data: [] } : await supabase
+        .from('order_payments').select('order_id, method, amount').in('order_id', orderIds)
+
+      // Adjustments today (voids/cash-in/cash-out logged here)
+      const { data: adjustments = [] } = await supabase.from('order_adjustments')
+        .select('id, type, amount, payment_method, staff_id, staff_name, created_at')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString())
+
+      // Shifts open during today (any opened or closed in today)
+      const { data: shifts = [] } = await supabase.from('cash_drawers')
+        .select('id, cashier_id, terminal_id, opened_at, closed_at, opening_amount, closing_amount, terminals(name)')
+        .eq('tenant_id', tenant.id)
+        .or(`opened_at.gte.${dayStart.toISOString()},closed_at.gte.${dayStart.toISOString()}`)
+
+      // Overrides today
+      const { data: overrides = [] } = await supabase.from('override_approvals')
+        .select('id, permission, action_label, amount, requested_by_name, approved_by_name, created_at')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString())
+
+      return { orders, payments, adjustments, shifts, overrides }
+    },
+    enabled: !!tenant?.id && activeReport === 'daily',
   })
 
   // ── CSV Export ──────────────────────────────────────
@@ -643,6 +691,11 @@ export default function ReportsPage() {
             </div>
           )}
 
+          {/* ── DAILY SUMMARY (X-Report) ── */}
+          {activeReport === 'daily' && (
+            <DailyReport data={dailyXReportData} storeInfo={store} tenantInfo={tenant}/>
+          )}
+
           {/* ── MANAGER OVERRIDES ── */}
           {activeReport === 'overrides' && (
             <OverridesReport rows={overridesData || []} dateFrom={dateFrom} dateTo={dateTo}/>
@@ -691,6 +744,341 @@ export default function ReportsPage() {
 // ════════════════════════════════════════════════════════════════════
 
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+// ── DAILY SUMMARY (X-REPORT) ─────────────────────────────────────
+// "Open the books at end of day" view. Always shows TODAY's data
+// regardless of the date picker. Combines orders + payments +
+// adjustments + shifts + overrides across all terminals in the
+// current store. Includes an 80mm print button.
+function DailyReport({ data, storeInfo, tenantInfo }) {
+  const orders     = data?.orders     || []
+  const payments   = data?.payments   || []
+  const adjustments= data?.adjustments|| []
+  const shifts     = data?.shifts     || []
+  const overrides  = data?.overrides  || []
+
+  const completed = orders.filter(o => o.status === 'completed')
+  const voided    = orders.filter(o => o.status === 'voided')
+  const sales     = completed.filter(o => Number(o.total) >= 0)
+  const refundOrders = completed.filter(o => Number(o.total) < 0)
+
+  const grossSales  = sales.reduce((s,o) => s + Number(o.total||0), 0)
+  const refundAmt   = Math.abs(refundOrders.reduce((s,o) => s + Number(o.total||0), 0))
+  const taxTotal    = sales.reduce((s,o) => s + Number(o.tax_amount||0), 0)
+  const discTotal   = sales.reduce((s,o) => s + Number(o.discount_amount||0), 0)
+  const couponTotal = sales.reduce((s,o) => s + Number(o.coupon_discount||0), 0)
+  const ptsTotal    = sales.reduce((s,o) => s + Number(o.points_redeemed||0), 0)
+  const voidedAmt   = voided.reduce((s,o) => s + Number(o.total||0), 0)
+  const netSales    = grossSales - refundAmt
+  const orderCount  = sales.length
+  const avgTicket   = orderCount > 0 ? grossSales / orderCount : 0
+
+  // Payment breakdown
+  const payByMethod = {}
+  payments.forEach(p => {
+    const ord = orders.find(o => o.id === p.order_id)
+    if (!ord || ord.status !== 'completed') return
+    const isRefund = Number(ord.total) < 0
+    if (!payByMethod[p.method]) payByMethod[p.method] = { collected:0, refunded:0, net:0 }
+    if (isRefund) payByMethod[p.method].refunded += Math.abs(Number(p.amount||0))
+    else          payByMethod[p.method].collected += Number(p.amount||0)
+    payByMethod[p.method].net = payByMethod[p.method].collected - payByMethod[p.method].refunded
+  })
+
+  // By cashier
+  const byCashier = {}
+  sales.forEach(o => {
+    const k = o.cashier_name || 'Unknown'
+    if (!byCashier[k]) byCashier[k] = { count:0, gross:0 }
+    byCashier[k].count++
+    byCashier[k].gross += Number(o.total||0)
+  })
+  const cashierRows = Object.entries(byCashier).sort((a,b) => b[1].gross - a[1].gross)
+
+  // Cash drawer math
+  const cashCollected = payByMethod.cash?.collected || 0
+  const cashRefunded  = payByMethod.cash?.refunded || 0
+  const cashIn  = adjustments.filter(a => a.type === 'cash_in').reduce((s,a) => s + Number(a.amount||0), 0)
+  const cashOut = Math.abs(adjustments.filter(a => a.type === 'cash_out').reduce((s,a) => s + Number(a.amount||0), 0))
+  const openingTotal = shifts.reduce((s,sh) => s + Number(sh.opening_amount||0), 0)
+  const expectedCash = openingTotal + cashCollected - cashRefunded + cashIn - cashOut
+
+  const fmt = (n) => '$' + Number(n||0).toFixed(2)
+
+  const PAY_LABEL = {
+    cash:'💵 Cash', card:'💳 Card', credit_card:'💳 Credit',
+    debit_card:'💳 Debit', member_card:'🏷️ VIP Card',
+    gift_card:'🎁 Gift Card', coupon:'🎫 Coupon',
+  }
+
+  const printX = () => {
+    const sn = (storeInfo?.name || 'RetailPOS').toUpperCase()
+    const dt = format(new Date(), 'EEE MMM d, yyyy')
+    const tm = format(new Date(), 'h:mm a')
+    const dash = '<div style="border-top:1px dashed #999;margin:4px 0;"></div>'
+    const dbl  = '<div style="border-top:2px solid #000;margin:6px 0;"></div>'
+    const row = (l, r, opt={}) => `
+      <div style="display:flex;justify-content:space-between;${opt.bold?'font-weight:900;':''}${opt.big?'font-size:13px;':''}${opt.color?`color:${opt.color};`:''}">
+        <span>${l}</span><span style="font-family:monospace;">${r}</span>
+      </div>`
+
+    const payRows = Object.entries(payByMethod).map(([m,v]) =>
+      row(PAY_LABEL[m]||m, fmt(v.net))).join('')
+    const cashierLines = cashierRows.map(([name, v]) =>
+      row(name, `${v.count} ord · ${fmt(v.gross)}`)).join('')
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      @page { size: 80mm auto; margin: 0; }
+      body { font-family: 'Courier New', monospace; font-size: 12px; line-height:1.5; color:#000; max-width:80mm; margin:0 auto; padding:6px; }
+      .title { font-size: 14px; font-weight: 900; text-align: center; letter-spacing: 1px; }
+      .center { text-align: center; }
+      .small { font-size: 10px; color:#555; }
+    </style></head><body>
+    <div class="title">${sn}</div>
+    <div class="center small">DAILY SUMMARY (X-REPORT)</div>
+    <div class="center small">${dt} · ${tm}</div>
+    ${dash}
+    ${row('Orders', orderCount)}
+    ${row('Refunds', refundOrders.length)}
+    ${row('Voids', voided.length)}
+    ${row('Avg Ticket', fmt(avgTicket))}
+    ${dash}
+    ${row('Gross Sales', fmt(grossSales))}
+    ${discTotal>0?row('  Discounts', `-${fmt(discTotal)}`, {color:'#dc2626'}):''}
+    ${couponTotal>0?row('  Coupons',  `-${fmt(couponTotal)}`,{color:'#dc2626'}):''}
+    ${ptsTotal>0?row('  Points', `${ptsTotal} pts`, {color:'#B45309'}):''}
+    ${row('Tax', fmt(taxTotal))}
+    ${refundAmt>0?row('Refunds', `-${fmt(refundAmt)}`, {color:'#dc2626'}):''}
+    ${dash}
+    ${row('NET SALES', fmt(netSales), {bold:true, big:true})}
+    ${dash}
+    <div class="bold center">— PAYMENTS —</div>
+    ${payRows || '<div class="center small">No payments</div>'}
+    ${dbl}
+    <div class="bold center">— CASH DRAWER —</div>
+    ${row('Opening total', fmt(openingTotal))}
+    ${row('Cash sales', `+${fmt(cashCollected)}`)}
+    ${cashRefunded>0?row('Cash refunds', `-${fmt(cashRefunded)}`, {color:'#dc2626'}):''}
+    ${cashIn>0?row('Cash in (paid in)', `+${fmt(cashIn)}`):''}
+    ${cashOut>0?row('Cash out (paid out)', `-${fmt(cashOut)}`):''}
+    ${row('EXPECTED', fmt(expectedCash), {bold:true})}
+    ${cashierRows.length>1?`${dbl}<div class="bold center">— BY EMPLOYEE —</div>${cashierLines}`:''}
+    ${overrides.length>0?`${dbl}<div class="bold center">— OVERRIDES (${overrides.length}) —</div>`:''}
+    ${dash}
+    <div class="center small">Printed ${new Date().toLocaleString()}</div>
+    <div class="center small" style="margin-top:8px;">— END OF X-REPORT —</div>
+    </body></html>`
+    printReceipt(html, 1)
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-[20px] font-bold mb-1">☀️ Daily Summary — {format(new Date(),'EEE MMM d, yyyy')}</div>
+          <div className="text-[11px] text-[#666]">
+            Today's activity across all terminals · {storeInfo?.name || 'All stores'} · auto-updated
+          </div>
+        </div>
+        <button onClick={printX}
+          className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none text-white"
+          style={{background:'#1F1F1F'}}>
+          🖨️ Print X-Report
+        </button>
+      </div>
+
+      {/* Big KPIs */}
+      <div className="grid grid-cols-4 gap-3">
+        <BigKpi label="Orders"      value={orderCount}          color="#3b82f6"/>
+        <BigKpi label="Net Sales"   value={fmt(netSales)}       color="#10b981"/>
+        <BigKpi label="Tax"         value={fmt(taxTotal)}       color="#0891b2"/>
+        <BigKpi label="Avg Ticket"  value={fmt(avgTicket)}      color="#1F1F1F"/>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <SmallKpi label="Gross Sales"      value={fmt(grossSales)}      color="#10b981"/>
+        <SmallKpi label="Refunds"          value={`-${fmt(refundAmt)}`} color="#dc2626"/>
+        <SmallKpi label="Voids"            value={voided.length}        color="#64748b"/>
+        <SmallKpi label="Discounts Given"  value={`-${fmt(discTotal)}`} color="#9333ea"/>
+        <SmallKpi label="Coupons Used"     value={`-${fmt(couponTotal)}`} color="#c026d3"/>
+        <SmallKpi label="Points Redeemed"  value={`${ptsTotal} pts`}    color="#B45309"/>
+      </div>
+
+      {/* Payment Breakdown */}
+      <div>
+        <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">💳 Payment Breakdown</div>
+        <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+          <table className="w-full text-[12px]">
+            <thead style={{background:'#FAFAFA'}}>
+              <tr>
+                <th className="text-left px-3 py-2 font-bold">Method</th>
+                <th className="text-right px-3 py-2 font-bold">Collected</th>
+                <th className="text-right px-3 py-2 font-bold">Refunded</th>
+                <th className="text-right px-3 py-2 font-bold">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(payByMethod).length === 0 ? (
+                <tr><td colSpan="4" className="text-center py-4 text-[#999]">No payments today</td></tr>
+              ) : Object.entries(payByMethod).map(([m,v]) => (
+                <tr key={m} className="border-t border-slate-100">
+                  <td className="px-3 py-2 font-semibold">{PAY_LABEL[m] || m}</td>
+                  <td className="px-3 py-2 text-right font-mono">{fmt(v.collected)}</td>
+                  <td className="px-3 py-2 text-right font-mono" style={{color:v.refunded>0?'#dc2626':'#999'}}>
+                    {v.refunded > 0 ? `-${fmt(v.refunded)}` : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono font-bold">{fmt(v.net)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Cash drawer */}
+      <div>
+        <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">💵 Cash Drawer</div>
+        <div className="rounded-xl px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-2 text-[12px]"
+          style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+          <Row l="Opening floats (all shifts)" v={fmt(openingTotal)} mono/>
+          <Row l="Cash sales" v={`+${fmt(cashCollected)}`} mono color="#16a34a"/>
+          {cashRefunded > 0 && <Row l="Cash refunds" v={`-${fmt(cashRefunded)}`} mono color="#dc2626"/>}
+          {cashIn > 0  && <Row l="Cash in"  v={`+${fmt(cashIn)}`} mono/>}
+          {cashOut > 0 && <Row l="Cash out" v={`-${fmt(cashOut)}`} mono/>}
+          <Row l="EXPECTED CASH" v={fmt(expectedCash)} mono bold/>
+        </div>
+      </div>
+
+      {/* By cashier */}
+      {cashierRows.length > 0 && (
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">👤 By Employee</div>
+          <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+            <table className="w-full text-[12px]">
+              <thead style={{background:'#FAFAFA'}}>
+                <tr>
+                  <th className="text-left px-3 py-2 font-bold">Employee</th>
+                  <th className="text-right px-3 py-2 font-bold">Orders</th>
+                  <th className="text-right px-3 py-2 font-bold">Sales</th>
+                  <th className="text-right px-3 py-2 font-bold">Avg Ticket</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashierRows.map(([name, v]) => (
+                  <tr key={name} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-semibold">{name}</td>
+                    <td className="px-3 py-2 text-right font-mono">{v.count}</td>
+                    <td className="px-3 py-2 text-right font-mono font-bold">{fmt(v.gross)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-[#666]">{fmt(v.gross / v.count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Shifts today */}
+      {shifts.length > 0 && (
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">🖥️ Shifts Today</div>
+          <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+            <table className="w-full text-[12px]">
+              <thead style={{background:'#FAFAFA'}}>
+                <tr>
+                  <th className="text-left px-3 py-2 font-bold">Terminal</th>
+                  <th className="text-left px-3 py-2 font-bold">Opened</th>
+                  <th className="text-left px-3 py-2 font-bold">Closed</th>
+                  <th className="text-right px-3 py-2 font-bold">Opening $</th>
+                  <th className="text-right px-3 py-2 font-bold">Closing $</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shifts.map(sh => (
+                  <tr key={sh.id} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-semibold">{sh.terminals?.name || '—'}</td>
+                    <td className="px-3 py-2 text-[#666] text-[11px]">{format(new Date(sh.opened_at), 'h:mm a')}</td>
+                    <td className="px-3 py-2 text-[#666] text-[11px]">
+                      {sh.closed_at ? format(new Date(sh.closed_at), 'h:mm a') : <span style={{color:'#16a34a',fontWeight:'bold'}}>● OPEN</span>}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(sh.opening_amount)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{sh.closing_amount != null ? fmt(sh.closing_amount) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Overrides today */}
+      {overrides.length > 0 && (
+        <div>
+          <div className="text-[12px] font-bold uppercase tracking-wider text-[#666] mb-2">
+            🔐 Manager Overrides Today ({overrides.length})
+          </div>
+          <div className="rounded-xl overflow-hidden" style={{border:'1px solid #E5E5E5'}}>
+            <table className="w-full text-[12px]">
+              <thead style={{background:'#FAFAFA'}}>
+                <tr>
+                  <th className="text-left px-3 py-2 font-bold">Time</th>
+                  <th className="text-left px-3 py-2 font-bold">Action</th>
+                  <th className="text-right px-3 py-2 font-bold">Amount</th>
+                  <th className="text-left px-3 py-2 font-bold">By</th>
+                  <th className="text-left px-3 py-2 font-bold">Approved by</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overrides.slice(0, 20).map(o => (
+                  <tr key={o.id} className="border-t border-slate-100">
+                    <td className="px-3 py-2 font-mono text-[11px] text-[#666]">{format(new Date(o.created_at), 'h:mm a')}</td>
+                    <td className="px-3 py-2 text-[11px]">{o.action_label || o.permission}</td>
+                    <td className="px-3 py-2 text-right font-mono">{o.amount ? fmt(o.amount) : '—'}</td>
+                    <td className="px-3 py-2 text-[11px]">{o.requested_by_name || '—'}</td>
+                    <td className="px-3 py-2 text-[11px] font-semibold" style={{color:'#9333ea'}}>{o.approved_by_name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {overrides.length > 20 && (
+              <div className="px-3 py-2 text-[10px] text-[#999] text-center" style={{background:'#FAFAFA'}}>
+                +{overrides.length - 20} more — see Manager Overrides tab for full list
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BigKpi({ label, value, color }) {
+  return (
+    <div className="rounded-xl px-5 py-4" style={{background:'#fff', border:`2px solid ${color}22`, boxShadow:`0 2px 8px ${color}10`}}>
+      <div className="text-[10px] font-bold uppercase tracking-wider text-[#666]">{label}</div>
+      <div className="text-[28px] font-bold font-mono mt-1" style={{color}}>{value}</div>
+    </div>
+  )
+}
+
+function SmallKpi({ label, value, color }) {
+  return (
+    <div className="rounded-lg px-3 py-2" style={{background:'#fff', border:'1px solid #E5E5E5'}}>
+      <div className="text-[9px] font-bold uppercase tracking-wider text-[#999]">{label}</div>
+      <div className="text-[14px] font-bold font-mono mt-0.5" style={{color}}>{value}</div>
+    </div>
+  )
+}
+
+function Row({ l, v, mono, bold, color }) {
+  return (
+    <div className="flex justify-between items-baseline">
+      <span className="text-[#666]">{l}</span>
+      <span style={{fontFamily: mono?'monospace':'inherit', fontWeight: bold?'bold':'normal', color: color||'inherit'}}>{v}</span>
+    </div>
+  )
+}
+
 
 // ── MANAGER OVERRIDES REPORT ──────────────────────────────────────
 // Shows every time a cashier needed manager PIN approval, grouped by
