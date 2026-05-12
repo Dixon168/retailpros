@@ -23,6 +23,9 @@ import DiscountPanel from './panels/DiscountPanel'
 import PaymentPanel from './panels/PaymentPanel'
 import RefundPanel from './panels/RefundPanel'
 import GiftCardPanel from '@/components/pos/GiftCardPanel'
+import { OpenShiftModal } from '@/components/pos/ShiftModal'
+import CloseShiftFlow from '@/components/pos/CloseShiftFlow'
+import { useTerminalStore } from '@/stores/terminalStore'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
@@ -42,6 +45,9 @@ export default function POSPage() {
   const [showPoints,     setShowPoints]     = useState(false)
   const [showGiftCard,   setShowGiftCard]   = useState(false)
   const [showOpenItem,   setShowOpenItem]   = useState(false)
+  const [showOpenShift,  setShowOpenShift]  = useState(false)
+  const [showCloseShift, setShowCloseShift] = useState(false)
+  const { currentShift, shiftOpen, terminal } = useTerminalStore()
   const [time,           setTime]           = useState(new Date())
 
   useEffect(() => {
@@ -155,6 +161,22 @@ export default function POSPage() {
             {time.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
           </div>
           <LangSwitcher/>
+          {shiftOpen ? (
+            <button onClick={() => setShowCloseShift(true)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(34,197,94,0.15)', borderColor:'rgba(34,197,94,0.45)', color:'#4ade80'}}
+              title={`Shift open since ${new Date(currentShift?.opened_at).toLocaleTimeString()}\nFloat: $${Number(currentShift?.opening_amount||0).toFixed(2)}`}>
+              <span className="w-2 h-2 rounded-full" style={{background:'#22c55e', boxShadow:'0 0 6px #22c55e'}}/>
+              Shift Open
+            </button>
+          ) : (
+            <button onClick={() => setShowOpenShift(true)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
+              style={{background:'rgba(234,88,12,0.15)', borderColor:'rgba(234,88,12,0.45)', color:'#fb923c'}}
+              title="Click to open shift and enter opening cash float">
+              ☀️ Open Shift
+            </button>
+          )}
           <button onClick={() => window.location.href='/backoffice'}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
             style={{background:'rgba(99,102,241,0.15)', borderColor:'rgba(99,102,241,0.4)', color:'#818cf8'}}>
@@ -257,6 +279,19 @@ export default function POSPage() {
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
 
     {showGiftCard && <GiftCardPanel onClose={() => setShowGiftCard(false)}/>}
+
+    {showOpenShift && <OpenShiftModal onClose={() => setShowOpenShift(false)}/>}
+
+    {showCloseShift && (
+      <CloseShiftFlow
+        shift={currentShift}
+        tenantId={tenant?.id}
+        storeInfo={store}
+        cashier={user?.name}
+        terminalName={terminal?.name}
+        onClose={() => setShowCloseShift(false)}
+      />
+    )}
 
     {showOpenItem && (
       <OpenItemModal
