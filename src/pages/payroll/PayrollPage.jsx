@@ -8,7 +8,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, subDays } from 'date-fns'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 import { printReceipt } from '@/lib/receipt'
+import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
+import { logOverride } from '@/lib/auditOverride'
 import toast from 'react-hot-toast'
 
 const PRESETS = [
@@ -25,11 +28,49 @@ const PRESETS = [
 
 export default function PayrollPage() {
   const qc = useQueryClient()
-  const { tenant, store, user: me } = useAuthStore()
+  const { tenant, store, user: me, can } = useAuthStore()
+  const { activeEmployee } = useEmployeeStore()
   const [preset, setPreset] = useState('week')
   const [customFrom, setCustomFrom] = useState(null)
   const [customTo, setCustomTo]     = useState(null)
   const [editing, setEditing] = useState(null) // entry being edited
+  const [override, setOverride] = useState(null)
+  // Track which approver authorized the currently-open edit modal (if any)
+  const [editApprover, setEditApprover] = useState(null)
+
+  // Attempt to open the edit modal for a time entry.
+  // Reads payroll.manage permission:
+  //   allow  → open immediately
+  //   prompt → open ManagerOverrideModal, then open editor on approve
+  //   deny   → toast error
+  const tryEdit = (entry) => {
+    const v = can('payroll.manage')
+    if (v === 'allow') { setEditApprover(null); setEditing(entry); return }
+    if (v === 'prompt') {
+      setOverride({
+        permission:'payroll.manage',
+        action:`edit a time-clock entry for ${entry.user_name || 'this employee'}`,
+        onApprove: (approver) => {
+          toast.success(`✓ Approved by ${approver.name}`)
+          logOverride({
+            tenantId: tenant?.id,
+            permission:'payroll.manage',
+            actionLabel:`edit time entry (${entry.id})`,
+            requestedBy: activeEmployee
+              ? { id: activeEmployee.id, name: activeEmployee.name }
+              : { id: me?.id, name: me?.name },
+            approver,
+            amount: entry.earned_amount,
+            notes: `Entry ${entry.id} · ${entry.user_name}`,
+          })
+          setEditApprover(approver)
+          setEditing(entry)
+        },
+      })
+      return
+    }
+    toast.error("You don't have permission to edit time entries")
+  }
 
   const { from, to } = useMemo(() => {
     if (preset === 'custom' && customFrom && customTo) {
@@ -197,7 +238,7 @@ export default function PayrollPage() {
                   <div className="text-right text-[12px] font-mono font-bold w-[80px]">
                     {e.earned_amount != null ? `$${Number(e.earned_amount).toFixed(2)}` : <span className="text-[#999]">—</span>}
                   </div>
-                  <button onClick={()=>setEditing(e)}
+                  <button onClick={()=>tryEdit(e)}
                     className="rounded-md px-2 py-1 text-[10px] cursor-pointer"
                     style={{background:'#F1F5F9', color:'#475569', border:'1px solid #E5E5E5'}}>Edit</button>
                 </div>
@@ -208,9 +249,17 @@ export default function PayrollPage() {
       </div>
 
       {editing && (
-        <EditEntryModal entry={editing} editorId={me?.id}
-          onClose={()=>setEditing(null)}
-          onSaved={()=>{ qc.invalidateQueries({queryKey:['payroll']}); setEditing(null) }}/>
+        <EditEntryModal entry={editing} editorId={me?.id} approver={editApprover}
+          onClose={()=>{ setEditing(null); setEditApprover(null) }}
+          onSaved={()=>{ qc.invalidateQueries({queryKey:['payroll']}); setEditing(null); setEditApprover(null) }}/>
+      )}
+
+      {override && (
+        <ManagerOverrideModal
+          permission={override.permission}
+          action={override.action}
+          onApprove={override.onApprove}
+          onClose={() => setOverride(null)}/>
       )}
     </div>
   )
@@ -227,7 +276,7 @@ function KPI({ label, value, color }) {
 }
 
 
-function EditEntryModal({ entry, editorId, onClose, onSaved }) {
+function EditEntryModal({ entry, editorId, approver, onClose, onSaved }) {
   const fmtLocal = (iso) => {
     if (!iso) return ''
     const d = new Date(iso)
@@ -269,6 +318,12 @@ function EditEntryModal({ entry, editorId, onClose, onSaved }) {
           <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 border-none text-white text-[18px] flex items-center justify-center cursor-pointer">✕</button>
         </div>
         <div className="p-5 space-y-3">
+          {approver && (
+            <div className="rounded-lg px-3 py-2 text-[11px]"
+              style={{background:'#faf5ff', border:'1px solid #e9d5ff', color:'#7c2d92'}}>
+              🔐 <b>Manager Override active:</b> approved by {approver.name}
+            </div>
+          )}
           <div>
             <SLabel>Clock In *</SLabel>
             <input type="datetime-local" value={ci} onChange={e=>setCi(e.target.value)}
