@@ -177,6 +177,26 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                 </>
               )}
 
+              {summary.activity && summary.activity.length > 0 && (
+                <>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">📜 Who Did What</div>
+                  <div className="rounded-xl mb-4 max-h-[280px] overflow-y-auto"
+                    style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+                    {summary.activity.map((a, i) => (
+                      <div key={i} className="flex items-start gap-2 px-3 py-2 border-b border-slate-100 last:border-0">
+                        <span className="text-[15px] leading-tight">{a.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-bold text-[#1F1F1F] truncate">{a.detail}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            {new Date(a.at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} · {a.who}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <button onClick={proceedToCount}
                 className="w-full rounded-lg py-3 text-[14px] font-bold text-white cursor-pointer border-none"
                 style={{background:'#006AFF'}}>

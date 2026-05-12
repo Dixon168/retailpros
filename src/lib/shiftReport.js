@@ -61,6 +61,23 @@ export async function buildShiftSummary({
   const sales     = completed.filter(o => Number(o.total) >= 0)
   const refunds   = completed.filter(o => Number(o.total) < 0)
 
+  // ── Fetch ADDITIONAL audit data for the activity log ──
+  // Order adjustments (voids, midshift cash in/out)
+  let adjQ = supabase.from('order_adjustments')
+    .select('id, type, amount, reason, payment_method, staff_id, staff_name, order_number, created_at')
+    .eq('tenant_id', tenantId)
+    .gte('created_at', openedAt)
+    .lte('created_at', closedAt)
+  if (terminalId) adjQ = adjQ.eq('terminal_id', terminalId)
+  const { data: adjustments = [] } = await adjQ.then(r => ({ data: r.data || [] }))
+
+  // Time-clock events that crossed this shift window
+  const { data: clockEvents = [] } = await supabase.from('time_clock_entries')
+    .select('id, user_id, clock_in_at, clock_out_at, users(name)')
+    .eq('tenant_id', tenantId)
+    .or(`and(clock_in_at.gte.${openedAt},clock_in_at.lte.${closedAt}),and(clock_out_at.gte.${openedAt},clock_out_at.lte.${closedAt})`)
+    .then(r => ({ data: r.data || [] }))
+
   const grossSales   = sales.reduce((s, o) => s + Number(o.total || 0), 0)
   const refundAmt    = Math.abs(refunds.reduce((s, o) => s + Number(o.total || 0), 0))
   const netSales     = grossSales - refundAmt
@@ -106,6 +123,97 @@ export async function buildShiftSummary({
   })
   const byCashierList = Object.values(byCashier).sort((a,b) => b.gross - a.gross)
 
+  // ── Build chronological activity log ──
+  // Resolve any extra user IDs we haven't already fetched names for
+  const extraIds = new Set()
+  voided.forEach(o => o.voided_by && extraIds.add(o.voided_by))
+  adjustments.forEach(a => a.staff_id && extraIds.add(a.staff_id))
+  clockEvents.forEach(e => e.user_id && extraIds.add(e.user_id))
+  const newIds = [...extraIds].filter(id => !cashierNames[id])
+  if (newIds.length > 0) {
+    const { data: us } = await supabase.from('users').select('id, name').in('id', newIds)
+    ;(us || []).forEach(u => { cashierNames[u.id] = u.name })
+  }
+  const nameOf = (id, fallback) => cashierNames[id] || fallback || 'Unknown'
+
+  const activity = []
+  // Shift open
+  activity.push({
+    at: openedAt,
+    icon:'☀️', kind:'shift_open',
+    who: nameOf(shift.cashier_id, 'Cashier'),
+    detail: `Opened shift · float $${Number(shift.opening_amount||0).toFixed(2)}`,
+  })
+  // Sales
+  sales.forEach(o => activity.push({
+    at: o.created_at,
+    icon:'🛒', kind:'sale',
+    who: nameOf(o.cashier_id),
+    detail: `Sold #${o.order_number} · $${Number(o.total||0).toFixed(2)}`,
+    order_id: o.id,
+  }))
+  // Refunds (orders with negative totals)
+  refunds.forEach(o => activity.push({
+    at: o.created_at,
+    icon:'↩️', kind:'refund',
+    who: nameOf(o.cashier_id),
+    detail: `Refunded order · ${'$'+Math.abs(Number(o.total||0)).toFixed(2)}`,
+    order_id: o.id,
+  }))
+  // Voids
+  voided.forEach(o => activity.push({
+    at: o.voided_at || o.created_at,
+    icon:'🚫', kind:'void',
+    who: nameOf(o.voided_by, o.voided_by_name),
+    detail: `Voided #${o.order_number} · $${Number(o.total||0).toFixed(2)}`,
+    order_id: o.id,
+  }))
+  // Order adjustments (other than voids which we already have)
+  adjustments.forEach(a => {
+    if (a.type === 'void') return // already in voided list
+    activity.push({
+      at: a.created_at,
+      icon: a.type === 'cash_in' ? '💵' : a.type === 'cash_out' ? '💸' : '🔧',
+      kind: a.type,
+      who: nameOf(a.staff_id, a.staff_name),
+      detail: `${a.type.replace(/_/g,' ')} · $${Math.abs(Number(a.amount||0)).toFixed(2)}${a.reason ? ' — '+a.reason : ''}`,
+    })
+  })
+  // Clock in / out events within the shift window
+  clockEvents.forEach(e => {
+    const inAt  = e.clock_in_at && new Date(e.clock_in_at)
+    const outAt = e.clock_out_at && new Date(e.clock_out_at)
+    const openAt = new Date(openedAt)
+    const closeAt = new Date(closedAt)
+    if (inAt && inAt >= openAt && inAt <= closeAt) {
+      activity.push({
+        at: e.clock_in_at,
+        icon:'⏰', kind:'clock_in',
+        who: e.users?.name || nameOf(e.user_id),
+        detail: 'Clocked in',
+      })
+    }
+    if (outAt && outAt >= openAt && outAt <= closeAt) {
+      activity.push({
+        at: e.clock_out_at,
+        icon:'🌙', kind:'clock_out',
+        who: e.users?.name || nameOf(e.user_id),
+        detail: 'Clocked out',
+      })
+    }
+  })
+  // Shift close (only if actually closed)
+  if (shift.closed_at) {
+    activity.push({
+      at: shift.closed_at,
+      icon:'🌙', kind:'shift_close',
+      who: nameOf(shift.cashier_id, 'Cashier'),
+      detail: `Closed shift · counted $${Number(shift.closing_amount||0).toFixed(2)}`,
+    })
+  }
+  // Sort chronologically
+  activity.sort((a,b) => new Date(a.at) - new Date(b.at))
+
   // Cash reconciliation
   const cashCollected = payByMethod.cash?.collected || 0
   const cashRefunded  = payByMethod.cash?.refunded || 0
@@ -134,6 +242,7 @@ export async function buildShiftSummary({
     voidedTotal,
     payByMethod,
     byCashier:    byCashierList,
+    activity,
     cashCollected, cashRefunded, cashNet,
     opening, expected, actualClosing, variance,
   }
@@ -229,6 +338,18 @@ ${row('Counted Cash', fmt(s.actualClosing), { bold:true })}
   <span>${s.variance===0?'BALANCED ✓':'VARIANCE'}</span>
   <span>${s.variance>=0?'+':''}${fmt(s.variance)}</span>
 </div>
+
+${(s.activity && s.activity.length > 0) ? `
+${dash}
+<div class="bold center">— WHO DID WHAT —</div>
+${s.activity.map(a => `
+  <div style="display:flex;gap:4px;margin-top:2px;align-items:flex-start;">
+    <span style="font-size:10px;width:48px;flex-shrink:0;color:#666;">${new Date(a.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+    <span style="font-size:10px;flex:1;">
+      <b>${esc(a.who)}</b> ${esc(a.detail)}
+    </span>
+  </div>`).join('')}
+` : ''}
 
 ${dash}
 <div class="center small">— END OF SHIFT REPORT —</div>
