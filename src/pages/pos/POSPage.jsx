@@ -28,11 +28,12 @@ import CloseShiftFlow from '@/components/pos/CloseShiftFlow'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import PinKeypadModal from '@/components/pos/PinKeypadModal'
+import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import toast from 'react-hot-toast'
 
 export default function POSPage() {
   const navigate    = useNavigate()
-  const { user, tenant, store } = useAuthStore()
+  const { user, tenant, store, can } = useAuthStore()
   const {
     loadTaxGroups, showSnPanel, showWtPanel, showPricePanel,
     showCustPanel, showDiscPanel, showPayPanel, selectedItemId, items
@@ -50,6 +51,31 @@ export default function POSPage() {
   const [showOpenShift,  setShowOpenShift]  = useState(false)
   const [showCloseShift, setShowCloseShift] = useState(false)
   const [pinMode,        setPinMode]        = useState(null)  // 'signin' | 'clockin' | 'clockout' | null
+  const [override,       setOverride]       = useState(null)  // { permission, action, onApprove }
+
+  /**
+   * Run an action that may require permission.
+   * - allow  → run immediately
+   * - prompt → open ManagerOverrideModal, run on PIN verify
+   * - deny   → red toast, don't run
+   * Optional `actionLabel` is shown in the override modal (e.g. "process this refund")
+   */
+  const guard = (permission, actionLabel, fn) => {
+    const v = can(permission)
+    if (v === 'allow') return fn()
+    if (v === 'prompt') {
+      setOverride({
+        permission, action: actionLabel,
+        onApprove: (approver) => {
+          // We could log who approved; for now toast it so the cashier sees it
+          toast.success(`✓ Approved by ${approver.name}`)
+          fn(approver)
+        },
+      })
+      return
+    }
+    toast.error(`You don't have permission to ${actionLabel}`)
+  }
   const { currentShift, shiftOpen, terminal } = useTerminalStore()
   const { activeEmployee, clockedIn, clockedInAt, signOut } = useEmployeeStore()
   const [time,           setTime]           = useState(new Date())
@@ -128,9 +154,9 @@ export default function POSPage() {
   const { t } = useLang()
   const QUICK_BTNS = [
     { id:'member',  label:t('member'),   icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
-    { id:'points',  label:t('points'),   icon:'⭐', action: () => setShowPoints(true) },
-    { id:'openitem',label:t('openItem'), icon:'✏️', action: () => setShowOpenItem(true) },
-    { id:'return',  label:t('return'),   icon:'↩️', action: () => setShowRefund(true) },
+    { id:'points',  label:t('points'),   icon:'⭐', action: () => guard('pos.points_redeem', 'redeem loyalty points', () => setShowPoints(true)) },
+    { id:'openitem',label:t('openItem'), icon:'✏️', action: () => guard('pos.price_override', 'use an open-price item', () => setShowOpenItem(true)) },
+    { id:'return',  label:t('return'),   icon:'↩️', action: () => guard('pos.refund', 'process a refund', () => setShowRefund(true)) },
     { id:'hold', label:t('hold'), icon:'📌', action: async () => {
       const { items, customer, totals } = useCartStore.getState()
       if (items.length === 0) { toast.error('Cart is empty'); return }
@@ -146,7 +172,7 @@ export default function POSPage() {
       })
       if (ok) toast.success('📌 Order held')
     }},
-    { id:'giftcard', label:'Gift Card', icon:'🎁', action: () => setShowGiftCard(true) },
+    { id:'giftcard', label:'Gift Card', icon:'🎁', action: () => guard('pos.gift_card', 'manage gift cards', () => setShowGiftCard(true)) },
     { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
@@ -208,7 +234,7 @@ export default function POSPage() {
           )}
 
           {shiftOpen ? (
-            <button onClick={() => setShowCloseShift(true)}
+            <button onClick={() => guard('pos.close_shift', 'close the shift', () => setShowCloseShift(true))}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
               style={{background:'rgba(34,197,94,0.15)', borderColor:'rgba(34,197,94,0.45)', color:'#4ade80'}}
               title={`Shift open since ${new Date(currentShift?.opened_at).toLocaleTimeString()}\nFloat: $${Number(currentShift?.opening_amount||0).toFixed(2)}`}>
@@ -216,7 +242,7 @@ export default function POSPage() {
               Shift Open
             </button>
           ) : (
-            <button onClick={() => setShowOpenShift(true)}
+            <button onClick={() => guard('pos.open_shift', 'open a shift', () => setShowOpenShift(true))}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
               style={{background:'rgba(234,88,12,0.15)', borderColor:'rgba(234,88,12,0.45)', color:'#fb923c'}}
               title="Click to open shift and enter opening cash float">
@@ -331,6 +357,14 @@ export default function POSPage() {
     {pinMode && (
       <PinKeypadModal mode={pinMode}
         onClose={() => setPinMode(null)}/>
+    )}
+
+    {override && (
+      <ManagerOverrideModal
+        permission={override.permission}
+        action={override.action}
+        onApprove={override.onApprove}
+        onClose={() => setOverride(null)}/>
     )}
 
     {showCloseShift && (

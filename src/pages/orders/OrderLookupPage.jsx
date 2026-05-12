@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
+import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { useCartStore } from '@/stores/cartStore'
 import { format, subDays, startOfDay, endOfDay } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -275,12 +276,29 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
 
 
 export default function OrderLookupPage() {
-  const { tenant, user } = useAuthStore()
+  const { tenant, user, can } = useAuthStore()
   const { activeEmployee } = useEmployeeStore()
   const effCashierId   = activeEmployee?.id   || user?.id
   const effCashierName = activeEmployee?.name || user?.name
   const { resumeHeldOrder, cancelHeldOrder } = useHeldOrdersStore()
   const qc = useQueryClient()
+  const [override, setOverride] = useState(null)
+
+  const guard = (permission, actionLabel, fn) => {
+    const v = can(permission)
+    if (v === 'allow') return fn()
+    if (v === 'prompt') {
+      setOverride({
+        permission, action: actionLabel,
+        onApprove: (approver) => {
+          toast.success(`✓ Approved by ${approver.name}`)
+          fn(approver)
+        },
+      })
+      return
+    }
+    toast.error(`You don't have permission to ${actionLabel}`)
+  }
 
   const [search,     setSearch]     = useState('')
   const [statusF,    setStatusF]    = useState('all')
@@ -608,8 +626,8 @@ export default function OrderLookupPage() {
                   await cancelHeldOrder({ heldOrderId: selected.id, tenantId: tenant.id })
                   setSelected(null); toast.success('Cancelled')
                 }}
-                onVoid={() => handleVoid(selected)}
-                onRefund={() => { window.location.href = '/pos?refund=' + selected.id }}
+                onVoid={() => guard('pos.void', 'void this order', () => handleVoid(selected))}
+                onRefund={() => guard('pos.refund', 'process this refund', () => { window.location.href = '/pos?refund=' + selected.id })}
               />
             </div>
           )}
@@ -771,6 +789,14 @@ export default function OrderLookupPage() {
           })}
         </div>
       </div>
+
+      {override && (
+        <ManagerOverrideModal
+          permission={override.permission}
+          action={override.action}
+          onApprove={override.onApprove}
+          onClose={() => setOverride(null)}/>
+      )}
     </div>
   )
 }
