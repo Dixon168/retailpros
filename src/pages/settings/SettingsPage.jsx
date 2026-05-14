@@ -1,5 +1,6 @@
 // src/pages/settings/SettingsPage.jsx
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -35,6 +36,7 @@ const SECTIONS = [
 ]
 
 export default function SettingsPage() {
+  const nav = useNavigate()
   const { user, tenant, store, canAccessSettings, can } = useAuthStore()
   const { activeEmployee } = useEmployeeStore()
   const [active, setActive] = useState('store')
@@ -79,8 +81,17 @@ export default function SettingsPage() {
     <div className="flex h-full bg-[#FAFAFA]">
       {/* Sidebar */}
       <div className="w-[220px] bg-[#FFFFFF] border-r border-[#E5E5E5] p-3 flex-shrink-0">
-        <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest px-2 mb-3">
-          Settings
+        {/* Header with close button */}
+        <div className="flex items-center justify-between px-2 mb-3">
+          <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest">
+            Settings
+          </div>
+          <button onClick={() => nav('/backoffice')}
+            title="Back to Store Overview"
+            className="w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none transition-all hover:bg-slate-100"
+            style={{background:'transparent', color:'#999999', fontSize:'14px'}}>
+            ✕
+          </button>
         </div>
         {visibleSections.map(s => {
           const v = can(`settings.${s.id}`)
