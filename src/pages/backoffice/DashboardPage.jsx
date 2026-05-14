@@ -174,13 +174,41 @@ export default function DashboardPage() {
       <div className="p-6" style={{maxWidth:'1400px', margin:'0 auto'}}>
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <div>
-            <div className="text-[22px] font-bold text-slate-800">Dashboard</div>
+            <div className="text-[22px] font-bold text-slate-800">🏠 Store Overview</div>
             <div className="text-[13px] text-slate-400 mt-0.5">
-              {store?.name} · {new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}
+              All channels combined · {store?.name} · {new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}
             </div>
           </div>
+        </div>
+
+        {/* Channel drill-down banner */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <button onClick={() => navigate('/pos-dashboard')}
+            className="rounded-2xl p-4 cursor-pointer border-2 text-left transition-all hover:shadow-md"
+            style={{background:'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderColor:'#80B2FF'}}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider font-bold" style={{color:'#1e40af'}}>Retail POS</div>
+                <div className="text-[18px] font-bold mt-0.5" style={{color:'#1e3a8a'}}>🛒 Walk-in Sales</div>
+                <div className="text-[11px] text-slate-600 mt-1">Today's orders, tips, refunds, top products</div>
+              </div>
+              <div className="text-[28px]">→</div>
+            </div>
+          </button>
+          <button onClick={() => navigate('/b2b-center')}
+            className="rounded-2xl p-4 cursor-pointer border-2 text-left transition-all hover:shadow-md"
+            style={{background:'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', borderColor:'#fdba74'}}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider font-bold" style={{color:'#9a3412'}}>B2B Invoicing</div>
+                <div className="text-[18px] font-bold mt-0.5" style={{color:'#7c2d12'}}>💼 Business Accounts</div>
+                <div className="text-[11px] text-slate-600 mt-1">A/R aging, top customers, estimates, payments</div>
+              </div>
+              <div className="text-[28px]">→</div>
+            </div>
+          </button>
         </div>
 
         {/* Stats row */}

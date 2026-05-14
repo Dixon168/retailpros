@@ -31,6 +31,9 @@ import BusinessCustomersPage from '@/pages/business/BusinessCustomersPage'
 import CompanyDetailPage from '@/pages/business/CompanyDetailPage'
 import BarcodePage from '@/pages/barcode/BarcodePage'
 import PayrollPage from '@/pages/payroll/PayrollPage'
+import POSDashboardPage from '@/pages/pos-dashboard/POSDashboardPage'
+import POSReportsPage from '@/pages/pos-reports/POSReportsPage'
+import B2BReportsPage from '@/pages/b2b-reports/B2BReportsPage'
 import CustomerDisplayPage from '@/pages/display/CustomerDisplayPage'
 
 const queryClient = new QueryClient({
@@ -122,6 +125,9 @@ export default function App() {
             <Route path="/business"      element={<BusinessCustomersPage />} />
             <Route path="/business/:id"  element={<CompanyDetailPage />} />
             <Route path="/reports"    element={<ReportsPage />} />
+            <Route path="/pos-dashboard" element={<POSDashboardPage />} />
+            <Route path="/pos-reports"   element={<POSReportsPage />} />
+            <Route path="/b2b-reports"   element={<B2BReportsPage />} />
             <Route path="/barcode"    element={<BarcodePage />} />
             <Route path="/payroll"    element={<PayrollPage />} />
             <Route path="/settings"   element={<SettingsPage />} />

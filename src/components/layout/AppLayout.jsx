@@ -15,8 +15,8 @@ const NAV_GROUPS = [
   {
     group: 'Overview',
     items: [
-      { to:'/backoffice', icon:'🏠', label:'Dashboard' },
-      { to:'/reports',    icon:'📊', label:'Reports' },
+      { to:'/backoffice', icon:'🏠', label:'Store Overview' },
+      { to:'/reports',    icon:'📊', label:'All Reports' },
       { to:'/payroll',    icon:'💰', label:'Payroll' },
     ]
   },
@@ -27,11 +27,13 @@ const NAV_GROUPS = [
   {
     group: '🛒 Retail POS',
     items: [
-      { to:'/orders',     icon:'🧾', label:'Orders / Recall' },
-      { to:'/customers',  icon:'👥', label:'Members' },
-      { to:'/loyalty',    icon:'⭐', label:'Loyalty' },
-      { to:'/marketing',  icon:'🎯', label:'Promotions' },
-      { to:'/cardcenter', icon:'💳', label:'Card Center' },
+      { to:'/pos-dashboard', icon:'📊', label:'POS Dashboard' },
+      { to:'/pos-reports',   icon:'📈', label:'POS Reports' },
+      { to:'/orders',        icon:'🧾', label:'Orders / Recall' },
+      { to:'/customers',     icon:'👥', label:'Members' },
+      { to:'/loyalty',       icon:'⭐', label:'Loyalty' },
+      { to:'/marketing',     icon:'🎯', label:'Promotions' },
+      { to:'/cardcenter',    icon:'💳', label:'Card Center' },
     ]
   },
 
@@ -41,7 +43,8 @@ const NAV_GROUPS = [
   {
     group: '💼 B2B Invoicing',
     items: [
-      { to:'/b2b-center',       icon:'📈', label:'B2B Dashboard' },
+      { to:'/b2b-center',       icon:'📊', label:'B2B Dashboard' },
+      { to:'/b2b-reports',      icon:'📈', label:'B2B Reports' },
       { to:'/business',         icon:'🏢', label:'Companies' },
       { to:'/estimates',        icon:'📝', label:'Estimates' },
       { to:'/invoices',         icon:'📄', label:'Invoices' },
