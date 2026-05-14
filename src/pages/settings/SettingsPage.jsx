@@ -2260,80 +2260,171 @@ function MemberLevelsSection({ tenantId }) {
 // ════════════════════════════════════════════════
 // 🖨️ PRINTER SETUP — Square white theme
 // ════════════════════════════════════════════════
-const DEFAULT_PRINTER = { ip:'192.168.1.100', port:'9100', model:'thermal_80mm', name:'Front Counter' }
+const DEFAULT_PRINTER = {
+  name:    'Receipt Printer',        // friendly label
+  windows_name: '',                  // exact Windows printer name (for cashier reference)
+  ip:      '',                       // optional — for cashier reference / future direct printing
+  paper:   '80mm',                   // 80mm / 58mm / a4
+  station: '',                       // which station this is bound to (terminal ID)
+}
 
 function PrinterSection() {
+  // Read terminal_id from terminalStore so per-station settings are bound to
+  // the right station automatically. Same machine running 2 browsers can
+  // hold 2 different configs (key includes terminal_id).
+  const { terminalId } = useTerminalStore()
+  const storageKey = `printerSettings:${terminalId || 'default'}`
+
   const [s, setS] = useState(() => {
-    try { const v = localStorage.getItem('printerSettings'); return v ? { ...DEFAULT_PRINTER, ...JSON.parse(v) } : DEFAULT_PRINTER }
+    try { const v = localStorage.getItem(storageKey); return v ? { ...DEFAULT_PRINTER, ...JSON.parse(v) } : DEFAULT_PRINTER }
     catch { return DEFAULT_PRINTER }
   })
-  const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState(null)
+  // Detect station change → reload its settings
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(storageKey)
+      setS(v ? { ...DEFAULT_PRINTER, ...JSON.parse(v) } : DEFAULT_PRINTER)
+    } catch { setS(DEFAULT_PRINTER) }
+  }, [storageKey])
 
   const save = () => {
-    localStorage.setItem('printerSettings', JSON.stringify(s))
-    toast.success('Printer settings saved')
+    // Always write back the station ID so the cashier knows what they configured
+    const toSave = { ...s, station: terminalId || 'default' }
+    localStorage.setItem(storageKey, JSON.stringify(toSave))
+    // Also write to the legacy key the receipt code reads — keeps existing
+    // print path working without changes.
+    localStorage.setItem('printerSettings', JSON.stringify(toSave))
+    setS(toSave)
+    toast.success('Printer saved for this station')
   }
 
-  const test = async () => {
-    setTesting(true); setTestResult(null)
-    try {
-      await new Promise(r => setTimeout(r, 1500))
-      setTestResult({ ok:true, msg:`Sent test print to ${s.ip}:${s.port}` })
-      toast.success('Test print sent')
-    } catch (err) { setTestResult({ ok:false, msg:err.message }) }
-    finally { setTesting(false) }
+  const test = () => {
+    // Open a tiny test page and let the browser print dialog pop up.
+    // On first use the cashier should pick the receipt printer and check
+    // "Set as default" so Chrome remembers it for this site.
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Test Print</title>
+      <style>
+        body{font-family:monospace;font-size:12px;padding:10px;max-width:80mm;margin:0 auto;line-height:1.6;}
+        .c{text-align:center;}.b{font-weight:bold;}.dash{text-align:center;color:#888;margin:6px 0;}
+      </style></head><body>
+        <div class="c b" style="font-size:14px;">★ TEST PRINT ★</div>
+        <div class="dash">- - - - - - - - - - - - - - - -</div>
+        <div>Station: <b>${(terminalId || 'default')}</b></div>
+        <div>Printer: <b>${s.name || '—'}</b></div>
+        <div>Win Name: <b>${s.windows_name || '—'}</b></div>
+        <div>IP: <b>${s.ip || '—'}</b></div>
+        <div>Paper: <b>${s.paper}</b></div>
+        <div>Time: ${new Date().toLocaleString()}</div>
+        <div class="dash">- - - - - - - - - - - - - - - -</div>
+        <div class="c">If this prints, you're set! ✓</div>
+        <div class="c" style="margin-top:8px;color:#666;font-size:10px;">
+          First time: pick your printer in the dialog and<br/>check "Set as default" so Chrome remembers it.
+        </div>
+      </body></html>`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument || iframe.contentWindow.document
+    doc.open(); doc.write(html); doc.close()
+    iframe.contentWindow.focus()
+    setTimeout(() => {
+      try { iframe.contentWindow.print() } catch (e) { console.error(e) }
+      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 1500)
+    }, 200)
+    toast.success('Print dialog opening — pick your receipt printer')
   }
 
   return (
     <div className="max-w-2xl">
-      <SectionTitle>Printer Setup</SectionTitle>
+      <SectionTitle>🖨️ Receipt Printer (this station)</SectionTitle>
+
+      {/* Station badge */}
+      <div className="rounded-lg p-3 mb-4 flex items-center gap-3"
+        style={{background:'#eff6ff', border:'1px solid #80B2FF'}}>
+        <span className="text-[20px]">📍</span>
+        <div className="flex-1">
+          <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#1e40af'}}>
+            Configuring station:
+          </div>
+          <div className="text-[14px] font-mono font-bold" style={{color:'#1e3a8a'}}>
+            {terminalId || 'default'}
+          </div>
+        </div>
+        <div className="text-[10px] text-slate-500 text-right max-w-[180px]">
+          Each station saves its own printer.<br/>Other terminals are unaffected.
+        </div>
+      </div>
 
       <Card>
-        <CardTitle>Network Configuration</CardTitle>
+        <CardTitle>Printer Identity</CardTitle>
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <FieldInput label="Printer Name" value={s.name}
-            onChange={v => setS({ ...s, name:v })} placeholder="Front Counter" />
+          <FieldInput label="Friendly Name" value={s.name}
+            onChange={v => setS({ ...s, name:v })} placeholder="Front Counter Receipt" />
           <div>
-            <FieldLabel>Printer Model</FieldLabel>
-            <select value={s.model} onChange={e => setS({ ...s, model:e.target.value })}
-              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF] focus:ring-2 focus:ring-[#E6F0FF]">
-              <option value="thermal_80mm">Thermal 80mm (most common)</option>
-              <option value="thermal_58mm">Thermal 58mm</option>
-              <option value="laser">Laser / Inkjet (full page)</option>
+            <FieldLabel>Paper Size</FieldLabel>
+            <select value={s.paper} onChange={e => setS({ ...s, paper:e.target.value })}
+              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF]">
+              <option value="80mm">80mm thermal (standard)</option>
+              <option value="58mm">58mm thermal (compact)</option>
+              <option value="a4">A4 / Letter (full page)</option>
             </select>
           </div>
-          <FieldInput label="IP Address" value={s.ip}
-            onChange={v => setS({ ...s, ip:v })} placeholder="192.168.1.100" mono/>
-          <FieldInput label="Port" value={s.port}
-            onChange={v => setS({ ...s, port:v })} placeholder="9100" mono/>
         </div>
 
-        <div className="rounded-[8px] p-3 mb-4" style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
-          <div className="text-[12px] leading-relaxed" style={{color:'#666666'}}>
-            <span style={{color:'#1F1F1F', fontWeight:600}}>How to find your printer's IP: </span>
-            Most thermal printers print a status sheet when you hold the FEED button while powering on. The IP shows on that sheet. Default port for ESC/POS thermal printers is <span className="font-mono" style={{color:'#006AFF', fontWeight:600}}>9100</span>.
+        <div className="mb-4">
+          <FieldLabel>Windows Printer Name <span style={{color:'#999'}}>(optional, for reference)</span></FieldLabel>
+          <input type="text" value={s.windows_name}
+            onChange={e => setS({ ...s, windows_name:e.target.value })}
+            placeholder='e.g. "EPSON TM-T88VI Receipt"'
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF] font-mono"/>
+          <div className="text-[10px] text-slate-400 mt-1">
+            Copy the exact name from Windows Settings → Printers & Scanners.
+            This is just a label so the cashier knows which printer to pick in the print dialog.
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <button onClick={test} disabled={testing}
-            className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold disabled:opacity-50 cursor-pointer"
-            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-            {testing ? 'Sending test...' : 'Test Print'}
-          </button>
-          <SaveBtn onClick={save} className="flex-1"/>
-        </div>
-
-        {testResult && (
-          <div className="mt-3 rounded-[8px] px-4 py-3 text-[13px]"
-            style={{background: testResult.ok ? '#E6F7EC' : '#FFF1F0',
-                    border: `1px solid ${testResult.ok ? '#00B23B' : '#CF1322'}`,
-                    color: testResult.ok ? '#00B23B' : '#CF1322'}}>
-            {testResult.msg}
+        <div>
+          <FieldLabel>Printer IP / USB <span style={{color:'#999'}}>(optional)</span></FieldLabel>
+          <input type="text" value={s.ip}
+            onChange={e => setS({ ...s, ip:e.target.value })}
+            placeholder="192.168.1.100 or USB001"
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF] font-mono"/>
+          <div className="text-[10px] text-slate-400 mt-1">
+            For your reference / troubleshooting only. Browser always asks Windows
+            for the printer list — this field doesn't change print behavior.
           </div>
-        )}
+        </div>
       </Card>
+
+      {/* Setup instructions */}
+      <Card className="mt-4">
+        <CardTitle>📋 Setup Instructions</CardTitle>
+        <ol className="text-[12px] leading-relaxed space-y-2" style={{color:'#475569'}}>
+          <li><b>1.</b> Install the thermal printer in Windows like any normal printer (USB or network). Print a Windows test page from <i>Settings → Printers & Scanners → [your printer] → Manage → Print test page</i>. Get this working first.</li>
+          <li><b>2.</b> In Windows: right-click the printer → Printing preferences → set paper to <b>80mm Receipt</b> (or whatever size you bought). Turn margins to 0.</li>
+          <li><b>3.</b> Come back here: enter the Windows printer name above (helps you remember), pick paper size, and Save.</li>
+          <li><b>4.</b> Click <b>Test Print</b> below. A print dialog opens — <b>pick your receipt printer</b> and check "<b>Save as default</b>". Done.</li>
+          <li><b>5.</b> From now on, every POS payment auto-prints to the same printer for this station.</li>
+        </ol>
+      </Card>
+
+      <div className="flex gap-3 mt-4">
+        <button onClick={test}
+          className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold cursor-pointer border-2"
+          style={{background:'#FFFFFF', color:'#006AFF', borderColor:'#006AFF'}}>
+          🖨️ Test Print
+        </button>
+        <SaveBtn onClick={save} className="flex-1"/>
+      </div>
+
+      {/* Status / saved info */}
+      {s.station && (
+        <div className="mt-4 rounded-lg p-3 text-[12px]"
+          style={{background:'#dcfce7', border:'1px solid #86efac', color:'#166534'}}>
+          ✓ <b>Saved for station {s.station}</b>
+          {s.windows_name && <> — print dialog should show <span className="font-mono font-bold">"{s.windows_name}"</span> as a choice</>}.
+        </div>
+      )}
     </div>
   )
 }
