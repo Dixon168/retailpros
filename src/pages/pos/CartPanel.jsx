@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
 import NumPad from '@/components/ui/NumPad'
 import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
+import { calculateBulkPrice, getActiveBulkTiers } from '@/lib/bulkPricing'
 import toast from 'react-hot-toast'
 
 const SIDE_BTNS = [
@@ -38,7 +39,7 @@ export default function CartPanel({ onRefund, onHold }) {
   const [photoViewer,  setPhotoViewer]  = useState(null)
   const [showNumPad,   setShowNumPad]   = useState(false)
 
-  const { subtotal, orderDiscountAmt, taxAmount, grandTotal } = totals()
+  const { subtotal, orderDiscountAmt, bulkSavings, taxAmount, grandTotal } = totals()
   const selectedItem = items.find(i => i.id === selectedItemId)
   const hasSelection = !!selectedItem
 
@@ -362,23 +363,30 @@ export default function CartPanel({ onRefund, onHold }) {
           ) : (
             items.map(item => {
               const isSelected = item.id === selectedItemId
-              const linePrice  = item.itemDiscount
+
+              // Determine the effective line price.
+              // Priority: bulk promo > manual item discount > unit price.
+              const bulkTiers = getActiveBulkTiers(item)
+              const hasBulk   = bulkTiers.length > 0 && !item.itemDiscount && !item.discount && item.qty > 0
+              const bulkInfo  = hasBulk ? calculateBulkPrice(item.qty, item.unitPrice, bulkTiers) : null
+
+              const linePrice = item.itemDiscount
                 ? item.itemDiscount.type === 'pct'
                   ? item.unitPrice * (1 - item.itemDiscount.value / 100)
                   : Math.max(0, item.unitPrice - item.itemDiscount.value)
                 : item.unitPrice
-              const lineTotal  = linePrice * item.qty
+              const lineTotal = bulkInfo ? bulkInfo.lineTotal : (linePrice * item.qty)
 
               return (
                 <div key={item.id} onClick={() => selectItem(item.id)}
                   className="px-3 py-2.5 cursor-pointer transition-all"
                   style={{
                     borderBottom: '1px solid #f8fafc',
-                    background: isSelected ? '#E6F0FF' : 'transparent',
-                    borderLeft: `3px solid ${isSelected ? '#006AFF' : 'transparent'}`,
+                    background: isSelected ? '#E6F0FF' : hasBulk ? '#f0fdf4' : 'transparent',
+                    borderLeft: `3px solid ${isSelected ? '#006AFF' : hasBulk ? '#16a34a' : 'transparent'}`,
                   }}
-                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#fafbff' }}
-                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = hasBulk ? '#dcfce7' : '#fafbff' }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = hasBulk ? '#f0fdf4' : 'transparent' }}>
 
                   <div className="flex items-start gap-2.5">
                     {/* Photo */}
@@ -404,9 +412,20 @@ export default function CartPanel({ onRefund, onHold }) {
                       </div>
 
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className={`text-[11px] font-mono ${item.qty < 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
-                          {item.qty < 0 ? '↩ RETURN ' : ''}{item.qty} × ${item.unitPrice.toFixed(2)}
-                        </span>
+                        {hasBulk ? (
+                          <>
+                            <span className="text-[11px] font-mono text-green-700 font-bold">
+                              {item.qty}× bulk
+                            </span>
+                            <span className="text-[10px] text-slate-400 line-through font-mono">
+                              ${(item.unitPrice * item.qty).toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className={`text-[11px] font-mono ${item.qty < 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                            {item.qty < 0 ? '↩ RETURN ' : ''}{item.qty} × ${item.unitPrice.toFixed(2)}
+                          </span>
+                        )}
                         {/* Stock badge — always show for tracked items */}
                         {(() => {
                           if (item.qty < 0) return null  // returns don't need stock check
@@ -446,6 +465,17 @@ export default function CartPanel({ onRefund, onHold }) {
                             {item.itemDiscount.type==='pct' ? `-${item.itemDiscount.value}%` : `-$${item.itemDiscount.value}`}
                           </span>
                         )}
+                        {bulkInfo && bulkInfo.savings > 0 && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
+                            style={{background:'#dcfce7', color:'#166534'}}
+                            title={bulkInfo.breakdown.map(b =>
+                              b.bundleCount
+                                ? `${b.bundleCount}× ${b.label}`
+                                : `${b.count}× $${b.unitPrice.toFixed(2)}`
+                            ).join(' + ')}>
+                            🏷️ -${bulkInfo.savings.toFixed(2)}
+                          </span>
+                        )}
                         {item.points_redeem && item.redeem_points_required > 0 && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold inline-flex items-center gap-0.5"
                             style={{background:'#FEF3C7', color:'#B45309'}}>
@@ -469,6 +499,40 @@ export default function CartPanel({ onRefund, onHold }) {
                     </div>
                   </div>
 
+                  {/* Bulk breakdown — shows how the qty was split into bundles */}
+                  {bulkInfo && bulkInfo.savings > 0 && (
+                    <div className="mt-1.5 ml-12 text-[10px] flex flex-wrap gap-1.5 items-center">
+                      {bulkInfo.breakdown.map((b, i) => (
+                        <span key={i} className="font-mono"
+                          style={{color: b.bundleCount ? '#166534' : '#94a3b8'}}>
+                          {b.bundleCount
+                            ? `${b.bundleCount}×(${b.label})`
+                            : `${b.count}×$${b.unitPrice.toFixed(2)}`}
+                          {i < bulkInfo.breakdown.length - 1 && <span className="text-slate-300 ml-1">+</span>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Smart upsell — "add N more to save $X" */}
+                  {bulkInfo?.hint && (
+                    <div className="mt-1.5 ml-12 rounded-lg px-2 py-1.5 flex items-center justify-between gap-2"
+                      style={{background:'#fefce8', border:'1px solid #fde68a'}}>
+                      <div className="text-[10px] flex-1">
+                        <span className="font-bold" style={{color:'#854d0e'}}>💡 Add {bulkInfo.hint.addQty} more</span>
+                        <span className="text-[#854d0e]"> → save ${bulkInfo.hint.savings.toFixed(2)}!</span>
+                      </div>
+                      <button onClick={(e) => {
+                        e.stopPropagation()
+                        updateQty(item.id, item.qty + bulkInfo.hint.addQty)
+                      }}
+                        className="rounded-md px-2 py-1 text-[10px] font-bold cursor-pointer border-none text-white"
+                        style={{background:'#ca8a04'}}>
+                        + {bulkInfo.hint.addQty}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Selected hint */}
                   {isSelected && (
                     <div className="mt-1.5 text-[9px] font-semibold" style={{color:'#006AFF'}}>
@@ -486,6 +550,7 @@ export default function CartPanel({ onRefund, onHold }) {
           <div className="px-3 py-2.5 space-y-1">
             {[
               ['Subtotal',       `$${subtotal.toFixed(2)}`,         '#E5E5E5'],
+              ...(bulkSavings > 0 ? [['Bulk savings', `-$${bulkSavings.toFixed(2)}`, '#16a34a']] : []),
               ...(orderDiscountAmt > 0 ? [['Discount', `-$${orderDiscountAmt.toFixed(2)}`, '#16a34a']] : []),
               ['Tax',            `$${taxAmount.toFixed(2)}`,        '#E5E5E5'],
               ['Tip',            '$0.00',                           '#94a3b8'],
@@ -495,6 +560,15 @@ export default function CartPanel({ onRefund, onHold }) {
                 <span className="text-[12px] font-mono font-semibold" style={{color:c}}>{v}</span>
               </div>
             ))}
+            {/* You saved today badge */}
+            {bulkSavings > 0 && (
+              <div className="rounded-lg px-2 py-1 mt-1.5 text-center"
+                style={{background:'#dcfce7', border:'1px solid #86efac'}}>
+                <span className="text-[11px] font-bold" style={{color:'#166534'}}>
+                  🎉 You saved ${bulkSavings.toFixed(2)} today!
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-0.5" style={{borderTop:'1px solid #f1f5f9'}}>
               <span className="text-[11px] text-slate-400 cursor-pointer hover:text-slate-600">Remark ›</span>
             </div>

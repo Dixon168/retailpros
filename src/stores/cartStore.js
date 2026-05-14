@@ -5,6 +5,7 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import { calculateBulkPrice, getActiveBulkTiers } from '@/lib/bulkPricing'
 
 // 美国 California 默认税率（实际从门店设置读取）
 const DEFAULT_TAX_RATE = 0.0725
@@ -291,12 +292,32 @@ export const useCartStore = create((set, get) => ({
   },
 
   // ── 汇总计算 ──
+  // Per-line bulk pricing (used by Cart UI + Customer Display).
+  // Returns null when no active bulk promo applies.
+  lineBulk: (item) => {
+    if (!item) return null
+    const tiers = getActiveBulkTiers(item)
+    if (tiers.length === 0) return null
+    // Don't apply bulk if the item has a manual itemDiscount — the cashier
+    // intentionally overrode pricing, that takes priority over the promo
+    if (item.itemDiscount || item.discount) return null
+    return calculateBulkPrice(item.qty, item.unitPrice, tiers)
+  },
+
   totals: () => {
     const { items, orderDiscount, appliedCoupon } = get()
 
     let subtotal = 0
 
     items.forEach(item => {
+      // 1) Bulk pricing has highest priority (if no manual itemDiscount)
+      const bulkTiers = getActiveBulkTiers(item)
+      if (bulkTiers.length > 0 && !(item.itemDiscount || item.discount)) {
+        const bp = calculateBulkPrice(item.qty, item.unitPrice, bulkTiers)
+        subtotal += bp.lineTotal
+        return
+      }
+      // 2) Manual itemDiscount path (old behavior)
       const lineAmt = item.unitPrice * item.qty
       let discounted = lineAmt
       const disc = item.itemDiscount || item.discount
@@ -339,13 +360,20 @@ export const useCartStore = create((set, get) => ({
     if (subtotal > 0) {
       const taxRatio = afterDiscount / subtotal
       items.forEach(item => {
-        const lineAmt = item.unitPrice * item.qty
-        let discounted = lineAmt
-        const disc = item.itemDiscount || item.discount
-        if (disc) {
-          discounted = disc.type === 'pct'
-            ? lineAmt * (1 - disc.value / 100)
-            : lineAmt - Math.min(disc.value, lineAmt)
+        // Determine the line's taxable amount the same way subtotal was computed
+        let discounted
+        const bulkTiers = getActiveBulkTiers(item)
+        if (bulkTiers.length > 0 && !(item.itemDiscount || item.discount)) {
+          discounted = calculateBulkPrice(item.qty, item.unitPrice, bulkTiers).lineTotal
+        } else {
+          const lineAmt = item.unitPrice * item.qty
+          discounted = lineAmt
+          const disc = item.itemDiscount || item.discount
+          if (disc) {
+            discounted = disc.type === 'pct'
+              ? lineAmt * (1 - disc.value / 100)
+              : lineAmt - Math.min(disc.value, lineAmt)
+          }
         }
         // Apply taxRatio to fairly distribute the order/coupon discount before tax
         const taxableAmount = discounted * taxRatio
@@ -356,10 +384,20 @@ export const useCartStore = create((set, get) => ({
 
     const grandTotal = afterDiscount + totalTax
 
+    // Total savings from bulk pricing (for display: "You saved $X")
+    let bulkSavings = 0
+    items.forEach(item => {
+      const bulkTiers = getActiveBulkTiers(item)
+      if (bulkTiers.length > 0 && !(item.itemDiscount || item.discount)) {
+        bulkSavings += calculateBulkPrice(item.qty, item.unitPrice, bulkTiers).savings
+      }
+    })
+
     return {
       subtotal,
       orderDiscountAmt,
       couponDiscountAmt,
+      bulkSavings,
       taxAmount: totalTax,
       grandTotal,
       itemCount: items.length

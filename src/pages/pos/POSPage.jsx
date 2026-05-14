@@ -118,11 +118,22 @@ export default function POSPage() {
       const s = useCartStore.getState()
       const totals = s.totals()
       sync.publish(EVT.CART_STATE, {
-        items: s.items.map(i => ({
-          id: i.id, name: i.name, qty: i.qty,
-          unitPrice: i.unitPrice, image_url: i.image_url,
-          itemDiscount: i.itemDiscount, note: i.note,
-        })),
+        items: s.items.map(i => {
+          const bulk = s.lineBulk(i)
+          return {
+            id: i.id, name: i.name, qty: i.qty,
+            unitPrice: i.unitPrice, image_url: i.image_url,
+            itemDiscount: i.itemDiscount, note: i.note,
+            // Send bulk info so display can show the discount + breakdown.
+            // Keep the shape lean — Display only needs lineTotal + savings + hint.
+            bulk: bulk ? {
+              lineTotal: bulk.lineTotal,
+              savings:   bulk.savings,
+              breakdown: bulk.breakdown,
+              hint:      bulk.hint,
+            } : null,
+          }
+        }),
         customer: s.customer ? {
           id: s.customer.id, name: s.customer.name,
           loyalty_points: s.customer.loyalty_points,
@@ -133,6 +144,7 @@ export default function POSPage() {
         totals: {
           subtotal: totals.subtotal,
           discountAmt: totals.orderDiscountAmt + (totals.couponDiscountAmt||0),
+          bulkSavings: totals.bulkSavings || 0,
           taxAmount: totals.taxAmount,
           grandTotal: totals.grandTotal,
         },

@@ -8,6 +8,7 @@ import { useEmployeeStore } from '@/stores/employeeStore'
 import { Overlay } from './SerialPanel'
 import { TERMINAL_ID } from '@/hooks/useLock'
 import { paxSale, paxCancel, dollarsToCents } from '@/lib/pax'
+import { calculateBulkPrice, getActiveBulkTiers } from '@/lib/bulkPricing'
 import {
   getPrintingSettings, buildReceiptHTML, printReceipt,
   sendEmailReceipt, sendSmsReceipt, isValidEmail, isValidPhone,
@@ -382,16 +383,29 @@ export default function PaymentPanel() {
 
     // ── Capture order data BEFORE submitting (cart will be cleared) ──
     const snapshotItems = items.map(it => {
+      // Bulk pricing takes priority over manual itemDiscount
+      const bulkTiers = getActiveBulkTiers(it)
+      if (bulkTiers.length > 0 && !it.itemDiscount && !it.discount) {
+        const bp = calculateBulkPrice(it.qty, it.unitPrice, bulkTiers)
+        return {
+          name: it.name, qty: it.qty,
+          line_total: bp.lineTotal,
+          bulk_breakdown: bp.breakdown,
+          bulk_savings: bp.savings,
+        }
+      }
       const d = it.itemDiscount
       const lp = d ? (d.type==='pct' ? it.unitPrice*(1-d.value/100) : Math.max(0,it.unitPrice-d.value)) : it.unitPrice
       return { name: it.name, qty: it.qty, line_total: lp * it.qty }
     })
+    const totalBulkSavings = snapshotItems.reduce((s, i) => s + (i.bulk_savings || 0), 0)
     const snapshotPayments = payments.map(p => ({ method:p.method, amount:p.amount }))
     const orderSnapshot = {
       items: snapshotItems,
       payments: snapshotPayments,
       subtotal,
       discount: orderDiscountAmt,
+      bulk_savings: totalBulkSavings,
       tax: taxExempt ? 0 : taxAmount,
       total: liveTotal,
       change,

@@ -59,7 +59,7 @@ export function buildReceiptHTML(orderData, settings, storeInfo) {
   const sh = s.show
   const {
     order_number, date, cashier_name, customer_name,
-    items = [], subtotal = 0, discount = 0, tax = 0, total = 0,
+    items = [], subtotal = 0, discount = 0, bulk_savings = 0, tax = 0, total = 0,
     payments = [], change = 0,
   } = orderData || {}
   const { name: storeName = '', address = '', phone = '' } = storeInfo || {}
@@ -94,12 +94,25 @@ ${sh.dateTime ? `<div class="row"><span>Date:</span><span>${date || new Date().t
 ${sh.cashier && cashier_name ? `<div class="row"><span>Cashier:</span><span>${escapeHTML(cashier_name)}</span></div>` : ''}
 ${sh.customer ? `<div class="row"><span>Customer:</span><span>${escapeHTML(customer_name || 'Walk-in')}</span></div>` : ''}
 ${dash}
-${sh.items ? items.map(i => `<div class="row"><span>${escapeHTML(i.name)} ×${i.qty}</span><span>${fmt(i.line_total)}</span></div>`).join('') : ''}
+${sh.items ? items.map(i => {
+  // If line has bulk breakdown, show how qty was split
+  const bulkLine = i.bulk_breakdown && i.bulk_breakdown.length > 0
+    ? `<div class="row" style="font-size:${fontPx-2}px;color:#555;padding-left:8px;">` +
+      `<span>${i.bulk_breakdown.map(b => b.bundleCount
+        ? `${b.bundleCount}× ${escapeHTML(b.label)}`
+        : `${b.count}× $${b.unitPrice.toFixed(2)}`).join(' + ')}</span>` +
+      (i.bulk_savings > 0 ? `<span style="color:#16a34a;">saved ${fmt(i.bulk_savings)}</span>` : '<span></span>') +
+      `</div>`
+    : ''
+  return `<div class="row"><span>${escapeHTML(i.name)} ×${i.qty}</span><span>${fmt(i.line_total)}</span></div>${bulkLine}`
+}).join('') : ''}
 ${dash}
 <div class="row"><span>Subtotal:</span><span>${fmt(subtotal)}</span></div>
+${bulk_savings > 0 ? `<div class="row" style="color:#16a34a;"><span>Bulk savings:</span><span>-${fmt(bulk_savings)}</span></div>` : ''}
 ${sh.discount && discount > 0 ? `<div class="row" style="color:#16a34a;"><span>Discount:</span><span>-${fmt(discount)}</span></div>` : ''}
 ${sh.tax ? `<div class="row"><span>Tax:</span><span>${fmt(tax)}</span></div>` : ''}
 ${sh.total ? `<div class="row total"><span>TOTAL:</span><span>${fmt(total)}</span></div>` : ''}
+${bulk_savings > 0 ? `<div class="center bold" style="color:#16a34a;margin-top:4px;">★ You saved ${fmt(bulk_savings)}! ★</div>` : ''}
 ${(sh.paymentMethod || sh.change) ? dash : ''}
 ${sh.paymentMethod ? payments.map(p => `<div class="row"><span>${labelOf(p.method)}:</span><span>${fmt(p.amount)}</span></div>`).join('') : ''}
 ${sh.change && change > 0 ? `<div class="row"><span>Change:</span><span>${fmt(change)}</span></div>` : ''}

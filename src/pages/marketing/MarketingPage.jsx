@@ -59,7 +59,11 @@ export default function MarketingPage() {
     }
     if (p.type === 'bulk') {
       const tiers = p.bulk_tiers || []
-      return tiers.map(t => `Buy ${t.min_qty}: ${t.type==='pct'?`-${t.value}%`:`$${t.value}/ea`}`).join(' · ')
+      return tiers.map(t => {
+        if (t.type === 'bundle_total') return `Buy ${t.min_qty} for $${Number(t.value).toFixed(2)}`
+        if (t.type === 'pct')          return `Buy ${t.min_qty}+: -${t.value}%`
+        return `Buy ${t.min_qty}+: $${Number(t.value).toFixed(2)}/ea`
+      }).join(' · ')
     }
     if (p.type === 'time') {
       const rules = p.time_rules || []
@@ -259,7 +263,11 @@ export default function MarketingPage() {
                         <div className="space-y-0.5">
                           {(promo.bulk_tiers || []).map((t, i) => (
                             <div key={i} className="text-[11px] font-bold leading-snug" style={{color: ti.color}}>
-                              Buy {t.min_qty}+: {t.type === 'pct' ? `-${t.value}% off` : `$${t.value} each`}
+                              {t.type === 'bundle_total'
+                                ? `Buy ${t.min_qty} for $${Number(t.value).toFixed(2)}`
+                                : t.type === 'pct'
+                                ? `Buy ${t.min_qty}+: -${t.value}% off`
+                                : `Buy ${t.min_qty}+: $${Number(t.value).toFixed(2)} each`}
                             </div>
                           ))}
                           {(!promo.bulk_tiers || promo.bulk_tiers.length === 0) && (
@@ -342,8 +350,9 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
   })
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
 
-  // Bulk tier state
-  const [newTier, setNewTier] = useState({ min_qty:'', type:'fixed', value:'' })
+  // Bulk tier state — default to bundle_total since that's the most common
+  // real-world pricing form ("Buy N for $X"), e.g. "Buy 3 for $21".
+  const [newTier, setNewTier] = useState({ min_qty:'', type:'bundle_total', value:'' })
   // Time rule state
   const [newRule, setNewRule] = useState({ days:[], start_time:'', end_time:'', type:'fixed', value:'' })
 
@@ -366,7 +375,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
     if (!newTier.min_qty || !newTier.value) { toast.error('Fill all tier fields'); return }
     set('bulk_tiers', [...form.bulk_tiers, { ...newTier, min_qty: parseInt(newTier.min_qty), value: parseFloat(newTier.value) }]
       .sort((a,b) => a.min_qty - b.min_qty))
-    setNewTier({ min_qty:'', type:'fixed', value:'' })
+    setNewTier({ min_qty:'', type:'bundle_total', value:'' })
   }
 
   const toggleDay = (d) => {
@@ -648,13 +657,23 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                   {form.bulk_tiers.map((t,i) => (
                     <div key={i} className="flex items-center gap-3 rounded-lg px-3 py-2"
                       style={{background:'#fff', border:'1px solid #bbf7d0'}}>
-                      <span className="text-[12px] font-bold text-green-700">Buy {t.min_qty}+</span>
-                      <span className="text-[12px] text-slate-600">
-                        {t.type==='fixed' ? `$${t.value}/ea` : `${t.value}% off`}
+                      <span className="text-[12px] font-bold text-green-700">
+                        {t.type === 'bundle_total' ? `Buy ${t.min_qty} for` : `Buy ${t.min_qty}+`}
+                      </span>
+                      <span className="text-[12px] text-slate-600 font-mono">
+                        {t.type==='bundle_total'
+                          ? `$${Number(t.value).toFixed(2)} total`
+                          : t.type==='fixed' || t.type==='flat'
+                          ? `$${Number(t.value).toFixed(2)}/ea`
+                          : `${t.value}% off`}
                       </span>
                       {selectedProduct && (
                         <span className="text-[11px] text-slate-400">
-                          → ${t.type==='fixed' ? t.value.toFixed(2) : (selectedProduct.price*(1-t.value/100)).toFixed(2)}/ea
+                          {t.type === 'bundle_total'
+                            ? `→ $${(t.value/t.min_qty).toFixed(2)}/ea`
+                            : t.type === 'fixed' || t.type === 'flat'
+                            ? `→ saves $${((selectedProduct.price - t.value)*t.min_qty).toFixed(2)}/${t.min_qty}-pack`
+                            : `→ $${(selectedProduct.price*(1-t.value/100)).toFixed(2)}/ea`}
                         </span>
                       )}
                       <button onClick={() => set('bulk_tiers', form.bulk_tiers.filter((_,j)=>j!==i))}
@@ -665,35 +684,59 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
               )}
 
               {/* Add tier */}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <div className="text-[10px] text-slate-500 mb-1">Min Qty</div>
-                  <input type="number" value={newTier.min_qty} onChange={e=>setNewTier(t=>({...t,min_qty:e.target.value}))}
-                    placeholder="2" min="2"
-                    className="w-full rounded-lg px-3 py-2 text-[13px] font-mono outline-none"
-                    style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+              <div className="space-y-2">
+                <div className="text-[11px] text-green-700 font-bold">+ Add a new tier</div>
+                <div className="rounded-lg px-3 py-2 text-[10px] text-slate-500"
+                  style={{background:'#fff', border:'1px solid #bbf7d0'}}>
+                  💡 <b>Tip:</b> use "Buy N for $X" for natural pricing like
+                  "<b>Buy 2 for $18</b>", "<b>Buy 3 for $21</b>" — POS will
+                  automatically combine bundles when customer buys more
+                  (4 items = 1× 3-pack + 1 single).
                 </div>
-                <div>
-                  <div className="text-[10px] text-slate-500 mb-1">Type</div>
-                  <select value={newTier.type} onChange={e=>setNewTier(t=>({...t,type:e.target.value}))}
-                    className="rounded-lg px-3 py-2 text-[12px] outline-none"
-                    style={{border:'1.5px solid #86efac', background:'#fff'}}>
-                    <option value="fixed">Fixed $</option>
-                    <option value="pct">% Off</option>
-                  </select>
+                <div className="flex gap-2 items-end">
+                  <div>
+                    <div className="text-[10px] text-slate-500 mb-1">Buy</div>
+                    <input type="number" value={newTier.min_qty} onChange={e=>setNewTier(t=>({...t,min_qty:e.target.value}))}
+                      placeholder="2" min="2"
+                      className="rounded-lg px-3 py-2 text-[13px] font-mono outline-none"
+                      style={{border:'1.5px solid #86efac', background:'#fff', width:'70px'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-500 mb-1">Pricing</div>
+                    <select value={newTier.type} onChange={e=>setNewTier(t=>({...t,type:e.target.value}))}
+                      className="rounded-lg px-3 py-2 text-[12px] outline-none cursor-pointer"
+                      style={{border:'1.5px solid #86efac', background:'#fff'}}>
+                      <option value="bundle_total">for $X total ⭐</option>
+                      <option value="fixed">at $X each</option>
+                      <option value="pct">% off each</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[10px] text-slate-500 mb-1">
+                      {newTier.type==='bundle_total' ? 'Total $ for bundle' :
+                       newTier.type==='fixed'        ? 'Price each ($)' :
+                                                      'Discount (%)'}
+                    </div>
+                    <input type="number" value={newTier.value} onChange={e=>setNewTier(t=>({...t,value:e.target.value}))}
+                      placeholder={newTier.type==='bundle_total'?'18.00':newTier.type==='fixed'?'9.00':'10'} step="0.01"
+                      className="w-full rounded-lg px-3 py-2 text-[13px] font-mono outline-none"
+                      style={{border:'1.5px solid #86efac', background:'#fff'}}/>
+                  </div>
+                  <button onClick={addTier}
+                    className="rounded-lg px-4 py-2 text-[12px] font-bold text-white cursor-pointer border-none"
+                    style={{background:'#16a34a'}}>
+                    + Add
+                  </button>
                 </div>
-                <div className="flex-1">
-                  <div className="text-[10px] text-slate-500 mb-1">{newTier.type==='fixed'?'Price ($)':'Discount (%)'}</div>
-                  <input type="number" value={newTier.value} onChange={e=>setNewTier(t=>({...t,value:e.target.value}))}
-                    placeholder={newTier.type==='fixed'?'8.00':'10'} step="0.01"
-                    className="w-full rounded-lg px-3 py-2 text-[13px] font-mono outline-none"
-                    style={{border:'1.5px solid #86efac', background:'#fff'}}/>
-                </div>
-                <button onClick={addTier}
-                  className="rounded-lg px-4 py-2 text-[12px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'#16a34a'}}>
-                  + Add
-                </button>
+                {/* Live preview */}
+                {newTier.min_qty && newTier.value && (
+                  <div className="text-[11px] text-green-700 font-mono">
+                    Preview:
+                    {newTier.type === 'bundle_total' && ` Buy ${newTier.min_qty} for $${Number(newTier.value).toFixed(2)} (= $${(Number(newTier.value)/Number(newTier.min_qty)).toFixed(2)}/ea)`}
+                    {newTier.type === 'fixed' && ` Buy ${newTier.min_qty}+ at $${Number(newTier.value).toFixed(2)} each`}
+                    {newTier.type === 'pct' && ` Buy ${newTier.min_qty}+ → ${newTier.value}% off each`}
+                  </div>
+                )}
               </div>
             </div>
           )}

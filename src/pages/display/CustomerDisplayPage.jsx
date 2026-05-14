@@ -297,25 +297,56 @@ function ActiveScreen({ t, state, fmt, settings }) {
           <div className="h-full flex items-center justify-center text-[#999] text-[14px]">
             {t.no_items}...
           </div>
-        ) : items.map(item => (
-          <div key={item.id} className="flex items-center gap-3 py-3 border-b border-slate-100">
-            {item.image_url
-              ? <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0"/>
-              : <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{background:'#f1f5f9', color:'#94a3b8'}}>
-                  <span className="text-[10px] font-bold">{item.name.substring(0,2).toUpperCase()}</span>
-                </div>}
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold truncate" style={{color:'#1F1F1F'}}>{item.name}</div>
-              <div className="text-[11px] text-[#666] font-mono">
-                {fmt(item.unitPrice)} × {item.qty}
+        ) : items.map(item => {
+          const bulk = item.bulk
+          const lineTotal = bulk ? bulk.lineTotal : item.unitPrice * item.qty
+          return (
+            <div key={item.id} className="py-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                {item.image_url
+                  ? <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0"/>
+                  : <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{background:'#f1f5f9', color:'#94a3b8'}}>
+                      <span className="text-[10px] font-bold">{item.name.substring(0,2).toUpperCase()}</span>
+                    </div>}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-semibold truncate" style={{color:'#1F1F1F'}}>{item.name}</div>
+                  {bulk && bulk.savings > 0 ? (
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="font-bold" style={{color:'#16a34a'}}>{item.qty}× bulk</span>
+                      <span className="line-through font-mono" style={{color:'#94a3b8'}}>
+                        {fmt(item.unitPrice * item.qty)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-[#666] font-mono">
+                      {fmt(item.unitPrice)} × {item.qty}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-[16px] font-bold font-mono" style={{color:'#1F1F1F'}}>
+                    {fmt(lineTotal)}
+                  </div>
+                  {bulk && bulk.savings > 0 && (
+                    <div className="text-[10px] font-bold" style={{color:'#16a34a'}}>
+                      saved {fmt(bulk.savings)}
+                    </div>
+                  )}
+                </div>
               </div>
+              {/* Upsell hint visible to the customer — encourages "+N more" */}
+              {bulk?.hint && (
+                <div className="mt-2 ml-15 rounded-xl px-3 py-2"
+                  style={{background:'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', border:'1.5px solid #fbbf24'}}>
+                  <div className="text-[12px] font-bold" style={{color:'#92400e'}}>
+                    💡 Add {bulk.hint.addQty} more {item.name} → save {fmt(bulk.hint.savings)} more!
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="text-[16px] font-bold font-mono" style={{color:'#1F1F1F'}}>
-              {fmt(item.unitPrice * item.qty)}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Totals (sticky bottom) */}
@@ -323,6 +354,7 @@ function ActiveScreen({ t, state, fmt, settings }) {
         style={{background:'#fff', border:'2px solid #006AFF'}}>
         <div className="space-y-1 mb-3">
           <Row l={`${t.subtotal} (${totalQty} ${t.items})`} v={fmt(totals.subtotal)}/>
+          {totals.bulkSavings > 0 && <Row l="Bulk savings" v={`-${fmt(totals.bulkSavings)}`} color="#16a34a"/>}
           {totals.discountAmt > 0 && <Row l={t.discount} v={`-${fmt(totals.discountAmt)}`} color="#dc2626"/>}
           <Row l={t.tax} v={fmt(totals.taxAmount)}/>
         </div>
@@ -332,6 +364,14 @@ function ActiveScreen({ t, state, fmt, settings }) {
             {fmt(totals.grandTotal)}
           </div>
         </div>
+        {totals.bulkSavings > 0 && (
+          <div className="mt-3 rounded-xl px-3 py-2 text-center"
+            style={{background:'#dcfce7', border:'1.5px solid #86efac'}}>
+            <span className="text-[13px] font-black" style={{color:'#166534'}}>
+              🎉 You saved {fmt(totals.bulkSavings)} today!
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
