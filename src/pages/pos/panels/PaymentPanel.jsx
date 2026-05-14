@@ -9,6 +9,7 @@ import { Overlay } from './SerialPanel'
 import { TERMINAL_ID } from '@/hooks/useLock'
 import { paxSale, paxCancel, dollarsToCents } from '@/lib/pax'
 import { calculateBulkPrice, getActiveBulkTiers } from '@/lib/bulkPricing'
+import { openCashDrawer } from '@/lib/cashDrawer'
 import {
   getPrintingSettings, buildReceiptHTML, printReceipt,
   sendEmailReceipt, sendSmsReceipt, isValidEmail, isValidPhone,
@@ -419,6 +420,19 @@ export default function PaymentPanel() {
       if (!result) { setProcessing(false); return }  // submitOrder returned null on error
 
       toast.success('✓ Order saved!')
+
+      // ── Auto-open cash drawer if any cash was used ──
+      // Only fires when (a) drawer is enabled, (b) "open_on_cash" is on,
+      // and (c) at least one payment in this order was cash. Kicked off
+      // BEFORE the receipt prints so the drawer opens immediately and
+      // the cashier can start counting change while the printer warms up.
+      try {
+        const drawerCfg = JSON.parse(localStorage.getItem('cashDrawerSettings') || '{}')
+        const hadCash = payments.some(p => p.method === 'cash' && Number(p.amount) > 0)
+        if (drawerCfg.enabled && drawerCfg.open_on_cash && hadCash) {
+          openCashDrawer()  // fire-and-forget — don't block receipt
+        }
+      } catch { /* ignore */ }
 
       // ── Receipt logic ──
       const settings = getPrintingSettings()

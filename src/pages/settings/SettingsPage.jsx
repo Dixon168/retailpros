@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { paxGetStatus } from '@/lib/pax'
+import { openCashDrawer, getCashDrawerSettings, saveCashDrawerSettings } from '@/lib/cashDrawer'
 import { PERMISSION_GROUPS, ALL_PERMISSIONS } from '@/lib/permissions'
 import ManagerOverrideModal from '@/components/pos/ManagerOverrideModal'
 import { logOverride } from '@/lib/auditOverride'
@@ -19,6 +20,7 @@ const SECTIONS = [
   { id:'store',     icon:'🏪', label:'Store Info',        role:'owner' },
   { id:'terminals', icon:'🖥️', label:'Terminals & PAX',   role:'owner' },
   { id:'printer',   icon:'🖨️', label:'Printer Setup',     role:'owner' },
+  { id:'cashdrawer',icon:'💰', label:'Cash Drawer',       role:'owner' },
   { id:'printing',  icon:'📄', label:'Print Settings',    role:'owner' },
   { id:'tax',       icon:'🧾', label:'Tax Rates',         role:'owner' },
   { id:'coupons',   icon:'🎫', label:'Coupons',           role:'owner' },
@@ -119,6 +121,7 @@ export default function SettingsPage() {
         {active === 'store'     && <StoreSection store={store} tenant={tenant}/>}
         {active === 'terminals' && <TerminalsSection tenantId={tenant?.id} storeId={store?.id}/>}
         {active === 'printer'   && <PrinterSection/>}
+        {active === 'cashdrawer'&& <CashDrawerSection/>}
         {active === 'printing'  && <PrintingSection/>}
         {active === 'tax'       && <TaxSection tenantId={tenant?.id}/>}
         {active === 'coupons'   && <CouponsSection tenantId={tenant?.id} userId={user?.id}/>}
@@ -2450,6 +2453,142 @@ const DEFAULT_PRINTING = {
   enableSms: false,
 }
 
+// ════════════════════════════════════════════════
+// 💰 CASH DRAWER — opens via receipt printer ESC/POS
+// ════════════════════════════════════════════════
+function CashDrawerSection() {
+  const [s, setS] = useState(() => getCashDrawerSettings())
+  const [testing, setTesting] = useState(false)
+
+  const save = () => {
+    saveCashDrawerSettings(s)
+    toast.success('Cash drawer settings saved')
+  }
+
+  const test = async () => {
+    setTesting(true)
+    const r = await openCashDrawer()
+    setTesting(false)
+    if (r.ok) toast.success('✓ Drawer command sent')
+    else toast.error(r.msg)
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>💰 Cash Drawer</SectionTitle>
+
+      {/* Enable toggle */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <CardTitle>Enable Cash Drawer</CardTitle>
+            <div className="text-[11px] text-slate-500">Show drawer button on POS + auto-open on cash payment</div>
+          </div>
+          <button onClick={() => setS({ ...s, enabled: !s.enabled })}
+            className="w-12 h-6 rounded-full transition-all cursor-pointer border-none"
+            style={{background: s.enabled ? '#16a34a' : '#cbd5e1'}}>
+            <div className="w-5 h-5 bg-white rounded-full shadow transition-all"
+              style={{marginLeft: s.enabled ? '24px' : '2px'}}/>
+          </button>
+        </div>
+
+        {s.enabled && (
+          <>
+            <div className="mb-4">
+              <FieldLabel>How is the drawer connected?</FieldLabel>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ['printer', '🖨️ Via Receipt Printer', 'Drawer plugged into the back of your thermal printer (RJ11/RJ12 cable). Recommended ⭐'],
+                  ['manual',  '🔑 Manual Only',          'No electronic control. Only the manager key opens it.'],
+                ].map(([val, label, desc]) => (
+                  <button key={val} onClick={() => setS({ ...s, method: val })}
+                    className="rounded-lg p-3 text-left cursor-pointer border-2 transition-all"
+                    style={s.method === val
+                      ? {background:'#eff6ff', borderColor:'#006AFF'}
+                      : {background:'#fff', borderColor:'#e5e5e5'}}>
+                    <div className="text-[12px] font-bold mb-1"
+                      style={{color: s.method === val ? '#1e40af' : '#1F1F1F'}}>{label}</div>
+                    <div className="text-[10px] text-slate-500 leading-snug">{desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {s.method === 'printer' && (
+              <>
+                <div className="mb-4">
+                  <FieldLabel>Auto-open drawer when…</FieldLabel>
+                  <div className="space-y-2">
+                    {[
+                      ['open_on_cash',   '💵 After a cash payment', 'Drawer pops open automatically when cashier hits Pay with cash'],
+                      ['open_on_refund', '↩️ After a cash refund',   'Drawer pops open when refunding to cash'],
+                    ].map(([key, label, desc]) => (
+                      <label key={key} className="flex items-start gap-3 cursor-pointer p-2 rounded hover:bg-slate-50">
+                        <input type="checkbox" checked={!!s[key]}
+                          onChange={() => setS({ ...s, [key]: !s[key] })}
+                          className="mt-0.5 w-4 h-4 cursor-pointer"/>
+                        <div className="flex-1">
+                          <div className="text-[12px] font-semibold">{label}</div>
+                          <div className="text-[10px] text-slate-500">{desc}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Advanced */}
+                <details className="rounded-lg p-3" style={{background:'#fafafa', border:'1px solid #e5e5e5'}}>
+                  <summary className="text-[12px] font-bold cursor-pointer text-slate-600">
+                    ⚙️ Advanced: ESC/POS command bytes
+                  </summary>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <FieldInput label="Pulse on (t1)" value={s.command_t1}
+                      onChange={v => setS({ ...s, command_t1: v })} placeholder="25" mono/>
+                    <FieldInput label="Pulse off (t2)" value={s.command_t2}
+                      onChange={v => setS({ ...s, command_t2: v })} placeholder="250" mono/>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-2">
+                    Most printers use ESC p 0 <b>25 250</b>. If your drawer won't open, try <b>50 50</b>
+                    or check your printer manual for the correct pulse values.
+                  </div>
+                </details>
+              </>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* Setup help */}
+      {s.enabled && s.method === 'printer' && (
+        <Card className="mt-4">
+          <CardTitle>📋 Setup Help</CardTitle>
+          <ol className="text-[12px] leading-relaxed space-y-2" style={{color:'#475569'}}>
+            <li><b>1.</b> Plug the drawer's RJ11/RJ12 cable into the <b>DK port</b> on the back of your thermal printer (NOT the network port — different jack).</li>
+            <li><b>2.</b> Make sure your receipt printer is set up correctly first (see Printer Setup section).</li>
+            <li><b>3.</b> Click <b>Test Open</b> below. If your drawer pops, you're done ✓</li>
+            <li><b>4.</b> If nothing happens: check the Advanced section — try pulse 50/50 instead of 25/250. Some printers also need <i>"Raw Printer Mode"</i> in Windows driver settings (right-click printer → Properties → Advanced).</li>
+          </ol>
+        </Card>
+      )}
+
+      <div className="flex gap-3 mt-4">
+        {s.enabled && s.method === 'printer' && (
+          <button onClick={test} disabled={testing}
+            className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold cursor-pointer border-2 disabled:opacity-50"
+            style={{background:'#FFFFFF', color:'#16a34a', borderColor:'#16a34a'}}>
+            {testing ? 'Opening…' : '💰 Test Open Drawer'}
+          </button>
+        )}
+        <SaveBtn onClick={save} className="flex-1"/>
+      </div>
+    </div>
+  )
+}
+
+
+// ════════════════════════════════════════════════
+// 📄 PRINT SETTINGS — Square white theme + live preview
+// ════════════════════════════════════════════════
 function PrintingSection() {
   const [s, setS] = useState(() => {
     try {

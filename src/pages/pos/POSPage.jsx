@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
+import { openCashDrawer } from '@/lib/cashDrawer'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
 import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
@@ -247,6 +248,18 @@ export default function POSPage() {
   const selectedItem = items.find(i => i.id === selectedItemId)
 
   const { t } = useLang()
+  // Cash drawer enabled? Cached at render — checked again on click
+  const drawerEnabled = (() => {
+    try { return JSON.parse(localStorage.getItem('cashDrawerSettings') || '{}').enabled === true }
+    catch { return false }
+  })()
+
+  const handleOpenDrawer = () => guard('pos.refund', 'open the cash drawer', async () => {
+    const r = await openCashDrawer()
+    if (r.ok) toast.success('💰 Drawer opened')
+    else toast.error(r.msg)
+  })
+
   const QUICK_BTNS = [
     { id:'member',  label:t('member'),   icon:'👥', action: () => useCartStore.setState({ showCustPanel: true }) },
     { id:'points',  label:t('points'),   icon:'⭐', action: () => guard('pos.points_redeem', 'redeem loyalty points', () => setShowPoints(true)) },
@@ -268,6 +281,9 @@ export default function POSPage() {
       if (ok) toast.success('📌 Order held')
     }},
     { id:'giftcard', label:'Gift Card', icon:'🎁', action: () => guard('pos.gift_card', 'manage gift cards', () => setShowGiftCard(true)) },
+    ...(drawerEnabled ? [
+      { id:'drawer', label:'Cash Drawer', icon:'💰', action: handleOpenDrawer },
+    ] : []),
     { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
