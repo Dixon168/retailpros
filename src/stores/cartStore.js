@@ -456,22 +456,54 @@ export const useCartStore = create((set, get) => ({
 
     const orderItems = items.map(item => {
       const { taxAmount: itemTax } = get().calcTaxForItem(item)
-      // Convert item discount to a percentage for storage
+
+      // Determine the actual line price the customer is paying.
+      // Priority: bulk promo > manual itemDiscount > unit price.
+      // This is critical for refunds — without it, returns would refund
+      // the original unit price even when the customer paid a bulk price.
+      const bulkTiers = getActiveBulkTiers(item)
+      let lineSubtotal
+      let bulkSavings = 0
+      if (bulkTiers.length > 0 && !item.itemDiscount && !item.discount) {
+        const bp = calculateBulkPrice(item.qty, item.unitPrice, bulkTiers)
+        lineSubtotal = bp.lineTotal
+        bulkSavings  = bp.savings
+      } else {
+        const d = item.itemDiscount
+        const linePrice = d
+          ? d.type === 'pct'
+            ? item.unitPrice * (1 - d.value / 100)
+            : Math.max(0, item.unitPrice - d.value)
+          : item.unitPrice
+        lineSubtotal = linePrice * item.qty
+      }
+
+      // Paid per-unit price (rounded to 4 decimals to keep things tidy).
+      // Returns use this number — the customer gets back what they paid,
+      // not the original sticker price.
+      const paidUnitPrice = item.qty !== 0
+        ? Math.round((lineSubtotal / item.qty) * 10000) / 10000
+        : item.unitPrice
+
+      // Convert item discount to a percentage for storage (legacy reporting).
       const d = item.itemDiscount
       const discountPct = !d ? 0
         : d.type === 'pct' ? d.value
         : (item.unitPrice > 0 ? Math.min(100, (d.value / item.unitPrice) * 100) : 0)
+
       return {
-        product_id:    item.productId,
-        product_name:  item.name,
-        product_sku:   item.sku || '',
-        product_type:  item.type,
-        serial_number: item.serialNumber || '',
-        quantity:      item.qty,
-        unit:          item.unit || 'ea',
-        unit_price:    item.unitPrice,
-        discount_pct:  discountPct,
-        line_total:    item.unitPrice * item.qty + itemTax,
+        product_id:       item.productId,
+        product_name:     item.name,
+        product_sku:      item.sku || '',
+        product_type:     item.type,
+        serial_number:    item.serialNumber || '',
+        quantity:         item.qty,
+        unit:             item.unit || 'ea',
+        unit_price:       item.unitPrice,
+        paid_unit_price:  paidUnitPrice,    // what the customer actually paid per unit
+        bulk_savings:     bulkSavings,      // money saved by bulk pricing on this line
+        discount_pct:     discountPct,
+        line_total:       lineSubtotal + itemTax,
       }
     })
 

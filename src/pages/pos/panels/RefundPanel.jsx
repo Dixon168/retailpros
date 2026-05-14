@@ -187,8 +187,16 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
 
     setProcessing(true)
     try {
-      const totalRefund = itemsToReturn.reduce((s, {item, qty}) =>
-        s + (item.unit_price * qty), 0)
+      // Refund amount uses paid_unit_price (what the customer actually paid),
+      // NOT unit_price (sticker price). This is the ShopRite/industry standard:
+      // returns refund "the price paid, adjusted for any offers received".
+      // Falls back to unit_price for legacy orders that don't have the field.
+      const totalRefund = itemsToReturn.reduce((s, {item, qty}) => {
+        const perUnit = (item.paid_unit_price !== null && item.paid_unit_price !== undefined)
+          ? Number(item.paid_unit_price)
+          : Number(item.unit_price)
+        return s + (perUnit * qty)
+      }, 0)
 
       // Update order_items returned_qty
       for (const { item, qty } of itemsToReturn) {
@@ -230,7 +238,9 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
         items: itemsToReturn.map(({item,qty}) => ({
           product_id: item.product_id,
           name: item.products?.name,
-          qty, unit_price: item.unit_price,
+          qty,
+          unit_price:       item.unit_price,
+          paid_unit_price:  item.paid_unit_price ?? item.unit_price,
         })),
         refunded_by: effCashierId,
         refunded_by_name: effCashierName,
@@ -240,12 +250,17 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
         }),
       })
 
-      // Add negative items to cart
+      // Add negative items to cart at the PAID unit price (what they actually
+      // paid). This makes the refund line on the new receipt match the
+      // refunded amount exactly.
       itemsToReturn.forEach(({ item, qty }) => {
+        const paidPerUnit = (item.paid_unit_price !== null && item.paid_unit_price !== undefined)
+          ? Number(item.paid_unit_price)
+          : Number(item.unit_price)
         useCartStore.getState()._addItem({
           productId:  item.product_id,
           name:       item.products?.name || 'Item',
-          unitPrice:  item.unit_price,
+          unitPrice:  paidPerUnit,
           qty:        -qty,
           unit:       item.products?.unit || 'ea',
           isReturn:   true,
@@ -264,10 +279,17 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     }
   }
 
+  // Effective per-unit refund price: what the customer actually paid.
+  // Falls back to sticker price for legacy orders missing paid_unit_price.
+  const refundUnit = (item) =>
+    (item?.paid_unit_price !== null && item?.paid_unit_price !== undefined)
+      ? Number(item.paid_unit_price)
+      : Number(item?.unit_price || 0)
+
   const totalReturnAmt = returnItems.reduce((s,{product,qty}) => s+product.price*qty, 0)
   const invoiceReturnAmt = Object.entries(returnQtys).reduce((s,[id,qty]) => {
     const item = selectedOrder?.order_items?.find(i=>i.id===id)
-    return s + (item?.unit_price||0)*qty
+    return s + refundUnit(item) * qty
   }, 0)
 
   // ─────────────────────────────────────────
@@ -308,7 +330,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                   <div key={i} className="flex justify-between py-1.5 text-[13px]"
                     style={{borderBottom: i<summary.items.length-1 ? '1px solid #f1f5f9':'none'}}>
                     <span className="text-slate-700">{item.products?.name} × {qty}</span>
-                    <span className="font-mono text-red-500">-${(item.unit_price*qty).toFixed(2)}</span>
+                    <span className="font-mono text-red-500">-${(refundUnit(item)*qty).toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="flex justify-between pt-2 font-bold text-[14px]">
@@ -564,7 +586,18 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                             </div>
                             <div className="text-[11px] text-slate-400 mt-0.5">
                               Qty: {item.quantity} {item.products?.unit} ·
-                              ${item.unit_price?.toFixed(2)}/ea
+                              {' '}
+                              {item.paid_unit_price && Math.abs(item.paid_unit_price - item.unit_price) > 0.01 ? (
+                                <>
+                                  <span className="line-through font-mono">${item.unit_price?.toFixed(2)}</span>
+                                  {' '}
+                                  <span className="font-mono font-bold text-green-700">${Number(item.paid_unit_price).toFixed(2)}/ea</span>
+                                  <span className="ml-1 px-1 rounded text-[9px] font-bold"
+                                    style={{background:'#dcfce7', color:'#166534'}}>BULK</span>
+                                </>
+                              ) : (
+                                <span className="font-mono">${item.unit_price?.toFixed(2)}/ea</span>
+                              )}
                               {alreadyReturned > 0 && (
                                 <span className="text-orange-500 ml-1">
                                   · {alreadyReturned} already returned
