@@ -307,31 +307,42 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
   })
 
   const { data: receives=[], isLoading: loadingR } = useQuery({
-    queryKey: ['product-receives', p.id],
+    queryKey: ['product-receives', p.id, storeId],
     queryFn: async () => {
-      const { data } = await supabase.from('inventory_receives')
-        .select('*, suppliers(name)').eq('product_id', p.id)
-        .order('created_at', { ascending: false }).limit(50)
+      // Join on vendors (not suppliers — that table doesn't exist).
+      // Scope to current store so multi-store stays clean.
+      let q = supabase.from('inventory_receives')
+        .select('*, vendors(name)').eq('product_id', p.id)
+      if (storeId) q = q.or(`store_id.eq.${storeId},store_id.is.null`)
+      const { data, error } = await q.order('created_at', { ascending: false }).limit(50)
+      if (error) { console.error('Receives load error:', error); return [] }
       return data || []
     },
     enabled: tab==='receiving' || tab==='info',
   })
   const { data: adjustments=[], isLoading: loadingA } = useQuery({
-    queryKey: ['product-adjustments', p.id],
+    queryKey: ['product-adjustments', p.id, storeId],
     queryFn: async () => {
-      const { data } = await supabase.from('inventory_adjustments')
+      let q = supabase.from('inventory_adjustments')
         .select('*, users(name)').eq('product_id', p.id)
-        .order('created_at', { ascending: false }).limit(100)
+      if (storeId) q = q.or(`store_id.eq.${storeId},store_id.is.null`)
+      const { data, error } = await q.order('created_at', { ascending: false }).limit(100)
+      if (error) { console.error('Adjustments load error:', error); return [] }
       return data || []
     },
     enabled: true,
   })
   const { data: sales=[], isLoading: loadingS } = useQuery({
-    queryKey: ['product-sales', p.id],
+    queryKey: ['product-sales', p.id, storeId],
     queryFn: async () => {
-      const { data } = await supabase.from('order_items')
-        .select('*, orders(order_number, created_at, cashier_name, customers(name), order_payments(method))')
-        .eq('product_id', p.id).order('created_at', { ascending: false }).limit(100)
+      // Simplified — was using a 4-level deep join with order_payments which
+      // often returned empty arrays. Now query the orders separately if needed.
+      let q = supabase.from('order_items')
+        .select('id, quantity, unit_price, paid_unit_price, line_total, created_at, order_id, orders!inner(order_number, created_at, store_id)')
+        .eq('product_id', p.id)
+      if (storeId) q = q.eq('orders.store_id', storeId)
+      const { data, error } = await q.order('created_at', { ascending: false }).limit(100)
+      if (error) { console.error('Sales load error:', error); return [] }
       return data || []
     },
     enabled: true,
@@ -511,9 +522,22 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
               ))}
             </SectionBox>
             <SectionBox title="Pricing & Stock" icon="💰" color="#16a34a">
-              {[['Sell Price',`$${parseFloat(d.price||0).toFixed(2)}`],['Cost',`$${parseFloat(d.cost||0).toFixed(2)}`],['Avg Cost',`$${parseFloat(avgCost).toFixed(2)}`],['Margin',`${margin}%`],['Profit/ea',`$${(parseFloat(d.price||0)-avgCost).toFixed(2)}`],['In Stock',`${qty} ${d.unit||'ea'}`],['Stock Value',`$${(qty*avgCost).toFixed(2)}`],['VIP',d.allow_vip?'Yes':'No'],['VIP Price',d.vip_price?`$${d.vip_price}`:'% tier discount']].map(([l,v])=>(
+              {[
+                ['Sell Price',  `$${parseFloat(d.price||0).toFixed(2)}`,        null],
+                ['Catalog Cost',`$${parseFloat(d.cost||0).toFixed(2)}`,         'The reference cost you set on the product. Used as a default for margin/profit display when no actual receive history exists.'],
+                ['Avg Cost',    `$${parseFloat(avgCost).toFixed(2)}`,            'Live weighted-average cost computed from all receives. Updates every time you Receive new stock. This is what drives "real" profit/margin.'],
+                ['Margin',      `${margin}%`,                                    'Based on Avg Cost'],
+                ['Profit/ea',   `$${(parseFloat(d.price||0)-avgCost).toFixed(2)}`, null],
+                ['In Stock',    `${qty} ${d.unit||'ea'}`,                        null],
+                ['Stock Value', `$${(qty*avgCost).toFixed(2)}`,                  'Current stock × Avg Cost'],
+                ['VIP',         d.allow_vip?'Yes':'No',                          null],
+                ['VIP Price',   d.vip_price?`$${d.vip_price}`:'% tier discount', null],
+              ].map(([l,v,tip])=>(
                 <div key={l} className="flex justify-between py-1" style={{borderBottom:'1px solid #f8fafc'}}>
-                  <span className="text-[11px] text-slate-400">{l}</span>
+                  <span className="text-[11px] text-slate-400 flex items-center gap-1" title={tip || ''}>
+                    {l}
+                    {tip && <span className="text-[9px] text-slate-300 cursor-help">ⓘ</span>}
+                  </span>
                   <span className="text-[11px] font-semibold text-right ml-2 text-slate-700">{v}</span>
                 </div>
               ))}

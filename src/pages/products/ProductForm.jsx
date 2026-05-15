@@ -1170,15 +1170,19 @@ function ProductPromotions({ productId, productName, productPrice, tenantId }) {
   })
 
   const togglePromo = async (p) => {
-    await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    const { error } = await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    if (error) { toast.error(`Couldn't toggle: ${error.message}`); return }
     qc.invalidateQueries(['product-promos', productId])
     qc.invalidateQueries(['promotions'])
+    toast.success(p.is_active ? 'Promotion disabled' : 'Promotion enabled')
   }
   const deletePromo = async (id) => {
     if (!confirm('Delete this promotion?')) return
-    await supabase.from('promotions').delete().eq('id', id)
+    const { error } = await supabase.from('promotions').delete().eq('id', id)
+    if (error) { toast.error(`Couldn't delete: ${error.message}`); return }
     qc.invalidateQueries(['product-promos', productId])
     qc.invalidateQueries(['promotions'])
+    toast.success('Promotion deleted')
   }
 
   const savePromo = async () => {
@@ -1196,12 +1200,23 @@ function ProductPromotions({ productId, productName, productPrice, tenantId }) {
         if (!timeDays.length||!timeStart||!timeEnd||!timeVal) { toast.error('Fill all fields'); setSaving(false); return }
         payload = { ...base, name:`${productName} Time`, time_rules:[{ days:timeDays, start_time:timeStart, end_time:timeEnd, type:timeType, value:parseFloat(timeVal) }] }
       }
-      await supabase.from('promotions').insert(payload)
+      // ✅ Check error explicitly — Supabase never throws, it returns { data, error }.
+      // Without this check, RLS denials and DB errors made the button stick on
+      // "Saving..." forever with no toast.
+      const { error: insertErr } = await supabase.from('promotions').insert(payload)
+      if (insertErr) {
+        console.error('Promo insert error:', insertErr)
+        toast.error(`Couldn't save promotion: ${insertErr.message || insertErr.hint || 'permission denied?'}`)
+        return
+      }
       qc.invalidateQueries(['product-promos', productId])
       qc.invalidateQueries(['promotions'])
       setAdding(false); setSaleVal(''); setBulkQty(''); setBulkVal(''); setTimeVal(''); setTimeDays([])
       toast.success('Promotion added ✓')
-    } catch(err) { toast.error(err.message) }
+    } catch(err) {
+      console.error(err)
+      toast.error('Error: ' + (err.message || 'unknown'))
+    }
     finally { setSaving(false) }
   }
 

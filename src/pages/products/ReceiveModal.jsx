@@ -48,21 +48,46 @@ export function ReceiveModal({ product: p, tenantId, storeId, onSave, onClose })
         .select('id,quantity,avg_cost').eq('product_id', p.id).eq('tenant_id', tenantId)
       if (storeId) invQuery = invQuery.eq('store_id', storeId)
       else invQuery = invQuery.is('store_id', null)
-      const { data: inv } = await invQuery.maybeSingle()
+      const { data: inv, error: readErr } = await invQuery.maybeSingle()
+      if (readErr) throw new Error(`Couldn't read inventory: ${readErr.message}`)
+
       if (inv) {
         const newQty = (inv.quantity||0) + qty
         const newAvgCost = ((inv.avg_cost||0)*(inv.quantity||0) + cost*qty) / newQty
-        await supabase.from('inventory').update({ quantity: newQty, avg_cost: newAvgCost, updated_at: new Date().toISOString() }).eq('id', inv.id)
+        const { error } = await supabase.from('inventory').update({
+          quantity: newQty, avg_cost: newAvgCost, updated_at: new Date().toISOString()
+        }).eq('id', inv.id)
+        if (error) throw new Error(`Couldn't update inventory: ${error.message}`)
       } else {
-        await supabase.from('inventory').insert({ tenant_id: tenantId, store_id: storeId || null, product_id: p.id, quantity: qty, avg_cost: cost })
+        const { error } = await supabase.from('inventory').insert({
+          tenant_id: tenantId, store_id: storeId || null, product_id: p.id, quantity: qty, avg_cost: cost
+        })
+        if (error) throw new Error(`Couldn't create inventory row: ${error.message}`)
       }
       if (needsSerials && serials.length > 0) {
-        await supabase.from('serial_numbers').insert(serials.map(s => ({ tenant_id: tenantId, product_id: p.id, serial: s, status: 'in_stock' })))
+        const { error } = await supabase.from('serial_numbers').insert(
+          serials.map(s => ({ tenant_id: tenantId, product_id: p.id, serial: s, status: 'in_stock' }))
+        )
+        if (error) throw new Error(`Couldn't save serial numbers: ${error.message}`)
       }
-      await supabase.from('inventory_receives').insert({ tenant_id: tenantId, product_id: p.id, vendor_id: form.vendor_id||null, qty, cost, notes: form.notes||null })
+      // Critical: this is the history record. Bug 8 (no first receive in history)
+      // was likely silent RLS failures here. Now we surface the error explicitly.
+      const { error: histErr } = await supabase.from('inventory_receives').insert({
+        tenant_id: tenantId,
+        store_id:  storeId || null,
+        product_id: p.id,
+        vendor_id: form.vendor_id || null,
+        qty, cost,
+        notes: form.notes || null,
+      })
+      if (histErr) throw new Error(`Couldn't save receive record: ${histErr.message}`)
+
       toast.success(`✓ Received ${qty} ${p.unit||'units'} of ${p.name}`)
       onSave()
-    } catch(err) { toast.error('Error: ' + err.message) }
+    } catch(err) {
+      console.error('Receive save error:', err)
+      toast.error(err.message || 'Receive failed')
+    }
     finally { setSaving(false) }
   }
 

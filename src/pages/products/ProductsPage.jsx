@@ -89,14 +89,20 @@ export default function ProductsPage() {
 
   const handleDisable = async (p) => {
     const enabling = p.is_enabled === false
-    await supabase.from('products').update({ is_enabled: enabling }).eq('id', p.id)
+    const { error } = await supabase.from('products').update({ is_enabled: enabling }).eq('id', p.id)
+    if (error) {
+      console.error('Disable error:', error)
+      toast.error(`Couldn't ${enabling?'enable':'disable'}: ${error.message}`)
+      return
+    }
     qc.invalidateQueries(['products'])
     toast.success(`Product ${enabling ? 'enabled' : 'disabled'}`)
   }
 
   const handleDelete = async (p) => {
     if (!confirm(`Permanently delete "${p.name}"?\n\nThis will free up the SKU and UPC codes.\nThis cannot be undone.`)) return
-    await supabase.from('products').update({ is_active: false, sku: null, upc: null }).eq('id', p.id)
+    const { error } = await supabase.from('products').update({ is_active: false, sku: null, upc: null }).eq('id', p.id)
+    if (error) { toast.error(`Couldn't delete: ${error.message}`); return }
     qc.invalidateQueries(['products'])
     toast.success('Product deleted — SKU/UPC codes are now free')
   }
@@ -815,14 +821,17 @@ function SalesHistoryInline({ product: p }) {
   const { data: receives = [], isLoading: lr } = useQuery({
     queryKey: ['hist-receives', p.id],
     queryFn: async () => {
-      const { data } = await supabase.from('inventory_receives')
-        .select('*, suppliers(name)').eq('product_id', p.id)
+      // Bug 8: was joining on 'suppliers' but real FK is 'vendors' → PostgREST
+      // returned empty results silently. Fixed.
+      const { data, error } = await supabase.from('inventory_receives')
+        .select('*, vendors(name)').eq('product_id', p.id)
         .order('created_at', { ascending: false }).limit(200)
+      if (error) { console.error('History receives:', error); return [] }
       return (data||[]).map(r => ({
         _type: 'receive',
         date: r.created_at,
         invoice: null,
-        customer: r.suppliers?.name || '—',
+        customer: r.vendors?.name || '—',
         qty: `+${r.qty}`,
         unit: p.unit,
         price: r.cost,

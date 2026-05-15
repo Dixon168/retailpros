@@ -18,29 +18,51 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
     if (!reason.trim()) { toast.error('Enter a reason'); return }
     setSaving(true)
     try {
-      // Look up the inventory record for THIS store specifically (each store
-      // has its own ledger).
-      const { data: inv } = await supabase.from('inventory')
+      // Look up the inventory record for THIS store. The old code used
+      // .eq('store_id', storeId || '') which sends '' (empty string), not
+      // null — Postgres rejects that for a UUID column. Fixed to match the
+      // ReceiveModal pattern (separate .eq vs .is null path).
+      let invQuery = supabase.from('inventory')
         .select('id,quantity')
         .eq('product_id', p.id)
-        .eq('store_id', storeId || '')
-        .maybeSingle()
+        .eq('tenant_id', tenantId)
+      if (storeId) invQuery = invQuery.eq('store_id', storeId)
+      else invQuery = invQuery.is('store_id', null)
+      const { data: inv, error: readErr } = await invQuery.maybeSingle()
+      if (readErr) throw new Error(`Couldn't read inventory: ${readErr.message}`)
+
       const currentQty = inv?.quantity || 0
       const newQty = Math.max(0, currentQty + adjustQty)
+
       if (inv) {
-        await supabase.from('inventory').update({ quantity: newQty, updated_at: new Date().toISOString() }).eq('id', inv.id)
+        const { error } = await supabase.from('inventory').update({
+          quantity: newQty, updated_at: new Date().toISOString()
+        }).eq('id', inv.id)
+        if (error) throw new Error(`Couldn't update inventory: ${error.message}`)
       } else {
-        await supabase.from('inventory').insert({
+        const { error } = await supabase.from('inventory').insert({
           tenant_id: tenantId, store_id: storeId || null, product_id: p.id, quantity: newQty
         })
+        if (error) throw new Error(`Couldn't create inventory row: ${error.message}`)
       }
-      await supabase.from('inventory_adjustments').insert({
-        tenant_id: tenantId, store_id: storeId || null, product_id: p.id,
-        qty_change: adjustQty, qty_before: currentQty, qty_after: newQty, reason
+
+      const { error: adjErr } = await supabase.from('inventory_adjustments').insert({
+        tenant_id: tenantId,
+        store_id:  storeId || null,
+        product_id: p.id,
+        qty_change: adjustQty,
+        qty_before: currentQty,
+        qty_after:  newQty,
+        reason,
       })
+      if (adjErr) throw new Error(`Couldn't save adjustment record: ${adjErr.message}`)
+
       toast.success(`Inventory adjusted: ${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`)
       onSave()
-    } catch(err) { toast.error('Error: ' + err.message) }
+    } catch(err) {
+      console.error('Adjust save error:', err)
+      toast.error(err.message || 'Adjust failed')
+    }
     finally { setSaving(false) }
   }
 
