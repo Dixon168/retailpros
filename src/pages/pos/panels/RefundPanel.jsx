@@ -214,7 +214,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
       }, 0)
       const refundStatus = totalReturnQty >= totalOrigQty ? 'full' : 'partial'
 
-      await supabase.from('orders')
+      const { error: ordErr } = await supabase.from('orders')
         .update({
           refund_status: refundStatus,
           refunded_amount: (selectedOrder.refunded_amount||0) + totalRefund,
@@ -227,9 +227,10 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
           }),
         })
         .eq('id', selectedOrder.id)
+      if (ordErr) throw new Error(`Order update: ${ordErr.message}`)
 
       // Record refund
-      await supabase.from('refund_records').insert({
+      const { error: refErr } = await supabase.from('refund_records').insert({
         tenant_id:   tenant.id,
         original_order_id: selectedOrder.id,
         original_order_number: selectedOrder.order_number,
@@ -249,6 +250,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
           approved_by_name: approver.name,
         }),
       })
+      if (refErr) throw new Error(`Refund record: ${refErr.message}`)
 
       // Add negative items to cart at the PAID unit price (what they actually
       // paid). This makes the refund line on the new receipt match the

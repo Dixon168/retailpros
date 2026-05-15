@@ -13,7 +13,7 @@ export async function logOverride({
   amount = null, notes = null,
 }) {
   try {
-    await supabase.from('override_approvals').insert({
+    const { error } = await supabase.from('override_approvals').insert({
       tenant_id:            tenantId,
       store_id:             storeId,
       terminal_id:          terminalId,
@@ -28,6 +28,7 @@ export async function logOverride({
       amount,
       notes,
     })
+    if (error) console.warn('Override audit log failed:', error)
   } catch (e) {
     // Swallow — audit failures should not block the user's action
     console.warn('Override audit log failed:', e)

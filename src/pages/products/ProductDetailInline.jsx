@@ -309,10 +309,11 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
   const { data: receives=[], isLoading: loadingR } = useQuery({
     queryKey: ['product-receives', p.id, storeId],
     queryFn: async () => {
-      // Join on vendors (not suppliers — that table doesn't exist).
-      // Scope to current store so multi-store stays clean.
+      // FK on inventory_receives.vendor_id → suppliers.id (legacy naming).
+      // Filter to current store but also include legacy NULL store_id rows
+      // so historical data still shows up after the migration.
       let q = supabase.from('inventory_receives')
-        .select('*, vendors(name)').eq('product_id', p.id)
+        .select('*, suppliers(name)').eq('product_id', p.id)
       if (storeId) q = q.or(`store_id.eq.${storeId},store_id.is.null`)
       const { data, error } = await q.order('created_at', { ascending: false }).limit(50)
       if (error) { console.error('Receives load error:', error); return [] }
@@ -376,13 +377,16 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
   })
 
   const togglePromo = async (promo) => {
-    await supabase.from('promotions').update({ is_active: !promo.is_active }).eq('id', promo.id)
+    const { error } = await supabase.from('promotions').update({ is_active: !promo.is_active }).eq('id', promo.id)
+    if (error) { toast.error(`Toggle failed: ${error.message}`); return }
     qc.invalidateQueries(['product-promos', p.id])
     qc.invalidateQueries(['promotions'])
+    toast.success(promo.is_active ? 'Disabled' : 'Enabled')
   }
   const deletePromo = async (id) => {
     if (!confirm('Delete this promotion?')) return
-    await supabase.from('promotions').delete().eq('id', id)
+    const { error } = await supabase.from('promotions').delete().eq('id', id)
+    if (error) { toast.error(`Delete failed: ${error.message}`); return }
     qc.invalidateQueries(['product-promos', p.id])
     toast.success('Deleted')
   }
@@ -401,13 +405,22 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
         if (!timeDays.length||!timeStart||!timeEnd||!timeVal) { toast.error('Fill all fields'); return }
         payload = { ...base, name:`${p.name} Time`, time_rules:[{days:timeDays,start_time:timeStart,end_time:timeEnd,type:timeType,value:parseFloat(timeVal)}] }
       }
-      await supabase.from('promotions').insert(payload)
+      // Surface insert errors — RLS / missing columns / etc made this stick on "Saving..."
+      const { error } = await supabase.from('promotions').insert(payload)
+      if (error) {
+        console.error('Promo insert:', error)
+        toast.error(`Couldn't save: ${error.message || error.hint || 'permission denied?'}`)
+        return
+      }
       qc.invalidateQueries(['product-promos', p.id])
       qc.invalidateQueries(['promotions'])
       setPromoAdding(false)
       setSaleVal(''); setBulkQty(''); setBulkVal(''); setTimeVal(''); setTimeDays([])
       toast.success('Promotion added ✓')
-    } catch(err) { toast.error(err.message) }
+    } catch(err) {
+      console.error(err)
+      toast.error(err.message || 'Save failed')
+    }
     finally { setPromoSaving(false) }
   }
 

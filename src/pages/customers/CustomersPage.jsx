@@ -508,15 +508,20 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
     setSaving(true)
     try {
       const newBal = (customer.card_balance||0) + amt
-      await supabase.from('customers').update({ card_balance: newBal }).eq('id', customer.id)
-      await supabase.from('customer_topups').insert({
+      const r1 = await supabase.from('customers').update({ card_balance: newBal }).eq('id', customer.id)
+      if (r1.error) throw new Error(`Update balance: ${r1.error.message}`)
+      const r2 = await supabase.from('customer_topups').insert({
         tenant_id: tenantId, customer_id: customer.id,
         amount: amt, method, note: note||null,
         staff_id: userId, staff_name: userName,
       })
+      if (r2.error) throw new Error(`Save topup: ${r2.error.message}`)
       toast.success(`✓ Topped up $${amt.toFixed(2)}`)
       onSave({ card_balance: newBal })
-    } catch(e) { toast.error(e.message) }
+    } catch(e) {
+      console.error(e)
+      toast.error(e.message)
+    }
     finally { setSaving(false) }
   }
 

@@ -442,14 +442,18 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
   })
 
   const togglePromo = async (p) => {
-    await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    const { error } = await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    if (error) { toast.error(`Toggle failed: ${error.message}`); return }
     qc.invalidateQueries(['product-promos', product.id])
     qc.invalidateQueries(['promotions'])
+    toast.success(p.is_active ? 'Disabled' : 'Enabled')
   }
   const deletePromo = async (id) => {
     if (!confirm('Delete this promotion?')) return
-    await supabase.from('promotions').delete().eq('id', id)
+    const { error } = await supabase.from('promotions').delete().eq('id', id)
+    if (error) { toast.error(`Delete failed: ${error.message}`); return }
     qc.invalidateQueries(['product-promos', product.id])
+    toast.success('Deleted')
   }
 
   const savePromo = async () => {
@@ -467,12 +471,20 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
         if (!timeDays.length||!timeStart||!timeEnd||!timeVal) { toast.error('Fill all fields'); setSaving(false); return }
         payload = { ...base, name:`${product.name} Time`, time_rules:[{days:timeDays,start_time:timeStart,end_time:timeEnd,type:timeType,value:parseFloat(timeVal)}] }
       }
-      await supabase.from('promotions').insert(payload)
+      const { error } = await supabase.from('promotions').insert(payload)
+      if (error) {
+        console.error('Promo insert:', error)
+        toast.error(`Couldn't save: ${error.message || error.hint || 'permission denied?'}`)
+        return
+      }
       qc.invalidateQueries(['product-promos', product.id])
       qc.invalidateQueries(['promotions'])
       setSaleVal(''); setBulkQty(''); setBulkVal(''); setTimeVal(''); setTimeDays([])
       toast.success('Promotion added ✓')
-    } catch(err) { toast.error(err.message) }
+    } catch(err) {
+      console.error(err)
+      toast.error(err.message || 'Save failed')
+    }
     finally { setSaving(false) }
   }
 
@@ -821,17 +833,15 @@ function SalesHistoryInline({ product: p }) {
   const { data: receives = [], isLoading: lr } = useQuery({
     queryKey: ['hist-receives', p.id],
     queryFn: async () => {
-      // Bug 8: was joining on 'suppliers' but real FK is 'vendors' → PostgREST
-      // returned empty results silently. Fixed.
       const { data, error } = await supabase.from('inventory_receives')
-        .select('*, vendors(name)').eq('product_id', p.id)
+        .select('*, suppliers(name)').eq('product_id', p.id)
         .order('created_at', { ascending: false }).limit(200)
       if (error) { console.error('History receives:', error); return [] }
       return (data||[]).map(r => ({
         _type: 'receive',
         date: r.created_at,
         invoice: null,
-        customer: r.vendors?.name || '—',
+        customer: r.suppliers?.name || '—',
         qty: `+${r.qty}`,
         unit: p.unit,
         price: r.cost,

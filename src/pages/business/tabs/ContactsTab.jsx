@@ -49,8 +49,9 @@ export default function ContactsTab({ customerId, tenantId, onChanged }) {
 
   const setPrimary = async (c) => {
     // Unset current primary, set this one
-    await supabase.from('business_contacts').update({ is_primary: false })
+    const r1 = await supabase.from('business_contacts').update({ is_primary: false })
       .eq('business_customer_id', customerId)
+    if (r1.error) { toast.error('Failed: ' + r1.error.message); return }
     const { error } = await supabase.from('business_contacts').update({ is_primary: true }).eq('id', c.id)
     if (error) { toast.error('Failed: ' + error.message); return }
     toast.success(`${c.name} is now the primary contact`)

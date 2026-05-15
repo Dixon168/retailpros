@@ -166,7 +166,8 @@ function StoreSection({ store, tenant }) {
   const u = (k,v) => setForm(p => ({...p,[k]:v}))
 
   const save = async () => {
-    await supabase.from('stores').update(form).eq('id', store.id)
+    const { error } = await supabase.from('stores').update(form).eq('id', store.id)
+    if (error) { toast.error(`Couldn't save: ${error.message}`); return }
     toast.success('Store settings saved')
   }
 
@@ -255,11 +256,10 @@ function TerminalsSection({ tenantId, storeId }) {
   }
 
   const saveTerm = async (data) => {
-    if (data.id) {
-      await supabase.from('terminals').update(data).eq('id', data.id)
-    } else {
-      await supabase.from('terminals').insert({ ...data, tenant_id: tenantId, store_id: storeId })
-    }
+    const r = data.id
+      ? await supabase.from('terminals').update(data).eq('id', data.id)
+      : await supabase.from('terminals').insert({ ...data, tenant_id: tenantId, store_id: storeId })
+    if (r.error) { toast.error(`Save failed: ${r.error.message}`); return }
     qc.invalidateQueries(['terminals-settings'])
     setEditTerm(null)
     toast.success('Terminal saved')

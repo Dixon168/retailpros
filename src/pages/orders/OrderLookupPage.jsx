@@ -86,8 +86,9 @@ function OrderActions({ order, tenantId, userId, onResume, onCancelHeld, onVoid,
 
   const saveNote = async () => {
     setSaving(true)
-    await supabase.from('orders').update({ staff_note: note }).eq('id', order.id)
+    const { error } = await supabase.from('orders').update({ staff_note: note }).eq('id', order.id)
     setSaving(false); setAddNote(false)
+    if (error) { toast.error(`Couldn't save note: ${error.message}`); return }
     toast.success('Note saved')
   }
 
@@ -446,7 +447,7 @@ export default function OrderLookupPage() {
 
     try {
       // 1. Mark order as voided — include approver if any
-      await supabase.from('orders').update({
+      const { error: voidErr } = await supabase.from('orders').update({
         status: 'voided',
         voided_at: new Date().toISOString(),
         voided_by: effCashierId,
@@ -456,10 +457,11 @@ export default function OrderLookupPage() {
           voided_approved_by_name: approver.name,
         }),
       }).eq('id', o.id)
+      if (voidErr) throw new Error(`Void order: ${voidErr.message}`)
 
       // 2. Create adjustment record on TODAY (not original date)
       for (const p of payMethods) {
-        await supabase.from('order_adjustments').insert({
+        const { error: adjErr } = await supabase.from('order_adjustments').insert({
           tenant_id:      tenant.id,
           order_id:       o.id,
           order_number:   o.order_number,
@@ -474,6 +476,7 @@ export default function OrderLookupPage() {
             approved_by_name: approver.name,
           }),
         })
+        if (adjErr) throw new Error(`Adjustment: ${adjErr.message}`)
       }
 
       // 3. Restore member card balance if applicable
@@ -484,9 +487,10 @@ export default function OrderLookupPage() {
           const { data: cust } = await supabase.from('customers')
             .select('card_balance').eq('id', o.customer_id).single()
           if (cust) {
-            await supabase.from('customers').update({
+            const { error: balErr } = await supabase.from('customers').update({
               card_balance: (cust.card_balance || 0) + restoreAmt
             }).eq('id', o.customer_id)
+            if (balErr) throw new Error(`Restore balance: ${balErr.message}`)
           }
         }
       }

@@ -94,13 +94,14 @@ export default function CardCenterPage() {
       const result = await cpVoid({ tenantId: tenant.id, retref: tx.cp_retref, amount: tx.amount })
       if (!result.success) { toast.error(`Void failed: ${result.errorMessage}`); return }
 
-      await supabase.from('card_transactions').update({
+      const { error } = await supabase.from('card_transactions').update({
         status:         'voided',
         voided_by:      authorizedBy.id,
         voided_by_name: authorizedBy.name,
         voided_at:      new Date().toISOString(),
         updated_at:     new Date().toISOString(),
       }).eq('id', tx.id)
+      if (error) { toast.error(`Couldn't mark voided: ${error.message}`); return }
 
       toast.success(`Voided: ${tx.masked_pan} $${tx.amount.toFixed(2)}`)
       setVoidConfirm(null)

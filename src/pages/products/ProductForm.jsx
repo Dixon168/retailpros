@@ -388,21 +388,24 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
           // store_id is critical — POS filters inventory by store, so an
           // inventory row without store_id appears as 'out of stock' in
           // every store. Always tag with current store.
-          await supabase.from('inventory').insert({
+          const { error: invErr } = await supabase.from('inventory').insert({
             tenant_id: tenantId,
             store_id:  storeId || null,
             product_id: productId,
             quantity: parseFloat(form.qty)||0,
             avg_cost: parseFloat(form.cost)||0,
           })
+          if (invErr) throw new Error(`Inventory: ${invErr.message}`)
         }
       }
       if (productId) {
-        await supabase.from('product_tax_rates').delete().eq('product_id', productId)
+        const { error: delErr } = await supabase.from('product_tax_rates').delete().eq('product_id', productId)
+        if (delErr) throw new Error(`Clear taxes: ${delErr.message}`)
         if (form.selectedTaxRates.length > 0) {
-          await supabase.from('product_tax_rates').insert(
+          const { error: taxErr } = await supabase.from('product_tax_rates').insert(
             form.selectedTaxRates.map(tax_rate_id => ({ tenant_id:tenantId, product_id:productId, tax_rate_id }))
           )
+          if (taxErr) throw new Error(`Save taxes: ${taxErr.message}`)
         }
       }
       toast.success(form.id ? 'Product updated ✓' : 'Product added ✓')

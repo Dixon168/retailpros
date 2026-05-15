@@ -189,10 +189,11 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
 
       // 4. Insert initial note if any
       if (form.initial_note?.trim()) {
-        await supabase.from('business_notes').insert({
+        const { error } = await supabase.from('business_notes').insert({
           tenant_id: tenant.id, business_customer_id: customerId,
           note: form.initial_note.trim(),
         })
+        if (error) console.warn('Note save failed (non-fatal):', error)
       }
 
       toast.success(`${company.company_name} created ✓`)

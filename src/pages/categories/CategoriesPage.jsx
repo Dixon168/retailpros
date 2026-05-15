@@ -129,7 +129,8 @@ export default function CategoriesPage() {
   }
 
   const updateProductOrder = async (productId, newOrder) => {
-    await supabase.from('products').update({ sort_order: parseInt(newOrder)||0 }).eq('id', productId)
+    const { error } = await supabase.from('products').update({ sort_order: parseInt(newOrder)||0 }).eq('id', productId)
+    if (error) { toast.error(`Couldn't reorder: ${error.message}`); return }
     qc.invalidateQueries(['subcat-products'])
   }
 

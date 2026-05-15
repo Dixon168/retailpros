@@ -195,13 +195,14 @@ export default function SmartReceivePage() {
         productId = newProduct.id
 
         // Create inventory record
-        await supabase.from('inventory').insert({
+        const { error: invInsErr } = await supabase.from('inventory').insert({
           tenant_id: tenant.id,
           store_id:  store?.id || null,
           product_id: productId,
           quantity: 0,
           avg_cost: parseFloat(form.cost) || 0,
         })
+        if (invInsErr) throw new Error(`Inventory create: ${invInsErr.message}`)
         toast.success(`✓ New product created: ${form.name}`)
       }
 
@@ -211,30 +212,36 @@ export default function SmartReceivePage() {
       const qty  = parseFloat(form.qty)
       const cost = parseFloat(form.cost) || 0
 
-      const { data: inv } = await supabase.from('inventory')
+      // Use is(null) for null store_id — `.eq('store_id', '')` would fail with
+      // 'invalid input syntax for type uuid' if store_id is null.
+      let invQ = supabase.from('inventory')
         .select('id,quantity,avg_cost')
         .eq('product_id', productId)
-        .eq('store_id', store?.id || '')
-        .maybeSingle()
+      if (store?.id) invQ = invQ.eq('store_id', store.id)
+      else           invQ = invQ.is('store_id', null)
+      const { data: inv, error: readErr } = await invQ.maybeSingle()
+      if (readErr) throw new Error(`Read inventory: ${readErr.message}`)
 
       if (inv) {
         const newQty     = (inv.quantity||0) + qty
         const newAvgCost = newQty > 0 ? ((inv.avg_cost||0)*(inv.quantity||0) + cost*qty) / newQty : cost
-        await supabase.from('inventory').update({
+        const { error } = await supabase.from('inventory').update({
           quantity: newQty, avg_cost: newAvgCost, updated_at: new Date().toISOString()
         }).eq('id', inv.id)
+        if (error) throw new Error(`Update inventory: ${error.message}`)
       } else {
         // No inventory record for this store — create one
-        await supabase.from('inventory').insert({
+        const { error } = await supabase.from('inventory').insert({
           tenant_id: tenant.id,
           store_id:  store?.id || null,
           product_id: productId,
           quantity: qty,
           avg_cost: cost,
         })
+        if (error) throw new Error(`Create inventory: ${error.message}`)
       }
 
-      await supabase.from('inventory_receives').insert({
+      const { error: recErr } = await supabase.from('inventory_receives').insert({
         tenant_id:  tenant.id,
         store_id:   store?.id || null,
         product_id: productId,
@@ -243,6 +250,7 @@ export default function SmartReceivePage() {
         cost,
         notes: form.notes || null,
       })
+      if (recErr) throw new Error(`Save receive: ${recErr.message}`)
 
       qc.invalidateQueries({ queryKey:['products'] })
       qc.invalidateQueries({ queryKey:['pos-products'] })
