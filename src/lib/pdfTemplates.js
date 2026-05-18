@@ -278,7 +278,12 @@ export function buildInvoiceHtml({ invoice, items, customer, payments = [], stor
     ${(invoice.discount_amount || 0) > 0 ? `<div class="row label"><span>Discount</span><span class="value" style="color:#CF1322;">−${fmtMoney(invoice.discount_amount)}</span></div>` : ''}
     ${(invoice.tax_amount || 0) > 0 ? `<div class="row label"><span>Tax</span><span class="value">${fmtMoney(invoice.tax_amount)}</span></div>` : ''}
     <div class="grand"><span class="lbl">Total</span><span class="val">${fmtMoney(invoice.total)}</span></div>
-    ${(invoice.amount_paid || 0) > 0 ? `<div class="row paid"><span>Amount Paid</span><span class="value">−${fmtMoney(invoice.amount_paid)}</span></div>` : ''}
+    ${(invoice.amount_paid || 0) > 0 ? `<div class="row paid"><span>${
+      // Partial = call it "Deposit" so the customer understands they paid SOME,
+      // not all. Fully-paid invoices say "Amount Paid". Either way the math is
+      // the same — this is presentation only.
+      balanceDue > 0.005 ? 'Deposit' : 'Amount Paid'
+    }</span><span class="value">−${fmtMoney(invoice.amount_paid)}</span></div>` : ''}
     ${balanceDue > 0.005 && !isVoid ? `<div class="balance"><span class="lbl">Balance Due</span><span class="val">${fmtMoney(balanceDue)}</span></div>` : ''}
   </div>
 

@@ -170,7 +170,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
         toast.error(`${it.product_name || 'Line item'}: quantity must be non-zero`); return
       }
       if (it.is_custom && !it.product_name?.trim()) {
-        toast.error('Custom line: name is required (e.g. "Deposit", "Service Fee")'); return
+        toast.error('Custom line: name is required (e.g. "Service Fee", "Shipping")'); return
       }
     }
     if (shipMode === 'custom' && !customShip.address.trim()) {
@@ -191,12 +191,15 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
 
     // Validate Pay Now amount if enabled
     if (payNow) {
-      const amt = parseFloat(payAmount) || totals.total
-      if (amt <= 0) {
-        toast.error('Pay Now amount must be greater than 0'); return
+      // Blank → full amount. Explicit 0 → same as toggle off (warn user).
+      const raw = (payAmount || '').trim()
+      const amt = raw === '' ? totals.total : parseFloat(raw)
+      if (raw !== '' && (isNaN(amt) || amt <= 0)) {
+        toast.error('Amount must be greater than 0 — or uncheck "Receive payment" to save as draft')
+        return
       }
       if (amt > totals.total + 0.01) {
-        toast.error(`Pay Now amount $${amt.toFixed(2)} can't exceed invoice total $${totals.total.toFixed(2)}`)
+        toast.error(`Amount $${amt.toFixed(2)} can't exceed invoice total $${totals.total.toFixed(2)}`)
         return
       }
     }
@@ -234,7 +237,9 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
       let data, error
       if (payNow) {
         // Combo RPC: create → send → receive payment, all atomic
-        const payAmt = parseFloat(payAmount) || totals.total
+        // Blank → full amount; any positive number → that exact amount
+        const raw = (payAmount || '').trim()
+        const payAmt = raw === '' ? totals.total : parseFloat(raw)
         ;({ data, error } = await supabase.rpc('fn_create_invoice_and_pay', {
           ...commonArgs,
           p_payment_amount:    payAmt,
@@ -393,7 +398,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                             <input
                               value={item.product_name}
                               onChange={e => updateItem(idx, 'product_name', e.target.value)}
-                              placeholder="e.g. Deposit, Service Fee, Shipping"
+                              placeholder="e.g. Service Fee, Shipping, Surcharge"
                               className="w-full text-[12px] font-bold text-[#1F1F1F] bg-transparent border-none outline-none placeholder:font-normal placeholder:text-[#999]"
                             />
                           ) : (
@@ -485,93 +490,109 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
             </div>
           </div>
 
-          {/* ── Pay Now (optional) ─────────────────────────────────────
-              When toggled on, the create button calls fn_create_invoice_and_pay
-              which atomically: creates draft → sends (deducts stock) → records
-              payment. If the customer is paying right at the counter, this
-              saves three clicks. If they're not paying now, leave it off
-              and the invoice saves as draft like before.                  */}
-          {totals.total !== 0 && items.length > 0 && (
-            <div className="px-5 pb-4 flex-shrink-0">
-              <div className="rounded-xl border" style={{borderColor: payNow ? '#15803D' : '#E5E5E5', background: payNow ? '#F0FDF4' : '#FAFAFA'}}>
-                <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
-                  <input type="checkbox" checked={payNow}
-                    onChange={e => setPayNow(e.target.checked)}
-                    className="w-4 h-4 cursor-pointer"
-                    style={{accentColor:'#15803D'}}/>
-                  <div className="flex-1">
-                    <div className="text-[13px] font-bold text-[#1F1F1F]">
-                      💰 Receive payment now
+          {/* ── Pay / Deposit (optional) ────────────────────────────────
+              Single payment input. Amount entered determines the label:
+                = 0 / blank  → no payment, save as draft
+                < total      → "Deposit / Partial" (PARTIAL invoice)
+                ≥ total      → "Pay in Full" (PAID invoice)
+              When amount > 0, the create button atomically does:
+              create draft → send (deduct stock) → record payment.        */}
+          {totals.total > 0 && items.length > 0 && (() => {
+            const enteredAmt = parseFloat(payAmount) || 0
+            const isFull    = payNow && enteredAmt >= totals.total - 0.005
+            const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
+            const balance   = Math.max(0, totals.total - enteredAmt)
+            const accentColor = isFull ? '#15803D' : isPartial ? '#B45309' : '#E5E5E5'
+            const bgColor     = isFull ? '#F0FDF4' : isPartial ? '#FFFBEB' : '#FAFAFA'
+            return (
+              <div className="px-5 pb-4 flex-shrink-0">
+                <div className="rounded-xl border" style={{borderColor: accentColor, background: bgColor}}>
+                  <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
+                    <input type="checkbox" checked={payNow}
+                      onChange={e => { setPayNow(e.target.checked); if (!e.target.checked) setPayAmount('') }}
+                      className="w-4 h-4 cursor-pointer"
+                      style={{accentColor: isFull ? '#15803D' : '#B45309'}}/>
+                    <div className="flex-1">
+                      <div className="text-[13px] font-bold text-[#1F1F1F]">
+                        💰 Receive payment / deposit now
+                      </div>
+                      <div className="text-[11px] text-[#666]">
+                        {!payNow
+                          ? 'Off — save as draft, customer pays later.'
+                          : isFull
+                          ? 'Pay in full — invoice will be marked PAID.'
+                          : isPartial
+                          ? `Deposit — invoice PARTIAL, $${balance.toFixed(2)} remaining.`
+                          : 'Enter amount below — leave blank = full payment.'}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-[#666]">
-                      {payNow
-                        ? 'Will send the invoice (deduct stock) AND record payment in one step.'
-                        : 'Skip — save as draft, customer pays later.'}
-                    </div>
-                  </div>
-                </label>
-                {payNow && (
-                  <div className="px-4 pb-4 pt-1 border-t" style={{borderColor:'#86EFAC'}}>
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <FieldLabel>Amount paid</FieldLabel>
-                        <DualInput compact mode="decimal" prefix="$"
-                          value={payAmount}
-                          onChange={setPayAmount}
-                          placeholder={totals.total.toFixed(2)}
-                          kbTitle="Amount received"/>
-                        <div className="text-[10px] text-[#666] mt-1">
-                          Leave blank = full {`$${totals.total.toFixed(2)}`}. Less = partial (Balance remains).
+                  </label>
+                  {payNow && (
+                    <div className="px-4 pb-4 pt-1 border-t" style={{borderColor: accentColor === '#E5E5E5' ? '#E5E5E5' : (isFull ? '#86EFAC' : '#FCD34D')}}>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <FieldLabel>Amount received {isPartial && '(Deposit)'}</FieldLabel>
+                          <DualInput compact mode="decimal" prefix="$"
+                            value={payAmount}
+                            onChange={setPayAmount}
+                            placeholder={totals.total.toFixed(2)}
+                            kbTitle="Amount received"/>
+                          <div className="text-[10px] text-[#666] mt-1">
+                            Leave blank = full {`$${totals.total.toFixed(2)}`}. Less = deposit.
+                          </div>
+                        </div>
+                        <div>
+                          <FieldLabel>Method</FieldLabel>
+                          <select value={payMethod} onChange={e => setPayMethod(e.target.value)}
+                            className="w-full bg-white border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]">
+                            <option value="cash">💵 Cash</option>
+                            <option value="check">🏦 Check</option>
+                            <option value="ach">🔄 ACH</option>
+                            <option value="card">💳 Card</option>
+                            <option value="bank_transfer">🏦 Bank Transfer</option>
+                            <option value="other">📋 Other</option>
+                          </select>
                         </div>
                       </div>
-                      <div>
-                        <FieldLabel>Method</FieldLabel>
-                        <select value={payMethod} onChange={e => setPayMethod(e.target.value)}
-                          className="w-full bg-white border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]">
-                          <option value="cash">💵 Cash</option>
-                          <option value="check">🏦 Check</option>
-                          <option value="ach">🔄 ACH</option>
-                          <option value="card">💳 Card</option>
-                          <option value="bank_transfer">🏦 Bank Transfer</option>
-                          <option value="other">📋 Other</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <FieldLabel>Reference / check #</FieldLabel>
-                        <input value={payReference} onChange={e => setPayReference(e.target.value)}
-                          placeholder="Optional"
-                          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]"/>
-                      </div>
-                      <div>
-                        <FieldLabel>Payment date</FieldLabel>
-                        <input type="date" value={payDate} onChange={e => setPayDate(e.target.value)}
-                          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]"/>
-                      </div>
-                    </div>
-                    {(() => {
-                      const amt = parseFloat(payAmount) || totals.total
-                      const bal = totals.total - amt
-                      return (
-                        <div className="mt-3 rounded-lg p-2.5 text-[11px] flex justify-between items-center"
-                          style={{background:'#FFFFFF', border:'1px solid #86EFAC'}}>
-                          <span className="text-[#666]">After payment:</span>
-                          {bal <= 0.005 ? (
-                            <span className="font-bold text-[#15803D]">✓ PAID IN FULL</span>
-                          ) : (
-                            <span className="font-mono"><span className="text-[#666]">Balance: </span>
-                              <span className="font-bold text-[#B45309]">${bal.toFixed(2)}</span>
-                            </span>
-                          )}
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <FieldLabel>Reference / check #</FieldLabel>
+                          <input value={payReference} onChange={e => setPayReference(e.target.value)}
+                            placeholder="Optional"
+                            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]"/>
                         </div>
-                      )
-                    })()}
-                  </div>
-                )}
+                        <div>
+                          <FieldLabel>Payment date</FieldLabel>
+                          <input type="date" value={payDate} onChange={e => setPayDate(e.target.value)}
+                            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]"/>
+                        </div>
+                      </div>
+                      {/* Live preview — total / deposit / balance */}
+                      <div className="mt-3 rounded-lg p-3 text-[12px] font-mono"
+                        style={{background:'#FFFFFF', border:`1px solid ${isFull ? '#86EFAC' : '#FCD34D'}`}}>
+                        <div className="flex justify-between text-[#666]">
+                          <span>Total Due:</span>
+                          <span>${totals.total.toFixed(2)}</span>
+                        </div>
+                        {enteredAmt > 0 && (
+                          <div className="flex justify-between mt-1"
+                            style={{color: isFull ? '#15803D' : '#B45309'}}>
+                            <span>{isFull ? 'Paid in Full:' : 'Deposit:'}</span>
+                            <span>−${Math.min(enteredAmt, totals.total).toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between mt-1 pt-1 border-t border-[#E5E5E5] font-bold"
+                          style={{color: balance <= 0.005 ? '#15803D' : '#CF1322'}}>
+                          <span>Balance Due:</span>
+                          <span>{balance <= 0.005 ? '✓ PAID' : `$${balance.toFixed(2)}`}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Footer */}
           <div className="px-5 py-4 flex gap-2 flex-shrink-0" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
@@ -582,16 +603,25 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
             </button>
             <button onClick={create} disabled={saving || !customerId || items.length === 0}
               className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{
-                background: payNow ? '#15803D' : '#006AFF',
-                color:'#FFFFFF', border:'none'
-              }}>
-              {saving
-                ? (payNow ? 'Processing...' : 'Creating...')
-                : payNow
-                ? `💰 Create + Pay · $${totals.total.toFixed(2)}`
-                : `Create Invoice · $${totals.total.toFixed(2)}`
-              }
+              style={(() => {
+                const enteredAmt = parseFloat(payAmount) || 0
+                const isFull = payNow && enteredAmt >= totals.total - 0.005
+                const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
+                return {
+                  background: isFull ? '#15803D' : isPartial ? '#B45309' : '#006AFF',
+                  color: '#FFFFFF',
+                  border: 'none',
+                }
+              })()}>
+              {(() => {
+                if (saving) return payNow ? 'Processing...' : 'Creating...'
+                const enteredAmt = parseFloat(payAmount) || 0
+                const isFull = payNow && enteredAmt >= totals.total - 0.005
+                const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
+                if (isFull)    return `💰 Create + Pay in Full · $${totals.total.toFixed(2)}`
+                if (isPartial) return `💰 Create + Deposit · $${enteredAmt.toFixed(2)}`
+                return `Create Invoice · $${totals.total.toFixed(2)}`
+              })()}
             </button>
           </div>
         </div>
