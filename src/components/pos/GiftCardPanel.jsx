@@ -333,9 +333,15 @@ function TopupTab({ tenant, user }) {
       toast.success(`✓ Topped up $${amt.toFixed(2)} — new balance $${data.balance.toFixed(2)}`)
       qc.invalidateQueries({ queryKey:['gift-cards'] })
       qc.invalidateQueries({ queryKey:['gift-card-history'] })
-    // Refresh the local lookup so user sees the new balance
-    setLookup({ ...lookup, balance: data.balance, status:'active' })
-    setAmount('')
+      // Refresh the local lookup so user sees the new balance
+      setLookup({ ...lookup, balance: data.balance, status:'active' })
+      setAmount('')
+    } catch (e) {
+      console.error('Gift card topup:', e)
+      toast.error(e?.message || 'Top-up failed')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
