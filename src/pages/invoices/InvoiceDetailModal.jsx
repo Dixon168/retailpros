@@ -365,6 +365,18 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                       <li className="text-[#666]">Inventory wasn't deducted yet (draft) — nothing to restore</li>
                     )}
                   </ul>
+                  {detail.amount_paid > 0 && (
+                    <div className="mt-3 rounded-lg p-2.5" style={{background:'#FEF3C7', border:'1px solid #FCD34D'}}>
+                      <div className="font-bold text-[#92400E] mb-1">
+                        ⚠️ Customer has already paid ${detail.amount_paid.toFixed(2)}
+                      </div>
+                      <div className="text-[#92400E]">
+                        Voiding does NOT refund the money. You'll need to either:
+                        <br/>• Refund cash/transfer back to the customer, OR
+                        <br/>• Leave it as a credit on their account for next invoice
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowVoidInline(false)} disabled={updating}

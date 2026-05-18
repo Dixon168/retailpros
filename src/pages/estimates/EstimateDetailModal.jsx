@@ -52,32 +52,41 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
 
   const updateStatus = async (newStatus) => {
     setUpdating(true)
-    const { error } = await supabase.from('estimates')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq('id', detail.id)
-    setUpdating(false)
-    if (error) { toast.error(error.message); return }
-    toast.success(`Marked as ${newStatus}`)
-    refetch()
-    onChanged?.()
+    try {
+      const { error } = await supabase.from('estimates')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', detail.id)
+      if (error) { toast.error(error.message); return }
+      toast.success(`Marked as ${newStatus}`)
+      refetch()
+      onChanged?.()
+    } finally { setUpdating(false) }
   }
 
   const convertNow = async () => {
     setUpdating(true)
-    const { data, error } = await supabase.rpc('fn_convert_estimate_to_invoice', {
-      p_tenant_id:   tenant.id,
-      p_estimate_id: detail.id,
-      p_due_date:    dueDate || null,
-      p_user_id:     user?.id || null,
-    })
-    setUpdating(false)
-    if (error || !data?.success) {
-      toast.error(error?.message || data?.message || 'Failed to convert')
-      return
+    try {
+      const { data, error } = await supabase.rpc('fn_convert_estimate_to_invoice', {
+        p_tenant_id:   tenant.id,
+        p_estimate_id: detail.id,
+        p_due_date:    dueDate || null,
+        p_user_id:     user?.id || null,
+      })
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.message || 'Failed to convert')
+        return
+      }
+      // New invoice starts as 'draft' — stock won't deduct until user clicks
+      // Send Invoice from the invoice detail screen.
+      toast.success(`Created draft ${data.invoice_number} — send invoice to deduct stock`)
+      onChanged?.()
+      onClose()
+    } catch (e) {
+      console.error('Convert estimate:', e)
+      toast.error(e?.message || 'Convert failed')
+    } finally {
+      setUpdating(false)
     }
-    toast.success(`Created ${data.invoice_number} — stock deducted`)
-    onChanged?.()
-    onClose()
   }
 
   const docData = { estimate: detail, items, customer, store, tenant }

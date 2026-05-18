@@ -221,8 +221,12 @@ export default function InvoicesPage() {
           invoice={viewingInv}
           onClose={() => setViewingInv(null)}
           onChanged={() => {
+            // Invoice changes affect: list view, stock pages, AND POS cart
+            // (because Send / Void changes inventory.quantity)
             qc.invalidateQueries({ queryKey: ['invoices-list'] })
             qc.invalidateQueries({ queryKey: ['stock-rows'] })
+            qc.invalidateQueries({ queryKey: ['pos-products'] })
+            qc.invalidateQueries({ queryKey: ['products'] })  // BackOffice product list
           }}
         />
       )}

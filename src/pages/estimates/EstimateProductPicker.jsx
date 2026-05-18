@@ -26,7 +26,7 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
       return data || []
     },
     enabled: !!tenant?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,  // 30 seconds — stock changes frequently after Send/Void/POS sales
   })
 
   // Show products as soon as the picker opens. "All categories" (empty
