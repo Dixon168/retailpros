@@ -1,4 +1,12 @@
 // src/pages/invoices/CreateInvoiceModal.jsx
+//
+// Dual-mode modal:
+//   - CREATE: { onClose, onCreated, presetCustomerId } — fresh invoice
+//   - EDIT:   { onClose, onCreated, editInvoiceId }    — load existing,
+//             call fn_edit_invoice on save. Inventory auto-adjusts.
+//             Voided/closed invoices are loaded read-only with a banner
+//             instead of letting the user submit.
+
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -7,8 +15,9 @@ import toast from 'react-hot-toast'
 import DualInput from '@/components/ui/DualInput'
 import EstimateProductPicker from '@/pages/estimates/EstimateProductPicker'
 
-export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerId }) {
+export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerId, editInvoiceId }) {
   const { tenant, store, user } = useAuthStore()
+  const isEdit = !!editInvoiceId
   const [customerId, setCustomerId]     = useState(presetCustomerId || '')
   const [dueDate, setDueDate]           = useState(() => {
     const d = new Date()
@@ -21,6 +30,10 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
   const [items, setItems]               = useState([])
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [saving, setSaving]             = useState(false)
+  // Set when we load an existing invoice — used to compute warnings and
+  // to suppress the Pay Now toggle (you receive payment separately via
+  // ReceivePaymentModal once the invoice is created)
+  const [loadedInvoice, setLoadedInvoice] = useState(null)
 
   // ── Pay Now (optional) — when toggled on, save also Sends + Receives payment
   // ── in a single atomic backend call (fn_create_invoice_and_pay).
@@ -66,6 +79,52 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
     },
     enabled: !!customerId,
   })
+
+  // ── EDIT MODE: load the existing invoice + items, then hydrate state.
+  // Only runs when editInvoiceId is set. Locked statuses (voided / closed)
+  // still hydrate so the user can SEE the data, but the save button blocks.
+  useEffect(() => {
+    if (!editInvoiceId) return
+    let cancelled = false
+    ;(async () => {
+      const { data: inv, error } = await supabase
+        .from('invoices')
+        .select('*, invoice_items(*)')
+        .eq('id', editInvoiceId)
+        .single()
+      if (cancelled) return
+      if (error || !inv) {
+        toast.error('Could not load invoice for editing')
+        onClose()
+        return
+      }
+      setLoadedInvoice(inv)
+      setCustomerId(inv.business_customer_id)
+      setDueDate(inv.due_date || '')
+      setNotes(inv.notes || '')
+      setInternalNotes(inv.internal_notes || '')
+      setDeliveryNotes(inv.delivery_notes || '')
+      setItems((inv.invoice_items || [])
+        .sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map(it => ({
+          // Same shape addProduct produces
+          product_id:   it.product_id,
+          product_name: it.product_name,
+          product_sku:  it.product_sku,
+          description:  it.description,
+          quantity:     String(it.quantity),
+          unit_price:   String(it.unit_price),
+          discount_pct: String(it.discount_pct || 0),
+          stock_qty:    null,  // recomputed live in stockWarnings
+          is_custom:    !it.product_id,
+        })))
+    })()
+    return () => { cancelled = true }
+  }, [editInvoiceId])
+
+  const isLocked = loadedInvoice?.status === 'voided'
+                || loadedInvoice?.status === 'void'
+                || loadedInvoice?.status === 'closed'
 
   // When company changes, reset ship-to to billing and clear picks
   useEffect(() => {
@@ -180,6 +239,56 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
       toast.error('Pick a saved delivery address'); return
     }
 
+    // ── EDIT MODE: branch off to fn_edit_invoice. No Pay Now in this path
+    // (payment is a separate flow via ReceivePaymentModal). Locked invoices
+    // (voided / closed) never reach here — UI hides the Save button.
+    if (isEdit) {
+      if (isLocked) {
+        toast.error('This invoice is locked and cannot be edited')
+        return
+      }
+      setSaving(true)
+      const watchdog = setTimeout(() => {
+        setSaving(false)
+        toast.error('⏱️ Save is taking too long — check connection and try again')
+      }, 20_000)
+      try {
+        const { data, error } = await supabase.rpc('fn_edit_invoice', {
+          p_tenant_id:  tenant.id,
+          p_invoice_id: editInvoiceId,
+          p_user_id:    user?.id || null,
+          p_items: items.map(it => ({
+            product_id:   it.product_id,
+            product_name: it.product_name,
+            product_sku:  it.product_sku,
+            description:  it.description,
+            quantity:     parseFloat(it.quantity) || 0,
+            unit_price:   parseFloat(it.unit_price) || 0,
+            discount_pct: parseFloat(it.discount_pct) || 0,
+          })),
+          p_header: {
+            due_date:       dueDate || null,
+            notes:          notes || null,
+            internal_notes: internalNotes || null,
+            delivery_notes: deliveryNotes || null,
+          },
+        })
+        if (error || !data?.success) {
+          toast.error(error?.message || data?.message || 'Failed to save changes')
+          return
+        }
+        toast.success(data.message || 'Invoice updated ✓')
+        onCreated()
+      } catch (e) {
+        console.error('Edit invoice error:', e)
+        toast.error(e?.message || 'Save failed')
+      } finally {
+        clearTimeout(watchdog)
+        setSaving(false)
+      }
+      return  // skip the create-path code below
+    }
+
     const customer = customers.find(c => c.id === customerId)
     const billingAddr = customer ? {
       address: customer.billing_address,
@@ -283,14 +392,39 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
           {/* Header */}
           <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
             <div>
-              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">New Invoice</div>
+              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">
+                {isEdit
+                  ? (isLocked ? '🔒 Invoice Locked' : `✏️ Edit Invoice`)
+                  : 'New Invoice'}
+              </div>
               <div className="text-[16px] font-bold text-[#1F1F1F]">
-                {selectedCustomer?.company_name || 'Pick a company'}
+                {loadedInvoice?.invoice_number
+                  ? `${loadedInvoice.invoice_number} · ${selectedCustomer?.company_name || ''}`
+                  : (selectedCustomer?.company_name || 'Pick a company')}
               </div>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
               style={{background:'#F5F5F5', border:'none'}}>✕</button>
           </div>
+
+          {/* Locked banner — only in edit mode for voided/closed invoices */}
+          {isEdit && isLocked && (
+            <div className="px-5 py-3 flex-shrink-0"
+              style={{background: loadedInvoice?.status === 'closed' ? '#F3F4F6' : '#FEF2F2',
+                      borderBottom: `1px solid ${loadedInvoice?.status === 'closed' ? '#D1D5DB' : '#FCA5A5'}`}}>
+              <div className="text-[12px] font-bold text-[#1F1F1F]">
+                {loadedInvoice?.status === 'closed' ? '🔒' : '⛔'}{' '}
+                {loadedInvoice?.status === 'closed'
+                  ? 'This invoice is closed and locked.'
+                  : 'This invoice has been voided.'}
+              </div>
+              <div className="text-[11px] text-[#666] mt-0.5">
+                {loadedInvoice?.status === 'closed'
+                  ? 'No further changes are allowed. To make corrections, issue a credit memo.'
+                  : 'The invoice has been cancelled and inventory has been restored.'}
+              </div>
+            </div>
+          )}
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -497,7 +631,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                 ≥ total      → "Pay in Full" (PAID invoice)
               When amount > 0, the create button atomically does:
               create draft → send (deduct stock) → record payment.        */}
-          {totals.total > 0 && items.length > 0 && (() => {
+          {totals.total > 0 && items.length > 0 && !isEdit && (() => {
             const enteredAmt = parseFloat(payAmount) || 0
             const isFull    = payNow && enteredAmt >= totals.total - 0.005
             const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
@@ -599,30 +733,39 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
             <button onClick={onClose}
               className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
               style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-              Cancel
+              {isLocked ? 'Close' : 'Cancel'}
             </button>
-            <button onClick={create} disabled={saving || !customerId || items.length === 0}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={(() => {
-                const enteredAmt = parseFloat(payAmount) || 0
-                const isFull = payNow && enteredAmt >= totals.total - 0.005
-                const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
-                return {
-                  background: isFull ? '#15803D' : isPartial ? '#B45309' : '#006AFF',
-                  color: '#FFFFFF',
-                  border: 'none',
-                }
-              })()}>
-              {(() => {
-                if (saving) return payNow ? 'Processing...' : 'Creating...'
-                const enteredAmt = parseFloat(payAmount) || 0
-                const isFull = payNow && enteredAmt >= totals.total - 0.005
-                const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
-                if (isFull)    return `💰 Create + Pay in Full · $${totals.total.toFixed(2)}`
-                if (isPartial) return `💰 Create + Deposit · $${enteredAmt.toFixed(2)}`
-                return `Create Invoice · $${totals.total.toFixed(2)}`
-              })()}
-            </button>
+            {/* Hide Save button entirely when invoice is locked. The user can
+                still view all fields but cannot submit changes. */}
+            {!isLocked && (
+              <button onClick={create} disabled={saving || !customerId || items.length === 0}
+                className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                style={(() => {
+                  // Edit mode: simple blue Save (no Pay Now logic here)
+                  if (isEdit) {
+                    return { background: '#006AFF', color: '#FFFFFF', border: 'none' }
+                  }
+                  const enteredAmt = parseFloat(payAmount) || 0
+                  const isFull = payNow && enteredAmt >= totals.total - 0.005
+                  const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
+                  return {
+                    background: isFull ? '#15803D' : isPartial ? '#B45309' : '#006AFF',
+                    color: '#FFFFFF',
+                    border: 'none',
+                  }
+                })()}>
+                {(() => {
+                  if (saving) return isEdit ? 'Saving...' : (payNow ? 'Processing...' : 'Creating...')
+                  if (isEdit) return `💾 Save Changes · $${totals.total.toFixed(2)}`
+                  const enteredAmt = parseFloat(payAmount) || 0
+                  const isFull = payNow && enteredAmt >= totals.total - 0.005
+                  const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
+                  if (isFull)    return `💰 Create + Pay in Full · $${totals.total.toFixed(2)}`
+                  if (isPartial) return `💰 Create + Deposit · $${enteredAmt.toFixed(2)}`
+                  return `Create Invoice · $${totals.total.toFixed(2)}`
+                })()}
+              </button>
+            )}
           </div>
         </div>
       </div>

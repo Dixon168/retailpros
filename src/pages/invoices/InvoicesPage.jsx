@@ -16,6 +16,8 @@ const STATUS_BADGE = {
   paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
   overdue:  { bg:'#FEE2E2', color:'#CF1322', label:'Overdue' },
   void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },
+  voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
+  closed:   { bg:'#E5E7EB', color:'#374151', label:'🔒 Closed' },
 }
 
 export default function InvoicesPage() {

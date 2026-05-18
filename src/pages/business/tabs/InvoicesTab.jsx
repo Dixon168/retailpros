@@ -12,6 +12,7 @@ const STATUS_BADGE = {
   paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
   voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
   void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },    // legacy
+  closed:   { bg:'#E5E7EB', color:'#374151', label:'🔒 Closed' },
 }
 
 export default function InvoicesTab({ customerId, onChanged }) {

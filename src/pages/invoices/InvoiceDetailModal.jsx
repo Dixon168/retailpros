@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import ReceivePaymentModal from './ReceivePaymentModal'
+import CreateInvoiceModal from './CreateInvoiceModal'
+import InvoiceAuditHistory from './InvoiceAuditHistory'
 import { buildInvoiceHtml, buildPackingSlipHtml, openPrintWindow, downloadHtml } from '@/lib/pdfTemplates'
 
 const STATUS_BADGE = {
@@ -16,6 +18,7 @@ const STATUS_BADGE = {
   overdue:  { bg:'#FEE2E2', color:'#CF1322', label:'Overdue' },
   voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
   void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },  // legacy alias
+  closed:   { bg:'#E5E7EB', color:'#374151', label:'🔒 Closed' },
 }
 
 const PAYMENT_METHOD_LABELS = {
@@ -28,10 +31,13 @@ const PAYMENT_METHOD_LABELS = {
 }
 
 export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
-  const { tenant, store } = useAuthStore()
+  const { tenant, store, user } = useAuthStore()
   const $ = tenant?.currency_symbol || '$'  // currency prefix used in template strings below
   const [showReceive, setShowReceive] = useState(false)
   const [showVoidInline, setShowVoidInline] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [showAudit, setShowAudit] = useState(false)
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [updating, setUpdating] = useState(false)
 
   const { data: detail, isLoading, refetch } = useQuery({
@@ -61,10 +67,15 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
     )
   }
 
-  const status = STATUS_BADGE[detail.status]
+  const status = STATUS_BADGE[detail.status] || { bg:'#F5F5F5', color:'#666', label: detail.status }
   const customer = detail.business_customers
   const items = (detail.invoice_items || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-  const isPaidOrVoid = detail.status === 'paid' || detail.status === 'void' || detail.status === 'voided'
+  const isVoid    = detail.status === 'void' || detail.status === 'voided'
+  const isClosed  = detail.status === 'closed'
+  const isLocked  = isVoid || isClosed   // permanently locked, no edits
+  const isPaidOrVoid = detail.status === 'paid' || isVoid || isClosed
+  const canEdit   = !isLocked   // any non-terminal state can be edited
+  const canClose  = detail.status === 'paid'   // only paid invoices can be closed
   const balanceDue = detail.balance_due || 0
   const isOverdue = detail.due_date && new Date(detail.due_date) < new Date() && balanceDue > 0
 
@@ -78,6 +89,29 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
       toast.success(`Invoice marked as ${newStatus}`)
       refetch()
       onChanged?.()
+    } finally { setUpdating(false) }
+  }
+
+  // Close & Lock — final step, calls fn_close_invoice. Permanent.
+  const closeAndLock = async () => {
+    setUpdating(true)
+    try {
+      const { data, error } = await supabase.rpc('fn_close_invoice', {
+        p_tenant_id:  tenant.id,
+        p_invoice_id: detail.id,
+        p_user_id:    user?.id || null,
+      })
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.message || 'Close failed')
+        return
+      }
+      toast.success(data.message || 'Invoice closed and locked 🔒')
+      setShowCloseConfirm(false)
+      refetch()
+      onChanged?.()
+    } catch (e) {
+      console.error('Close invoice:', e)
+      toast.error(e?.message || 'Close failed')
     } finally { setUpdating(false) }
   }
 
@@ -454,6 +488,23 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
               </button>
             </div>
 
+            {/* Edit button — available on any non-terminal status */}
+            {canEdit && !showVoidInline && (
+              <button onClick={() => setShowEdit(true)} disabled={updating}
+                className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                ✏️ Edit
+              </button>
+            )}
+
+            {/* History button — always available */}
+            <button onClick={() => setShowAudit(true)} disabled={updating}
+              title="View edit history"
+              className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+              style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>
+              📜 History
+            </button>
+
             {!isPaidOrVoid && !showVoidInline && (
               <>
                 {detail.status === 'draft' && (
@@ -478,9 +529,76 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                 💰 Receive Payment
               </button>
             )}
+
+            {/* Close & Lock — only on fully paid invoices, pushes to right */}
+            {canClose && !showVoidInline && (
+              <button onClick={() => setShowCloseConfirm(true)} disabled={updating}
+                className="ml-auto rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                style={{background:'#374151', color:'#FFFFFF', border:'none'}}>
+                🔒 Close &amp; Lock
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Close & Lock confirmation dialog */}
+      {showCloseConfirm && (
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4"
+          style={{background:'rgba(0,0,0,0.5)'}}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="text-[20px] font-bold text-[#1F1F1F] mb-2">
+              🔒 Close &amp; Lock this invoice?
+            </div>
+            <div className="text-[13px] text-[#666] mb-4 leading-relaxed">
+              Once closed, <b>this invoice can never be edited or voided</b>.
+              The numbers are final.
+            </div>
+            <div className="rounded-lg p-3 mb-4 text-[12px]"
+              style={{background:'#FFFBEB', border:'1px solid #FCD34D'}}>
+              <div className="font-bold text-[#92400E] mb-1">If you need to make changes later:</div>
+              <div className="text-[#78350F]">
+                You'll have to issue a separate credit memo or correction invoice.
+                You cannot reopen this one.
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCloseConfirm(false)} disabled={updating}
+                className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer"
+                style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+                Cancel
+              </button>
+              <button onClick={closeAndLock} disabled={updating}
+                className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                style={{background:'#374151', color:'#FFFFFF', border:'none'}}>
+                {updating ? 'Locking...' : '🔒 Yes, Close & Lock'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal — reuses CreateInvoiceModal in edit mode */}
+      {showEdit && (
+        <CreateInvoiceModal
+          editInvoiceId={detail.id}
+          onClose={() => setShowEdit(false)}
+          onCreated={() => {
+            setShowEdit(false)
+            refetch()
+            onChanged?.()
+          }}
+        />
+      )}
+
+      {/* Audit history drawer */}
+      {showAudit && (
+        <InvoiceAuditHistory
+          invoiceId={detail.id}
+          invoiceNumber={detail.invoice_number}
+          onClose={() => setShowAudit(false)}
+        />
+      )}
 
       {showReceive && (
         <ReceivePaymentModal
