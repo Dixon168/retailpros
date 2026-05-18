@@ -199,7 +199,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
       toast.error(error?.message || data?.message || 'Failed to create invoice')
       return
     }
-    toast.success(`Created ${data.invoice_number} — stock deducted`)
+    toast.success(`Created ${data.invoice_number} — draft saved (send to deduct stock)`)
     onCreated()
   }
 

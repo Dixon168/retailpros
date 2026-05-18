@@ -86,25 +86,31 @@ function SellTab({ tenant, user, onDone }) {
     if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return }
 
     setSaving(true)
-    const { data, error } = await supabase.rpc('fn_create_gift_card', {
-      p_tenant_id:       tenant.id,
-      p_card_number:     num,
-      p_amount:          amt,
-      p_expire_days:     expireDays ? parseInt(expireDays) : null,
-      p_recipient_name:  recipient || null,
-      p_recipient_phone: phone || null,
-      p_note:            note || null,
-      p_user_id:         user?.id || null,
-    })
-    setSaving(false)
-    if (error || !data?.success) {
-      toast.error(data?.message || error?.message || 'Failed to create card')
-      return
+    try {
+      const { data, error } = await supabase.rpc('fn_create_gift_card', {
+        p_tenant_id:       tenant.id,
+        p_card_number:     num,
+        p_amount:          amt,
+        p_expire_days:     expireDays ? parseInt(expireDays) : null,
+        p_recipient_name:  recipient || null,
+        p_recipient_phone: phone || null,
+        p_note:            note || null,
+        p_user_id:         user?.id || null,
+      })
+      if (error || !data?.success) {
+        toast.error(data?.message || error?.message || 'Failed to create card')
+        return
+      }
+      toast.success(`✓ Card ${num} issued — $${amt.toFixed(2)}`)
+      qc.invalidateQueries({ queryKey:['gift-cards'] })
+      qc.invalidateQueries({ queryKey:['member-cards'] })
+      setResult({ card_number: num, balance: amt, expires_at: data.expires_at })
+    } catch (e) {
+      console.error('Gift card create:', e)
+      toast.error(e?.message || 'Failed to create card')
+    } finally {
+      setSaving(false)
     }
-    toast.success(`✓ Card ${num} issued — $${amt.toFixed(2)}`)
-    qc.invalidateQueries({ queryKey:['gift-cards'] })
-    qc.invalidateQueries({ queryKey:['member-cards'] })
-    setResult({ card_number: num, balance: amt, expires_at: data.expires_at })
   }
 
   if (result) {
@@ -313,20 +319,20 @@ function TopupTab({ tenant, user }) {
     const amt = parseFloat(amount)
     if (!amt || amt <= 0) { toast.error('Enter a valid top-up amount'); return }
     setSaving(true)
-    const { data, error } = await supabase.rpc('fn_topup_gift_card', {
-      p_tenant_id:   tenant.id,
-      p_card_number: lookup.card_number,
-      p_amount:      amt,
-      p_user_id:     user?.id || null,
-    })
-    setSaving(false)
-    if (error || !data?.success) {
-      toast.error(data?.message || error?.message || 'Top-up failed')
-      return
-    }
-    toast.success(`✓ Topped up $${amt.toFixed(2)} — new balance $${data.balance.toFixed(2)}`)
-    qc.invalidateQueries({ queryKey:['gift-cards'] })
-    qc.invalidateQueries({ queryKey:['gift-card-history'] })
+    try {
+      const { data, error } = await supabase.rpc('fn_topup_gift_card', {
+        p_tenant_id:   tenant.id,
+        p_card_number: lookup.card_number,
+        p_amount:      amt,
+        p_user_id:     user?.id || null,
+      })
+      if (error || !data?.success) {
+        toast.error(data?.message || error?.message || 'Top-up failed')
+        return
+      }
+      toast.success(`✓ Topped up $${amt.toFixed(2)} — new balance $${data.balance.toFixed(2)}`)
+      qc.invalidateQueries({ queryKey:['gift-cards'] })
+      qc.invalidateQueries({ queryKey:['gift-card-history'] })
     // Refresh the local lookup so user sees the new balance
     setLookup({ ...lookup, balance: data.balance, status:'active' })
     setAmount('')

@@ -51,7 +51,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
         .select('id, invoice_number, invoice_date, due_date, total, amount_paid, balance_due, status')
         .eq('tenant_id', tenant.id)
         .eq('business_customer_id', customerId)
-        .not('status', 'in', '(paid,void)')
+        .not('status', 'in', '(paid,void,voided)')
         .order('due_date', { ascending: true, nullsFirst: false })
       return data || []
     },

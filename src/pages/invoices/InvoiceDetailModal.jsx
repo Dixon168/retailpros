@@ -14,7 +14,8 @@ const STATUS_BADGE = {
   partial:  { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
   paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
   overdue:  { bg:'#FEE2E2', color:'#CF1322', label:'Overdue' },
-  void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },
+  voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
+  void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },  // legacy alias
 }
 
 const PAYMENT_METHOD_LABELS = {
@@ -62,20 +63,67 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
   const status = STATUS_BADGE[detail.status]
   const customer = detail.business_customers
   const items = (detail.invoice_items || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-  const isPaidOrVoid = detail.status === 'paid' || detail.status === 'void'
+  const isPaidOrVoid = detail.status === 'paid' || detail.status === 'void' || detail.status === 'voided'
   const balanceDue = detail.balance_due || 0
   const isOverdue = detail.due_date && new Date(detail.due_date) < new Date() && balanceDue > 0
 
   const updateStatus = async (newStatus) => {
     setUpdating(true)
-    const updates = { status: newStatus, updated_at: new Date().toISOString() }
-    if (newStatus === 'sent') updates.sent_at = new Date().toISOString()
-    const { error } = await supabase.from('invoices').update(updates).eq('id', detail.id)
-    setUpdating(false)
-    if (error) { toast.error(error.message); return }
-    toast.success(`Invoice marked as ${newStatus}`)
-    refetch()
-    onChanged?.()
+    try {
+      const updates = { status: newStatus, updated_at: new Date().toISOString() }
+      if (newStatus === 'sent') updates.sent_at = new Date().toISOString()
+      const { error } = await supabase.from('invoices').update(updates).eq('id', detail.id)
+      if (error) { toast.error(error.message); return }
+      toast.success(`Invoice marked as ${newStatus}`)
+      refetch()
+      onChanged?.()
+    } finally { setUpdating(false) }
+  }
+
+  // Send a draft invoice — calls fn_send_invoice which deducts inventory
+  // atomically (with a stock-availability pre-check). If any item is short,
+  // nothing is deducted and the user sees which product failed.
+  const sendInvoice = async () => {
+    setUpdating(true)
+    try {
+      const { user } = useAuthStore.getState()
+      const { data, error } = await supabase.rpc('fn_send_invoice', {
+        p_tenant_id:  tenant.id,
+        p_invoice_id: detail.id,
+        p_user_id:    user?.id || null,
+      })
+      if (error) { toast.error(`Send failed: ${error.message}`); return }
+      if (!data?.success) { toast.error(data?.message || 'Send failed'); return }
+      toast.success('✓ Invoice sent — inventory deducted')
+      refetch()
+      onChanged?.()
+    } catch (e) {
+      console.error('Send invoice:', e)
+      toast.error(e?.message || 'Send failed')
+    } finally { setUpdating(false) }
+  }
+
+  // Void an invoice — calls fn_void_invoice which restores inventory if it
+  // was previously deducted (i.e. if the invoice was sent, not just drafted).
+  const voidInvoice = async (reason) => {
+    setUpdating(true)
+    try {
+      const { user } = useAuthStore.getState()
+      const { data, error } = await supabase.rpc('fn_void_invoice', {
+        p_tenant_id:  tenant.id,
+        p_invoice_id: detail.id,
+        p_user_id:    user?.id || null,
+        p_reason:     reason || null,
+      })
+      if (error) { toast.error(`Void failed: ${error.message}`); return }
+      if (!data?.success) { toast.error(data?.message || 'Void failed'); return }
+      toast.success(data.message || '✓ Voided')
+      refetch()
+      onChanged?.()
+    } catch (e) {
+      console.error('Void invoice:', e)
+      toast.error(e?.message || 'Void failed')
+    } finally { setUpdating(false) }
   }
 
   // Build doc data once
@@ -310,7 +358,12 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
                     <li>Mark invoice as <strong>Void</strong> and exclude from totals</li>
                     <li>Customer's outstanding balance goes back down</li>
-                    <li><strong className="text-[#CF1322]">Inventory is NOT auto-restored</strong> — adjust manually if items returned</li>
+                    {detail.status !== 'draft' && (
+                      <li className="text-[#15803D]"><strong>✓ Inventory will be automatically restored</strong></li>
+                    )}
+                    {detail.status === 'draft' && (
+                      <li className="text-[#666]">Inventory wasn't deducted yet (draft) — nothing to restore</li>
+                    )}
                   </ul>
                 </div>
                 <div className="flex gap-2">
@@ -319,7 +372,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                     style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
                     Keep Invoice
                   </button>
-                  <button onClick={() => { setShowVoidInline(false); updateStatus('void') }} disabled={updating}
+                  <button onClick={() => { setShowVoidInline(false); voidInvoice() }} disabled={updating}
                     className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
                     style={{background:'#CF1322', border:'none'}}>
                     🗑 Yes, Void Invoice
@@ -368,10 +421,10 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
             {!isPaidOrVoid && !showVoidInline && (
               <>
                 {detail.status === 'draft' && (
-                  <button onClick={() => updateStatus('sent')} disabled={updating}
+                  <button onClick={sendInvoice} disabled={updating}
                     className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                    style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
-                    📤 Mark Sent
+                    style={{background:'#006AFF', color:'#fff', border:'1px solid #006AFF'}}>
+                    📤 Send Invoice
                   </button>
                 )}
                 <button onClick={() => setShowVoidInline(true)} disabled={updating}

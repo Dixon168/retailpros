@@ -28,19 +28,25 @@ export function CountModal({ product, currentQty, onClose, onSaved }) {
 
   const save = async () => {
     setSaving(true)
-    const { data, error } = await supabase.rpc('fn_adjust_inventory', {
-      p_tenant_id:  tenant.id,
-      p_store_id:   store.id,
-      p_product_id: product.id,
-      p_new_qty:    parseFloat(newQty) || 0,
-      p_reason:     reason || null,
-      p_notes:      notes || null,
-      p_user_id:    user?.id || null,
-    })
-    setSaving(false)
-    if (error) { toast.error(error.message); return }
-    toast.success(`Counted: ${product.name} → ${newQty}`)
-    onSaved()
+    try {
+      const { data, error } = await supabase.rpc('fn_adjust_inventory', {
+        p_tenant_id:  tenant.id,
+        p_store_id:   store.id,
+        p_product_id: product.id,
+        p_new_qty:    parseFloat(newQty) || 0,
+        p_reason:     reason || null,
+        p_notes:      notes || null,
+        p_user_id:    user?.id || null,
+      })
+      if (error) { toast.error(error.message); return }
+      toast.success(`Counted: ${product.name} → ${newQty}`)
+      onSaved()
+    } catch (e) {
+      console.error('StockOps adjust:', e)
+      toast.error(e?.message || 'Adjust failed')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -131,19 +137,25 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
   const save = async () => {
     if (writeOffQty <= 0) { toast.error('Enter a quantity to write off'); return }
     setSaving(true)
-    const { data, error } = await supabase.rpc('fn_adjust_inventory', {
-      p_tenant_id:  tenant.id,
-      p_store_id:   store.id,
-      p_product_id: product.id,
-      p_new_qty:    newStock,
-      p_reason:     `Write off: ${reason}`,
-      p_notes:      notes || null,
-      p_user_id:    user?.id || null,
-    })
-    setSaving(false)
-    if (error) { toast.error(error.message); return }
-    toast.success(`Wrote off ${writeOffQty} × ${product.name}`)
-    onSaved()
+    try {
+      const { data, error } = await supabase.rpc('fn_adjust_inventory', {
+        p_tenant_id:  tenant.id,
+        p_store_id:   store.id,
+        p_product_id: product.id,
+        p_new_qty:    newStock,
+        p_reason:     `Write off: ${reason}`,
+        p_notes:      notes || null,
+        p_user_id:    user?.id || null,
+      })
+      if (error) { toast.error(error.message); return }
+      toast.success(`Wrote off ${writeOffQty} × ${product.name}`)
+      onSaved()
+    } catch (e) {
+      console.error('Writeoff:', e)
+      toast.error(e?.message || 'Write-off failed')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

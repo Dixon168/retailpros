@@ -58,7 +58,7 @@ export default function InvoicesPage() {
     if (statusFilter === 'unpaid') {
       list = list.filter(i => ['sent', 'viewed', 'partial', 'overdue'].includes(i.status))
     } else if (statusFilter === 'overdue') {
-      list = list.filter(i => i.days_overdue > 0 && i.status !== 'paid' && i.status !== 'void')
+      list = list.filter(i => i.days_overdue > 0 && i.status !== 'paid' && i.status !== 'void' && i.status !== 'voided')
     } else if (statusFilter === 'paid') {
       list = list.filter(i => i.status === 'paid')
     } else if (statusFilter === 'draft') {
@@ -80,9 +80,9 @@ export default function InvoicesPage() {
     invoices.forEach(i => {
       if (i.status === 'draft') c.draft++
       if (['sent', 'viewed', 'partial', 'overdue'].includes(i.status)) c.unpaid++
-      if (i.days_overdue > 0 && i.status !== 'paid' && i.status !== 'void') c.overdue++
+      if (i.days_overdue > 0 && i.status !== 'paid' && i.status !== 'void' && i.status !== 'voided') c.overdue++
       if (i.status === 'paid') c.paid++
-      if (i.status !== 'paid' && i.status !== 'void') totalOwed += (i.balance_due || 0)
+      if (i.status !== 'paid' && i.status !== 'void' && i.status !== 'voided') totalOwed += (i.balance_due || 0)
     })
     return { ...c, totalOwed }
   }, [invoices])
@@ -157,7 +157,7 @@ export default function InvoicesPage() {
           </div>
           {filtered.map(inv => {
             const st = STATUS_BADGE[inv.status] || STATUS_BADGE.draft
-            const isOverdue = inv.days_overdue > 0 && inv.status !== 'paid' && inv.status !== 'void'
+            const isOverdue = inv.days_overdue > 0 && inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'voided'
             return (
               <div key={inv.id} onClick={() => setViewingInv(inv)}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] cursor-pointer"
