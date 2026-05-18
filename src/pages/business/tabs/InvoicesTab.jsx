@@ -10,7 +10,8 @@ const STATUS_BADGE = {
   viewed:   { bg:'#E6F0FF', color:'#006AFF', label:'Viewed' },
   partial:  { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
   paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
-  void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },
+  voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
+  void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },    // legacy
 }
 
 export default function InvoicesTab({ customerId, onChanged }) {
@@ -32,7 +33,7 @@ export default function InvoicesTab({ customerId, onChanged }) {
     if (filter === 'open') return invoices.filter(i => ['sent','viewed','partial'].includes(i.status) && (i.balance_due || 0) > 0)
     if (filter === 'overdue') return invoices.filter(i =>
       i.due_date && new Date(i.due_date) < new Date()
-      && !['paid','void'].includes(i.status) && (i.balance_due || 0) > 0
+      && !['paid','void','voided','draft'].includes(i.status) && (i.balance_due || 0) > 0
     )
     if (filter === 'paid')    return invoices.filter(i => i.status === 'paid')
     return invoices
@@ -42,7 +43,7 @@ export default function InvoicesTab({ customerId, onChanged }) {
     all: invoices.length,
     open: invoices.filter(i => ['sent','viewed','partial'].includes(i.status) && (i.balance_due || 0) > 0).length,
     overdue: invoices.filter(i => i.due_date && new Date(i.due_date) < new Date()
-      && !['paid','void'].includes(i.status) && (i.balance_due || 0) > 0).length,
+      && !['paid','void','voided','draft'].includes(i.status) && (i.balance_due || 0) > 0).length,
     paid: invoices.filter(i => i.status === 'paid').length,
   }), [invoices])
 
