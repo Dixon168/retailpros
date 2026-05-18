@@ -122,9 +122,29 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
   )
 }
 
-export function NumericKeypad({ value, onChange, onClose, title='Enter Number', placeholder='', allowPlus=true, formatPhone=true }) {
+export function NumericKeypad({ value, onChange, onClose, title='Enter Number', placeholder='', allowPlus=true, formatPhone=true, allowDecimal=false, allowNegative=false }) {
 
   const press = (k) => {
+    // Decimal: one max
+    if (k === '.') {
+      if (!allowDecimal) return
+      if ((value || '').includes('.')) return
+      // Don't allow leading "."; auto-prefix 0
+      if (!value || value === '-') {
+        onChange((value || '') + '0.')
+        return
+      }
+      onChange((value || '') + '.')
+      return
+    }
+    // Negative: toggle prefix
+    if (k === '-') {
+      if (!allowNegative) return
+      const v = value || ''
+      if (v.startsWith('-')) onChange(v.slice(1))   // remove
+      else onChange('-' + v)                          // add
+      return
+    }
     const next = (value || '') + k
     const digits = next.replace(/[^\d]/g,'')
     if (digits.length > 15) return
@@ -182,10 +202,26 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
             {['1','2','3','4','5','6','7','8','9'].map(k => (
               <Key key={k} label={k} onClick={() => press(k)}/>
             ))}
-            {allowPlus ? <Key label="+" onClick={() => press('+')}/> : <div/>}
+            {/* Bottom row: priority — negative > decimal > plus > blank */}
+            {allowNegative
+              ? <Key label="±" onClick={() => press('-')}/>
+              : allowDecimal
+              ? <Key label="." onClick={() => press('.')}/>
+              : allowPlus
+              ? <Key label="+" onClick={() => press('+')}/>
+              : <div/>}
             <Key label="0" onClick={() => press('0')}/>
             <Key label="⌫" onClick={back} danger/>
           </div>
+
+          {/* Second row of special keys when BOTH negative AND decimal enabled */}
+          {(allowNegative && allowDecimal) && (
+            <div className="grid grid-cols-3 gap-2.5 mt-2.5">
+              <Key label="." onClick={() => press('.')}/>
+              <div/>
+              <div/>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2.5 mt-3">
             <button onClick={() => onChange('')}

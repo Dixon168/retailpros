@@ -318,13 +318,13 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                           {item.stock_qty ?? 0}
                         </div>
                         <div className="px-1 py-2.5">
-                          <DualInput compact mode="decimal"
+                          <DualInput compact mode="decimal" allowNegative
                             value={item.quantity}
                             onChange={(v) => updateItem(idx, 'quantity', v)}
                             kbTitle={`Qty: ${item.product_name}`}/>
                         </div>
                         <div className="px-1 py-2.5">
-                          <DualInput compact mode="decimal" prefix="$"
+                          <DualInput compact mode="decimal" prefix="$" allowNegative
                             value={item.unit_price}
                             onChange={(v) => updateItem(idx, 'unit_price', v)}
                             kbTitle={`Price: ${item.product_name}`}/>

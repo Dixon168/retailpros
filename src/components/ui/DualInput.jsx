@@ -38,6 +38,7 @@ export default function DualInput({
   className = '',
   autoFocus,
   compact,
+  allowNegative = false,   // touch-keyboard shows ± toggle
   inputProps = {},
 }) {
   const [showKB, setShowKB] = useState(false)
@@ -118,6 +119,7 @@ export default function DualInput({
           formatPhone={mode === 'phone'}
           allowPlus={mode === 'phone'}
           allowDecimal={mode === 'decimal'}
+          allowNegative={allowNegative && mode === 'decimal'}
         />
       )}
     </>
