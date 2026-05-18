@@ -42,6 +42,13 @@ CREATE TABLE IF NOT EXISTS invoice_audit (
 CREATE INDEX IF NOT EXISTS idx_invoice_audit_invoice ON invoice_audit(invoice_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_invoice_audit_tenant  ON invoice_audit(tenant_id, created_at DESC);
 
+-- Tenant isolation — same pattern as other tables in MASTER_SETUP.sql.
+-- Without this, a user could query invoice_audit rows from other tenants.
+ALTER TABLE invoice_audit ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "tenant_isolation_invoice_audit" ON invoice_audit;
+CREATE POLICY "tenant_isolation_invoice_audit" ON invoice_audit FOR ALL
+  USING (tenant_id = (SELECT tenant_id FROM users WHERE id = auth.uid()));
+
 
 -- ── PART 2: fn_edit_invoice — the heavy lifter
 -- Atomically edits an existing invoice:
@@ -182,9 +189,20 @@ BEGIN
            AND store_id   = v_inv.store_id;
 
         IF v_available < (v_qty - v_old_qty) THEN
+          -- Look up product name so error message tells user WHICH product
+          -- is short, not just generic "product". Falls back gracefully
+          -- if products table is missing the column or row.
+          DECLARE v_product_name TEXT;
+          BEGIN
+            SELECT name INTO v_product_name FROM products WHERE id = v_product_id;
+          EXCEPTION WHEN OTHERS THEN
+            v_product_name := NULL;
+          END;
+
           RETURN jsonb_build_object(
             'success', false,
-            'message', format('Not enough stock for product — need %s more, have %s available',
+            'message', format('Not enough stock for %s — need %s more, have %s available',
+                              COALESCE(v_product_name, 'product'),
                               (v_qty - v_old_qty)::TEXT,
                               COALESCE(v_available, 0)::TEXT)
           );
