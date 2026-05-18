@@ -46,10 +46,10 @@ export default function ProductsPage() {
   })
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products', tenant?.id, search, filterType, filterCat, filterTag],
+    queryKey: ['products', tenant?.id, store?.id, search, filterType, filterCat, filterTag],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, avg_cost), subcategories(id, name, category_id, categories(id, name, emoji, color))')
+        .select('*, inventory(quantity, avg_cost, low_stock_threshold, store_id), subcategories(id, name, category_id, categories(id, name, emoji, color))')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%`)
       if (filterType !== 'all' && filterType !== 'low') q = q.eq('type', filterType)
@@ -61,8 +61,27 @@ export default function ProductsPage() {
     enabled: !!tenant?.id,
   })
 
-  function getQty(p)     { return p.inventory?.reduce((a,i) => a+(i.quantity||0), 0) || 0 }
-  function getAvgCost(p) { return p.inventory?.[0]?.avg_cost || p.cost || 0 }
+  // Get this-store inventory row for a product (POS only cares about
+  // the current store, not the sum across all stores).
+  function getInvRow(p) {
+    if (!p.inventory) return null
+    return p.inventory.find(i => i.store_id === store?.id)
+      || p.inventory.find(i => !i.store_id)  // legacy rows
+      || null
+  }
+  function getQty(p)     { return getInvRow(p)?.quantity || 0 }
+  function getAvgCost(p) { return getInvRow(p)?.avg_cost || p.cost || 0 }
+  // Per-product threshold; falls back to product.low_stock_qty,
+  // then to 5 as a sensible default.
+  function getThreshold(p) {
+    return getInvRow(p)?.low_stock_threshold
+        ?? p.low_stock_qty
+        ?? 5
+  }
+  function isLowStock(p) {
+    if (p.type === 'service') return false
+    return getQty(p) <= getThreshold(p)
+  }
 
   const inventoryValue = products.reduce((s,p) => {
     const q = getQty(p)
@@ -83,9 +102,9 @@ export default function ProductsPage() {
   const allTags = [...new Set(products.flatMap(p => p.tags || []))].sort()
 
   const displayed  = filterType === 'low'
-    ? products.filter(p => getQty(p) <= 5 && p.type !== 'service')
+    ? products.filter(isLowStock)
     : products
-  const lowStock   = products.filter(p => getQty(p) <= 5 && p.type !== 'service').length
+  const lowStock   = products.filter(isLowStock).length
 
   const handleDisable = async (p) => {
     const enabling = p.is_enabled === false
@@ -129,11 +148,12 @@ export default function ProductsPage() {
         ))}
         <div className="h-px bg-[#E5E5E5] my-2"/>
         <div onClick={() => setFilterType('low')}
+          title="Products where current stock is at or below their low-stock threshold (set per product in Edit → Inventory)"
           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] transition-all ${
             filterType==='low' ? 'bg-red-500/10 text-[#CF1322]' : 'text-[#666666] hover:bg-[#F5F5F5]'
           }`}>
           <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"/>
-          Low Stock
+          ⚠️ Low Stock
           {lowStock > 0 && <span className="ml-auto text-[10px] font-mono bg-red-500/10 text-[#CF1322] px-1.5 py-0.5 rounded">{lowStock}</span>}
         </div>
       </div>
@@ -198,12 +218,34 @@ export default function ProductsPage() {
             </div>
           ) : displayed.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-[#999999]">
-              <div className="text-5xl mb-3 opacity-15">📦</div>
-              <div className="text-[14px] font-semibold mb-2">No products yet</div>
-              <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-                className="bg-[#006AFF] border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
-                + Add your first product
-              </button>
+              <div className="text-5xl mb-3 opacity-15">
+                {filterType === 'low' ? '✅' : '📦'}
+              </div>
+              {filterType === 'low' ? (
+                <>
+                  <div className="text-[14px] font-semibold mb-2 text-green-600">All stock levels healthy</div>
+                  <div className="text-[11px] text-slate-400 max-w-md text-center">
+                    No products are at or below their low-stock threshold.
+                    To set a threshold, edit a product → Inventory → "Low stock alert at".
+                  </div>
+                </>
+              ) : (search || filterType !== 'all' || filterCat || filterTag) ? (
+                <>
+                  <div className="text-[14px] font-semibold mb-2">No products match your filters</div>
+                  <button onClick={() => { setSearch(''); setFilterType('all'); setFilterCat(null); setFilterTag(null) }}
+                    className="text-[12px] text-blue-600 cursor-pointer bg-transparent border-none">
+                    Clear filters
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="text-[14px] font-semibold mb-2">No products yet</div>
+                  <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
+                    className="bg-[#006AFF] border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
+                    + Add your first product
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <table className="w-full border-collapse">
@@ -219,7 +261,7 @@ export default function ProductsPage() {
                   const qty      = getQty(p)
                   const avgCost  = getAvgCost(p)
                   const margin   = p.price > 0 ? ((p.price - avgCost) / p.price * 100) : 0
-                  const isLow    = qty <= 5 && p.type !== 'service'
+                  const isLow    = isLowStock(p)
                   const disabled = p.is_enabled === false
                   const tc       = TYPE_COLOR[p.type] || '#3b82f6'
                   const subcat   = p.subcategories || null
