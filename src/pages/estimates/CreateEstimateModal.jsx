@@ -167,34 +167,45 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
     const shipSnapshot = buildShipSnapshot()
 
     setSaving(true)
-    const { data, error } = await supabase.rpc('fn_create_estimate_atomic', {
-      p_tenant_id:      tenant.id,
-      p_store_id:       store.id,
-      p_customer_id:    customerId,
-      p_valid_until:    validUntil || null,
-      p_notes:          notes || null,
-      p_internal_notes: internalNotes || null,
-      p_created_by:     user?.id || null,
-      p_items: items.map(it => ({
-        product_id:   it.product_id,
-        product_name: it.product_name,
-        product_sku:  it.product_sku,
-        description:  it.description,
-        quantity:     parseFloat(it.quantity) || 0,
-        unit_price:   parseFloat(it.unit_price) || 0,
-        discount_pct: parseFloat(it.discount_pct) || 0,
-      })),
-      p_billing_addr:  billingAddr,
-      p_shipping_addr: shipSnapshot,
-      p_delivery_notes: deliveryNotes || null,
-    })
-    setSaving(false)
-    if (error || !data?.success) {
-      toast.error(error?.message || data?.message || 'Failed to create estimate')
-      return
+    const watchdog = setTimeout(() => {
+      setSaving(false)
+      toast.error('⏱️ Create is taking too long — check connection and try again')
+    }, 15_000)
+    try {
+      const { data, error } = await supabase.rpc('fn_create_estimate_atomic', {
+        p_tenant_id:      tenant.id,
+        p_store_id:       store.id,
+        p_customer_id:    customerId,
+        p_valid_until:    validUntil || null,
+        p_notes:          notes || null,
+        p_internal_notes: internalNotes || null,
+        p_created_by:     user?.id || null,
+        p_items: items.map(it => ({
+          product_id:   it.product_id,
+          product_name: it.product_name,
+          product_sku:  it.product_sku,
+          description:  it.description,
+          quantity:     parseFloat(it.quantity) || 0,
+          unit_price:   parseFloat(it.unit_price) || 0,
+          discount_pct: parseFloat(it.discount_pct) || 0,
+        })),
+        p_billing_addr:  billingAddr,
+        p_shipping_addr: shipSnapshot,
+        p_delivery_notes: deliveryNotes || null,
+      })
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.message || 'Failed to create estimate')
+        return
+      }
+      toast.success(`Created ${data.estimate_number}`)
+      onCreated()
+    } catch (e) {
+      console.error('Create estimate error:', e)
+      toast.error(e?.message || 'Create failed')
+    } finally {
+      clearTimeout(watchdog)
+      setSaving(false)
     }
-    toast.success(`Created ${data.estimate_number}`)
-    onCreated()
   }
 
   return (

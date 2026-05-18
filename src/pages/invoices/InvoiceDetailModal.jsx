@@ -195,8 +195,31 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
-            {/* Balance Due banner */}
-            {balanceDue > 0 && !isPaidOrVoid && (
+            {/* Draft hint — this invoice hasn't been issued yet */}
+            {detail.status === 'draft' && (
+              <div className="rounded-lg p-4 flex items-center justify-between"
+                style={{background:'#F5F5F5', border:'1px solid #D5D5D5'}}>
+                <div>
+                  <div className="text-[10px] font-bold uppercase mb-0.5 text-[#666]">
+                    📝 Draft
+                  </div>
+                  <div className="text-[12px] text-[#1F1F1F]">
+                    This invoice hasn't been sent yet. Customer can't pay it until you send.
+                  </div>
+                  <div className="text-[11px] text-[#666] mt-1">
+                    Sending will deduct stock and lock the line items.
+                  </div>
+                </div>
+                <button onClick={sendInvoice} disabled={updating}
+                  className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96] text-white disabled:opacity-40"
+                  style={{background:'#006AFF', border:'none'}}>
+                  📤 Send Invoice
+                </button>
+              </div>
+            )}
+
+            {/* Balance Due banner — only after invoice is sent (drafts can't be paid) */}
+            {balanceDue > 0 && !isPaidOrVoid && detail.status !== 'draft' && (
               <div className="rounded-lg p-4 flex items-center justify-between"
                 style={isOverdue
                   ? {background:'#FEE2E2', border:'1px solid #CF1322'}
@@ -448,7 +471,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
               </>
             )}
 
-            {balanceDue > 0 && !isPaidOrVoid && !showVoidInline && (
+            {balanceDue > 0 && !isPaidOrVoid && !showVoidInline && detail.status !== 'draft' && (
               <button onClick={() => setShowReceive(true)}
                 className="ml-auto rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
                 style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>

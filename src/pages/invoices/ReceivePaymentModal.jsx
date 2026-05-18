@@ -3,7 +3,7 @@
 // QuickBooks-style: one payment can cover multiple invoices.
 
 import { useState, useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
@@ -20,6 +20,8 @@ const PAYMENT_METHODS = [
 
 export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId, onClose, onDone }) {
   const { tenant, store, user } = useAuthStore()
+  const qc = useQueryClient()
+  const $ = tenant?.currency_symbol || '$'  // used in toast messages below
   const [customerId, setCustomerId]   = useState(presetCustomerId || '')
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [method, setMethod]           = useState('check')
@@ -43,6 +45,10 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
   })
 
   // Open invoices for the selected customer
+  // Excludes drafts — drafts haven't been "issued" to the customer so they
+  // shouldn't be paid yet. Also: receiving payment on a draft skips the
+  // 'sent' state entirely, which means fn_send_invoice never runs and
+  // inventory never deducts. User must Send the invoice first.
   const { data: openInvoices = [] } = useQuery({
     queryKey: ['open-invoices', customerId],
     queryFn: async () => {
@@ -51,7 +57,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
         .select('id, invoice_number, invoice_date, due_date, total, amount_paid, balance_due, status')
         .eq('tenant_id', tenant.id)
         .eq('business_customer_id', customerId)
-        .not('status', 'in', '(paid,void,voided)')
+        .not('status', 'in', '(draft,paid,void,voided)')
         .order('due_date', { ascending: true, nullsFirst: false })
       return data || []
     },
@@ -119,30 +125,51 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
     for (const alloc of allocList) {
       const inv = openInvoices.find(i => i.id === alloc.invoice_id)
       if (alloc.amount > (inv?.balance_due || 0) + 0.01) {  // small tolerance
-        toast.error(`${inv?.invoice_number}: payment $${alloc.amount} > balance $${inv?.balance_due}`)
+        toast.error(`${inv?.invoice_number}: payment ${$}${alloc.amount} > balance ${$}${inv?.balance_due}`)
         return
       }
     }
 
     setSaving(true)
-    const { data, error } = await supabase.rpc('fn_receive_payment_atomic', {
-      p_tenant_id:     tenant.id,
-      p_store_id:      store.id,
-      p_customer_id:   customerId,
-      p_payment_date:  paymentDate,
-      p_method:        method,
-      p_reference:     reference || null,
-      p_notes:         notes || null,
-      p_user_id:       user?.id || null,
-      p_allocations:   allocList,
-    })
-    setSaving(false)
-    if (error || !data?.success) {
-      toast.error(error?.message || data?.message || 'Failed to record payment')
-      return
+    // Watchdog: payment is high-stakes (customer waiting). Auto-unstick at
+    // 15s so the user isn't trapped if the RPC hangs.
+    const watchdog = setTimeout(() => {
+      setSaving(false)
+      toast.error('⏱️ Payment is taking too long — check connection and try again')
+    }, 15_000)
+    try {
+      const { data, error } = await supabase.rpc('fn_receive_payment_atomic', {
+        p_tenant_id:     tenant.id,
+        p_store_id:      store.id,
+        p_customer_id:   customerId,
+        p_payment_date:  paymentDate,
+        p_method:        method,
+        p_reference:     reference || null,
+        p_notes:         notes || null,
+        p_user_id:       user?.id || null,
+        p_allocations:   allocList,
+      })
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.message || 'Failed to record payment')
+        return
+      }
+      toast.success(`Payment ${data.payment_number} recorded — ${$}${data.amount}`)
+      // Invalidate ALL invoice-related queries because the payment may have
+      // touched multiple invoices (allocated across them). The detail-modal's
+      // refetch only covers one — these cover the rest.
+      qc.invalidateQueries({ queryKey: ['invoices-list'] })
+      qc.invalidateQueries({ queryKey: ['invoice-detail'] })
+      qc.invalidateQueries({ queryKey: ['open-invoices'] })
+      qc.invalidateQueries({ queryKey: ['customers'] })  // outstanding balance
+      qc.invalidateQueries({ queryKey: ['received-payments'] })
+      onDone()
+    } catch (err) {
+      console.error('Receive payment error:', err)
+      toast.error(err?.message || 'Payment failed — see console')
+    } finally {
+      clearTimeout(watchdog)
+      setSaving(false)
     }
-    toast.success(`Payment ${data.payment_number} recorded — $${data.amount}`)
-    onDone()
   }
 
   return (
@@ -224,7 +251,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[11px] font-bold text-[#1F1F1F]">
-                  Outstanding invoices ({openInvoices.length}) · Total owed: <span className="font-mono">${totalOpen.toFixed(2)}</span>
+                  Outstanding invoices ({openInvoices.length}) · Total owed: <span className="font-mono">{$}${totalOpen.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-1.5">
                   <button onClick={() => autoApply(totalOpen)}
@@ -264,13 +291,13 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
                         {overdue && <span className="ml-1 text-[9px] font-bold">⚠️</span>}
                       </div>
                       <div className="px-3 py-2.5 text-right font-mono text-[12px] text-[#666]">
-                        ${(inv.total || 0).toFixed(2)}
+                        {$}${(inv.total || 0).toFixed(2)}
                       </div>
                       <div className="px-3 py-2.5 text-right font-mono text-[12px] font-bold text-[#CF1322]">
-                        ${(inv.balance_due || 0).toFixed(2)}
+                        {$}${(inv.balance_due || 0).toFixed(2)}
                       </div>
                       <div className="px-2 py-2">
-                        <DualInput compact mode="decimal" prefix="$"
+                        <DualInput compact mode="decimal" prefix={$}
                           value={allocations[inv.id] || ''}
                           onChange={(v) => setAlloc(inv.id, v)}
                           placeholder="0.00"
@@ -286,7 +313,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
                   <span className="text-[12px] font-bold text-[#1F1F1F]">Total payment</span>
                   <span className="font-mono text-[18px] font-bold"
                     style={{color: totalAllocated > 0 ? '#15803D' : '#999'}}>
-                    ${totalAllocated.toFixed(2)}
+                    {$}${totalAllocated.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -309,7 +336,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
           <button onClick={submit} disabled={saving || totalAllocated <= 0 || !customerId}
             className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
             style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
-            {saving ? 'Saving...' : `💰 Receive $${totalAllocated.toFixed(2)}`}
+            {saving ? 'Saving...' : `💰 Receive ${$}${totalAllocated.toFixed(2)}`}
           </button>
         </div>
       </div>
