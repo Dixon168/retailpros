@@ -63,20 +63,36 @@ function ProtectedRoute({ children }) {
 }
 
 class ErrorBoundary extends Component {
-  state = { hasError: false, error: null }
+  state = { hasError: false, error: null, info: null }
   static getDerivedStateFromError(error) { return { hasError: true, error } }
+  componentDidCatch(error, info) {
+    // Log full error + component stack so we can find the actual crash site
+    // when "Something went wrong" pops up.
+    console.error('[ErrorBoundary] caught:', error)
+    console.error('[ErrorBoundary] component stack:', info?.componentStack)
+    this.setState({ info })
+  }
   render() {
     if (this.state.hasError) return (
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',background:'#FFFFFF',gap:'16px',padding:'20px'}}>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#FFFFFF',gap:'16px',padding:'20px'}}>
         <div style={{fontSize:'40px'}}>⚠️</div>
         <div style={{fontSize:'18px',fontWeight:'bold',color:'#1F1F1F'}}>Something went wrong</div>
-        <div style={{fontSize:'12px',color:'#64748b',maxWidth:'400px',textAlign:'center',fontFamily:'monospace',background:'#fff',padding:'12px',borderRadius:'8px',border:'1px solid #e2e8f0'}}>
-          {this.state.error?.message}
+        <div style={{fontSize:'12px',color:'#64748b',maxWidth:'600px',textAlign:'left',fontFamily:'monospace',background:'#fff',padding:'12px',borderRadius:'8px',border:'1px solid #e2e8f0',whiteSpace:'pre-wrap',overflow:'auto',maxHeight:'200px'}}>
+          <strong style={{color:'#dc2626'}}>{this.state.error?.name || 'Error'}: {this.state.error?.message || '(no message)'}</strong>
+          {this.state.error?.stack && (
+            <div style={{marginTop:'8px',fontSize:'10px',opacity:0.7}}>{this.state.error.stack.split('\n').slice(0,4).join('\n')}</div>
+          )}
         </div>
-        <button onClick={() => window.location.href='/pos'}
-          style={{background:'#006AFF',color:'#fff',border:'none',borderRadius:'10px',padding:'10px 24px',fontSize:'13px',fontWeight:'bold',cursor:'pointer'}}>
-          Back to POS
-        </button>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button onClick={() => window.location.href='/pos'}
+            style={{background:'#006AFF',color:'#fff',border:'none',borderRadius:'10px',padding:'10px 24px',fontSize:'13px',fontWeight:'bold',cursor:'pointer'}}>
+            Back to POS
+          </button>
+          <button onClick={() => window.location.reload()}
+            style={{background:'#fff',color:'#475569',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'10px 24px',fontSize:'13px',fontWeight:'bold',cursor:'pointer'}}>
+            Reload page
+          </button>
+        </div>
       </div>
     )
     return this.props.children

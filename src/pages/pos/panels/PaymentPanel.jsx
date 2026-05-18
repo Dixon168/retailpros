@@ -458,7 +458,11 @@ export default function PaymentPanel() {
         setProcessing(false)
         // Don't close yet — user will click an action in the modal
       }
-    } catch { toast.error('Failed'); setProcessing(false) }
+    } catch (err) {
+      console.error('Payment submit error:', err)
+      toast.error(err?.message || 'Payment failed — see console')
+      setProcessing(false)
+    }
   }
 
   const finishAndClose = () => {
