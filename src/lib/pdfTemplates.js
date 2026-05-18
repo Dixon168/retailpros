@@ -17,6 +17,16 @@ const escapeHtml = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 
+// fmtMoney is now a factory — call mkMoney(tenant) to get a formatter
+// scoped to that tenant's currency. Done this way because the templates
+// already accept `tenant` as a parameter, but the formatter is used in
+// many places inside the template strings — easier to bind once at the
+// top of each builder than to thread `sym` through every call site.
+const mkMoney = (tenant) => {
+  const sym = tenant?.currency_symbol || '$'
+  return (n) => `${sym}${(Number(n) || 0).toFixed(2)}`
+}
+// Legacy fallback for any caller that doesn't have tenant
 const fmtMoney = (n) => `$${(Number(n) || 0).toFixed(2)}`
 const fmtDate  = (d) => d ? new Date(d).toLocaleDateString('en-US', {
   year:'numeric', month:'short', day:'numeric'
@@ -150,10 +160,14 @@ function companyHeaderHtml(store, tenant) {
 // ─────────────────────────────────────────────────────────────
 
 export function buildInvoiceHtml({ invoice, items, customer, payments = [], store, tenant }) {
+  // Shadow the module-level fmtMoney with a tenant-currency-aware one.
+  // All template-string interpolations below will pick this up via lexical
+  // scope rather than the module-level fallback.
+  const fmtMoney = mkMoney(tenant)
   const balanceDue = (invoice.balance_due ?? (invoice.total - (invoice.amount_paid || 0))) || 0
   const isPaid     = invoice.status === 'paid' || balanceDue <= 0.005
   const isOverdue  = invoice.due_date && new Date(invoice.due_date) < new Date() && balanceDue > 0
-  const isVoid     = invoice.status === 'void'
+  const isVoid     = invoice.status === 'void' || invoice.status === 'voided'
 
   const stampLabel = isVoid ? 'VOID'
                    : isPaid ? 'PAID'
@@ -282,6 +296,7 @@ export function buildInvoiceHtml({ invoice, items, customer, payments = [], stor
 // ─────────────────────────────────────────────────────────────
 
 export function buildEstimateHtml({ estimate, items, customer, store, tenant }) {
+  const fmtMoney = mkMoney(tenant)
   const isExpired   = estimate.valid_until && new Date(estimate.valid_until) < new Date()
                       && !['converted', 'declined'].includes(estimate.status)
   const isConverted = estimate.status === 'converted'

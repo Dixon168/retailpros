@@ -29,6 +29,7 @@ const PAYMENT_METHOD_LABELS = {
 
 export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
   const { tenant, store } = useAuthStore()
+  const $ = tenant?.currency_symbol || '$'  // currency prefix used in template strings below
   const [showReceive, setShowReceive] = useState(false)
   const [showVoidInline, setShowVoidInline] = useState(false)
   const [updating, setUpdating] = useState(false)
@@ -207,11 +208,11 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                   </div>
                   <div className="font-mono text-[24px] font-bold"
                     style={{color: isOverdue ? '#CF1322' : '#1F1F1F'}}>
-                    ${balanceDue.toFixed(2)}
+                    {$}{balanceDue.toFixed(2)}
                   </div>
                   {detail.amount_paid > 0 && (
                     <div className="text-[11px] text-[#666] mt-0.5 font-mono">
-                      ${detail.amount_paid.toFixed(2)} of ${detail.total.toFixed(2)} received
+                      {$}{detail.amount_paid.toFixed(2)} of {$}{detail.total.toFixed(2)} received
                     </div>
                   )}
                 </div>
@@ -266,11 +267,11 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                     {item.description && <div className="text-[11px] text-[#666] mt-0.5">{item.description}</div>}
                   </div>
                   <div className="px-3 py-3 text-right font-mono text-[12px]">{item.quantity}</div>
-                  <div className="px-3 py-3 text-right font-mono text-[12px]">${(item.unit_price || 0).toFixed(2)}</div>
+                  <div className="px-3 py-3 text-right font-mono text-[12px]">{$}{(item.unit_price || 0).toFixed(2)}</div>
                   <div className="px-3 py-3 text-right font-mono text-[12px]">
                     {(item.discount_pct || 0) > 0 ? `${item.discount_pct}%` : '—'}
                   </div>
-                  <div className="px-3 py-3 text-right font-mono text-[13px] font-bold">${(item.line_total || 0).toFixed(2)}</div>
+                  <div className="px-3 py-3 text-right font-mono text-[13px] font-bold">{$}{(item.line_total || 0).toFixed(2)}</div>
                 </div>
               ))}
               {/* Totals */}
@@ -278,29 +279,29 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                 <div className="ml-auto max-w-[280px] text-[12px] space-y-1">
                   <div className="flex justify-between">
                     <span className="text-[#666]">Subtotal</span>
-                    <span className="font-mono">${(detail.subtotal || 0).toFixed(2)}</span>
+                    <span className="font-mono">{$}{(detail.subtotal || 0).toFixed(2)}</span>
                   </div>
                   {detail.discount_amount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-[#666]">Discount</span>
-                      <span className="font-mono text-[#CF1322]">−${(detail.discount_amount || 0).toFixed(2)}</span>
+                      <span className="font-mono text-[#CF1322]">−{$}{(detail.discount_amount || 0).toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
                     <span className="font-bold">Total</span>
-                    <span className="font-mono text-[16px] font-bold">${(detail.total || 0).toFixed(2)}</span>
+                    <span className="font-mono text-[16px] font-bold">{$}{(detail.total || 0).toFixed(2)}</span>
                   </div>
                   {detail.amount_paid > 0 && (
                     <>
                       <div className="flex justify-between text-[#15803D]">
                         <span className="font-bold">Paid</span>
-                        <span className="font-mono">−${(detail.amount_paid || 0).toFixed(2)}</span>
+                        <span className="font-mono">−{$}{(detail.amount_paid || 0).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
                         <span className="font-bold">Balance</span>
                         <span className="font-mono text-[15px] font-bold"
                           style={{color: balanceDue > 0 ? '#CF1322' : '#15803D'}}>
-                          ${balanceDue.toFixed(2)}
+                          {$}{balanceDue.toFixed(2)}
                         </span>
                       </div>
                     </>
@@ -332,7 +333,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                           </div>
                         </div>
                         <div className="font-mono text-[14px] font-bold text-[#15803D]">
-                          +${a.amount.toFixed(2)}
+                          +{$}{a.amount.toFixed(2)}
                         </div>
                       </div>
                     )
@@ -368,7 +369,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                   {detail.amount_paid > 0 && (
                     <div className="mt-3 rounded-lg p-2.5" style={{background:'#FEF3C7', border:'1px solid #FCD34D'}}>
                       <div className="font-bold text-[#92400E] mb-1">
-                        ⚠️ Customer has already paid ${detail.amount_paid.toFixed(2)}
+                        ⚠️ Customer has already paid {$}{detail.amount_paid.toFixed(2)}
                       </div>
                       <div className="text-[#92400E]">
                         Voiding does NOT refund the money. You'll need to either:

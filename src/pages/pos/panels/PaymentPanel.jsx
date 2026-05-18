@@ -450,6 +450,7 @@ export default function PaymentPanel() {
         name: store?.name,
         address: [store?.address, store?.city, store?.state, store?.zip].filter(Boolean).join(', '),
         phone: store?.phone,
+        currency_symbol: tenant?.currency_symbol || '$',
       }
       const receiptOrder = { ...orderSnapshot, order_number: result.order_number }
       const html = buildReceiptHTML(receiptOrder, settings, storeInfo)

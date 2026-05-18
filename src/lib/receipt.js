@@ -50,7 +50,11 @@ const labelOf = (method) => {
   return map[method] || method
 }
 
-const fmt = (n) => '$' + Number(n||0).toFixed(2)
+// Build a money formatter scoped to a specific currency. Receipts are
+// generated for a single order so we capture the symbol once and use it
+// consistently throughout. Pass storeInfo.currency_symbol (set by
+// PaymentPanel from tenant.currency_symbol) — falls back to '$' if not set.
+const makeFmt = (sym) => (n) => sym + Number(n||0).toFixed(2)
 
 // Build standalone HTML document for the receipt
 export function buildReceiptHTML(orderData, settings, storeInfo) {
@@ -62,7 +66,8 @@ export function buildReceiptHTML(orderData, settings, storeInfo) {
     items = [], subtotal = 0, discount = 0, bulk_savings = 0, tax = 0, total = 0,
     payments = [], change = 0,
   } = orderData || {}
-  const { name: storeName = '', address = '', phone = '' } = storeInfo || {}
+  const { name: storeName = '', address = '', phone = '', currency_symbol } = storeInfo || {}
+  const fmt = makeFmt(currency_symbol || '$')
 
   const dash = `<div style="text-align:center;color:#888;margin:6px 0;">- - - - - - - - - - - - - - - -</div>`
 
@@ -100,7 +105,7 @@ ${sh.items ? items.map(i => {
     ? `<div class="row" style="font-size:${fontPx-2}px;color:#555;padding-left:8px;">` +
       `<span>${i.bulk_breakdown.map(b => b.bundleCount
         ? `${b.bundleCount}× ${escapeHTML(b.label)}`
-        : `${b.count}× $${b.unitPrice.toFixed(2)}`).join(' + ')}</span>` +
+        : `${b.count}× ${fmt(b.unitPrice)}`).join(' + ')}</span>` +
       (i.bulk_savings > 0 ? `<span style="color:#16a34a;">saved ${fmt(i.bulk_savings)}</span>` : '<span></span>') +
       `</div>`
     : ''
