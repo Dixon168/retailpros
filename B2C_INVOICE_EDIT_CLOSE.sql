@@ -156,23 +156,24 @@ BEGIN
   END IF;
 
   -- ── STEP 3: Stock pre-check (only if invoice is/was sent)
-  -- Compute net change per product. If we need MORE of something
-  -- (new qty > old qty), check we have enough on hand.
+  -- We need to check NET stock needed per product, not per line:
+  --   - sum all NEW lines per product (handles same product on multiple lines)
+  --   - sum all OLD lines per product (was the previous deduction)
+  --   - if new_total > old_total, the difference must be available in stock
   IF v_was_sent THEN
-    FOR v_item IN SELECT * FROM jsonb_array_elements(v_new_items)
+    FOR v_product_id, v_qty IN
+      SELECT (it->>'product_id')::UUID, SUM((it->>'quantity')::NUMERIC)
+        FROM jsonb_array_elements(v_new_items) it
+       WHERE NULLIF(it->>'product_id','') IS NOT NULL
+       GROUP BY (it->>'product_id')::UUID
     LOOP
-      v_product_id := NULLIF(v_item->>'product_id', '')::UUID;
-      IF v_product_id IS NULL THEN CONTINUE; END IF;  -- skip custom lines
-      v_qty := (v_item->>'quantity')::NUMERIC;
-
-      -- Find the old qty for this product on this invoice
+      -- Sum old quantities for this product on this invoice
       SELECT COALESCE(SUM(quantity), 0) INTO v_old_qty
         FROM invoice_items
        WHERE invoice_id = p_invoice_id
          AND product_id = v_product_id;
 
-      -- Net additional needed = new qty - old qty
-      -- If positive, we need that much extra stock on hand
+      -- Net additional needed = new_total - old_total
       IF v_qty > v_old_qty THEN
         SELECT COALESCE(quantity, 0) INTO v_available
           FROM inventory
@@ -183,8 +184,7 @@ BEGIN
         IF v_available < (v_qty - v_old_qty) THEN
           RETURN jsonb_build_object(
             'success', false,
-            'message', format('Not enough stock for %s — need %s more, have %s available',
-                              (v_item->>'product_name'),
+            'message', format('Not enough stock for product — need %s more, have %s available',
                               (v_qty - v_old_qty)::TEXT,
                               COALESCE(v_available, 0)::TEXT)
           );

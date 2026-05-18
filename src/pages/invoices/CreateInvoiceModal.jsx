@@ -7,7 +7,7 @@
 //             Voided/closed invoices are loaded read-only with a banner
 //             instead of letting the user submit.
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -34,6 +34,9 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
   // to suppress the Pay Now toggle (you receive payment separately via
   // ReceivePaymentModal once the invoice is created)
   const [loadedInvoice, setLoadedInvoice] = useState(null)
+  // Ref flag used by the customer-change useEffect below. Set true during
+  // edit-mode hydration so we don't blow away the original ship-to.
+  const skipShipResetRef = useRef(false)
 
   // ── Pay Now (optional) — when toggled on, save also Sends + Receives payment
   // ── in a single atomic backend call (fn_create_invoice_and_pay).
@@ -99,11 +102,34 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
         return
       }
       setLoadedInvoice(inv)
+      // ⚠️ Skip the customer-change-resets-shipMode useEffect for this one
+      // hydration: we want to keep the shipping_address that was frozen
+      // on the invoice when it was created. The flag is cleared at end
+      // of this effect so future customer changes still reset properly.
+      skipShipResetRef.current = true
       setCustomerId(inv.business_customer_id)
       setDueDate(inv.due_date || '')
       setNotes(inv.notes || '')
       setInternalNotes(inv.internal_notes || '')
       setDeliveryNotes(inv.delivery_notes || '')
+
+      // Fetch real-time stock for all products on this invoice so the
+      // stockWarnings UX reads truthfully (without this, every item
+      // would show "out of stock" because stock_qty was null).
+      const productIds = (inv.invoice_items || [])
+        .map(it => it.product_id)
+        .filter(Boolean)
+      let stockMap = {}
+      if (productIds.length > 0) {
+        const { data: stockRows } = await supabase
+          .from('inventory')
+          .select('product_id, quantity')
+          .eq('tenant_id', tenant.id)
+          .eq('store_id', inv.store_id)
+          .in('product_id', productIds)
+        ;(stockRows || []).forEach(r => { stockMap[r.product_id] = r.quantity })
+      }
+
       setItems((inv.invoice_items || [])
         .sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0))
         .map(it => ({
@@ -115,9 +141,17 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
           quantity:     String(it.quantity),
           unit_price:   String(it.unit_price),
           discount_pct: String(it.discount_pct || 0),
-          stock_qty:    null,  // recomputed live in stockWarnings
+          // Available stock + the qty already deducted by this invoice =
+          // the "effective max" the user can sell. Pass that as stock_qty
+          // so the warning bar shows realistic numbers.
+          stock_qty: it.product_id
+            ? (stockMap[it.product_id] || 0) + (it.inventory_deducted || 0)
+            : null,
           is_custom:    !it.product_id,
         })))
+      // Allow the ref to be released on next tick — the customer effect
+      // will have fired by then.
+      setTimeout(() => { skipShipResetRef.current = false }, 0)
     })()
     return () => { cancelled = true }
   }, [editInvoiceId])
@@ -126,8 +160,11 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                 || loadedInvoice?.status === 'void'
                 || loadedInvoice?.status === 'closed'
 
-  // When company changes, reset ship-to to billing and clear picks
+  // When company changes, reset ship-to to billing and clear picks.
+  // Skipped during edit-mode hydration so we don't lose the invoice's
+  // original ship-to data (see skipShipResetRef in the edit loader).
   useEffect(() => {
+    if (skipShipResetRef.current) return
     setShipMode('billing')
     setSavedShipId('')
     setCustomShip({ address:'', city:'', state:'', zip:'', contact_name:'', contact_phone:'', label:'' })
@@ -432,7 +469,9 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
               <div>
                 <FieldLabel>Company *</FieldLabel>
                 <select value={customerId} onChange={e => setCustomerId(e.target.value)}
-                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"
+                  disabled={isEdit}
+                  title={isEdit ? 'Cannot change company on an existing invoice — void and recreate to change' : undefined}
+                  className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer disabled:bg-[#F0F0F0] disabled:cursor-not-allowed disabled:opacity-70"
                   style={{borderColor: customerId ? '#006AFF' : '#E5E5E5'}}>
                   <option value="">— Select company —</option>
                   {customers.map(c => (
