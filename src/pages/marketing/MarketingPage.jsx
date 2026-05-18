@@ -414,6 +414,10 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
       toast.error('Add at least one time-of-day rule'); return
     }
     setSaving(true)
+    const watchdog = setTimeout(() => {
+      setSaving(false)
+      toast.error('⏱️ Save is taking too long — try again')
+    }, 15_000)
     try {
       const payload = {
         tenant_id:  tenantId,
@@ -446,7 +450,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
       toast.error('Error: ' + err.message)
       console.error('[Promotions] Unexpected error:', err)
     }
-    finally { setSaving(false) }
+    finally { clearTimeout(watchdog); setSaving(false) }
   }
 
   return (

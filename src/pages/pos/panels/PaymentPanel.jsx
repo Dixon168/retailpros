@@ -382,6 +382,16 @@ export default function PaymentPanel() {
     if (totalPaid < liveTotal && !payments.some(p=>p.method==='on_account')) { toast.error('Payment incomplete'); return }
     setProcessing(true)
 
+    // Watchdog: payment is the riskiest place to be stuck — customer is
+    // standing at the counter. Unstick at 20s with a clear "try again"
+    // toast. submitOrder is idempotent: it generates a new order_number
+    // each call, so retrying after a network blip is safe (worst case
+    // creates a duplicate order which the cashier voids).
+    const watchdog = setTimeout(() => {
+      setProcessing(false)
+      toast.error('⏱️ Payment is taking too long — check connection and try again', { duration: 6000 })
+    }, 20_000)
+
     // ── Capture order data BEFORE submitting (cart will be cleared) ──
     const snapshotItems = items.map(it => {
       // Bulk pricing takes priority over manual itemDiscount
@@ -462,6 +472,8 @@ export default function PaymentPanel() {
       console.error('Payment submit error:', err)
       toast.error(err?.message || 'Payment failed — see console')
       setProcessing(false)
+    } finally {
+      clearTimeout(watchdog)
     }
   }
 

@@ -128,8 +128,9 @@ export function ProductQuickInfo({ product: p, storeId, canEdit = true, canSeeCo
             {/* Cost + margin (only if user can see cost) */}
             {canSeeCost && p.cost > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="rounded-xl px-3 py-2 text-center" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
-                  <div className="text-[9px] uppercase text-slate-400 font-bold tracking-wider">Cost</div>
+                <div className="rounded-xl px-3 py-2 text-center" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}
+                  title="Catalog Cost — what you entered when adding the product. For real per-unit cost, see Avg Cost (from receives).">
+                  <div className="text-[9px] uppercase text-slate-400 font-bold tracking-wider">Catalog Cost</div>
                   <div className="text-[14px] font-mono font-bold text-slate-700">${Number(p.cost).toFixed(2)}</div>
                 </div>
                 {margin !== null && (

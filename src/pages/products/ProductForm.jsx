@@ -780,7 +780,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                 </div>
               </div>
               <div>
-                <Label>Cost Price</Label>
+                <Label>Catalog Cost</Label>
                 <div className="flex items-center rounded-xl px-3 transition-all"
                   style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}
                   onFocusCapture={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#fff'}}
@@ -807,7 +807,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                 {[
                   ['Margin', `${margin}%`, parseFloat(margin)>=30?'#16a34a':parseFloat(margin)>=10?'#d97706':'#dc2626'],
                   ['Profit/Unit', `$${profit}`, '#006AFF'],
-                  ['Cost', `$${parseFloat(form.cost||0).toFixed(2)}`, '#64748b'],
+                  ['Catalog Cost', `$${parseFloat(form.cost||0).toFixed(2)}`, '#64748b'],
                 ].map(([l,v,c])=>(
                   <div key={l} className="rounded-xl p-2.5 text-center" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
                     <div className="text-[9px] text-slate-400 uppercase tracking-wider">{l}</div>

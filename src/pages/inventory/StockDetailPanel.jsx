@@ -271,7 +271,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
             <div className="grid grid-cols-2 gap-3">
               <PriceField label="Sell price" value={p.price} editing={editing === 'price'}
                 onEdit={() => setEditing('price')} onSave={v => saveField('price', v)} onCancel={() => setEditing(null)}/>
-              <PriceField label="Cost" value={p.cost} editing={editing === 'cost'}
+              <PriceField label="Catalog Cost" value={p.cost} editing={editing === 'cost'}
                 onEdit={() => setEditing('cost')} onSave={v => saveField('cost', v)} onCancel={() => setEditing(null)}/>
             </div>
             <button onClick={() => navigate(`/products?edit=${p.id}`)}

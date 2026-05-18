@@ -685,7 +685,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                 <div className="grid grid-cols-3 gap-2 mt-3">
                   {[['Margin',`${((parseFloat(form.price)-parseFloat(form.cost||0))/parseFloat(form.price)*100).toFixed(1)}%`,'#16a34a'],
                     ['Profit/ea',`$${(parseFloat(form.price)-parseFloat(form.cost||0)).toFixed(2)}`,'#006AFF'],
-                    ['Cost',`$${parseFloat(form.cost||0).toFixed(2)}`,'#64748b']
+                    ['Catalog Cost',`$${parseFloat(form.cost||0).toFixed(2)}`,'#64748b']
                   ].map(([l,v,c])=>(
                     <div key={l} className="rounded-xl p-2 text-center" style={{background:'#f0fdf4',border:'1px solid #86efac'}}>
                       <div className="text-[9px] text-slate-400 uppercase">{l}</div>

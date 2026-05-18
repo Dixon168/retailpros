@@ -17,6 +17,10 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
     if (!qty) { toast.error('Enter adjustment quantity'); return }
     if (!reason.trim()) { toast.error('Enter a reason'); return }
     setSaving(true)
+    const watchdog = setTimeout(() => {
+      setSaving(false)
+      toast.error('⏱️ Adjust is taking too long — check connection and try again')
+    }, 15_000)
     try {
       // Look up the inventory record for THIS store. The old code used
       // .eq('store_id', storeId || '') which sends '' (empty string), not
@@ -63,7 +67,7 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
       console.error('Adjust save error:', err)
       toast.error(err.message || 'Adjust failed')
     }
-    finally { setSaving(false) }
+    finally { clearTimeout(watchdog); setSaving(false) }
   }
 
   return (

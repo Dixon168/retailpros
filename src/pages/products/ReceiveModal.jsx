@@ -41,6 +41,13 @@ export function ReceiveModal({ product: p, tenantId, storeId, onSave, onClose })
     if (!form.qty || qty <= 0) { toast.error('Enter quantity'); return }
     if (needsSerials && serials.length < qty) { toast.error(`Enter all ${qty} serial numbers`); return }
     setSaving(true)
+    // Watchdog: if save hasn't finished in 15s, unstick the button so the
+    // user can retry. This doesn't cancel the in-flight request (browsers
+    // can't), it just frees the UI.
+    const watchdog = setTimeout(() => {
+      setSaving(false)
+      toast.error('⏱️ Save is taking too long — check connection and try again')
+    }, 15_000)
     try {
       const cost = parseFloat(form.cost) || 0
       // Read inventory row scoped to current store
@@ -88,7 +95,7 @@ export function ReceiveModal({ product: p, tenantId, storeId, onSave, onClose })
       console.error('Receive save error:', err)
       toast.error(err.message || 'Receive failed')
     }
-    finally { setSaving(false) }
+    finally { clearTimeout(watchdog); setSaving(false) }
   }
 
   return (
