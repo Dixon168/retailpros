@@ -151,6 +151,7 @@ export default function SettingsPage() {
 
 // ── Store Info ──
 function StoreSection({ store, tenant }) {
+  const qc = useQueryClient()
   const [form, setForm] = useState({
     name:           store?.name           || '',
     phone:          store?.phone          || '',
@@ -163,12 +164,29 @@ function StoreSection({ store, tenant }) {
     receipt_header: store?.receipt_header || '',
     receipt_footer: store?.receipt_footer || 'Thank you for your business!',
   })
+  // Currency lives on tenant, not store — separate state + save
+  const [currency, setCurrency] = useState({
+    symbol: tenant?.currency_symbol || '$',
+    code:   tenant?.currency_code   || 'USD',
+  })
   const u = (k,v) => setForm(p => ({...p,[k]:v}))
 
   const save = async () => {
     const { error } = await supabase.from('stores').update(form).eq('id', store.id)
     if (error) { toast.error(`Couldn't save: ${error.message}`); return }
     toast.success('Store settings saved')
+  }
+
+  const saveCurrency = async () => {
+    const { error } = await supabase.from('tenants').update({
+      currency_symbol: currency.symbol || '$',
+      currency_code:   currency.code   || 'USD',
+    }).eq('id', tenant.id)
+    if (error) { toast.error(`Couldn't save: ${error.message}`); return }
+    // Refresh auth store so the new symbol propagates immediately
+    useAuthStore.getState().initialize?.()
+    qc.invalidateQueries()
+    toast.success('Currency updated — refresh to see everywhere')
   }
 
   return (
@@ -211,6 +229,55 @@ function StoreSection({ store, tenant }) {
               text-[12px] outline-none focus:border-[#006AFF] resize-none"/>
         </div>
       </Card>
+
+      {/* ── Currency ── */}
+      <Card className="mt-4">
+        <CardTitle>💱 Currency</CardTitle>
+        <div className="text-[11px] text-slate-500 mb-3">
+          Used everywhere money is shown — POS, receipts, reports, invoices.
+          Applies tenant-wide (all stores share one currency).
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <FieldLabel>Symbol</FieldLabel>
+            <select value={currency.symbol}
+              onChange={e => setCurrency({ ...currency, symbol: e.target.value })}
+              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF]">
+              <option value="$">$ (US Dollar / CAD / etc)</option>
+              <option value="¥">¥ (Chinese Yuan / Japanese Yen)</option>
+              <option value="€">€ (Euro)</option>
+              <option value="£">£ (British Pound)</option>
+              <option value="₩">₩ (Korean Won)</option>
+              <option value="₫">₫ (Vietnamese Dong)</option>
+              <option value="₱">₱ (Philippine Peso)</option>
+              <option value="₹">₹ (Indian Rupee)</option>
+              <option value="HK$">HK$ (Hong Kong Dollar)</option>
+              <option value="NT$">NT$ (Taiwan Dollar)</option>
+              <option value="S$">S$ (Singapore Dollar)</option>
+              <option value="A$">A$ (Australian Dollar)</option>
+              <option value="CHF ">CHF (Swiss Franc)</option>
+              <option value="kr ">kr (Nordic Krona)</option>
+              <option value="R$">R$ (Brazilian Real)</option>
+              <option value="₽">₽ (Russian Ruble)</option>
+              <option value="₺">₺ (Turkish Lira)</option>
+              <option value="MX$">MX$ (Mexican Peso)</option>
+            </select>
+          </div>
+          <FieldInput label="ISO code (USD, CNY, EUR…)" value={currency.code}
+            onChange={v => setCurrency({ ...currency, code: v.toUpperCase() })} mono/>
+        </div>
+        <div className="mt-3 rounded-lg p-2.5 text-[11px]"
+          style={{background:'#eff6ff', border:'1px solid #80B2FF', color:'#1e3a8a'}}>
+          Preview: <b className="font-mono">{currency.symbol}1,234.56</b> ({currency.code})
+        </div>
+        <button onClick={saveCurrency}
+          className="mt-3 px-4 py-2.5 rounded-lg text-[13px] font-bold cursor-pointer border-none text-white"
+          style={{background:'#006AFF'}}>
+          Save Currency
+        </button>
+      </Card>
+
+      {/* Save store info (separate from currency which has its own save) */}
       <SaveBtn onClick={save}/>
 
       {/* About — software info */}
