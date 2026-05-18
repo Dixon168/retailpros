@@ -29,7 +29,10 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
     staleTime: 5 * 60 * 1000,
   })
 
-  const queryMode = debounced.length >= 1 ? 'search' : categoryId ? 'category' : 'idle'
+  // Show products as soon as the picker opens. "All categories" (empty
+  // categoryId) means "no category filter" — show everything (limited to
+  // 100). Specific category → just that category. Search overlays either.
+  const queryMode = debounced.length >= 1 ? 'search' : 'browse'
 
   const { data: results = [], isLoading } = useQuery({
     queryKey: ['est-product-picker', tenant?.id, store?.id, queryMode, debounced, categoryId],
@@ -51,9 +54,11 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
         const term = debounced.replace(/[%,]/g, '')
         q = q.or(`name.ilike.%${term}%,sku.ilike.%${term}%,upc.eq.${term}`)
         if (categoryId) q = q.eq('category_id', categoryId)
-      } else if (queryMode === 'category') {
+      } else if (categoryId) {
+        // browse mode WITH a specific category selected
         q = q.eq('category_id', categoryId)
       }
+      // else: browse mode with no category → show all (limit 100 below)
 
       const { data: products, error: pErr } = await q.order('name').limit(100)
       if (pErr) {
@@ -76,7 +81,7 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
 
       return nonService.map(p => ({ ...p, stock_qty: stockMap[p.id] || 0 }))
     },
-    enabled: !!tenant?.id && queryMode !== 'idle',
+    enabled: !!tenant?.id,
   })
 
   const visible = results.filter(p => !excludeIds.includes(p.id))
@@ -127,18 +132,17 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
-          {queryMode === 'idle' ? (
-            <div className="p-12 text-center">
-              <div className="text-[40px] mb-2 opacity-30">📦</div>
-              <div className="text-[13px] text-[#1F1F1F] font-bold mb-1">Search or pick a category</div>
-              <div className="text-[11px] text-[#999]">Type a name / SKU, scan a barcode, or pick a category</div>
-            </div>
-          ) : isLoading ? (
+          {isLoading ? (
             <div className="p-8 text-center text-[12px] text-[#999]">Loading...</div>
           ) : visible.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="text-[36px] mb-2 opacity-30">🔍</div>
-              <div className="text-[12px] text-[#999]">No products found</div>
+            <div className="p-12 text-center">
+              <div className="text-[40px] mb-2 opacity-30">📦</div>
+              <div className="text-[13px] text-[#1F1F1F] font-bold mb-1">
+                {search ? 'No products match your search' : categoryId ? 'No products in this category' : 'No products found'}
+              </div>
+              <div className="text-[11px] text-[#999]">
+                {search || categoryId ? 'Try a different search or category' : 'Add products in Inventory first'}
+              </div>
             </div>
           ) : (
             <div className="space-y-1">
