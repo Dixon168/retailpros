@@ -426,6 +426,20 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
           width:'820px', maxWidth:'100%', maxHeight:'92vh', background:'#FFFFFF',
           boxShadow:'0 20px 50px rgba(0,0,0,0.3)'
         }}>
+          {/* Loading state for edit mode — wait until we've fetched the
+              invoice. Otherwise the form briefly shows as if creating a
+              new invoice ("Pick a company" header, empty items) which
+              is confusing. */}
+          {isEdit && !loadedInvoice ? (
+            <div className="flex-1 flex items-center justify-center p-16" style={{minHeight:'400px'}}>
+              <div className="text-center">
+                <div className="text-[32px] mb-3 animate-pulse">📋</div>
+                <div className="text-[13px] font-bold text-[#1F1F1F]">Loading invoice...</div>
+                <div className="text-[11px] text-[#666] mt-1">Fetching items + stock levels</div>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Header */}
           <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
             <div>
@@ -806,6 +820,8 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
               </button>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
 

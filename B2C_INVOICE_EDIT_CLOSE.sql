@@ -410,7 +410,56 @@ END;
 $func$;
 
 
--- ── PART 5: Migration record
+-- ── PART 5: Patch fn_void_invoice to block CLOSED invoices
+-- The original function rejects 'voided' and 'paid' but didn't know about
+-- 'closed' yet. A closed invoice must NEVER be voidable — that defeats
+-- the whole point of closing it. This adds the missing guard.
+DROP FUNCTION IF EXISTS fn_void_invoice(UUID, UUID, UUID, TEXT);
+
+CREATE FUNCTION fn_void_invoice(p_tenant_id UUID, p_invoice_id UUID, p_user_id UUID, p_reason TEXT DEFAULT NULL)
+RETURNS JSONB LANGUAGE plpgsql AS $func$
+DECLARE
+  v_store_id UUID; v_status TEXT; v_inv_no TEXT; v_item RECORD;
+BEGIN
+  SELECT store_id, status, invoice_number INTO v_store_id, v_status, v_inv_no
+    FROM invoices WHERE id = p_invoice_id AND tenant_id = p_tenant_id FOR UPDATE;
+  IF v_status IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invoice not found');
+  END IF;
+  IF v_status = 'voided' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Already voided');
+  END IF;
+  IF v_status = 'closed' THEN
+    RETURN jsonb_build_object('success', false,
+      'message', 'Cannot void a closed invoice — it is locked. Issue a credit memo instead.');
+  END IF;
+  IF v_status = 'paid' THEN
+    RETURN jsonb_build_object('success', false,
+      'message', 'Cannot void a paid invoice — issue a credit note instead');
+  END IF;
+
+  FOR v_item IN SELECT product_id, inventory_deducted FROM invoice_items
+    WHERE invoice_id = p_invoice_id AND product_id IS NOT NULL
+      AND COALESCE(inventory_deducted, 0) > 0 LOOP
+    INSERT INTO inventory (tenant_id, product_id, store_id, quantity)
+    VALUES (p_tenant_id, v_item.product_id, v_store_id, v_item.inventory_deducted)
+    ON CONFLICT (tenant_id, product_id, store_id)
+    DO UPDATE SET quantity = inventory.quantity + v_item.inventory_deducted, updated_at = NOW();
+    UPDATE invoice_items SET inventory_deducted = 0
+     WHERE invoice_id = p_invoice_id AND product_id = v_item.product_id;
+  END LOOP;
+
+  UPDATE invoices SET status='voided', voided_at=NOW(), voided_by=p_user_id,
+    voided_reason=p_reason, updated_at=NOW()
+   WHERE id = p_invoice_id;
+  RETURN jsonb_build_object('success', true, 'invoice_number', v_inv_no,
+    'message', 'Invoice voided — inventory restored');
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END; $func$;
+
+
+-- ── PART 6: Migration record
 INSERT INTO schema_migrations (id, description, notes) VALUES
   ('B2C_INVOICE_EDIT_CLOSE', 'Edit invoice + Close & Lock + audit log', 'Editable B2B')
 ON CONFLICT (id) DO UPDATE SET applied_at = NOW();

@@ -92,6 +92,10 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
       return data || []
     },
     enabled: !!invoiceId,
+    // Always fetch fresh when the drawer opens — user just made a change
+    // and expects to see it in the history.
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   return (
