@@ -8,7 +8,6 @@ import { openCashDrawer } from '@/lib/cashDrawer'
 import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
 import { useAuthStore } from '@/stores/authStore'
 import CartPanel from './CartPanel'
-import { VoiceOrderButton } from '@/components/pos/VoiceOrder'
 import { OpenItemModal } from '@/components/pos/OpenItemModal'
 import { LangSwitcher } from '@/components/ui/LangSwitcher'
 import { useLang } from '@/lib/i18n'
@@ -446,7 +445,6 @@ export default function POSPage() {
               <option value="">🏷️ All tags</option>
               {allTags.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <VoiceOrderButton products={products || []} />
           </div>
 
           {/* Category tabs */}
