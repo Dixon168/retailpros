@@ -1,5 +1,5 @@
 // src/pages/purchase-orders/CreatePOModal.jsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -7,14 +7,43 @@ import toast from 'react-hot-toast'
 import DualInput from '@/components/ui/DualInput'
 import ProductPicker from '@/components/inventory/ProductPicker'
 
-export default function CreatePOModal({ initialItems = [], initialVendorId = null, onClose, onCreated }) {
+export default function CreatePOModal({ initialItems = [], initialVendorId = null, editPo = null, onClose, onCreated }) {
   const { tenant, store, user } = useAuthStore()
-  const [vendorId, setVendorId]         = useState(initialVendorId || '')
-  const [expectedDate, setExpectedDate] = useState('')
-  const [notes, setNotes]               = useState('')
-  const [items, setItems]               = useState(initialItems)  // [{product_id, product_name, quantity, unit_cost}]
+  const isEdit = !!editPo
+  const [vendorId, setVendorId]         = useState(initialVendorId || editPo?.supplier_id || '')
+  const [expectedDate, setExpectedDate] = useState(editPo?.expected_date || '')
+  const [notes, setNotes]               = useState(editPo?.notes || '')
+  const [items, setItems]               = useState(initialItems || [])
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [saving, setSaving]             = useState(false)
+
+  // Edit mode: load the PO's existing line items
+  useEffect(() => {
+    if (!editPo) return
+    let cancelled = false
+    ;(async () => {
+      const { data: poItems, error } = await supabase
+        .from('purchase_order_items')
+        .select('*')
+        .eq('po_id', editPo.id)
+        .order('created_at')
+      if (cancelled) return
+      if (error) {
+        toast.error('Could not load PO items')
+        onClose()
+        return
+      }
+      setItems((poItems || []).map(it => ({
+        product_id:   it.product_id,
+        product_name: it.product_name,
+        product_sku:  it.product_sku || '',
+        quantity:     String(it.quantity),
+        unit_cost:    String(it.unit_cost),
+        received:     it.received || 0,  // track so we don't drop below received
+      })))
+    })()
+    return () => { cancelled = true }
+  }, [editPo])
 
   // Vendors list
   const { data: vendors = [] } = useQuery({
@@ -70,6 +99,37 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
         toast.error(`${item.product_name}: quantity must be > 0`)
         return
       }
+      // In edit mode, don't allow dropping below what's already received
+      if (isEdit && item.received != null && parseFloat(item.quantity) < item.received) {
+        toast.error(`${item.product_name}: can't set below ${item.received} already received`)
+        return
+      }
+    }
+
+    // ── EDIT MODE — call fn_edit_po
+    if (isEdit) {
+      setSaving(true)
+      const { data, error } = await supabase.rpc('fn_edit_po', {
+        p_tenant_id:     tenant.id,
+        p_po_id:         editPo.id,
+        p_supplier_id:   vendorId,
+        p_expected_date: expectedDate || null,
+        p_notes:         notes || null,
+        p_items:         items.map(it => ({
+          product_id:   it.product_id,
+          product_name: it.product_name,
+          quantity:     parseFloat(it.quantity) || 0,
+          unit_cost:    parseFloat(it.unit_cost) || 0,
+        })),
+      })
+      setSaving(false)
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.message || 'Failed to update PO')
+        return
+      }
+      toast.success(data.message || 'PO updated')
+      onCreated()
+      return
     }
 
     setSaving(true)
@@ -108,7 +168,9 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
           {/* Header */}
           <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
             <div>
-              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">New Purchase Order</div>
+              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">
+                {isEdit ? `✏️ Edit ${editPo.po_number || 'PO'}` : 'New Purchase Order'}
+              </div>
               <div className="text-[16px] font-bold text-[#1F1F1F]">
                 {selectedVendor?.name || 'Pick a vendor'}
               </div>
@@ -239,7 +301,9 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
             <button onClick={create} disabled={saving || !vendorId || items.length === 0}
               className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
               style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-              {saving ? 'Creating...' : `Create PO · $${totalAmount.toFixed(2)}`}
+              {saving
+                ? (isEdit ? 'Saving...' : 'Creating...')
+                : `${isEdit ? '💾 Save Changes' : 'Create PO'} · $${totalAmount.toFixed(2)}`}
             </button>
           </div>
         </div>

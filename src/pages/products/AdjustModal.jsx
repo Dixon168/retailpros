@@ -1,5 +1,5 @@
 // src/pages/products/AdjustModal.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import NumPad from '@/components/ui/NumPad'
 import toast from 'react-hot-toast'
@@ -12,6 +12,44 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
   const [saving,     setSaving]     = useState(false)
   const [showNumPad, setShowNumPad] = useState(true)
   const adjustQty = parseFloat(qty) || 0
+
+  // Restock settings — low-stock alert threshold + auto-restock qty.
+  // Both live on the inventory row for this product+store. Loaded on
+  // mount, saved alongside (or independently of) an adjustment.
+  const [lowThreshold, setLowThreshold] = useState('')
+  const [autoRestock,  setAutoRestock]  = useState('')
+  const [savingSettings, setSavingSettings] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      // Both settings live on the products table (low_stock_qty added by
+      // STOCK_CENTER_SETUP, auto_restock_qty by PO_AUTORESTOCK_EDIT).
+      const { data } = await supabase.from('products')
+        .select('low_stock_qty, auto_restock_qty')
+        .eq('id', p.id).maybeSingle()
+      if (cancelled) return
+      setLowThreshold(data?.low_stock_qty != null ? String(data.low_stock_qty) : '5')
+      setAutoRestock(data?.auto_restock_qty != null ? String(data.auto_restock_qty) : '0')
+    })()
+    return () => { cancelled = true }
+  }, [p.id])
+
+  const saveSettings = async () => {
+    setSavingSettings(true)
+    try {
+      const { error } = await supabase.from('products').update({
+        low_stock_qty:    parseInt(lowThreshold) || 0,
+        auto_restock_qty: parseInt(autoRestock) || 0,
+      }).eq('id', p.id)
+      if (error) throw error
+      toast.success('Restock settings saved')
+      onSave?.()
+    } catch (e) {
+      console.error('Save settings:', e)
+      toast.error(e.message || 'Could not save settings')
+    } finally { setSavingSettings(false) }
+  }
 
   const handleSave = async () => {
     if (!qty) { toast.error('Enter adjustment quantity'); return }
@@ -117,6 +155,42 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
             <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Or type a custom reason..."
               className="w-full rounded-xl px-3 py-2 text-[12px] outline-none"
               style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
+          </div>
+
+          {/* ── Restock settings ─────────────────────────────────────
+              These don't change stock — they set the alert threshold and
+              the qty to auto-fill when this product is reordered from the
+              low-stock list. Saved with its own button so the user can
+              update settings WITHOUT making an adjustment.              */}
+          <div className="rounded-xl p-3" style={{background:'#F0F9FF', border:'1px solid #BAE6FD'}}>
+            <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider mb-2">
+              📦 Restock Settings
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <div className="text-[10px] text-slate-500 mb-1">Low-stock alert at ≤</div>
+                <input value={lowThreshold} onChange={e=>setLowThreshold(e.target.value.replace(/[^\d]/g,''))}
+                  inputMode="numeric" placeholder="5"
+                  className="w-full rounded-lg px-2.5 py-2 text-[13px] font-mono text-center outline-none"
+                  style={{border:'1.5px solid #BAE6FD', background:'#fff'}}/>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-500 mb-1">Auto-restock qty</div>
+                <input value={autoRestock} onChange={e=>setAutoRestock(e.target.value.replace(/[^\d]/g,''))}
+                  inputMode="numeric" placeholder="0"
+                  className="w-full rounded-lg px-2.5 py-2 text-[13px] font-mono text-center outline-none"
+                  style={{border:'1.5px solid #BAE6FD', background:'#fff'}}/>
+              </div>
+            </div>
+            <div className="text-[9px] text-slate-400 mt-1.5 leading-tight">
+              When stock hits the alert level, this product shows in the low-stock list.
+              "Auto-restock qty" pre-fills the order quantity when you build a PO.
+            </div>
+            <button onClick={saveSettings} disabled={savingSettings}
+              className="w-full mt-2.5 rounded-lg py-2 text-[11px] font-bold cursor-pointer border-none disabled:opacity-40"
+              style={{background:'#0EA5E9', color:'#fff'}}>
+              {savingSettings ? 'Saving...' : 'Save Restock Settings'}
+            </button>
           </div>
         </div>
 

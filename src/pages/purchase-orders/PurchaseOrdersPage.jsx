@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 import CreatePOModal from './CreatePOModal'
 import POReceiveModal from './POReceiveModal'
+import LowStockPanel from './LowStockPanel'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666', label:'Draft' },
@@ -19,8 +20,14 @@ export default function PurchaseOrdersPage() {
   const { tenant, store } = useAuthStore()
   const qc = useQueryClient()
   const [showCreate, setShowCreate]     = useState(false)
+  const [presetItems, setPresetItems]   = useState(null)  // pre-fill from low-stock
   const [receivingPo, setReceivingPo]   = useState(null)
-  const [statusFilter, setStatusFilter] = useState('all')  // all | open | done
+  const [editingPo, setEditingPo]       = useState(null)  // edit an open PO
+  // Main view tab — 'orders' shows the PO list, 'lowstock' shows the
+  // low-stock list for building a new PO.
+  const [view, setView]                 = useState('orders')
+  // Within the orders view: open vs history sub-tab.
+  const [statusFilter, setStatusFilter] = useState('open')  // open | history | all
   const [search, setSearch]             = useState('')
 
   // ── List of POs (with vendor name joined) ──
@@ -41,9 +48,9 @@ export default function PurchaseOrdersPage() {
   const filtered = useMemo(() => {
     let list = pos
     if (statusFilter === 'open') {
-      list = list.filter(p => ['ordered', 'partial'].includes(p.status))
-    } else if (statusFilter === 'done') {
-      list = list.filter(p => p.status === 'received')
+      list = list.filter(p => ['draft', 'ordered', 'partial'].includes(p.status))
+    } else if (statusFilter === 'history') {
+      list = list.filter(p => ['received', 'cancelled'].includes(p.status))
     }
     const q = search.trim().toLowerCase()
     if (q) {
@@ -57,9 +64,16 @@ export default function PurchaseOrdersPage() {
 
   const counts = useMemo(() => ({
     all: pos.length,
-    open: pos.filter(p => ['ordered', 'partial'].includes(p.status)).length,
-    done: pos.filter(p => p.status === 'received').length,
+    open: pos.filter(p => ['draft', 'ordered', 'partial'].includes(p.status)).length,
+    history: pos.filter(p => ['received', 'cancelled'].includes(p.status)).length,
   }), [pos])
+
+  // Build a PO from selected low-stock items
+  const buildPOFromLowStock = (items) => {
+    setPresetItems(items)
+    setShowCreate(true)
+    setView('orders')
+  }
 
   return (
     <div className="max-w-[1200px] mx-auto p-5">
@@ -68,31 +82,45 @@ export default function PurchaseOrdersPage() {
         <div>
           <div className="text-[22px] font-bold text-[#1F1F1F]">📋 Purchase Orders</div>
           <div className="text-[12px] text-[#666] mt-1">
-            All {counts.all} · Open <span className="text-[#006AFF] font-bold">{counts.open}</span> · Received <span className="text-[#15803D] font-bold">{counts.done}</span>
+            Open <span className="text-[#006AFF] font-bold">{counts.open}</span> · History <span className="text-[#15803D] font-bold">{counts.history}</span>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)}
+        <button onClick={() => { setPresetItems(null); setShowCreate(true) }}
           className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
           style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
           + New Purchase Order
         </button>
       </div>
 
-      {/* Search + filter */}
+      {/* Top-level view tabs: Orders list vs Low-stock reorder */}
+      <div className="flex gap-2 mb-4 border-b border-[#E5E5E5]">
+        <ViewTab active={view==='orders'} onClick={() => setView('orders')}>
+          📋 Orders
+        </ViewTab>
+        <ViewTab active={view==='lowstock'} onClick={() => setView('lowstock')}>
+          ⚠️ Low Stock · Reorder
+        </ViewTab>
+      </div>
+
+      {view === 'lowstock' ? (
+        <LowStockPanel onBuildPO={buildPOFromLowStock} />
+      ) : (
+      <>
+      {/* Search + open/history filter */}
       <div className="mb-4 space-y-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search by PO number or vendor name..."
           className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
 
         <div className="flex gap-2">
-          <FilterTab active={statusFilter==='all'} onClick={() => setStatusFilter('all')} count={counts.all}>
-            All
-          </FilterTab>
           <FilterTab active={statusFilter==='open'} onClick={() => setStatusFilter('open')} count={counts.open} highlight>
             ⏳ Open
           </FilterTab>
-          <FilterTab active={statusFilter==='done'} onClick={() => setStatusFilter('done')} count={counts.done}>
-            ✅ Received
+          <FilterTab active={statusFilter==='history'} onClick={() => setStatusFilter('history')} count={counts.history}>
+            📚 History
+          </FilterTab>
+          <FilterTab active={statusFilter==='all'} onClick={() => setStatusFilter('all')} count={counts.all}>
+            All
           </FilterTab>
         </div>
       </div>
@@ -109,7 +137,7 @@ export default function PurchaseOrdersPage() {
             {pos.length === 0 ? 'No purchase orders yet' : 'No POs match your filter'}
           </div>
           {pos.length === 0 && (
-            <button onClick={() => setShowCreate(true)}
+            <button onClick={() => { setPresetItems(null); setShowCreate(true) }}
               className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
               style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
               Create your first PO
@@ -120,7 +148,7 @@ export default function PurchaseOrdersPage() {
         <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
           {/* Header row */}
           <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]"
-            style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1.3fr'}}>
+            style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1.5fr'}}>
             {['PO Number', 'Vendor', 'Status', 'Order Date', 'Expected', 'Total / Action'].map(h => (
               <div key={h} className="px-3.5 py-2.5 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
             ))}
@@ -128,10 +156,11 @@ export default function PurchaseOrdersPage() {
           {filtered.map(po => {
             const st = STATUS_BADGE[po.status] || STATUS_BADGE.draft
             const canReceive = ['ordered', 'partial'].includes(po.status)
+            const canEdit    = ['draft', 'ordered', 'partial'].includes(po.status)
             return (
               <div key={po.id}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]"
-                style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1.3fr'}}>
+                style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1.5fr'}}>
                 <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#006AFF]">
                   {po.po_number}
                 </div>
@@ -150,36 +179,61 @@ export default function PurchaseOrdersPage() {
                 <div className="px-3.5 py-3 text-[12px] text-[#666]">
                   {po.expected_date ? new Date(po.expected_date).toLocaleDateString() : '—'}
                 </div>
-                <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+                <div className="px-3.5 py-3 flex items-center justify-between gap-1.5">
                   <span className="font-mono text-[13px] font-bold text-[#1F1F1F]">
                     ${(po.total || 0).toFixed(2)}
                   </span>
-                  {canReceive ? (
-                    <button onClick={() => setReceivingPo(po)}
-                      className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                      style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-                      📥 Receive
-                    </button>
-                  ) : (
-                    <button onClick={() => setReceivingPo(po)}
-                      className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                      style={{background:'#F5F5F5', color:'#666', border:'1px solid #E5E5E5'}}>
-                      View
-                    </button>
-                  )}
+                  <div className="flex gap-1.5">
+                    {canEdit && (
+                      <button onClick={() => setEditingPo(po)}
+                        className="rounded-lg px-2 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                        style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                        ✏️
+                      </button>
+                    )}
+                    {canReceive ? (
+                      <button onClick={() => setReceivingPo(po)}
+                        className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                        style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                        📥 Receive
+                      </button>
+                    ) : (
+                      <button onClick={() => setReceivingPo(po)}
+                        className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                        style={{background:'#F5F5F5', color:'#666', border:'1px solid #E5E5E5'}}>
+                        View
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
           })}
         </div>
       )}
+      </>
+      )}
 
       {/* Create PO modal */}
       {showCreate && (
         <CreatePOModal
-          onClose={() => setShowCreate(false)}
+          initialItems={presetItems}
+          onClose={() => { setShowCreate(false); setPresetItems(null) }}
           onCreated={() => {
             setShowCreate(false)
+            setPresetItems(null)
+            qc.invalidateQueries({ queryKey: ['purchase-orders-list'] })
+          }}
+        />
+      )}
+
+      {/* Edit PO modal — reuses CreatePOModal in edit mode */}
+      {editingPo && (
+        <CreatePOModal
+          editPo={editingPo}
+          onClose={() => setEditingPo(null)}
+          onCreated={() => {
+            setEditingPo(null)
             qc.invalidateQueries({ queryKey: ['purchase-orders-list'] })
           }}
         />
@@ -194,10 +248,22 @@ export default function PurchaseOrdersPage() {
             qc.invalidateQueries({ queryKey: ['purchase-orders-list'] })
             qc.invalidateQueries({ queryKey: ['stock-rows'] })
             qc.invalidateQueries({ queryKey: ['stock-summary'] })
+            qc.invalidateQueries({ queryKey: ['lowstock-list'] })
           }}
         />
       )}
     </div>
+  )
+}
+
+function ViewTab({ active, onClick, children }) {
+  return (
+    <button onClick={onClick}
+      className="px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none bg-transparent relative"
+      style={{ color: active ? '#006AFF' : '#666' }}>
+      {children}
+      {active && <div className="absolute left-0 right-0 -bottom-px h-0.5" style={{background:'#006AFF'}}/>}
+    </button>
   )
 }
 

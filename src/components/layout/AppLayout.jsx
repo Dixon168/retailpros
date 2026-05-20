@@ -168,11 +168,6 @@ export default function AppLayout() {
             </div>
           )}
           {/* Back to POS */}
-          {!collapsed && (
-            <div className="mb-2 px-1">
-              <LangSwitcher dark/>
-            </div>
-          )}
           <button onClick={() => window.location.href='/pos'}
             className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer border-none mb-1.5 transition-all"
             style={{background:'rgba(0,106,255,0.15)', color:'#80B2FF'}}
@@ -216,8 +211,14 @@ export default function AppLayout() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden flex flex-col relative">
         <NetworkStatusBanner />
+        {/* Floating language switcher — always visible, top-right, doesn't
+            push page content. z-30 keeps it above page content but below
+            modals (which use z-400+). */}
+        <div className="absolute top-3 right-4 z-30">
+          <LangSwitcher />
+        </div>
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
