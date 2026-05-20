@@ -373,13 +373,31 @@ export default function PaymentPanel() {
     if (amount<=0) { toast.error('Enter amount'); return }
     if (selMethod==='card' && terminal?.pax_enabled) { handleCardPax(amount); return }
     addPayment({ method:selMethod, amount })
+    setPayInput('')  // clear so the next payment starts fresh
     const newPaid = paid + amount
-    if (newPaid >= liveTotal) setTimeout(()=>handleComplete(newPaid), 400)
+    // Full payment reached → auto-finish. Partial → stay so the cashier
+    // picks the next method and enters its amount (the new payment shows
+    // in the right-hand Payments list).
+    if (newPaid >= liveTotal - 0.005) {
+      setTimeout(()=>handleComplete(newPaid), 400)
+    } else {
+      toast(`$${(liveTotal - newPaid).toFixed(2)} remaining — add another payment`, { icon:'💳', duration: 2500 })
+    }
   }
 
   const handleComplete = async (overridePaid) => {
-    const totalPaid = overridePaid || paid
-    if (totalPaid < liveTotal && !payments.some(p=>p.method==='on_account')) { toast.error('Payment incomplete'); return }
+    // Use the explicit override when provided (auto-complete passes the
+    // freshly-computed total), otherwise the live paid sum.
+    const totalPaid = (typeof overridePaid === 'number') ? overridePaid : paid
+    // An on-account payment is an explicit "put the rest on the customer's
+    // tab" — only then may the order finish under-paid.
+    const hasOnAccount = payments.some(p => p.method === 'on_account')
+    // Guard against underpayment. Epsilon avoids float rounding (e.g.
+    // 219.999999 vs 220). Without an on-account line, paid must cover total.
+    if (!hasOnAccount && totalPaid < liveTotal - 0.005) {
+      toast.error(`Payment incomplete — $${(liveTotal - totalPaid).toFixed(2)} still owing`)
+      return
+    }
     setProcessing(true)
 
     // Watchdog: payment is the riskiest place to be stuck — customer is
@@ -821,7 +839,7 @@ export default function PaymentPanel() {
             ← Back
           </button>
           <button onClick={()=>handleComplete()}
-            disabled={processing||(paid<liveTotal&&!payments.some(p=>p.method==='on_account'))}
+            disabled={processing||(paid<liveTotal-0.005&&!payments.some(p=>p.method==='on_account'))}
             className="flex-1 rounded-lg py-4 text-[18px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#00B23B', boxShadow:'0 4px 20px rgba(22,163,74,0.35)'}}>
             {processing?'⏳ Processing...': remaining<=0 ? `✓ Complete Order — $${liveTotal.toFixed(2)}` : `Complete ($${paid.toFixed(2)} of $${liveTotal.toFixed(2)})`}
