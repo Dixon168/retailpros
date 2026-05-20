@@ -49,6 +49,7 @@ export default function POSPage() {
 
   const [searchQuery,    setSearchQuery]    = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
+  const [selectedTag,    setSelectedTag]    = useState('')  // filter by product tag
   const [showRefund,     setShowRefund]     = useState(false)
   const [refundPreload,  setRefundPreload]  = useState(null)
   const [showHold,       setShowHold]       = useState(false)
@@ -191,8 +192,21 @@ export default function POSPage() {
     enabled: !!tenant?.id,
   })
 
+  // All distinct tags across active products — powers the POS tag filter.
+  const { data: allTags = [] } = useQuery({
+    queryKey: ['pos-tags', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('products')
+        .select('tags').eq('tenant_id', tenant.id).eq('is_active', true)
+      const set = new Set()
+      ;(data || []).forEach(p => (p.tags || []).forEach(t => t && set.add(t)))
+      return [...set].sort()
+    },
+    enabled: !!tenant?.id,
+  })
+
   const { data: products = [] } = useQuery({
-    queryKey: ['pos-products', tenant?.id, store?.id, searchQuery, activeCategory],
+    queryKey: ['pos-products', tenant?.id, store?.id, searchQuery, activeCategory, selectedTag],
     queryFn: async () => {
       let q = supabase.from('products')
         .select(`*,
@@ -206,6 +220,8 @@ export default function POSPage() {
         q = q.or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,upc.eq.${searchQuery}`)
       if (activeCategory !== 'all')
         q = q.eq('category_id', activeCategory)
+      if (selectedTag)
+        q = q.contains('tags', [selectedTag])
       const { data } = await q.order('sort_order').order('name').limit(80)
       // Filter inventory[] to only the current store so qty shows per-store
       return (data || []).map(p => ({
@@ -399,9 +415,9 @@ export default function POSPage() {
         {/* Left: Products */}
         <div className="flex flex-col flex-1 overflow-hidden" style={{background:'#FFFFFF'}}>
 
-          {/* Search bar */}
-          <div className="px-3 py-2 flex-shrink-0" style={{background:'#FFFFFF'}}>
-            <div className="flex items-center gap-2 rounded-xl px-3 shadow-sm"
+          {/* Search bar — search input + tag filter + mic, all one line */}
+          <div className="px-3 py-2 flex-shrink-0 flex items-center gap-2" style={{background:'#FFFFFF'}}>
+            <div className="flex items-center gap-2 rounded-xl px-3 shadow-sm flex-1 min-w-0"
               style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
               <span className="text-slate-400 text-[15px]">🔍</span>
               <input
@@ -409,7 +425,7 @@ export default function POSPage() {
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleBarcodeInput}
                 placeholder="Search products or scan barcode..."
-                className="flex-1 border-none outline-none text-slate-700 text-[13px] py-2.5 bg-transparent placeholder-slate-400"
+                className="flex-1 border-none outline-none text-slate-700 text-[13px] py-2.5 bg-transparent placeholder-slate-400 min-w-0"
                 autoFocus
               />
               {searchQuery && (
@@ -417,6 +433,19 @@ export default function POSPage() {
                   className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
               )}
             </div>
+            {/* Tag filter — narrows the product grid to one tag */}
+            <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}
+              className="rounded-xl px-2.5 text-[12px] font-semibold cursor-pointer outline-none flex-shrink-0"
+              style={{
+                height: '40px', maxWidth: '130px',
+                border: '1.5px solid #e2e8f0',
+                background: selectedTag ? '#E6F0FF' : '#fff',
+                color: selectedTag ? '#006AFF' : '#64748b',
+              }}
+              title="Filter by tag">
+              <option value="">🏷️ All tags</option>
+              {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
             <VoiceOrderButton products={products || []} />
           </div>
 
