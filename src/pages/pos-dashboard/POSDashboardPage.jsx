@@ -90,12 +90,13 @@ export default function POSDashboardPage() {
     queryKey: ['low-stock', tenant?.id, store?.id],
     queryFn: async () => {
       const { data } = await supabase.from('inventory')
-        .select('product_id, quantity, low_stock_threshold, products(name)')
+        .select('product_id, quantity, products(name, low_stock_qty)')
         .eq('tenant_id', tenant.id)
         .eq('store_id', store.id)
         .limit(200)
       return (data || [])
-        .filter(i => i.quantity <= (i.low_stock_threshold || 5) && i.quantity > 0)
+        .map(i => ({ ...i, low_stock_qty: i.products?.low_stock_qty }))
+        .filter(i => i.quantity <= (i.low_stock_qty || 5) && i.quantity > 0)
         .slice(0, 8)
     },
     enabled: !!tenant?.id && !!store?.id,
@@ -343,7 +344,7 @@ export default function POSDashboardPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-[12px] font-bold font-mono text-amber-700">{item.quantity}</div>
-                      <div className="text-[9px] text-slate-400">≤ {item.low_stock_threshold || 5}</div>
+                      <div className="text-[9px] text-slate-400">≤ {item.low_stock_qty || 5}</div>
                     </div>
                   </div>
                 ))}

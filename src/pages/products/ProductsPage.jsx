@@ -49,7 +49,7 @@ export default function ProductsPage() {
     queryKey: ['products', tenant?.id, store?.id, search, filterType, filterCat, filterTag],
     queryFn: async () => {
       let q = supabase.from('products')
-        .select('*, inventory(quantity, avg_cost, low_stock_threshold, store_id), subcategories(id, name, category_id, categories(id, name, emoji, color))')
+        .select('*, inventory(quantity, avg_cost, store_id), subcategories(id, name, category_id, categories(id, name, emoji, color))')
         .eq('tenant_id', tenant.id).eq('is_active', true)
       if (search) q = q.or(`name.ilike.%${search}%,sku.ilike.%${search}%,upc.ilike.%${search}%`)
       if (filterType !== 'all' && filterType !== 'low') q = q.eq('type', filterType)
@@ -71,12 +71,10 @@ export default function ProductsPage() {
   }
   function getQty(p)     { return getInvRow(p)?.quantity || 0 }
   function getAvgCost(p) { return getInvRow(p)?.avg_cost || p.cost || 0 }
-  // Per-product threshold; falls back to product.low_stock_qty,
-  // then to 5 as a sensible default.
+  // Per-product low-stock threshold. Single source of truth is
+  // products.low_stock_qty (set in Adjust → Restock Settings).
   function getThreshold(p) {
-    return getInvRow(p)?.low_stock_threshold
-        ?? p.low_stock_qty
-        ?? 5
+    return p.low_stock_qty ?? 5
   }
   function isLowStock(p) {
     if (p.type === 'service') return false

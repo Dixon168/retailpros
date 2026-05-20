@@ -18,7 +18,7 @@ export function ProductQuickInfo({ product: p, storeId, canEdit = true, canSeeCo
     .filter(i => !storeId || !i.store_id || i.store_id === storeId)
     .reduce((sum, i) => sum + Number(i.quantity || 0), 0)
 
-  const lowStock      = stockHere <= (p.low_stock_threshold || 5)
+  const lowStock      = stockHere <= (p.low_stock_qty || 5)
   const outOfStock    = stockHere <= 0
   const margin        = p.cost && p.price ? ((p.price - p.cost) / p.price * 100) : null
   const subcatName    = p.subcategories?.name || p.subcategory?.name || null
@@ -117,10 +117,10 @@ export function ProductQuickInfo({ product: p, storeId, canEdit = true, canSeeCo
                   </div>
                 </div>
               </div>
-              {p.low_stock_threshold && p.track_inventory !== false && (
+              {p.low_stock_qty && p.track_inventory !== false && (
                 <div className="text-right">
                   <div className="text-[9px] uppercase text-slate-400 font-bold tracking-wider">Reorder At</div>
-                  <div className="text-[13px] font-mono font-bold text-slate-600">≤ {p.low_stock_threshold}</div>
+                  <div className="text-[13px] font-mono font-bold text-slate-600">≤ {p.low_stock_qty}</div>
                 </div>
               )}
             </div>
