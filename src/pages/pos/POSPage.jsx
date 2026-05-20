@@ -414,16 +414,17 @@ export default function POSPage() {
         {/* Left: Products */}
         <div className="flex flex-col flex-1 overflow-hidden" style={{background:'#FFFFFF'}}>
 
-          {/* Search bar — search input + tag filter + mic, all one line */}
+          {/* Search bar — narrow search/scan box + horizontal tag buttons */}
           <div className="px-3 py-2 flex-shrink-0 flex items-center gap-2" style={{background:'#FFFFFF'}}>
-            <div className="flex items-center gap-2 rounded-xl px-3 shadow-sm flex-1 min-w-0"
-              style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
+            {/* Search box — fixed narrow width, enough to type / scan */}
+            <div className="flex items-center gap-2 rounded-xl px-3 shadow-sm flex-shrink-0"
+              style={{background:'#fff', border:'1.5px solid #e2e8f0', width:'260px'}}>
               <span className="text-slate-400 text-[15px]">🔍</span>
               <input
                 type="text" value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleBarcodeInput}
-                placeholder="Search products or scan barcode..."
+                placeholder="Search or scan..."
                 className="flex-1 border-none outline-none text-slate-700 text-[13px] py-2.5 bg-transparent placeholder-slate-400 min-w-0"
                 autoFocus
               />
@@ -432,19 +433,30 @@ export default function POSPage() {
                   className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer text-[14px]">✕</button>
               )}
             </div>
-            {/* Tag filter — narrows the product grid to one tag */}
-            <select value={selectedTag} onChange={e => setSelectedTag(e.target.value)}
-              className="rounded-xl px-2.5 text-[12px] font-semibold cursor-pointer outline-none flex-shrink-0"
-              style={{
-                height: '40px', maxWidth: '130px',
-                border: '1.5px solid #e2e8f0',
-                background: selectedTag ? '#E6F0FF' : '#fff',
-                color: selectedTag ? '#006AFF' : '#64748b',
-              }}
-              title="Filter by tag">
-              <option value="">🏷️ All tags</option>
-              {allTags.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+
+            {/* Tag filter — horizontal scrollable button strip. Click to
+                filter the grid to one tag; click again (or All) to clear. */}
+            {allTags.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto flex-1 min-w-0 items-center">
+                <button onClick={() => setSelectedTag('')}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all cursor-pointer whitespace-nowrap flex-shrink-0"
+                  style={!selectedTag
+                    ? {background:'#1F1F1F', color:'#fff', border:'1.5px solid #1F1F1F'}
+                    : {background:'#fff', color:'#64748b', border:'1.5px solid #e2e8f0'}}>
+                  🏷️ All
+                </button>
+                {allTags.map(t => (
+                  <button key={t}
+                    onClick={() => setSelectedTag(selectedTag === t ? '' : t)}
+                    className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all cursor-pointer whitespace-nowrap flex-shrink-0"
+                    style={selectedTag === t
+                      ? {background:'#006AFF', color:'#fff', border:'1.5px solid #006AFF'}
+                      : {background:'#fff', color:'#64748b', border:'1.5px solid #e2e8f0'}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Category tabs */}
