@@ -920,9 +920,38 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                 )}
               </div>
             </div>
-          </Section>
 
-          {/* ── VIP & LOYALTY ── */}
+            {/* 3rd line — low-stock alert + auto-restock qty. Shown whenever
+                inventory is tracked. These drive the low-stock reorder list
+                and pre-fill PO quantities. Always visible here (create AND
+                edit) so they're set up front, not buried in another tab. */}
+            {form.track_inventory && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <Label>Low-Stock Alert (≤ QTY)</Label>
+                  <Input
+                    type="number"
+                    value={form.low_stock_qty}
+                    onChange={e => set('low_stock_qty', e.target.value.replace(/[^\d]/g,''))}
+                    placeholder="5" mono/>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    Shows in the low-stock reorder list when stock hits this.
+                  </div>
+                </div>
+                <div>
+                  <Label>Auto-Restock QTY</Label>
+                  <Input
+                    type="number"
+                    value={form.auto_restock_qty}
+                    onChange={e => set('auto_restock_qty', e.target.value.replace(/[^\d]/g,''))}
+                    placeholder="0" mono/>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    Pre-fills the order qty when building a PO from low stock.
+                  </div>
+                </div>
+              </div>
+            )}
+          </Section>
           <Section title="VIP & Loyalty" icon="⭐" color="#006AFF">
             {/* VIP */}
             <div className="mb-4">
@@ -1069,38 +1098,6 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
               <Toggle checked={form.is_enabled} onChange={()=>set('is_enabled',!form.is_enabled)}
                 label="Product Enabled" desc="Turn off to hide from POS without deleting"/>
             </div>
-
-            {/* Low-stock + auto-restock — only relevant when tracking stock.
-                Same fields as the Stock Center Adjust modal, so they stay
-                in sync no matter where you edit them. */}
-            {form.track_inventory && (
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                  <Label>Low-stock alert at ≤</Label>
-                  <input
-                    value={form.low_stock_qty}
-                    onChange={e => set('low_stock_qty', e.target.value.replace(/[^\d]/g,''))}
-                    inputMode="numeric" placeholder="5"
-                    className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"
-                    style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
-                  <div className="text-[10px] text-slate-400 mt-1">
-                    Product shows in the low-stock reorder list when stock hits this.
-                  </div>
-                </div>
-                <div>
-                  <Label>Auto-restock qty</Label>
-                  <input
-                    value={form.auto_restock_qty}
-                    onChange={e => set('auto_restock_qty', e.target.value.replace(/[^\d]/g,''))}
-                    inputMode="numeric" placeholder="0"
-                    className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"
-                    style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
-                  <div className="text-[10px] text-slate-400 mt-1">
-                    Pre-fills the order quantity when building a PO from low stock.
-                  </div>
-                </div>
-              </div>
-            )}
           </Section>
 
           {/* ── PROMOTIONS (existing products only) ── */}
