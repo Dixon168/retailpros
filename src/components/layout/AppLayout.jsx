@@ -61,8 +61,7 @@ const NAV_GROUPS = [
     items: [
       { to:'/products',        icon:'📦', label:'Products' },
       { to:'/categories',      icon:'📁', label:'Categories' },
-      { to:'/stock-levels',    icon:'📊', label:'Stock Center' },
-      { to:'/purchase-orders', icon:'📋', label:'Purchase Orders' },
+      { to:'/purchase-orders', icon:'📋', label:'Purchase Center' },
       { to:'/vendors',         icon:'🚚', label:'Vendors' },
       { to:'/smart-receive',   icon:'🤖', label:'Smart Receive' },
       { to:'/barcode',         icon:'🏷️', label:'Barcode Print' },

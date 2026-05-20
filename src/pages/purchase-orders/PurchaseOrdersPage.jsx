@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import CreatePOModal from './CreatePOModal'
 import POReceiveModal from './POReceiveModal'
 import LowStockPanel from './LowStockPanel'
+import { ProductDetailInline } from '@/pages/products/ProductDetailInline'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666', label:'Draft' },
@@ -23,9 +24,10 @@ export default function PurchaseOrdersPage() {
   const [presetItems, setPresetItems]   = useState(null)  // pre-fill from low-stock
   const [receivingPo, setReceivingPo]   = useState(null)
   const [editingPo, setEditingPo]       = useState(null)  // edit an open PO
-  // Main view tab — 'orders' shows the PO list, 'lowstock' shows the
-  // low-stock list for building a new PO.
-  const [view, setView]                 = useState('orders')
+  const [detailProductId, setDetailProductId] = useState(null)  // product detail popup
+  // Main view tab — 'lowstock' (reorder list) is the default since that's
+  // the most common entry point; 'orders' shows the PO list.
+  const [view, setView]                 = useState('lowstock')
   // Within the orders view: open vs history sub-tab.
   const [statusFilter, setStatusFilter] = useState('open')  // open | history | all
   const [search, setSearch]             = useState('')
@@ -80,7 +82,7 @@ export default function PurchaseOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <div className="text-[22px] font-bold text-[#1F1F1F]">📋 Purchase Orders</div>
+          <div className="text-[22px] font-bold text-[#1F1F1F]">📋 Purchase Center</div>
           <div className="text-[12px] text-[#666] mt-1">
             Open <span className="text-[#006AFF] font-bold">{counts.open}</span> · History <span className="text-[#15803D] font-bold">{counts.history}</span>
           </div>
@@ -92,18 +94,18 @@ export default function PurchaseOrdersPage() {
         </button>
       </div>
 
-      {/* Top-level view tabs: Orders list vs Low-stock reorder */}
+      {/* Top-level view tabs: Low-stock reorder (default) vs Orders list */}
       <div className="flex gap-2 mb-4 border-b border-[#E5E5E5]">
-        <ViewTab active={view==='orders'} onClick={() => setView('orders')}>
-          📋 Orders
-        </ViewTab>
         <ViewTab active={view==='lowstock'} onClick={() => setView('lowstock')}>
           ⚠️ Low Stock · Reorder
+        </ViewTab>
+        <ViewTab active={view==='orders'} onClick={() => setView('orders')}>
+          📋 Purchase Orders
         </ViewTab>
       </div>
 
       {view === 'lowstock' ? (
-        <LowStockPanel onBuildPO={buildPOFromLowStock} />
+        <LowStockPanel onBuildPO={buildPOFromLowStock} onOpenDetail={setDetailProductId} />
       ) : (
       <>
       {/* Search + open/history filter */}
@@ -252,6 +254,51 @@ export default function PurchaseOrdersPage() {
           }}
         />
       )}
+
+      {/* Product detail popup (from the low-stock list › button) */}
+      {detailProductId && (
+        <ProductDetailPopup
+          productId={detailProductId}
+          tenantId={tenant?.id}
+          storeId={store?.id}
+          onClose={() => setDetailProductId(null)}
+          onRefresh={() => qc.invalidateQueries({ queryKey: ['lowstock-list'] })}
+        />
+      )}
+    </div>
+  )
+}
+
+// Fetches the full product then shows ProductDetailInline in a centered popup
+function ProductDetailPopup({ productId, tenantId, storeId, onClose, onRefresh }) {
+  const { data: product } = useQuery({
+    queryKey: ['po-detail-product', productId],
+    queryFn: async () => {
+      const { data } = await supabase.from('products')
+        .select('*, inventory(quantity, avg_cost, store_id), subcategories(id, name, category_id, categories(id, name, emoji, color))')
+        .eq('id', productId).single()
+      return data
+    },
+    enabled: !!productId,
+  })
+
+  return (
+    <div className="fixed inset-0 z-[450] flex items-center justify-center p-4"
+      style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
+      <div className="bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-[900px]"
+        style={{maxHeight:'90vh'}} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E5E5]">
+          <div className="text-[15px] font-bold text-[#1F1F1F]">{product?.name || 'Loading...'}</div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full border-none cursor-pointer text-[16px] flex items-center justify-center"
+            style={{background:'#F5F5F5', color:'#666'}}>✕</button>
+        </div>
+        <div className="overflow-y-auto" style={{maxHeight:'calc(90vh - 56px)'}}>
+          {product && (
+            <ProductDetailInline product={product} tenantId={tenantId} storeId={storeId} onRefresh={onRefresh} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

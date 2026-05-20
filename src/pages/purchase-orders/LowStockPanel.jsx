@@ -1,28 +1,28 @@
 // src/pages/purchase-orders/LowStockPanel.jsx
 //
-// Shows all products at or below their low-stock threshold for the current
-// store, with checkboxes. Select some → "Build PO from selected" hands them
-// to CreatePOModal pre-filled with each product's auto_restock_qty.
+// Low-stock reorder list inside Purchase Center.
+// Columns: checkbox · Product (name + UPC) · Price · In Stock · Reorder Qty
+//          (editable) · details (>)
+// Select rows → edit each reorder qty inline → "Build PO from selected"
+// hands the chosen items (with the edited quantities) to CreatePOModal.
 //
 // Low-stock definition: inventory.quantity <= products.low_stock_qty
-// (low_stock_qty is the per-product threshold from STOCK_CENTER_SETUP).
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
-export default function LowStockPanel({ onBuildPO }) {
+export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
   const { tenant, store } = useAuthStore()
-  const [selected, setSelected] = useState({})  // { product_id: true }
+  const [selected, setSelected] = useState({})   // { product_id: true }
+  const [qtyEdits, setQtyEdits] = useState({})    // { product_id: '12' } — edited reorder qty
 
   const { data: lowStock = [], isLoading } = useQuery({
     queryKey: ['lowstock-list', tenant?.id, store?.id],
     queryFn: async () => {
-      // Pull products (non-service) + their stock for this store, then
-      // filter to those at/below threshold client-side.
       const { data: products } = await supabase.from('products')
-        .select('id, name, sku, cost, low_stock_qty, auto_restock_qty, type')
+        .select('id, name, sku, upc, price, cost, low_stock_qty, auto_restock_qty, type')
         .eq('tenant_id', tenant.id)
         .neq('type', 'service')
         .limit(1000)
@@ -48,6 +48,24 @@ export default function LowStockPanel({ onBuildPO }) {
     enabled: !!tenant?.id && !!store?.id,
   })
 
+  // Seed the editable reorder qty: use auto_restock_qty, or enough to get
+  // back up to threshold+1, or 1 as a floor.
+  useEffect(() => {
+    if (!lowStock.length) return
+    setQtyEdits(prev => {
+      const next = { ...prev }
+      lowStock.forEach(p => {
+        if (next[p.id] === undefined) {
+          const suggested = p.restock > 0
+            ? p.restock
+            : Math.max(1, (p.threshold + 1) - p.stock)
+          next[p.id] = String(suggested)
+        }
+      })
+      return next
+    })
+  }, [lowStock])
+
   const selectedCount = Object.values(selected).filter(Boolean).length
   const allSelected = lowStock.length > 0 && selectedCount === lowStock.length
 
@@ -57,8 +75,8 @@ export default function LowStockPanel({ onBuildPO }) {
     lowStock.forEach(p => { next[p.id] = true })
     setSelected(next)
   }
-
   const toggle = (id) => setSelected(s => ({ ...s, [id]: !s[id] }))
+  const setQty = (id, v) => setQtyEdits(e => ({ ...e, [id]: v.replace(/[^\d]/g, '') }))
 
   const buildPO = () => {
     const items = lowStock
@@ -67,9 +85,7 @@ export default function LowStockPanel({ onBuildPO }) {
         product_id:   p.id,
         product_name: p.name,
         product_sku:  p.sku,
-        // Pre-fill qty from auto_restock_qty. If it's 0 (not set), fall
-        // back to 1 so the line is valid; user can edit.
-        quantity:     String(p.restock > 0 ? p.restock : 1),
+        quantity:     String(parseInt(qtyEdits[p.id]) || 1),
         unit_cost:    String(p.cost || 0),
       }))
     if (items.length === 0) return
@@ -112,46 +128,69 @@ export default function LowStockPanel({ onBuildPO }) {
         </div>
       ) : (
         <div className="bg-white border border-[#E5E5E5] rounded-xl overflow-hidden">
-          {/* Header */}
+          {/* Header: checkbox · Product · UPC · Price · In Stock · Reorder Qty · > */}
           <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5] items-center"
-            style={{gridTemplateColumns:'40px 2fr 1fr 1fr 1fr 1fr'}}>
+            style={{gridTemplateColumns:'40px 2fr 1.3fr 0.9fr 0.9fr 1.1fr 44px'}}>
             <div className="px-3 py-2.5 flex items-center justify-center">
               <input type="checkbox" checked={allSelected} onChange={toggleAll}
                 className="w-4 h-4 cursor-pointer" style={{accentColor:'#006AFF'}}/>
             </div>
-            {['Product', 'In Stock', 'Alert ≤', 'Restock Qty', 'Unit Cost'].map(h => (
-              <div key={h} className="px-3 py-2.5 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
+            {['Product', 'UPC', 'Price', 'In Stock', 'Reorder Qty', ''].map((h,i) => (
+              <div key={i} className="px-3 py-2.5 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
             ))}
           </div>
           {lowStock.map(p => {
             const isOut = p.stock <= 0
+            const checked = !!selected[p.id]
             return (
               <div key={p.id}
-                className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] items-center cursor-pointer"
-                style={{gridTemplateColumns:'40px 2fr 1fr 1fr 1fr 1fr'}}
-                onClick={() => toggle(p.id)}>
-                <div className="px-3 py-3 flex items-center justify-center">
-                  <input type="checkbox" checked={!!selected[p.id]} onChange={() => toggle(p.id)}
+                className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] items-center"
+                style={{gridTemplateColumns:'40px 2fr 1.3fr 0.9fr 0.9fr 1.1fr 44px',
+                        background: checked ? '#F0F7FF' : undefined}}>
+                {/* Checkbox */}
+                <div className="px-3 py-3 flex items-center justify-center cursor-pointer" onClick={() => toggle(p.id)}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(p.id)}
                     onClick={e => e.stopPropagation()}
                     className="w-4 h-4 cursor-pointer" style={{accentColor:'#006AFF'}}/>
                 </div>
-                <div className="px-3 py-3">
+                {/* Product name + sku */}
+                <div className="px-3 py-3 cursor-pointer" onClick={() => toggle(p.id)}>
                   <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{p.name}</div>
-                  {p.sku && <div className="text-[10px] text-[#999] font-mono">{p.sku}</div>}
+                  {p.sku && <div className="text-[10px] text-[#999] font-mono">SKU {p.sku}</div>}
                 </div>
+                {/* UPC */}
+                <div className="px-3 py-3 font-mono text-[12px] text-[#666] truncate">
+                  {p.upc || '—'}
+                </div>
+                {/* Price */}
+                <div className="px-3 py-3 font-mono text-[12px] text-[#1F1F1F]">
+                  ${(p.price || 0).toFixed(2)}
+                </div>
+                {/* In Stock */}
                 <div className="px-3 py-3">
                   <span className="font-mono text-[13px] font-bold"
                     style={{color: isOut ? '#CF1322' : '#B45309'}}>
                     {p.stock}{isOut && ' ⚠️'}
                   </span>
                 </div>
-                <div className="px-3 py-3 font-mono text-[12px] text-[#666]">{p.threshold}</div>
-                <div className="px-3 py-3 font-mono text-[12px]"
-                  style={{color: p.restock > 0 ? '#15803D' : '#999'}}>
-                  {p.restock > 0 ? p.restock : '— (set in product)'}
+                {/* Reorder Qty — editable */}
+                <div className="px-3 py-3">
+                  <input
+                    value={qtyEdits[p.id] ?? ''}
+                    onChange={e => setQty(p.id, e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    inputMode="numeric" placeholder="0"
+                    className="w-16 rounded-lg px-2 py-1.5 text-[13px] font-mono font-bold text-center outline-none focus:border-[#006AFF]"
+                    style={{border:'1.5px solid #E5E5E5', background:'#fff', color:'#15803D'}}/>
                 </div>
-                <div className="px-3 py-3 font-mono text-[12px] text-[#666]">
-                  ${(p.cost || 0).toFixed(2)}
+                {/* Detail > */}
+                <div className="px-2 py-3 flex items-center justify-center">
+                  <button onClick={(e) => { e.stopPropagation(); onOpenDetail?.(p.id) }}
+                    title="View details"
+                    className="w-7 h-7 rounded-lg cursor-pointer border flex items-center justify-center text-[14px] text-[#666] hover:bg-[#F0F7FF] hover:text-[#006AFF]"
+                    style={{borderColor:'#E5E5E5', background:'#fff'}}>
+                    ›
+                  </button>
                 </div>
               </div>
             )
