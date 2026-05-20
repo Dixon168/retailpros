@@ -1,5 +1,6 @@
 // src/pages/pos/panels/PaymentPanel.jsx
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -253,6 +254,7 @@ function CouponInputModal({ onConfirm, onClose }) {
 
 export default function PaymentPanel() {
   const { totals, payments, addPayment, removePayment, paidAmount, submitOrder, setOrderDiscount, orderDiscount, appliedCoupon, setAppliedCoupon } = useCartStore()
+  const qc = useQueryClient()
   const { user, tenant, store } = useAuthStore()
   const { terminal, paxOnline } = useTerminalStore()
   const { activeEmployee } = useEmployeeStore()
@@ -448,6 +450,14 @@ export default function PaymentPanel() {
       if (!result) { setProcessing(false); return }  // submitOrder returned null on error
 
       toast.success('✓ Order saved!')
+
+      // Refresh stock-dependent views so the POS card badges, product list,
+      // and low-stock/PO list reflect the just-deducted inventory — even in
+      // manual receipt mode where we don't do a full page reload.
+      qc.invalidateQueries({ queryKey: ['pos-products'] })
+      qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+      qc.invalidateQueries({ queryKey: ['lowstock-list'] })
 
       // ── Auto-open cash drawer if any cash was used ──
       // Only fires when (a) drawer is enabled, (b) "open_on_cash" is on,
