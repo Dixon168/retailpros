@@ -97,7 +97,7 @@ export default function CartPanel({ onRefund, onHold }) {
 
   const applyAction = (val) => {
     const v = val !== undefined ? val : parseFloat(inputVal)
-    const workItem = selectedItem || activeItem
+    const workItem = selectedItem
     if (!workItem && activeAction !== 'disc') return
     if (activeAction === 'custom' && v !== 0 && !isNaN(v)) {
       setItemQty(selectedItem.id, v)
@@ -251,7 +251,7 @@ export default function CartPanel({ onRefund, onHold }) {
             <div className="w-full shadow-md" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="text-[14px] font-bold text-slate-800">
-                  📝 <span style={{color:'#006AFF'}}>{(selectedItem||activeItem)?.name}</span>
+                  📝 <span style={{color:'#006AFF'}}>{(selectedItem)?.name}</span>
                 </div>
                 <button onClick={() => { setActiveAction(null); setInputVal('') }}
                   className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500">✕</button>
@@ -303,7 +303,7 @@ export default function CartPanel({ onRefund, onHold }) {
               </div>
               <div className="px-4 pb-6 pt-2">
                 <button onClick={() => {
-                  const item = selectedItem || activeItem
+                  const item = selectedItem
                   if (item) setItemNote(item.id, inputVal)
                   setActiveAction(null)
                   setInputVal('')
@@ -598,7 +598,7 @@ export default function CartPanel({ onRefund, onHold }) {
       {showNumPad && activeAction && !['staff','remark','inc','dec','delete'].includes(activeAction) && (
         <NumPad
           title={{custom:'Set Quantity / Return', disc:'Item Discount', price:'Change Price', single:'Unit Price'}[activeAction] || 'Enter Value'}
-          subtitle={activeAction==='custom' ? `${activeItem?.name} · Enter negative to return` : activeItem?.name}
+          subtitle={activeAction==='custom' ? `${selectedItem?.name} · Enter negative to return` : selectedItem?.name}
           value={inputVal}
           onChange={setInputVal}
           prefix={['price','single'].includes(activeAction) ? '$' : activeAction==='disc' && discType==='amt' ? '$' : ''}
