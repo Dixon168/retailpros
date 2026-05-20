@@ -130,6 +130,14 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
       has_serial:       p.has_serial ?? false,
       prompt_sales:     p.prompt_sales ?? false,
       track_inventory:  p.track_inventory ?? true,
+      // Inventory restock (match ProductForm / create flow)
+      low_stock_qty:    p.low_stock_qty ?? 5,
+      auto_restock_qty: p.auto_restock_qty ?? 0,
+      // Points redemption (match ProductForm)
+      points_redeem:          p.points_redeem ?? false,
+      redeem_points_required: String(p.redeem_points_required || ''),
+      // Enable/disable
+      is_enabled:       p.is_enabled ?? true,
       // Tax
       selectedTaxRates: [],
     })
@@ -230,6 +238,11 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
         has_serial:       form.has_serial,
         prompt_sales:     form.prompt_sales,
         track_inventory:  form.track_inventory,
+        low_stock_qty:    parseInt(form.low_stock_qty) || 0,
+        auto_restock_qty: parseInt(form.auto_restock_qty) || 0,
+        points_redeem:    form.points_redeem,
+        redeem_points_required: parseInt(form.redeem_points_required) || null,
+        is_enabled:       form.is_enabled,
       }).eq('id', p.id)
       if (updErr) throw updErr
 
@@ -785,7 +798,31 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                 <Toggle checked={form.has_serial}       onChange={()=>setF('has_serial',      !form.has_serial)}       label="Serial Numbers"   desc="Track serial numbers"/>
                 <Toggle checked={form.prompt_sales}     onChange={()=>setF('prompt_sales',    !form.prompt_sales)}     label="Prompt Staff"     desc="Show staff list on add"/>
                 <Toggle checked={form.track_inventory}  onChange={()=>setF('track_inventory', !form.track_inventory)}  label="Track Inventory"  desc="Show stock levels"/>
+                <Toggle checked={form.is_enabled}       onChange={()=>setF('is_enabled',      !form.is_enabled)}       label="Product Enabled"  desc="Off = hide from POS"/>
               </div>
+
+              {/* Low-stock + auto-restock — match the create form. Shown when
+                  inventory is tracked. */}
+              {form.track_inventory && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Low-Stock Alert (≤ QTY)</div>
+                    <input value={form.low_stock_qty}
+                      onChange={e=>setF('low_stock_qty', e.target.value.replace(/[^\d]/g,''))}
+                      inputMode="numeric" placeholder="5"
+                      className="w-full rounded-xl px-3 py-2.5 text-[13px] font-mono outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Auto-Restock QTY</div>
+                    <input value={form.auto_restock_qty}
+                      onChange={e=>setF('auto_restock_qty', e.target.value.replace(/[^\d]/g,''))}
+                      inputMode="numeric" placeholder="0"
+                      className="w-full rounded-xl px-3 py-2.5 text-[13px] font-mono outline-none"
+                      style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                </div>
+              )}
             </SectionBox>
 
             {/* Save button at bottom */}
