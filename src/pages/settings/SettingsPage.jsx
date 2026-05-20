@@ -17,24 +17,38 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
 const SECTIONS = [
-  { id:'store',     icon:'🏪', label:'Store Info',        role:'owner' },
-  { id:'terminals', icon:'🖥️', label:'Terminals & PAX',   role:'owner' },
-  { id:'printer',   icon:'🖨️', label:'Printer Setup',     role:'owner' },
-  { id:'cashdrawer',icon:'💰', label:'Cash Drawer',       role:'owner' },
-  { id:'printing',  icon:'📄', label:'Print Settings',    role:'owner' },
-  { id:'tax',       icon:'🧾', label:'Tax Rates',         role:'owner' },
-  { id:'coupons',   icon:'🎫', label:'Coupons',           role:'owner' },
-  { id:'discounts', icon:'🏷️', label:'Discount Tiers',    role:'owner' },
-  { id:'users',     icon:'👤', label:'Employees',          role:'manager' },
-  { id:'roles',     icon:'🛡️', label:'Roles & Permissions',role:'owner' },
-  { id:'payment',   icon:'💳', label:'Payment Config',    role:'owner' },
-  { id:'billing',   icon:'💰', label:'Subscription',      role:'owner' },
-  { id:'language',  icon:'🌐', label:'Language & Region', role:'owner' },
-  { id:'loyalty',   icon:'💎', label:'Loyalty & Points',   role:'owner' },
-  { id:'memberlevels', icon:'🏅', label:'Member Levels', role:'owner' },
-  { id:'notifications', icon:'📨', label:'Notifications', role:'owner' },
-  { id:'display',   icon:'📺', label:'Customer Display', role:'owner' },
-  { id:'api',       icon:'🤖', label:'API & Integrations', role:'owner' },
+  // 🏪 Store & Hardware
+  { id:'store',     icon:'🏪', label:'Store Info',         role:'owner',   cat:'store' },
+  { id:'terminals', icon:'🖥️', label:'Terminals & PAX',    role:'owner',   cat:'store' },
+  { id:'printer',   icon:'🖨️', label:'Printer Setup',      role:'owner',   cat:'store' },
+  { id:'cashdrawer',icon:'💰', label:'Cash Drawer',        role:'owner',   cat:'store' },
+  { id:'printing',  icon:'📄', label:'Print Settings',     role:'owner',   cat:'store' },
+  // 💵 Sales & Pricing
+  { id:'tax',       icon:'🧾', label:'Tax Rates',          role:'owner',   cat:'sales' },
+  { id:'payment',   icon:'💳', label:'Payment Config',     role:'owner',   cat:'sales' },
+  { id:'coupons',   icon:'🎫', label:'Coupons',            role:'owner',   cat:'sales' },
+  { id:'discounts', icon:'🏷️', label:'Discount Tiers',     role:'owner',   cat:'sales' },
+  // 👥 Team
+  { id:'users',     icon:'👤', label:'Employees',          role:'manager', cat:'team' },
+  { id:'roles',     icon:'🛡️', label:'Roles & Permissions',role:'owner',   cat:'team' },
+  // 🎁 Customers
+  { id:'loyalty',   icon:'💎', label:'Loyalty & Points',   role:'owner',   cat:'customers' },
+  { id:'memberlevels', icon:'🏅', label:'Member Levels',   role:'owner',   cat:'customers' },
+  { id:'display',   icon:'📺', label:'Customer Display',    role:'owner',   cat:'customers' },
+  // ⚙️ System
+  { id:'billing',   icon:'💰', label:'Subscription',       role:'owner',   cat:'system' },
+  { id:'language',  icon:'🌐', label:'Language & Region',   role:'owner',   cat:'system' },
+  { id:'notifications', icon:'📨', label:'Notifications',   role:'owner',   cat:'system' },
+  { id:'api',       icon:'🤖', label:'API & Integrations',  role:'owner',   cat:'system' },
+]
+
+// Category headers shown as group dividers in the settings sidebar.
+const CATEGORIES = [
+  { id:'store',     label:'Store & Hardware' },
+  { id:'sales',     label:'Sales & Pricing' },
+  { id:'team',      label:'Team' },
+  { id:'customers', label:'Customers' },
+  { id:'system',    label:'System' },
 ]
 
 export default function SettingsPage() {
@@ -82,7 +96,7 @@ export default function SettingsPage() {
   return (
     <div className="flex h-full bg-[#FAFAFA]">
       {/* Sidebar */}
-      <div className="w-[220px] bg-[#FFFFFF] border-r border-[#E5E5E5] p-3 flex-shrink-0">
+      <div className="w-[220px] bg-[#FFFFFF] border-r border-[#E5E5E5] p-3 flex-shrink-0 overflow-y-auto">
         {/* Header with close button */}
         <div className="flex items-center justify-between px-2 mb-3">
           <div className="text-[9px] font-mono text-[#999999] uppercase tracking-widest">
@@ -95,22 +109,34 @@ export default function SettingsPage() {
             ✕
           </button>
         </div>
-        {visibleSections.map(s => {
-          const v = can(`settings.${s.id}`)
-          const isPrompt = v === 'prompt' && !unlockedSections.has(s.id)
-          const isUnlocked = unlockedSections.has(s.id)
+        {CATEGORIES.map(category => {
+          const itemsInCat = visibleSections.filter(s => s.cat === category.id)
+          if (itemsInCat.length === 0) return null  // hide empty groups (perms)
           return (
-            <div key={s.id} onClick={() => trySwitch(s.id)}
-              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer
-                text-[12px] mb-0.5 transition-all ${
-                active === s.id
-                  ? 'bg-[#000000] text-white font-semibold'
-                  : 'text-[#1F1F1F] hover:bg-[#F5F5F5]'
-              }`}>
-              <span>{s.icon}</span>
-              <span className="flex-1">{s.label}</span>
-              {isPrompt && <span title="Requires manager approval" className="text-[11px]">🔐</span>}
-              {isUnlocked && <span title="Approved this session" className="text-[10px]" style={{color:'#10b981'}}>✓</span>}
+            <div key={category.id} className="mb-3">
+              {/* Category header */}
+              <div className="px-2.5 mb-1 text-[9px] font-bold text-[#999999] uppercase tracking-widest">
+                {category.label}
+              </div>
+              {itemsInCat.map(s => {
+                const v = can(`settings.${s.id}`)
+                const isPrompt = v === 'prompt' && !unlockedSections.has(s.id)
+                const isUnlocked = unlockedSections.has(s.id)
+                return (
+                  <div key={s.id} onClick={() => trySwitch(s.id)}
+                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer
+                      text-[12px] mb-0.5 transition-all ${
+                      active === s.id
+                        ? 'bg-[#000000] text-white font-semibold'
+                        : 'text-[#1F1F1F] hover:bg-[#F5F5F5]'
+                    }`}>
+                    <span>{s.icon}</span>
+                    <span className="flex-1">{s.label}</span>
+                    {isPrompt && <span title="Requires manager approval" className="text-[11px]">🔐</span>}
+                    {isUnlocked && <span title="Approved this session" className="text-[10px]" style={{color:'#10b981'}}>✓</span>}
+                  </div>
+                )
+              })}
             </div>
           )
         })}
