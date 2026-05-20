@@ -424,7 +424,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4 px-4"
+    <div className="fixed inset-0 z-[500] flex items-start justify-center pt-4 pb-4 px-4"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(2px)', overflowY:'auto'}}>
       <div className="flex flex-col rounded-2xl overflow-hidden shadow-md w-full"
         style={{maxWidth:'860px', background:'#FFFFFF', minHeight:'auto'}}>
@@ -1087,7 +1087,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
 
         {/* Add Category modal */}
         {showAddCat && (
-          <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center" onClick={()=>setShowAddCat(false)}>
+          <div className="fixed inset-0 bg-black/40 z-[510] flex items-center justify-center" onClick={()=>setShowAddCat(false)}>
             <div className="bg-white rounded-2xl w-[320px] p-5 shadow-md" onClick={e=>e.stopPropagation()}>
               <div className="text-[15px] font-bold mb-3">✚ Add Main Category</div>
               <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} autoFocus
@@ -1109,7 +1109,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
 
         {/* Add Subcategory modal */}
         {showAddSub && (
-          <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center" onClick={()=>setShowAddSub(false)}>
+          <div className="fixed inset-0 bg-black/40 z-[510] flex items-center justify-center" onClick={()=>setShowAddSub(false)}>
             <div className="bg-white rounded-2xl w-[360px] p-5 shadow-md" onClick={e=>e.stopPropagation()}>
               <div className="text-[15px] font-bold mb-4">✚ Add Subcategory</div>
               <div className="mb-3">

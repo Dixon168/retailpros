@@ -7,15 +7,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
-import { useNavigate } from 'react-router-dom'
 import { ReceiveModal } from '@/pages/products/ReceiveModal'
+import { ProductForm } from '@/pages/products/ProductForm'
 import { CountModal, WriteOffModal, HistoryModal } from '@/components/inventory/StockOpsModals'
 import { QWERTYKeyboard } from '@/components/ui/TouchKeyboards'
 
 export default function StockDetailPanel({ product, onClose, onChanged }) {
   const { tenant, store, user } = useAuthStore()
   const qc = useQueryClient()
-  const navigate = useNavigate()
 
   const [editing, setEditing] = useState(null)
   const [showKB, setShowKB] = useState(null)
@@ -23,6 +22,33 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
   const [showCount, setShowCount]     = useState(false)
   const [showWriteOff, setShowWriteOff] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  // Full-edit popup. We store the fully-loaded product object here; null
+  // means the popup is closed.
+  const [editFullProduct, setEditFullProduct] = useState(null)
+  const [loadingFullEdit, setLoadingFullEdit] = useState(false)
+
+  // Fetch the COMPLETE product row (the detail query only pulls a subset
+  // of columns; ProductForm needs everything — description, upc, category,
+  // tags, etc). Then open the form as a popup over this panel.
+  const openFullEdit = async (productId) => {
+    setLoadingFullEdit(true)
+    try {
+      const { data, error } = await supabase.from('products')
+        .select('*')
+        .eq('id', productId)
+        .single()
+      if (error || !data) {
+        toast.error('Could not load product for editing')
+        return
+      }
+      setEditFullProduct(data)
+    } catch (e) {
+      console.error('Load full product:', e)
+      toast.error('Could not load product')
+    } finally {
+      setLoadingFullEdit(false)
+    }
+  }
 
   // Fetch fresh detail (includes inventory + 7d sales + vendor pricing)
   const { data: detail, isLoading } = useQuery({
@@ -274,10 +300,10 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
               <PriceField label="Catalog Cost" value={p.cost} editing={editing === 'cost'}
                 onEdit={() => setEditing('cost')} onSave={v => saveField('cost', v)} onCancel={() => setEditing(null)}/>
             </div>
-            <button onClick={() => navigate(`/products?edit=${p.id}`)}
-              className="mt-3 w-full rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.98]"
+            <button onClick={() => openFullEdit(p.id)} disabled={loadingFullEdit}
+              className="mt-3 w-full rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.98] disabled:opacity-50"
               style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
-              Edit full details →
+              {loadingFullEdit ? 'Loading...' : 'Edit full details →'}
             </button>
           </Section>
 
@@ -383,6 +409,26 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
       {showKB && (
         <QWERTYKeyboard value={showKB.value} onChange={showKB.onChange}
           onClose={() => setShowKB(null)} title={showKB.title}/>
+      )}
+
+      {/* Full product edit — opens as a popup OVER this panel. On save or
+          close, returns here (the Stock Center detail panel). */}
+      {editFullProduct && (
+        <ProductForm
+          initial={editFullProduct}
+          tenantId={tenant?.id}
+          storeId={store?.id}
+          onSave={() => {
+            setEditFullProduct(null)
+            // Refresh the detail panel + parent list so edits show up
+            qc.invalidateQueries({ queryKey: ['stock-detail', product.id] })
+            qc.invalidateQueries({ queryKey: ['stock-rows'] })
+            qc.invalidateQueries({ queryKey: ['stock-summary'] })
+            qc.invalidateQueries({ queryKey: ['products'] })
+            onChanged?.()
+          }}
+          onClose={() => setEditFullProduct(null)}
+        />
       )}
     </PanelShell>
   )
