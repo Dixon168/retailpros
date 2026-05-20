@@ -689,15 +689,15 @@ export default function PaymentPanel() {
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Payment Method
             </div>
-            <div className="flex-1 flex flex-col p-3 gap-3" style={{minHeight:0}}>
+            <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto" style={{minHeight:0}}>
               {/* Method buttons */}
               <div className="flex-shrink-0 grid gap-2" style={{gridTemplateColumns:`repeat(${Math.min(enabledMethods.length,4)},1fr)`}}>
                 {enabledMethods.map(m=>(
                   <button key={m.id} onClick={()=>setSelMethod(m.id)}
-                    className="flex flex-col items-center py-3 rounded-xl cursor-pointer border-2 transition-all"
+                    className="flex flex-col items-center py-2.5 rounded-xl cursor-pointer border-2 transition-all"
                     style={selMethod===m.id?{background:m.bg,borderColor:m.color}:{background:'#f8fafc',borderColor:'#e2e8f0'}}>
-                    <span className="text-[20px]">{m.icon}</span>
-                    <span className="text-[10px] font-bold mt-1"
+                    <span className="text-[18px]">{m.icon}</span>
+                    <span className="text-[10px] font-bold mt-0.5"
                       style={{color:selMethod===m.id?m.color:'#64748b'}}>{m.label}</span>
                   </button>
                 ))}
@@ -721,10 +721,10 @@ export default function PaymentPanel() {
               {paxState==='idle' && remaining>0 && (
                 <>
                   <button onClick={()=>setShowPayPad(true)}
-                    className="flex-shrink-0 w-full rounded-lg px-4 py-4 text-left cursor-pointer border-2 transition-all"
+                    className="flex-shrink-0 w-full rounded-lg px-4 py-3 text-left cursor-pointer border-2 transition-all"
                     style={{borderColor:'#80B2FF', background:'#E6F0FF'}}>
                     <div className="text-[10px] text-indigo-400 mb-0.5">Payment {payments.length+1} Amount</div>
-                    <div className="text-[38px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>
+                    <div className="text-[30px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>
                       ${payInput||remaining.toFixed(2)}
                     </div>
                   </button>
@@ -741,7 +741,7 @@ export default function PaymentPanel() {
                     }
                   </div>
                   <button onClick={handleAddPayment}
-                    className="flex-shrink-0 w-full rounded-lg py-4 text-[16px] font-bold text-white cursor-pointer border-none"
+                    className="flex-shrink-0 w-full rounded-lg py-3.5 text-[16px] font-bold text-white cursor-pointer border-none"
                     style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
                     {METHODS.find(m=>m.id===selMethod)?.icon} Add {METHODS.find(m=>m.id===selMethod)?.label} — ${payInput||remaining.toFixed(2)}
                   </button>
