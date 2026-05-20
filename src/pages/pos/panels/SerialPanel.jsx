@@ -83,7 +83,7 @@ export default function SerialPanel() {
         {/* 商品信息 */}
         <div className="flex items-center gap-2.5 bg-[#F5F5F5] border border-[#E5E5E5]
           rounded-[9px] p-3 mb-4">
-          <span className="text-[24px]">{pendingProduct?.emoji || '📱'}</span>
+          <span className="text-[24px]">📦</span>
           <div>
             <div className="text-[13px] font-semibold">{pendingProduct?.name}</div>
             <div className="text-[10px] font-mono text-[#999999] mt-0.5">

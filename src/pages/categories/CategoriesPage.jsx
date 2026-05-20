@@ -298,7 +298,7 @@ export default function CategoriesPage() {
                             <span className="text-[#999999] font-mono text-[11px] w-5 text-center">
                               {idx + 1}
                             </span>
-                            <span className="text-[16px]">{p.emoji || '📦'}</span>
+                            <span className="text-[16px]">📦</span>
                             <span className="flex-1 text-[12px] font-semibold">{p.name}</span>
                             <span className="font-mono text-[12px] text-[#006AFF]">
                               ${parseFloat(p.price||0).toFixed(2)}

@@ -190,7 +190,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
             style={{background:'#F5F5F5', border:'1px solid #E5E5E5'}}>
             {p.image_url
               ? <img src={p.image_url} alt="" className="w-full h-full object-cover"/>
-              : <span className="text-[18px]">{p.emoji || '📦'}</span>}
+              : <span className="text-[18px]">📦</span>}
           </div>
           <div className="flex-1 min-w-0">
             {editing === 'name' ? (

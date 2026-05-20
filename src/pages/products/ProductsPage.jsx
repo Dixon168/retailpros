@@ -429,7 +429,7 @@ export default function ProductsPage() {
               {/* Popup header with close */}
               <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E5E5] sticky top-0 bg-white z-10">
                 <div className="flex items-center gap-2">
-                  <span className="text-[18px]">{expandedProduct.emoji || '📦'}</span>
+                  <span className="text-[18px]">📦</span>
                   <span className="text-[15px] font-bold text-[#1F1F1F]">{expandedProduct.name}</span>
                 </div>
                 <button onClick={() => setExpandedId(null)}
