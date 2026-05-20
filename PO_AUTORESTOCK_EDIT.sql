@@ -78,29 +78,37 @@ BEGIN
       ((v_item->>'quantity')::NUMERIC * (v_item->>'unit_cost')::NUMERIC);
   END LOOP;
 
-  -- Preserve received counts: we delete + re-insert items, but for any
-  -- product that had received > 0, carry that forward so partial receives
-  -- aren't lost.
-  CREATE TEMP TABLE _old_received ON COMMIT DROP AS
-    SELECT product_id, SUM(received) AS received
-      FROM purchase_order_items
-     WHERE po_id = p_po_id AND product_id IS NOT NULL
-     GROUP BY product_id;
+  -- Snapshot received counts per product into a JSONB map BEFORE deleting,
+  -- so we can carry them forward onto the re-inserted rows. Using a local
+  -- variable instead of a TEMP TABLE avoids any "table already exists"
+  -- clash if this function were ever called twice in one transaction.
+  DECLARE
+    v_received_map JSONB;
+  BEGIN
+    SELECT COALESCE(jsonb_object_agg(product_id::TEXT, total_received), '{}'::jsonb)
+      INTO v_received_map
+      FROM (
+        SELECT product_id, SUM(received) AS total_received
+          FROM purchase_order_items
+         WHERE po_id = p_po_id AND product_id IS NOT NULL
+         GROUP BY product_id
+      ) s;
 
-  DELETE FROM purchase_order_items WHERE po_id = p_po_id;
+    DELETE FROM purchase_order_items WHERE po_id = p_po_id;
 
-  INSERT INTO purchase_order_items (
-    tenant_id, po_id, product_id, product_name, quantity, unit_cost, received
-  )
-  SELECT
-    p_tenant_id, p_po_id,
-    NULLIF(item->>'product_id','')::UUID,
-    item->>'product_name',
-    (item->>'quantity')::NUMERIC,
-    (item->>'unit_cost')::NUMERIC,
-    COALESCE((SELECT received FROM _old_received o
-               WHERE o.product_id = NULLIF(item->>'product_id','')::UUID), 0)
-  FROM jsonb_array_elements(p_items) AS item;
+    INSERT INTO purchase_order_items (
+      tenant_id, po_id, product_id, product_name, quantity, unit_cost, received
+    )
+    SELECT
+      p_tenant_id, p_po_id,
+      NULLIF(item->>'product_id','')::UUID,
+      item->>'product_name',
+      (item->>'quantity')::NUMERIC,
+      (item->>'unit_cost')::NUMERIC,
+      -- Carry forward received count for this product, if any
+      COALESCE((v_received_map->>(NULLIF(item->>'product_id','')))::NUMERIC, 0)
+    FROM jsonb_array_elements(p_items) AS item;
+  END;
 
   -- Update header
   UPDATE purchase_orders
