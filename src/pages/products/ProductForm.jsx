@@ -172,6 +172,9 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
     tax_exempt:       initial.tax_exempt       ?? false,
     points_redeem:          initial.points_redeem          ?? false,
     redeem_points_required: initial.redeem_points_required || '',
+    // Enable/disable — temporarily hide from POS without deleting.
+    // New products default to enabled.
+    is_enabled:       initial.is_enabled       ?? true,
   })
   const set = (k,v) => setForm(p => ({...p,[k]:v}))
 
@@ -378,6 +381,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
         auto_restock_qty: parseInt(form.auto_restock_qty) || 0,
         tax_exempt:       form.tax_exempt,
         is_active:        true,
+        is_enabled:       form.is_enabled,
       }
 
       let productId = form.id
@@ -1062,6 +1066,8 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                 label="Prompt Staff" desc="Auto pop up staff list when adding to cart"/>
               <Toggle checked={form.track_inventory} onChange={()=>set('track_inventory',!form.track_inventory)}
                 label="Track Inventory" desc="Show stock levels and low stock alerts"/>
+              <Toggle checked={form.is_enabled} onChange={()=>set('is_enabled',!form.is_enabled)}
+                label="Product Enabled" desc="Turn off to hide from POS without deleting"/>
             </div>
 
             {/* Low-stock + auto-restock — only relevant when tracking stock.

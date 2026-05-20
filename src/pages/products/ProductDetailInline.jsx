@@ -566,7 +566,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
               ))}
             </SectionBox>
             <SectionBox title="Checkout Settings" icon="🛒" color="#0891b2">
-              {[['Prompt Weight',d.prompt_weight],['Prompt Price',d.prompt_price],['Prompt Staff',d.prompt_sales],['Serial Numbers',d.has_serial],['Track Inventory',d.track_inventory]].map(([l,v])=>(
+              {[['Prompt Weight',d.prompt_weight],['Prompt Price',d.prompt_price],['Prompt Staff',d.prompt_sales],['Serial Numbers',d.has_serial],['Track Inventory',d.track_inventory],['Product Enabled',d.is_enabled !== false]].map(([l,v])=>(
                 <div key={l} className="flex justify-between items-center py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
                   <span className={`text-[11px] font-bold ${v?'text-green-600':'text-slate-300'}`}>{v?'✅ Yes':'✗ No'}</span>
