@@ -35,12 +35,31 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
       const stockMap = {}
       ;(inv || []).forEach(r => { stockMap[r.product_id] = r.quantity })
 
+      // Which products are already on an OPEN purchase order? Show a badge
+      // so the cashier knows it's already been ordered (they can still add
+      // it to a different PO if they want).
+      const { data: openPoItems } = await supabase
+        .from('purchase_order_items')
+        .select('product_id, quantity, purchase_orders!inner(status, po_number, tenant_id)')
+        .eq('tenant_id', tenant.id)
+        .in('purchase_orders.status', ['draft', 'ordered', 'partial'])
+      const onOrderMap = {}  // product_id -> { qty, po_numbers:Set }
+      ;(openPoItems || []).forEach(r => {
+        const pid = r.product_id
+        if (!pid) return
+        if (!onOrderMap[pid]) onOrderMap[pid] = { qty: 0, pos: new Set() }
+        onOrderMap[pid].qty += Number(r.quantity) || 0
+        if (r.purchase_orders?.po_number) onOrderMap[pid].pos.add(r.purchase_orders.po_number)
+      })
+
       return products
         .map(p => ({
           ...p,
           stock:     stockMap[p.id] ?? 0,
           threshold: p.low_stock_qty ?? 5,
           restock:   p.auto_restock_qty ?? 0,
+          onOrderQty: onOrderMap[p.id]?.qty || 0,
+          onOrderPOs: onOrderMap[p.id] ? [...onOrderMap[p.id].pos] : [],
         }))
         .filter(p => p.stock <= p.threshold)
         .sort((a, b) => (a.stock - a.threshold) - (b.stock - b.threshold))  // most urgent first
@@ -90,6 +109,7 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
       }))
     if (items.length === 0) return
     onBuildPO(items)
+    setSelected({})  // reset checkboxes — the PO is being created from these
   }
 
   return (
@@ -156,7 +176,16 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
                 {/* Product name + sku */}
                 <div className="px-3 py-3 cursor-pointer" onClick={() => toggle(p.id)}>
                   <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{p.name}</div>
-                  {p.sku && <div className="text-[10px] text-[#999] font-mono">SKU {p.sku}</div>}
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    {p.sku && <span className="text-[10px] text-[#999] font-mono">SKU {p.sku}</span>}
+                    {p.onOrderQty > 0 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                        style={{background:'#E6F0FF', color:'#006AFF'}}
+                        title={`Already on PO: ${p.onOrderPOs.join(', ')}`}>
+                        🛒 {p.onOrderQty} on order ({p.onOrderPOs.join(', ')})
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {/* UPC */}
                 <div className="px-3 py-3 font-mono text-[12px] text-[#666] truncate">

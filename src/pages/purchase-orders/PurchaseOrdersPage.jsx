@@ -150,8 +150,8 @@ export default function PurchaseOrdersPage() {
         <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
           {/* Header row */}
           <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]"
-            style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1.5fr'}}>
-            {['PO Number', 'Vendor', 'Status', 'Order Date', 'Expected', 'Total / Action'].map(h => (
+            style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1fr 1.5fr'}}>
+            {['PO Number', 'Vendor', 'Items / Qty', 'Status', 'Order Date', 'Expected', 'Total / Action'].map(h => (
               <div key={h} className="px-3.5 py-2.5 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
             ))}
           </div>
@@ -162,12 +162,17 @@ export default function PurchaseOrdersPage() {
             return (
               <div key={po.id}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]"
-                style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1.5fr'}}>
+                style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1fr 1.5fr'}}>
                 <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#006AFF]">
                   {po.po_number}
                 </div>
                 <div className="px-3.5 py-3 text-[13px] text-[#1F1F1F] truncate">
                   {po.vendor_name || '—'}
+                </div>
+                <div className="px-3.5 py-3 text-[12px] text-[#666]">
+                  <span className="font-bold text-[#1F1F1F]">{po.item_count || 0}</span> items
+                  <span className="text-[#999]"> · </span>
+                  <span className="font-mono">{(po.total_qty || 0)} qty</span>
                 </div>
                 <div className="px-3.5 py-3">
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded"
@@ -225,6 +230,7 @@ export default function PurchaseOrdersPage() {
             setShowCreate(false)
             setPresetItems(null)
             qc.invalidateQueries({ queryKey: ['purchase-orders-list'] })
+            qc.invalidateQueries({ queryKey: ['lowstock-list'] })
           }}
         />
       )}
@@ -237,6 +243,7 @@ export default function PurchaseOrdersPage() {
           onCreated={() => {
             setEditingPo(null)
             qc.invalidateQueries({ queryKey: ['purchase-orders-list'] })
+            qc.invalidateQueries({ queryKey: ['lowstock-list'] })
           }}
         />
       )}
