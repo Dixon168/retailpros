@@ -157,8 +157,6 @@ export default function PurchaseOrdersPage() {
           </div>
           {filtered.map(po => {
             const st = STATUS_BADGE[po.status] || STATUS_BADGE.draft
-            const canReceive = ['ordered', 'partial'].includes(po.status)
-            const canEdit    = ['draft', 'ordered', 'partial'].includes(po.status)
             return (
               <div key={po.id}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]"
@@ -190,28 +188,11 @@ export default function PurchaseOrdersPage() {
                   <span className="font-mono text-[13px] font-bold text-[#1F1F1F]">
                     ${(po.total || 0).toFixed(2)}
                   </span>
-                  <div className="flex gap-1.5">
-                    {canEdit && (
-                      <button onClick={() => setEditingPo(po)}
-                        className="rounded-lg px-2 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                        style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
-                        ✏️
-                      </button>
-                    )}
-                    {canReceive ? (
-                      <button onClick={() => setReceivingPo(po)}
-                        className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                        style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-                        📥 Receive
-                      </button>
-                    ) : (
-                      <button onClick={() => setReceivingPo(po)}
-                        className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                        style={{background:'#F5F5F5', color:'#666', border:'1px solid #E5E5E5'}}>
-                        View
-                      </button>
-                    )}
-                  </div>
+                  <button onClick={() => setReceivingPo(po)}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
+                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                    Details ›
+                  </button>
                 </div>
               </div>
             )

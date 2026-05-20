@@ -221,9 +221,9 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
 
               <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
                 <div className="grid bg-[#F5F5F5] border-b border-[#E5E5E5]"
-                  style={{gridTemplateColumns:'1fr 70px 70px 90px 90px 100px'}}>
-                  {['Product','Ordered','Already','Receive Now','Unit Cost','Subtotal'].map(h => (
-                    <div key={h} className="px-2.5 py-2 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
+                  style={{gridTemplateColumns:'1fr 100px 110px 110px 44px'}}>
+                  {['Product','Qty','Price','Subtotal',''].map((h,i) => (
+                    <div key={i} className="px-2.5 py-2 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
                   ))}
                 </div>
 
@@ -232,58 +232,33 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                   const qty = parseFloat(line.qty_to_receive) || 0
                   const cost = parseFloat(line.unit_cost) || 0
                   const sub = qty * cost
-                  const isFullyReceived = (line.already_received || 0) >= line.ordered
-                  const overReceiving = qty + line.already_received > line.ordered
                   return (
                     <div key={line.po_item_id} className="grid border-b border-[#E5E5E5] items-center"
-                      style={{gridTemplateColumns:'1fr 70px 70px 90px 90px 100px'}}>
+                      style={{gridTemplateColumns:'1fr 100px 110px 110px 44px'}}>
                       <div className="px-2.5 py-2.5">
-                        <div className="text-[12px] font-bold text-[#1F1F1F] truncate"
-                          style={{opacity: isFullyReceived ? 0.5 : 1}}>
+                        <div className="text-[12px] font-bold text-[#1F1F1F] truncate">
                           {line.product_name}
                         </div>
-                        {isFullyReceived && (
-                          <div className="text-[9px] font-bold text-[#15803D]">✅ Fully received</div>
-                        )}
-                        {overReceiving && (
-                          <div className="text-[9px] font-bold text-[#B45309]">⚠️ Over by {(qty + line.already_received - line.ordered).toFixed(0)}</div>
-                        )}
-                      </div>
-                      <div className="px-2.5 py-2.5 text-right font-mono text-[12px] text-[#666]">
-                        {line.ordered}
-                      </div>
-                      <div className="px-2.5 py-2.5 text-right font-mono text-[12px] text-[#666]">
-                        {line.already_received || 0}
-                      </div>
-                      <div className="px-2 py-2.5">
-                        {isReadOnly ? (
-                          <div className="px-2 py-1.5 rounded text-right font-mono text-[12px]"
-                            style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666'}}>
-                            {line.qty_to_receive || '0'}
-                          </div>
-                        ) : (
-                          <DualInput compact mode="decimal"
-                            value={line.qty_to_receive}
-                            onChange={(v) => updateLine(idx, 'qty_to_receive', v)}
-                            kbTitle={`Receive: ${line.product_name}`}/>
+                        {line.ordered != null && (
+                          <div className="text-[9px] text-[#999]">Ordered {line.ordered}</div>
                         )}
                       </div>
                       <div className="px-2 py-2.5">
-                        {isReadOnly ? (
-                          <div className="px-2 py-1.5 rounded text-right font-mono text-[12px]"
-                            style={{background:'#F5F5F5', border:'1px solid #E5E5E5', color:'#666'}}>
-                            ${line.unit_cost || '0'}
-                          </div>
-                        ) : (
-                          <DualInput compact mode="decimal" prefix="$"
-                            value={line.unit_cost}
-                            onChange={(v) => updateLine(idx, 'unit_cost', v)}
-                            kbTitle={`Cost: ${line.product_name}`}/>
-                        )}
+                        <DualInput compact mode="decimal"
+                          value={line.qty_to_receive}
+                          onChange={(v) => updateLine(idx, 'qty_to_receive', v)}
+                          kbTitle={`Qty: ${line.product_name}`}/>
+                      </div>
+                      <div className="px-2 py-2.5">
+                        <DualInput compact mode="decimal" prefix="$"
+                          value={line.unit_cost}
+                          onChange={(v) => updateLine(idx, 'unit_cost', v)}
+                          kbTitle={`Price: ${line.product_name}`}/>
                       </div>
                       <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#1F1F1F]">
                         ${sub.toFixed(2)}
                       </div>
+                      <div className="px-2 py-2.5"></div>
                     </div>
                   )
                 })}
@@ -295,18 +270,12 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                   const sub = qty * cost
                   return (
                     <div key={`extra-${idx}`} className="grid border-b border-[#E5E5E5] items-center"
-                      style={{gridTemplateColumns:'1fr 70px 70px 90px 90px 100px', background:'#F5F8FF'}}>
+                      style={{gridTemplateColumns:'1fr 100px 110px 110px 44px', background:'#F5F8FF'}}>
                       <div className="px-2.5 py-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded"
-                            style={{background:'#006AFF', color:'#FFFFFF'}}>EXTRA</span>
-                          <button onClick={() => removeExtra(idx)}
-                            className="text-[10px] text-[#CF1322] cursor-pointer" style={{background:'none', border:'none'}}>✕</button>
-                        </div>
-                        <div className="text-[12px] font-bold text-[#1F1F1F] truncate">{item.product_name}</div>
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded mr-1"
+                          style={{background:'#006AFF', color:'#FFFFFF'}}>NEW</span>
+                        <span className="text-[12px] font-bold text-[#1F1F1F]">{item.product_name}</span>
                       </div>
-                      <div className="px-2.5 py-2.5 text-right font-mono text-[12px] text-[#999]">—</div>
-                      <div className="px-2.5 py-2.5 text-right font-mono text-[12px] text-[#999]">—</div>
                       <div className="px-2 py-2.5">
                         <DualInput compact mode="decimal"
                           value={item.quantity}
@@ -317,23 +286,29 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                         <DualInput compact mode="decimal" prefix="$"
                           value={item.unit_cost}
                           onChange={(v) => updateExtra(idx, 'unit_cost', v)}
-                          kbTitle={`Cost: ${item.product_name}`}/>
+                          kbTitle={`Price: ${item.product_name}`}/>
                       </div>
                       <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#006AFF]">
                         ${sub.toFixed(2)}
+                      </div>
+                      <div className="px-2 py-2.5 flex items-center justify-center">
+                        <button onClick={() => removeExtra(idx)}
+                          className="w-7 h-7 rounded text-[14px] cursor-pointer"
+                          style={{background:'#FEE2E2', color:'#CF1322', border:'none'}}>×</button>
                       </div>
                     </div>
                   )
                 })}
 
                 {/* Total row */}
-                <div className="grid bg-[#F5F5F5]" style={{gridTemplateColumns:'1fr 70px 70px 90px 90px 100px'}}>
-                  <div className="col-span-5 px-3 py-3 text-right text-[12px] font-bold text-[#666] uppercase">
-                    {isReadOnly ? 'PO Total' : 'Total to receive'}
+                <div className="grid bg-[#F5F5F5]" style={{gridTemplateColumns:'1fr 100px 110px 110px 44px'}}>
+                  <div className="col-span-3 px-3 py-3 text-right text-[12px] font-bold text-[#666] uppercase">
+                    Total
                   </div>
                   <div className="px-3 py-3 text-right font-mono text-[16px] font-bold text-[#1F1F1F]">
                     ${(isReadOnly ? poDetail.total : totalToReceive).toFixed(2)}
                   </div>
+                  <div className="px-2 py-3"></div>
                 </div>
               </div>
             </div>
@@ -350,7 +325,7 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
               <button onClick={receiveAll} disabled={saving || totalToReceive === 0}
                 className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
                 style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
-                {saving ? 'Receiving...' : `📥 Receive All · $${totalToReceive.toFixed(2)}`}
+                {saving ? 'Saving...' : `✓ Save · Add to Inventory — $${totalToReceive.toFixed(2)}`}
               </button>
             )}
           </div>
