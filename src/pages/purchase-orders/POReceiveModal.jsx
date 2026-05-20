@@ -62,6 +62,16 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
     setReceiveLines(lines)
   }, [poDetail])
 
+  // Totals — must be declared BEFORE any early return so the hook order
+  // stays stable across the loading and loaded renders (React error #310).
+  const totalToReceive = useMemo(() => {
+    const main = receiveLines.reduce((s, l) =>
+      s + (parseFloat(l.qty_to_receive) || 0) * (parseFloat(l.unit_cost) || 0), 0)
+    const extras = extraItems.reduce((s, e) =>
+      s + (parseFloat(e.quantity) || 0) * (parseFloat(e.unit_cost) || 0), 0)
+    return main + extras
+  }, [receiveLines, extraItems])
+
   if (isLoading || !poDetail) {
     return (
       <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
@@ -73,15 +83,6 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
   const status = STATUS_BADGE[poDetail.status]
   const isReadOnly = poDetail.status === 'received' || poDetail.status === 'cancelled'
   const vendor = poDetail.suppliers
-
-  // Totals
-  const totalToReceive = useMemo(() => {
-    const main = receiveLines.reduce((s, l) =>
-      s + (parseFloat(l.qty_to_receive) || 0) * (parseFloat(l.unit_cost) || 0), 0)
-    const extras = extraItems.reduce((s, e) =>
-      s + (parseFloat(e.quantity) || 0) * (parseFloat(e.unit_cost) || 0), 0)
-    return main + extras
-  }, [receiveLines, extraItems])
 
   const updateLine = (idx, field, value) => {
     setReceiveLines(receiveLines.map((l, i) => i === idx ? { ...l, [field]: value } : l))
