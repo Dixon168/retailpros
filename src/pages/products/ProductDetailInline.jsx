@@ -542,6 +542,8 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                 ['Margin',      `${margin}%`,                                    'Based on Avg Cost'],
                 ['Profit/ea',   `$${(parseFloat(d.price||0)-avgCost).toFixed(2)}`, null],
                 ['In Stock',    `${qty} ${d.unit||'ea'}`,                        null],
+                ['Low-Stock Alert', `≤ ${d.low_stock_qty ?? 5}`,                'Product appears in the low-stock reorder list when stock hits this level.'],
+                ['Auto-Restock Qty', d.auto_restock_qty > 0 ? `${d.auto_restock_qty}` : '—', 'Pre-fills the order quantity when building a PO from the low-stock list.'],
                 ['Stock Value', `$${(qty*avgCost).toFixed(2)}`,                  'Current stock × Avg Cost'],
                 ['VIP',         d.allow_vip?'Yes':'No',                          null],
                 ['VIP Price',   d.vip_price?`$${d.vip_price}`:'% tier discount', null],

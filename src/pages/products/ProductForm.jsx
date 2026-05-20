@@ -165,6 +165,8 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
     has_serial:       initial.has_serial       ?? false,
     prompt_sales:     initial.prompt_sales     ?? false,
     track_inventory:  initial.track_inventory  ?? true,
+    low_stock_qty:    initial.low_stock_qty    ?? 5,
+    auto_restock_qty: initial.auto_restock_qty ?? 0,
     // Tax
     selectedTaxRates: [],
     tax_exempt:       initial.tax_exempt       ?? false,
@@ -372,6 +374,8 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
         has_serial:       form.has_serial,
         prompt_sales:     form.prompt_sales,
         track_inventory:  form.track_inventory,
+        low_stock_qty:    parseInt(form.low_stock_qty) || 0,
+        auto_restock_qty: parseInt(form.auto_restock_qty) || 0,
         tax_exempt:       form.tax_exempt,
         is_active:        true,
       }
@@ -1059,6 +1063,38 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
               <Toggle checked={form.track_inventory} onChange={()=>set('track_inventory',!form.track_inventory)}
                 label="Track Inventory" desc="Show stock levels and low stock alerts"/>
             </div>
+
+            {/* Low-stock + auto-restock — only relevant when tracking stock.
+                Same fields as the Stock Center Adjust modal, so they stay
+                in sync no matter where you edit them. */}
+            {form.track_inventory && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <Label>Low-stock alert at ≤</Label>
+                  <input
+                    value={form.low_stock_qty}
+                    onChange={e => set('low_stock_qty', e.target.value.replace(/[^\d]/g,''))}
+                    inputMode="numeric" placeholder="5"
+                    className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"
+                    style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    Product shows in the low-stock reorder list when stock hits this.
+                  </div>
+                </div>
+                <div>
+                  <Label>Auto-restock qty</Label>
+                  <input
+                    value={form.auto_restock_qty}
+                    onChange={e => set('auto_restock_qty', e.target.value.replace(/[^\d]/g,''))}
+                    inputMode="numeric" placeholder="0"
+                    className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"
+                    style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    Pre-fills the order quantity when building a PO from low stock.
+                  </div>
+                </div>
+              </div>
+            )}
           </Section>
 
           {/* ── PROMOTIONS (existing products only) ── */}
