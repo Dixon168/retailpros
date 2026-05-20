@@ -395,14 +395,6 @@ export default function ProductsPage() {
                         </div>
                       </td>
                     </tr>
-                    {expandedId === p.id && (
-                      <tr key={p.id+'-detail'}>
-                        <td colSpan={11} className="p-0" style={{borderBottom:'1px solid #e2e8f0'}}>
-                          <ProductDetailInline product={p} tenantId={tenant?.id} storeId={store?.id}
-                            onRefresh={() => { qc.invalidateQueries(['products']); qc.invalidateQueries(['pos-products']);const id=expandedId;setExpandedId(null);setTimeout(()=>setExpandedId(id),100) }}/>
-                        </td>
-                      </tr>
-                    )}
                     {historyId === p.id && (
                       <tr key={p.id+'-history'}>
                         <td colSpan={11} className="p-0" style={{borderBottom:'2px solid #2563eb'}}>
@@ -421,6 +413,38 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
+      {/* Product detail — full-screen popup. Renders over the product
+          list; closing returns here. expandedId holds the product id;
+          we find the row object from the loaded list. */}
+      {expandedId && (() => {
+        const expandedProduct = products.find(p => p.id === expandedId)
+        if (!expandedProduct) return null
+        return (
+          <div className="fixed inset-0 z-[450] flex items-start justify-center overflow-y-auto"
+            style={{background:'rgba(15,23,42,0.55)', backdropFilter:'blur(2px)'}}
+            onClick={() => setExpandedId(null)}>
+            <div className="w-full max-w-[1100px] my-4 mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
+              onClick={e => e.stopPropagation()}>
+              {/* Popup header with close */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E5E5] sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-2">
+                  <span className="text-[18px]">{expandedProduct.emoji || '📦'}</span>
+                  <span className="text-[15px] font-bold text-[#1F1F1F]">{expandedProduct.name}</span>
+                </div>
+                <button onClick={() => setExpandedId(null)}
+                  className="w-8 h-8 rounded-lg cursor-pointer text-[16px] border-none"
+                  style={{background:'#F5F5F5', color:'#666'}}>✕</button>
+              </div>
+              <ProductDetailInline product={expandedProduct} tenantId={tenant?.id} storeId={store?.id}
+                onRefresh={() => {
+                  qc.invalidateQueries(['products'])
+                  qc.invalidateQueries(['pos-products'])
+                }}/>
+            </div>
+          </div>
+        )
+      })()}
 
       {photoViewer && <PhotoViewer product={photoViewer} onClose={() => setPhotoViewer(null)}/>}
 
