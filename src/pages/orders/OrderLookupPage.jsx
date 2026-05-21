@@ -362,7 +362,7 @@ export default function OrderLookupPage() {
 
   // ── Orders query ──
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders-lookup', tenant?.id, search, statusF, payF, cashierF, dateMode, dateFrom, dateTo],
+    queryKey: ['orders-lookup', tenant?.id, search, cashierF, dateMode, dateFrom, dateTo],
     queryFn: async () => {
       let q = supabase.from('orders')
         .select(`*, customers(name,phone), users(name), terminals(name),
@@ -430,7 +430,7 @@ export default function OrderLookupPage() {
 
   const handleVoid = async (o, approver) => {
     const payMethods = o.order_payments || []
-    const total = parseFloat(o.grand_total || 0)
+    const total = parseFloat(o.grand_total || o.total || 0)
     const hasCash = payMethods.some(p => p.method === 'cash')
     const hasCard = payMethods.some(p => ['card','credit_card','debit_card'].includes(p.method))
     const hasMember = payMethods.some(p => ['member_card','vip_card'].includes(p.method))

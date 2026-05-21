@@ -77,6 +77,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     return init
   })
   const [showQtyPad,    setShowQtyPad]    = useState(null) // itemId
+  const [qtyPadValue,   setQtyPadValue]   = useState('')   // controlled NumPad input
   const [showKB,        setShowKB]        = useState(false)
 
   // PIN auth
@@ -446,7 +447,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                           <button onClick={() => setReturnItems(prev => prev.map((r,i) => i===idx ? {...r, qty: Math.max(1,r.qty-1)} : r))}
                             className="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer border text-[18px] font-bold active:scale-90"
                             style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>−</button>
-                          <button onClick={() => { setEditItemIdx(idx); setShowItemPad(true) }}
+                          <button onClick={() => { setEditItemIdx(idx); setShowItemPad(true); setQtyPadValue(String(returnItems[idx]?.qty || '')) }}
                             className="min-w-[44px] h-10 px-2 rounded-lg text-[15px] font-bold text-center cursor-pointer border"
                             style={{background:'#eff6ff', borderColor:'#93c5fd', color:'#2563eb'}}>
                             {item.qty}
@@ -614,7 +615,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                                 onClick={() => setReturnQtys(q => ({...q, [item.id]: Math.max(0,(q[item.id]||0)-1)}))}
                                 className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border text-[16px] font-bold"
                                 style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>−</button>
-                              <button onClick={() => setShowQtyPad(item.id)}
+                              <button onClick={() => { setShowQtyPad(item.id); setQtyPadValue(String(retQty || '')) }}
                                 className="w-12 h-8 rounded-lg text-[14px] font-bold text-center cursor-pointer"
                                 style={{
                                   background: retQty > 0 ? '#fee2e2' : '#f8fafc',
@@ -662,30 +663,31 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
       {showItemPad && editItemIdx !== null && (
         <NumPad title="Return Quantity"
           subtitle={returnItems[editItemIdx]?.product.name}
-          value={String(returnItems[editItemIdx]?.qty || '')}
-          onChange={() => {}}
+          value={qtyPadValue}
+          onChange={setQtyPadValue}
           allowNegative={false} allowDecimal={false}
           onConfirm={v => {
             setReturnItems(prev => prev.map((r,i) => i===editItemIdx ? {...r, qty: Math.max(1,Math.round(v))} : r))
-            setShowItemPad(false); setEditItemIdx(null)
+            setShowItemPad(false); setEditItemIdx(null); setQtyPadValue('')
           }}
-          onClose={() => { setShowItemPad(false); setEditItemIdx(null) }}/>
+          onClose={() => { setShowItemPad(false); setEditItemIdx(null); setQtyPadValue('') }}/>
       )}
 
       {/* NumPad for invoice item qty */}
       {showQtyPad && (
         <NumPad title="Return Quantity"
           subtitle={selectedOrder?.order_items?.find(i=>i.id===showQtyPad)?.products?.name}
-          value={String(returnQtys[showQtyPad] || '')}
-          onChange={() => {}}
+          value={qtyPadValue}
+          onChange={setQtyPadValue}
           allowNegative={false} allowDecimal={false}
           onConfirm={v => {
             const item = selectedOrder.order_items.find(i=>i.id===showQtyPad)
             const max  = (item?.quantity||0) - (item?.returned_qty||0)
             setReturnQtys(q => ({...q, [showQtyPad]: Math.min(max, Math.max(0, Math.round(v)))}))
             setShowQtyPad(null)
+            setQtyPadValue('')
           }}
-          onClose={() => setShowQtyPad(null)}/>
+          onClose={() => { setShowQtyPad(null); setQtyPadValue('') }}/>
       )}
 
       {/* Keyboard for invoice search */}
