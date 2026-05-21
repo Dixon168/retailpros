@@ -63,6 +63,34 @@ export const useHeldOrdersStore = create((set, get) => ({
   },
 
   // ── 调出挂单（恢复到购物车）──
+  // ── Restore a held order into the cart (does NOT mark it completed).
+  //    Used after navigating to /pos?resume=<id>. The held order stays
+  //    'held' and is only finalized when the sale actually completes (or
+  //    can be re-held / cancelled). Returns the held row so the caller can
+  //    track which held order is in progress.
+  restoreHeldToCart: async ({ heldOrderId }) => {
+    const { data: held } = await supabase
+      .from('held_orders')
+      .select('*')
+      .eq('id', heldOrderId)
+      .single()
+
+    if (!held) { toast.error('Held order not found'); return null }
+    if (held.status !== 'held') { toast.error('This order is no longer on hold'); return null }
+
+    const cart = useCartStore.getState()
+    cart.clearCart()
+    const snap = held.cart_snapshot || {}
+    useCartStore.setState({
+      items:         snap.items         || [],
+      customer:      snap.customer      || null,
+      orderDiscount: snap.orderDiscount || null,
+      resumedHeldId: heldOrderId,   // remember which held order is in progress
+    })
+    toast.success(`↩ Resumed: ${held.label || held.customer_name || 'Held order'}`)
+    return held
+  },
+
   resumeHeldOrder: async ({ heldOrderId, tenantId, terminalId, userId }) => {
     const { data: held } = await supabase
       .from('held_orders')

@@ -421,11 +421,11 @@ export default function OrderLookupPage() {
     if (cartItems.length > 0) {
       if (!window.confirm('Current cart will be cleared. Resume this order?')) return
     }
-    const ok = await resumeHeldOrder({ heldOrderId: o.id, tenantId: tenant.id, userId: user?.id })
-    if (ok) {
-      toast.success('↩ Returning to POS with held order...')
-      setTimeout(() => { window.location.href = '/pos' }, 600)
-    }
+    // Navigate to POS with the held-order id. POS restores the cart on
+    // mount. We do NOT mark the held order completed here — it stays 'held'
+    // until the resumed sale is actually completed, so nothing is lost if
+    // the cashier backs out.
+    window.location.href = '/pos?resume=' + o.id
   }
 
   const handleVoid = async (o, approver) => {

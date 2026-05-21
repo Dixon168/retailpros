@@ -46,7 +46,7 @@ export default function ProductPicker({ title = 'Add Product', onPick, onClose, 
                   : categoryId ? 'category'
                   : 'idle'
 
-  const { data: results = [], isLoading } = useQuery({
+  const { data: results = [], isLoading, error } = useQuery({
     queryKey: ['product-picker', tenant?.id, queryMode, debouncedSearch, categoryId, vendorId],
     queryFn: async () => {
       let q = supabase.from('products')
@@ -61,21 +61,25 @@ export default function ProductPicker({ title = 'Add Product', onPick, onClose, 
         q = q.eq('category_id', categoryId)
       }
 
-      const { data: products } = await q.order('name').limit(100)
+      const { data: products, error: prodErr } = await q.order('name').limit(100)
+      if (prodErr) throw prodErr
 
-      // Attach vendor pricing if a vendor is provided
+      // Attach vendor pricing if a vendor is provided. Wrapped so a pricing
+      // lookup failure can never block the product search itself.
       if (vendorId && products?.length > 0) {
-        const { data: vp } = await supabase.from('vendor_product_pricing')
-          .select('product_id, last_cost, avg_cost')
-          .eq('vendor_id', vendorId)
-          .in('product_id', products.map(p => p.id))
-        const priceMap = {}
-        ;(vp || []).forEach(p => { priceMap[p.product_id] = p })
-        return products.map(p => ({
-          ...p,
-          vendor_last_cost: priceMap[p.id]?.last_cost,
-          vendor_avg_cost: priceMap[p.id]?.avg_cost,
-        }))
+        try {
+          const { data: vp } = await supabase.from('vendor_product_pricing')
+            .select('product_id, last_cost, avg_cost')
+            .eq('vendor_id', vendorId)
+            .in('product_id', products.map(p => p.id))
+          const priceMap = {}
+          ;(vp || []).forEach(p => { priceMap[p.product_id] = p })
+          return products.map(p => ({
+            ...p,
+            vendor_last_cost: priceMap[p.id]?.last_cost,
+            vendor_avg_cost: priceMap[p.id]?.avg_cost,
+          }))
+        } catch { return products }
       }
       return products || []
     },
@@ -136,6 +140,12 @@ export default function ProductPicker({ title = 'Add Product', onPick, onClose, 
             </div>
           ) : isLoading ? (
             <div className="p-8 text-center text-[12px] text-[#999]">Loading...</div>
+          ) : error ? (
+            <div className="p-8 text-center">
+              <div className="text-[36px] mb-2 opacity-30">⚠️</div>
+              <div className="text-[12px] text-[#CF1322] font-bold">Search error</div>
+              <div className="text-[11px] text-[#999] mt-1">{error.message || 'Could not load products'}</div>
+            </div>
           ) : visible.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-[36px] mb-2 opacity-30">🔍</div>

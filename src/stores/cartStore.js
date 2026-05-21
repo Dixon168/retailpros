@@ -17,6 +17,7 @@ export const useCartStore = create((set, get) => ({
   orderDiscount: null, // 整单折扣 { type: 'pct'|'amt', value: number } OR { type:'points_cash', amount, points_used }
   appliedCoupon: null, // 已应用的 coupon { id, code, name, discount_type, discount_value, discount_amount }
   taxGroups: [],       // 税率组（从数据库加载）
+  resumedHeldId: null, // 若当前购物车是从挂单恢复的, 记录挂单 id (完成后标记该挂单)
 
   // ── 支付数据 ──
   payments: [],        // 支付方式列表 [{ method, amount, cardId }]
@@ -545,6 +546,18 @@ export const useCartStore = create((set, get) => ({
 
     toast.success(`✅ Order ${result.order_number} completed!`)
 
+    // If this sale came from a resumed held order, mark that held order
+    // completed now (not on resume) so it leaves the hold list only once
+    // the sale is actually done.
+    const resumedHeldId = get().resumedHeldId
+    if (resumedHeldId) {
+      try {
+        await supabase.from('held_orders')
+          .update({ status: 'completed', resumed_at: new Date().toISOString() })
+          .eq('id', resumedHeldId)
+      } catch (e) { /* non-fatal */ }
+    }
+
     // Show oversold warnings if any (stock went negative)
     if (Array.isArray(result.warnings) && result.warnings.length > 0) {
       result.warnings.forEach(w => {
@@ -569,6 +582,7 @@ export const useCartStore = create((set, get) => ({
       orderDiscount: null,
       appliedCoupon: null,
       payments: [],
+      resumedHeldId: null,
       pendingProduct: null,
       showSnPanel: false,
       showWtPanel: false,

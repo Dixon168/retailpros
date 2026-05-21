@@ -181,6 +181,19 @@ export default function POSPage() {
     })()
   }, [tenant?.id])
 
+  // Restore a held order into the cart if /pos?resume=<held_id>
+  useEffect(() => {
+    if (!tenant?.id) return
+    const params = new URLSearchParams(window.location.search)
+    const resumeId = params.get('resume')
+    if (!resumeId) return
+    ;(async () => {
+      await useHeldOrdersStore.getState().restoreHeldToCart({ heldOrderId: resumeId })
+      // Clean the URL so reloading doesn't re-trigger the restore
+      window.history.replaceState({}, '', '/pos')
+    })()
+  }, [tenant?.id])
+
   const { data: categories = [] } = useQuery({
     queryKey: ['categories', tenant?.id],
     queryFn: async () => {
