@@ -106,7 +106,10 @@ SELECT 'fn_pay_vendor_po',
        EXISTS(SELECT 1 FROM pg_proc WHERE proname='fn_pay_vendor_po')::TEXT;
 
 -- ── 4. Refresh the PO view to expose payment fields too ─────────────
-CREATE OR REPLACE VIEW v_po_with_vendor AS
+-- DROP first: CREATE OR REPLACE can't reorder/rename existing view columns
+-- (po.* now includes amount_paid + po_balance_due, which shifts positions).
+DROP VIEW IF EXISTS v_po_with_vendor;
+CREATE VIEW v_po_with_vendor AS
 SELECT
   po.*,
   s.name         AS vendor_name,
