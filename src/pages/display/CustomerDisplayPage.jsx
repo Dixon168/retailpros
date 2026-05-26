@@ -278,138 +278,133 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
   const totals = state?.totals || { subtotal:0, discountAmt:0, taxAmount:0, grandTotal:0 }
   const customer = state?.customer
   const totalQty = items.reduce((s,i) => s + i.qty, 0)
-  // Total money saved = order/coupon discount + bulk savings
   const totalSaved = (totals.discountAmt || 0) + (totals.bulkSavings || 0)
+  const heroPrice = lastItem ? (lastItem.bulk ? lastItem.bulk.lineTotal : lastItem.unitPrice * lastItem.qty) : 0
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Just-scanned hero — big photo + price of the item the cashier just
-          added, so the customer can confirm it on the spot. */}
-      {lastItem && (
-        <div className="flex-shrink-0 mx-6 mt-4 rounded-2xl px-5 py-4 flex items-center gap-4"
-          style={{background:'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)', border:'2px solid #80B2FF'}}>
-          {lastItem.image_url
-            ? <img src={lastItem.image_url} alt="" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 shadow-md"/>
-            : <div className="w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{background:'#fff', color:'#94a3b8'}}>
-                <span className="text-[18px] font-bold">{(lastItem.name||'').substring(0,2).toUpperCase()}</span>
-              </div>}
-          <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#1e40af'}}>✓ {t.just_added}</div>
-            <div className="text-[22px] font-bold truncate" style={{color:'#1F1F1F'}}>{lastItem.name}</div>
-            <div className="text-[13px] font-mono" style={{color:'#666'}}>{fmt(lastItem.unitPrice)} × {lastItem.qty}</div>
-          </div>
-          <div className="text-[28px] font-black font-mono flex-shrink-0" style={{color:'#006AFF'}}>
-            {fmt(lastItem.bulk ? lastItem.bulk.lineTotal : lastItem.unitPrice * lastItem.qty)}
-          </div>
+    <div className="h-full flex gap-4 p-4 min-h-0">
+      {/* ── LEFT: compact item list (more items visible) ── */}
+      <div className="flex-1 min-w-0 flex flex-col rounded-2xl overflow-hidden"
+        style={{background:'#fff', border:'1px solid #e5e7eb'}}>
+        <div className="flex-shrink-0 px-4 py-2.5 flex items-center justify-between"
+          style={{background:'#f8fafc', borderBottom:'1px solid #e5e7eb'}}>
+          <span className="text-[13px] font-bold uppercase tracking-wider" style={{color:'#475569'}}>
+            {totalQty} {t.items}
+          </span>
         </div>
-      )}
-
-      {/* Member / Join CTA */}
-      {customer ? (
-        <div className="flex-shrink-0 mx-6 mt-4 rounded-2xl px-5 py-3"
-          style={{background:'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'}}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[12px] font-bold text-[#7c2d12] uppercase tracking-wider">{t.member}</div>
-              <div className="text-[20px] font-bold" style={{color:'#1F1F1F'}}>👋 {customer.name}</div>
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {items.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-[#999] text-[14px]">
+              {t.no_items}...
             </div>
-            <div className="text-right">
-              <div className="text-[10px] text-[#7c2d12] uppercase">{t.points}</div>
-              <div className="text-[24px] font-bold font-mono" style={{color:'#1F1F1F'}}>
-                {(customer.loyalty_points || 0).toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : settings?.show_join_cta !== false ? (
-        <div className="flex-shrink-0 mx-6 mt-4 rounded-2xl px-5 py-3 text-center"
-          style={{background:'#1F1F1F', color:'#FFD700'}}>
-          <div className="text-[14px] font-bold">⭐ {t.join_member}</div>
-        </div>
-      ) : null}
-
-      {/* Item list (scrollable) */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {items.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[#999] text-[14px]">
-            {t.no_items}...
-          </div>
-        ) : items.map(item => {
-          const bulk = item.bulk
-          const lineTotal = bulk ? bulk.lineTotal : item.unitPrice * item.qty
-          return (
-            <div key={item.id} className="py-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
+          ) : items.map(item => {
+            const bulk = item.bulk
+            const lineTotal = bulk ? bulk.lineTotal : item.unitPrice * item.qty
+            const isLast = lastItem && item.id === lastItem.id
+            return (
+              <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-50"
+                style={isLast ? {background:'#eff6ff'} : {}}>
                 {item.image_url
-                  ? <img src={item.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0"/>
-                  : <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                  ? <img src={item.image_url} alt="" className="w-9 h-9 rounded-md object-cover flex-shrink-0"/>
+                  : <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0"
                       style={{background:'#f1f5f9', color:'#94a3b8'}}>
-                      <span className="text-[10px] font-bold">{item.name.substring(0,2).toUpperCase()}</span>
+                      <span className="text-[9px] font-bold">{item.name.substring(0,2).toUpperCase()}</span>
                     </div>}
                 <div className="flex-1 min-w-0">
                   <div className="text-[14px] font-semibold truncate" style={{color:'#1F1F1F'}}>{item.name}</div>
-                  {bulk && bulk.savings > 0 ? (
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span className="font-bold" style={{color:'#16a34a'}}>{item.qty}× bulk</span>
-                      <span className="line-through font-mono" style={{color:'#94a3b8'}}>
-                        {fmt(item.unitPrice * item.qty)}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-[11px] text-[#666] font-mono">
-                      {fmt(item.unitPrice)} × {item.qty}
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  <div className="text-[16px] font-bold font-mono" style={{color:'#1F1F1F'}}>
-                    {fmt(lineTotal)}
+                  <div className="text-[11px] font-mono" style={{color:'#94a3b8'}}>
+                    {fmt(item.unitPrice)} × {item.qty}
+                    {bulk && bulk.savings > 0 && <span className="ml-1 font-bold" style={{color:'#16a34a'}}>· bulk</span>}
                   </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-[15px] font-bold font-mono" style={{color:'#1F1F1F'}}>{fmt(lineTotal)}</div>
                   {bulk && bulk.savings > 0 && (
-                    <div className="text-[10px] font-bold" style={{color:'#16a34a'}}>
-                      saved {fmt(bulk.savings)}
-                    </div>
+                    <div className="text-[9px] font-bold" style={{color:'#16a34a'}}>−{fmt(bulk.savings)}</div>
                   )}
                 </div>
               </div>
-              {/* Upsell hint visible to the customer — encourages "+N more" */}
-              {bulk?.hint && (
-                <div className="mt-2 ml-15 rounded-xl px-3 py-2"
-                  style={{background:'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', border:'1.5px solid #fbbf24'}}>
-                  <div className="text-[12px] font-bold" style={{color:'#92400e'}}>
-                    💡 Add {bulk.hint.addQty} more {item.name} → save {fmt(bulk.hint.savings)} more!
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
-      {/* Totals (sticky bottom) */}
-      <div className="flex-shrink-0 px-6 py-4 mx-6 mb-6 rounded-3xl shadow-2xl"
-        style={{background:'#fff', border:'2px solid #006AFF'}}>
-        <div className="space-y-1 mb-3">
-          <Row l={`${t.subtotal} (${totalQty} ${t.items})`} v={fmt(totals.subtotal)}/>
-          {totals.bulkSavings > 0 && <Row l="Bulk savings" v={`-${fmt(totals.bulkSavings)}`} color="#16a34a"/>}
-          {totals.discountAmt > 0 && <Row l={t.discount} v={`-${fmt(totals.discountAmt)}`} color="#dc2626"/>}
-          <Row l={t.tax} v={fmt(totals.taxAmount)}/>
+      {/* ── RIGHT: hero photo (top) + totals/customer (bottom) ── */}
+      <div className="flex flex-col gap-4" style={{width:'42%', maxWidth:'520px'}}>
+
+        {/* Right-top: big last-scanned photo */}
+        <div className="flex-1 min-h-0 rounded-2xl flex flex-col items-center justify-center p-5"
+          style={{background:'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)', border:'2px solid #80B2FF'}}>
+          {lastItem ? (
+            <>
+              {lastItem.image_url
+                ? <img src={lastItem.image_url} alt="" className="rounded-2xl object-cover shadow-lg mb-3"
+                    style={{maxHeight:'46vh', maxWidth:'100%', width:'auto'}}/>
+                : <div className="rounded-2xl flex items-center justify-center mb-3 shadow-lg"
+                    style={{background:'#fff', color:'#94a3b8', width:'200px', height:'200px'}}>
+                    <span className="text-[40px] font-black">{(lastItem.name||'').substring(0,2).toUpperCase()}</span>
+                  </div>}
+              <div className="text-[11px] font-bold uppercase tracking-wider mb-0.5" style={{color:'#1e40af'}}>✓ {t.just_added}</div>
+              <div className="text-[24px] font-bold text-center leading-tight" style={{color:'#1F1F1F'}}>{lastItem.name}</div>
+              <div className="text-[13px] font-mono mb-1" style={{color:'#666'}}>{fmt(lastItem.unitPrice)} × {lastItem.qty}</div>
+              <div className="text-[40px] font-black font-mono" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>{fmt(heroPrice)}</div>
+            </>
+          ) : (
+            <div className="text-center text-[#94a3b8]">
+              <div className="text-[64px] mb-2">🛒</div>
+              <div className="text-[14px]">{t.no_items}...</div>
+            </div>
+          )}
         </div>
-        <div className="flex justify-between items-baseline pt-3 border-t-2 border-slate-200">
-          <div className="text-[14px] uppercase tracking-wider font-bold" style={{color:'#666'}}>{t.total}</div>
-          <div className="text-[48px] font-black font-mono" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
-            {fmt(totals.grandTotal)}
+
+        {/* Customer / Join CTA */}
+        {customer ? (
+          <div className="flex-shrink-0 rounded-2xl px-4 py-2.5"
+            style={{background:'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'}}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold text-[#7c2d12] uppercase tracking-wider">{t.member}</div>
+                <div className="text-[17px] font-bold" style={{color:'#1F1F1F'}}>👋 {customer.name}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[9px] text-[#7c2d12] uppercase">{t.points}</div>
+                <div className="text-[20px] font-bold font-mono" style={{color:'#1F1F1F'}}>
+                  {(customer.loyalty_points || 0).toLocaleString()}
+                </div>
+              </div>
+            </div>
           </div>
+        ) : settings?.show_join_cta !== false ? (
+          <div className="flex-shrink-0 rounded-2xl px-4 py-2.5 text-center"
+            style={{background:'#1F1F1F', color:'#FFD700'}}>
+            <div className="text-[13px] font-bold">⭐ {t.join_member}</div>
+          </div>
+        ) : null}
+
+        {/* Right-bottom: totals */}
+        <div className="flex-shrink-0 px-5 py-4 rounded-2xl"
+          style={{background:'#fff', border:'2px solid #006AFF'}}>
+          <div className="space-y-1 mb-2">
+            <Row l={`${t.subtotal} (${totalQty} ${t.items})`} v={fmt(totals.subtotal)}/>
+            {totals.bulkSavings > 0 && <Row l="Bulk savings" v={`-${fmt(totals.bulkSavings)}`} color="#16a34a"/>}
+            {totals.discountAmt > 0 && <Row l={t.discount} v={`-${fmt(totals.discountAmt)}`} color="#dc2626"/>}
+            <Row l={t.tax} v={fmt(totals.taxAmount)}/>
+          </div>
+          <div className="flex justify-between items-baseline pt-2 border-t-2 border-slate-200">
+            <div className="text-[13px] uppercase tracking-wider font-bold" style={{color:'#666'}}>{t.total}</div>
+            <div className="text-[44px] font-black font-mono leading-none" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
+              {fmt(totals.grandTotal)}
+            </div>
+          </div>
+          {totalSaved > 0 && (
+            <div className="mt-2 rounded-xl px-3 py-1.5 text-center"
+              style={{background:'#dcfce7', border:'1.5px solid #86efac'}}>
+              <span className="text-[12px] font-black" style={{color:'#166534'}}>
+                🎉 {t.you_saved} {fmt(totalSaved)} {t.today}!
+              </span>
+            </div>
+          )}
         </div>
-        {totalSaved > 0 && (
-          <div className="mt-3 rounded-xl px-3 py-2 text-center"
-            style={{background:'#dcfce7', border:'1.5px solid #86efac'}}>
-            <span className="text-[13px] font-black" style={{color:'#166534'}}>
-              🎉 {t.you_saved} {fmt(totalSaved)} {t.today}!
-            </span>
-          </div>
-        )}
       </div>
     </div>
   )
