@@ -219,7 +219,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     setReturnQtys(init)
   }
 
-  // ── Confirm return by invoice ──
+  // ── Confirm return by invoice → add to cart (executes on checkout) ──
   const confirmByInvoice = async () => {
     const itemsToReturn = Object.entries(returnQtys)
       .filter(([,qty]) => qty > 0)
@@ -240,100 +240,34 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
       }
     }
 
-    setProcessing(true)
-    try {
-      // Refund amount uses paid_unit_price (what the customer actually paid),
-      // NOT unit_price (sticker price). This is the ShopRite/industry standard:
-      // returns refund "the price paid, adjusted for any offers received".
-      // Falls back to unit_price for legacy orders that don't have the field.
-      const totalRefund = itemsToReturn.reduce((s, {item, qty}) => {
-        const perUnit = (item.paid_unit_price !== null && item.paid_unit_price !== undefined)
-          ? Number(item.paid_unit_price)
-          : Number(item.unit_price)
-        return s + (perUnit * qty)
-      }, 0)
-
-      // Update order_items returned_qty
-      for (const { item, qty } of itemsToReturn) {
-        await supabase.from('order_items')
-          .update({ returned_qty: (item.returned_qty||0) + qty })
-          .eq('id', item.id)
-      }
-
-      // Update order refund_status
-      const allItems = selectedOrder.order_items
-      const totalOrigQty = allItems.reduce((s,i) => s+i.quantity, 0)
-      const totalReturnQty = allItems.reduce((s,i) => {
-        const extra = itemsToReturn.find(r => r.item.id === i.id)?.qty || 0
-        return s + (i.returned_qty||0) + extra
-      }, 0)
-      const refundStatus = totalReturnQty >= totalOrigQty ? 'full' : 'partial'
-
-      const { error: ordErr } = await supabase.from('orders')
-        .update({
-          refund_status: refundStatus,
-          refunded_amount: (selectedOrder.refunded_amount||0) + totalRefund,
-          refunded_at: new Date().toISOString(),
-          refunded_by: effCashierId,
-          refunded_by_name: effCashierName,
-          ...(approver && {
-            refunded_approved_by:      approver.id,
-            refunded_approved_by_name: approver.name,
-          }),
-        })
-        .eq('id', selectedOrder.id)
-      if (ordErr) throw new Error(`Order update: ${ordErr.message}`)
-
-      // Record refund
-      const { error: refErr } = await supabase.from('refund_records').insert({
-        tenant_id:   tenant.id,
-        original_order_id: selectedOrder.id,
-        original_order_number: selectedOrder.order_number,
-        mode: 'by_invoice',
-        amount: totalRefund,
-        items: itemsToReturn.map(({item,qty}) => ({
-          product_id: item.product_id,
-          name: item.products?.name,
-          qty,
-          unit_price:       item.unit_price,
-          paid_unit_price:  item.paid_unit_price ?? item.unit_price,
-        })),
-        refunded_by: effCashierId,
-        refunded_by_name: effCashierName,
-        ...(approver && {
-          approved_by:      approver.id,
-          approved_by_name: approver.name,
-        }),
+    // Add negative items to cart at the PAID unit price. Nothing is written
+    // to the DB now — the refund (returned_qty, refund_status, refund
+    // record, inventory restore) is executed only when the refund order is
+    // completed at checkout. Cancel = nothing happens. Each line carries
+    // the info needed to finalize on completion, and the price stays
+    // editable in the cart so the cashier can adjust the refund.
+    itemsToReturn.forEach(({ item, qty }) => {
+      const paidPerUnit = (item.paid_unit_price !== null && item.paid_unit_price !== undefined)
+        ? Number(item.paid_unit_price)
+        : Number(item.unit_price)
+      useCartStore.getState()._addItem({
+        productId:  item.product_id,
+        name:       item.products?.name || 'Item',
+        unitPrice:  paidPerUnit,
+        qty:        -qty,
+        unit:       item.products?.unit || 'ea',
+        isReturn:   true,
+        refund: {
+          origOrderId:     selectedOrder.id,
+          origOrderNumber: selectedOrder.order_number,
+          orderItemId:     item.id,
+          approverId:      approver?.id || null,
+          approverName:    approver?.name || null,
+        },
       })
-      if (refErr) throw new Error(`Refund record: ${refErr.message}`)
-
-      // Add negative items to cart at the PAID unit price (what they actually
-      // paid). This makes the refund line on the new receipt match the
-      // refunded amount exactly.
-      itemsToReturn.forEach(({ item, qty }) => {
-        const paidPerUnit = (item.paid_unit_price !== null && item.paid_unit_price !== undefined)
-          ? Number(item.paid_unit_price)
-          : Number(item.unit_price)
-        useCartStore.getState()._addItem({
-          productId:  item.product_id,
-          name:       item.products?.name || 'Item',
-          unitPrice:  paidPerUnit,
-          qty:        -qty,
-          unit:       item.products?.unit || 'ea',
-          isReturn:   true,
-          refundOrderId: selectedOrder.id,
-        })
-      })
-
-      qc.invalidateQueries(['orders'])
-      setSummary({ items: itemsToReturn, total: totalRefund, order: selectedOrder })
-      setDone(true)
-      toast.success(`↩ Return processed: $${totalRefund.toFixed(2)}`)
-    } catch(err) {
-      toast.error('Error: ' + err.message)
-    } finally {
-      setProcessing(false)
-    }
+    })
+    toast.success(`↩ ${itemsToReturn.length} item(s) added as return — complete at checkout`)
+    onClose()
   }
 
   // Effective per-unit refund price: what the customer actually paid.

@@ -759,6 +759,77 @@ export const useCartStore = create((set, get) => ({
       }
     }
 
+    // ── Finalize product returns (negative lines carrying refund info) ─
+    // These came from Refund → by invoice. On completion: bump the
+    // original order_items.returned_qty, recompute the original order's
+    // refund_status + refunded_amount, restore inventory, and log a
+    // refund_record. Executes only now (cancel = nothing happened).
+    const refundLines = items.filter(i => i.refund && i.qty < 0 && i.productId)
+    if (refundLines.length > 0) {
+      // group by original order
+      const byOrder = {}
+      for (const line of refundLines) {
+        const oid = line.refund.origOrderId
+        if (!oid) continue
+        ;(byOrder[oid] = byOrder[oid] || []).push(line)
+      }
+      for (const [oid, lines] of Object.entries(byOrder)) {
+        try {
+          const refundAmt = lines.reduce((s,l) => s + Math.abs(l.unitPrice * l.qty), 0)
+          // bump returned_qty per order_item
+          for (const l of lines) {
+            if (!l.refund.orderItemId) continue
+            const { data: oi } = await supabase.from('order_items')
+              .select('quantity, returned_qty, product_id').eq('id', l.refund.orderItemId).single()
+            const newRet = (oi?.returned_qty || 0) + Math.abs(l.qty)
+            await supabase.from('order_items').update({ returned_qty: newRet }).eq('id', l.refund.orderItemId)
+            // restore inventory for this product
+            if (oi?.product_id) {
+              const { data: inv } = await supabase.from('inventory')
+                .select('quantity').eq('tenant_id', tenantId).eq('product_id', oi.product_id).eq('store_id', storeId).maybeSingle()
+              if (inv) {
+                await supabase.from('inventory').update({ quantity: (inv.quantity||0) + Math.abs(l.qty) })
+                  .eq('tenant_id', tenantId).eq('product_id', oi.product_id).eq('store_id', storeId)
+              } else {
+                await supabase.from('inventory').insert({ tenant_id: tenantId, product_id: oi.product_id, store_id: storeId, quantity: Math.abs(l.qty) })
+              }
+            }
+          }
+          // recompute refund_status on the original order
+          const { data: allItems } = await supabase.from('order_items')
+            .select('quantity, returned_qty').eq('order_id', oid)
+          const totalQty = (allItems||[]).reduce((s,i)=>s+i.quantity,0)
+          const totalRet = (allItems||[]).reduce((s,i)=>s+(i.returned_qty||0),0)
+          const refundStatus = totalRet >= totalQty ? 'full' : 'partial'
+          const { data: ord } = await supabase.from('orders').select('refunded_amount').eq('id', oid).single()
+          await supabase.from('orders').update({
+            refund_status: refundStatus,
+            refunded_amount: (ord?.refunded_amount || 0) + refundAmt,
+            refunded_at: new Date().toISOString(),
+            refunded_by: cashierId,
+            ...(lines[0].refund.approverId && {
+              refunded_approved_by: lines[0].refund.approverId,
+              refunded_approved_by_name: lines[0].refund.approverName,
+            }),
+          }).eq('id', oid)
+          // log a refund record
+          await supabase.from('refund_records').insert({
+            tenant_id: tenantId,
+            original_order_id: oid,
+            original_order_number: lines[0].refund.origOrderNumber,
+            refund_order_id: result.order_id,
+            mode: 'by_invoice', amount: refundAmt,
+            items: lines.map(l => ({ product_id: l.productId, name: l.name, qty: Math.abs(l.qty), paid_unit_price: l.unitPrice })),
+            refunded_by: cashierId,
+            ...(lines[0].refund.approverId && { approved_by: lines[0].refund.approverId, approved_by_name: lines[0].refund.approverName }),
+          })
+        } catch (e) {
+          console.error('Refund finalize:', e)
+          toast.error(`⚠️ Refund completed but updating original order failed: ${e.message}`, { duration: 8000 })
+        }
+      }
+    }
+
     get().clearCart()
 
     return { id: result.order_id, order_number: result.order_number }
