@@ -31,7 +31,7 @@ export default function POSDashboardPage() {
       const { data } = await supabase.from('orders')
         .select(`
           id, order_number, total, subtotal, tax_amount, discount_amount,
-          tip_amount, refunded_amount, refund_status, status,
+          refunded_amount, refund_status, status,
           cashier_id, customer_id, created_at,
           payments:order_payments(method, amount),
           items:order_items(quantity, paid_unit_price, unit_price, bulk_savings)
