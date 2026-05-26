@@ -330,7 +330,7 @@ export default function POSPage() {
           <div className="flex items-center gap-1.5">
             <div className="flex flex-col leading-none">
               <div className="text-[15px] font-bold tracking-tight text-white">Retail Pro</div>
-              <div className="text-[7px] tracking-tight" style={{color:'#64748b'}}>powered by All in One Payment Solution</div>
+              <div className="text-[7px] tracking-tight" style={{color:'#cbd5e1'}}>powered by All in One Payment Solution</div>
             </div>
             <span className="text-[8px] font-mono px-1 py-0.5 rounded self-start" style={{background:'rgba(0,106,255,0.25)', color:'#80B2FF'}}>
               v{APP_VERSION}

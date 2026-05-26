@@ -273,7 +273,7 @@ function IdleScreen({ t, promos, promoIdx, storeName, logoUrl, phone, address, n
       {/* Powered-by footer (very subtle, doesn't compete with store branding) */}
       <div className="absolute bottom-3 left-0 right-0 text-center text-[9px] font-mono"
         style={{color:'#cbd5e1'}}>
-        Powered by RetailPOS · v{appVersion()}
+        Retail Pro · powered by All in One Payment Solution · v{appVersion()}
       </div>
     </div>
   )

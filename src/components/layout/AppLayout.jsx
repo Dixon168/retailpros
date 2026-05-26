@@ -203,10 +203,10 @@ export default function AppLayout() {
         {!collapsed && (
           <div className="px-3 py-2 text-center" style={{borderTop:'1px solid #2A2A2A', background:'#161616'}}>
             <div className="text-[10px] font-bold" style={{color:'#80B2FF'}}>Retail Pro</div>
-            <div className="text-[8px] mt-0.5 leading-tight" style={{color:'#666'}}>
+            <div className="text-[8px] mt-0.5 leading-tight" style={{color:'#cbd5e1'}}>
               powered by All in One Payment Solution
             </div>
-            <div className="text-[8px] font-mono mt-1" style={{color:'#555'}}>
+            <div className="text-[8px] font-mono mt-1" style={{color:'#888'}}>
               {APP_VERSION_LABEL}
             </div>
           </div>
