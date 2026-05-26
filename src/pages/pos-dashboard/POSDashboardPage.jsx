@@ -74,15 +74,36 @@ export default function POSDashboardPage() {
     enabled: !!tenant?.id && !!store?.id,
   })
 
-  // ── Product costs (for profit) ──
-  const { data: productCosts = {} } = useQuery({
-    queryKey: ['dash-product-costs', tenant?.id],
+  // ── Product costs + commission (for profit + commission) ──
+  const { data: productMeta = {} } = useQuery({
+    queryKey: ['dash-product-meta', tenant?.id],
     queryFn: async () => {
       const { data } = await supabase.from('products')
-        .select('id, cost, upc').eq('tenant_id', tenant.id).limit(5000)
+        .select('id, cost, upc, commission_type, commission_value').eq('tenant_id', tenant.id).limit(5000)
       const map = {}
-      ;(data || []).forEach(p => { map[p.id] = { cost: Number(p.cost) || 0, upc: p.upc } })
+      ;(data || []).forEach(p => { map[p.id] = {
+        cost: Number(p.cost) || 0, upc: p.upc,
+        commission_type: p.commission_type || 'none',
+        commission_value: Number(p.commission_value) || 0,
+      } })
       return map
+    },
+    enabled: !!tenant?.id,
+  })
+
+  // ── Gift + member card balances ──
+  const { data: cardSummary = { gift:{count:0,balance:0}, member:{count:0,balance:0} } } = useQuery({
+    queryKey: ['dash-cards', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('member_cards')
+        .select('card_type, balance, is_active').eq('tenant_id', tenant.id)
+      const sum = { gift:{count:0,balance:0}, member:{count:0,balance:0} }
+      ;(data || []).forEach(c => {
+        const bucket = c.card_type === 'gift' ? sum.gift : sum.member
+        bucket.count += 1
+        bucket.balance += Number(c.balance) || 0
+      })
+      return sum
     },
     enabled: !!tenant?.id,
   })
@@ -146,11 +167,11 @@ export default function POSDashboardPage() {
       {isLoading ? (
         <div className="text-center py-16 text-[13px] text-[#999]">Loading...</div>
       ) : tab === 'summary' ? (
-        <SummaryTab completed={completed} filtered={filtered} t={t}/>
+        <SummaryTab completed={completed} filtered={filtered} cardSummary={cardSummary} t={t}/>
       ) : tab === 'employee' ? (
-        <EmployeeTab completed={completed} employees={employees} t={t}/>
+        <EmployeeTab completed={completed} employees={employees} productMeta={productMeta} t={t}/>
       ) : (
-        <SalesTab completed={completed} productCosts={productCosts} t={t}/>
+        <SalesTab completed={completed} productCosts={productMeta} t={t}/>
       )}
     </div>
   )
@@ -159,7 +180,7 @@ export default function POSDashboardPage() {
 // ════════════════════════════════════════════════════════════════════
 // SUMMARY TAB
 // ════════════════════════════════════════════════════════════════════
-function SummaryTab({ completed, filtered, t }) {
+function SummaryTab({ completed, filtered, cardSummary, t }) {
   const m = useMemo(() => {
     let totalSales = 0, netSales = 0, tax = 0, refunds = 0, subtotal = 0, discount = 0
     const byMethod = {}  // method -> { count, amount }
@@ -222,6 +243,20 @@ function SummaryTab({ completed, filtered, t }) {
           </div>
         ))}
       </div>
+
+      {/* Gift + member card balances */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
+          <div className="text-[13px] font-bold mb-2" style={{color:'#1F1F1F'}}>🎁 {t('giftCard')}</div>
+          <div className="text-[22px] font-bold font-mono" style={{color:'#a855f7'}}>{money(cardSummary.gift.balance)}</div>
+          <div className="text-[11px] text-[#888] mt-1">{cardSummary.gift.count} {t('giftCard').toLowerCase()}</div>
+        </div>
+        <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
+          <div className="text-[13px] font-bold mb-2" style={{color:'#1F1F1F'}}>⭐ {t('memberCard')}</div>
+          <div className="text-[22px] font-bold font-mono" style={{color:'#0891b2'}}>{money(cardSummary.member.balance)}</div>
+          <div className="text-[11px] text-[#888] mt-1">{cardSummary.member.count} {t('memberCard').toLowerCase()}</div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -229,16 +264,27 @@ function SummaryTab({ completed, filtered, t }) {
 // ════════════════════════════════════════════════════════════════════
 // EMPLOYEE TAB
 // ════════════════════════════════════════════════════════════════════
-function EmployeeTab({ completed, employees, t }) {
+function EmployeeTab({ completed, employees, productMeta, t }) {
   const rows = useMemo(() => {
-    const byEmp = {}  // cashier_id -> { name, revenue, orders }
+    const byEmp = {}  // cashier_id -> { name, revenue, orders, commission }
     for (const o of completed) {
       const id = o.cashier_id || 'unknown'
-      if (!byEmp[id]) byEmp[id] = { id, name: o.cashier_name || 'Unknown', revenue: 0, orders: 0 }
+      if (!byEmp[id]) byEmp[id] = { id, name: o.cashier_name || 'Unknown', revenue: 0, orders: 0, commission: 0 }
       byEmp[id].revenue += Number(o.total) || 0
       byEmp[id].orders  += 1
+      // Commission from each line item's product setting
+      for (const it of (o.items || [])) {
+        const meta = productMeta[it.product_id]
+        if (!meta || meta.commission_type === 'none') continue
+        const qty = Number(it.quantity) || 0
+        const lineTotal = Number(it.line_total) || 0
+        let comm = 0
+        if (meta.commission_type === 'fixed')    comm = meta.commission_value * qty
+        else if (meta.commission_type === 'pct_sell') comm = lineTotal * (meta.commission_value / 100)
+        else if (meta.commission_type === 'pct_cost') comm = (meta.cost * qty) * (meta.commission_value / 100)
+        byEmp[id].commission += comm
+      }
     }
-    // Backfill names from employees list
     Object.values(byEmp).forEach(r => {
       if (r.name === 'Unknown') {
         const e = employees.find(e => e.id === r.id)
@@ -246,23 +292,24 @@ function EmployeeTab({ completed, employees, t }) {
       }
     })
     return Object.values(byEmp).sort((a,b) => b.revenue - a.revenue)
-  }, [completed, employees])
+  }, [completed, employees, productMeta])
 
   return (
     <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
       <div className="text-[14px] font-bold mb-3" style={{color:'#1F1F1F'}}>👥 {t('employeeSales')}</div>
-      <div className="grid border-b border-[#eee] pb-2 mb-1" style={{gridTemplateColumns:'2fr 1fr 1.3fr'}}>
-        {[t('dashEmployee'),t('ordersCount'),t('revenue')].map((h,i) => (
+      <div className="grid border-b border-[#eee] pb-2 mb-1" style={{gridTemplateColumns:'2fr 1fr 1.3fr 1.3fr'}}>
+        {[t('dashEmployee'),t('ordersCount'),t('revenue'),t('commission')].map((h,i) => (
           <div key={i} className="text-[10px] font-bold text-[#999] uppercase" style={{textAlign:i===0?'left':'right'}}>{h}</div>
         ))}
       </div>
       {rows.length === 0 ? (
         <div className="text-center py-6 text-[12px] text-[#999]">{t('noData')}</div>
       ) : rows.map(r => (
-        <div key={r.id} className="grid py-2.5 border-b border-[#f5f5f5] last:border-0 items-center" style={{gridTemplateColumns:'2fr 1fr 1.3fr'}}>
+        <div key={r.id} className="grid py-2.5 border-b border-[#f5f5f5] last:border-0 items-center" style={{gridTemplateColumns:'2fr 1fr 1.3fr 1.3fr'}}>
           <div className="text-[13px] font-bold text-[#1F1F1F]">{r.name}</div>
           <div className="text-[13px] font-mono text-[#666] text-right">{r.orders}</div>
           <div className="text-[13px] font-mono font-bold text-[#16a34a] text-right">{money(r.revenue)}</div>
+          <div className="text-[13px] font-mono font-bold text-[#a855f7] text-right">{money(r.commission)}</div>
         </div>
       ))}
     </div>
