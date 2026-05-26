@@ -446,18 +446,17 @@ export default function OrderLookupPage() {
     if (!window.confirm(msg)) return
 
     try {
-      // 1. Mark order as voided — include approver if any
-      const { error: voidErr } = await supabase.from('orders').update({
-        status: 'voided',
-        voided_at: new Date().toISOString(),
-        voided_by: effCashierId,
-        voided_by_name: effCashierName,
-        ...(approver && {
-          voided_approved_by:      approver.id,
-          voided_approved_by_name: approver.name,
-        }),
-      }).eq('id', o.id)
-      if (voidErr) throw new Error(`Void order: ${voidErr.message}`)
+      // 1. Void the order via RPC — this restores inventory atomically
+      //    (POS voids previously didn't restock; now they do).
+      const { data: voidRes, error: voidErr } = await supabase.rpc('fn_void_order', {
+        p_tenant_id:        tenant.id,
+        p_order_id:         o.id,
+        p_user_id:          effCashierId,
+        p_user_name:        effCashierName,
+        p_approved_by:      approver?.id || null,
+        p_approved_by_name: approver?.name || null,
+      })
+      if (voidErr || !voidRes?.success) throw new Error(voidRes?.message || voidErr?.message || 'Void failed')
 
       // 2. Create adjustment record on TODAY (not original date)
       for (const p of payMethods) {
@@ -495,7 +494,7 @@ export default function OrderLookupPage() {
         }
       }
 
-      toast.success(`✓ Order ${o.order_number} voided — recorded on today's report`)
+      toast.success(`✓ Order ${o.order_number} voided — inventory restored, recorded on today's report`)
       // Update side-panel and refetch the list so the row's status badge
       // changes immediately (was previously only updating selected).
       setSelected(s => s?.id===o.id ? {...s, status:'voided'} : s)
