@@ -21,13 +21,25 @@ export default function POSDashboardPage() {
   const [range, setRange]       = useState('today')
   const [terminalId, setTerminalId] = useState('all')
   const [employeeId, setEmployeeId] = useState('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo]     = useState('')
 
   const window = useMemo(() => {
     const now = new Date()
     if (range === 'today') return { start: startOfDay(now), end: endOfDay(now) }
     if (range === 'week')  return { start: startOfDay(subDays(now, 6)), end: endOfDay(now) }
-    return { start: startOfDay(subDays(now, 29)), end: endOfDay(now) }
-  }, [range])
+    if (range === 'month') return { start: startOfDay(subDays(now, 29)), end: endOfDay(now) }
+    if (range === 'custom' && customFrom && customTo)
+      return { start: startOfDay(new Date(customFrom)), end: endOfDay(new Date(customTo)) }
+    return { start: startOfDay(now), end: endOfDay(now) }
+  }, [range, customFrom, customTo])
+
+  // Prior period of equal length (for trend comparison) — pro store owners
+  // care about "up or down vs last period", not just the raw number.
+  const priorWindow = useMemo(() => {
+    const ms = window.end - window.start
+    return { start: new Date(window.start.getTime() - ms - 1), end: new Date(window.start.getTime() - 1) }
+  }, [window])
 
   // ── Terminals + employees for the filter dropdowns ──
   const { data: terminals = [] } = useQuery({
@@ -74,7 +86,21 @@ export default function POSDashboardPage() {
     enabled: !!tenant?.id && !!store?.id,
   })
 
-  // ── Product costs + commission (for profit + commission) ──
+  // Prior-period revenue (same length, immediately before) for the trend %
+  const { data: priorOrders = [] } = useQuery({
+    queryKey: ['dash-orders-prior', tenant?.id, store?.id, range, customFrom, customTo],
+    queryFn: async () => {
+      const { data } = await supabase.from('orders')
+        .select('total, status, terminal_id, cashier_id')
+        .eq('tenant_id', tenant.id)
+        .eq('store_id', store.id)
+        .gte('created_at', priorWindow.start.toISOString())
+        .lte('created_at', priorWindow.end.toISOString())
+        .limit(3000)
+      return data || []
+    },
+    enabled: !!tenant?.id && !!store?.id,
+  })
   const { data: productMeta = {} } = useQuery({
     queryKey: ['dash-product-meta', tenant?.id],
     queryFn: async () => {
@@ -120,6 +146,17 @@ export default function POSDashboardPage() {
     [filtered]
   )
 
+  // Prior-period revenue (same terminal/employee filters) for trend %
+  const priorRevenue = useMemo(() => {
+    return priorOrders
+      .filter(o => {
+        if (terminalId !== 'all' && o.terminal_id !== terminalId) return false
+        if (employeeId !== 'all' && o.cashier_id !== employeeId) return false
+        return o.status === 'completed' || o.status === 'partially_refunded'
+      })
+      .reduce((s, o) => s + (Number(o.total) || 0), 0)
+  }, [priorOrders, terminalId, employeeId])
+
   return (
     <div className="p-5 max-w-[1400px] mx-auto">
       {/* Header + filters */}
@@ -141,8 +178,8 @@ export default function POSDashboardPage() {
             {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
           {/* Date range */}
-          <div className="flex gap-1">
-            {[['today',t('today')],['week',t('thisWeek')],['month',t('thisMonth')]].map(([k,label]) => (
+          <div className="flex gap-1 items-center">
+            {[['today',t('today')],['week',t('thisWeek')],['month',t('thisMonth')],['custom',t('customRange')]].map(([k,label]) => (
               <button key={k} onClick={() => setRange(k)}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2"
                 style={range===k ? {background:'#006AFF',color:'#fff',borderColor:'#006AFF'} : {background:'#fff',color:'#666',borderColor:'#e5e5e5'}}>
@@ -150,6 +187,15 @@ export default function POSDashboardPage() {
               </button>
             ))}
           </div>
+          {range === 'custom' && (
+            <div className="flex gap-1 items-center">
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                className="rounded-lg px-2 py-1.5 text-[12px] outline-none" style={{border:'1.5px solid #e5e5e5'}}/>
+              <span className="text-[#999]">→</span>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                className="rounded-lg px-2 py-1.5 text-[12px] outline-none" style={{border:'1.5px solid #e5e5e5'}}/>
+            </div>
+          )}
         </div>
       </div>
 
@@ -167,7 +213,7 @@ export default function POSDashboardPage() {
       {isLoading ? (
         <div className="text-center py-16 text-[13px] text-[#999]">Loading...</div>
       ) : tab === 'summary' ? (
-        <SummaryTab completed={completed} filtered={filtered} cardSummary={cardSummary} t={t}/>
+        <SummaryTab completed={completed} filtered={filtered} cardSummary={cardSummary} productMeta={productMeta} priorRevenue={priorRevenue} t={t}/>
       ) : tab === 'employee' ? (
         <EmployeeTab completed={completed} employees={employees} productMeta={productMeta} t={t}/>
       ) : (
@@ -180,9 +226,9 @@ export default function POSDashboardPage() {
 // ════════════════════════════════════════════════════════════════════
 // SUMMARY TAB
 // ════════════════════════════════════════════════════════════════════
-function SummaryTab({ completed, filtered, cardSummary, t }) {
+function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenue, t }) {
   const m = useMemo(() => {
-    let totalSales = 0, netSales = 0, tax = 0, refunds = 0, subtotal = 0, discount = 0
+    let totalSales = 0, netSales = 0, tax = 0, refunds = 0, subtotal = 0, discount = 0, cogs = 0
     const byMethod = {}  // method -> { count, amount }
     for (const o of completed) {
       totalSales += Number(o.total) || 0
@@ -190,6 +236,10 @@ function SummaryTab({ completed, filtered, cardSummary, t }) {
       tax        += Number(o.tax_amount) || 0
       discount   += Number(o.discount_amount) || 0
       refunds    += Number(o.refunded_amount) || 0
+      for (const it of (o.items || [])) {
+        const q = Number(it.quantity) || 0
+        if (q > 0) cogs += q * (productMeta[it.product_id]?.cost || 0)
+      }
       for (const p of (o.payments || [])) {
         const key = ['credit_card','debit_card'].includes(p.method) ? 'card' : p.method
         if (!byMethod[key]) byMethod[key] = { count: 0, amount: 0 }
@@ -199,8 +249,12 @@ function SummaryTab({ completed, filtered, cardSummary, t }) {
     }
     netSales = subtotal - discount
     const collected = Object.values(byMethod).reduce((s,v) => s + v.amount, 0)
-    return { totalSales, netSales, tax, refunds, subtotal, discount, byMethod, collected, orderCount: completed.length }
-  }, [completed])
+    const grossProfit = netSales - cogs
+    const margin = netSales > 0 ? (grossProfit / netSales) * 100 : 0
+    const trend = priorRevenue > 0 ? ((totalSales - priorRevenue) / priorRevenue) * 100 : null
+    return { totalSales, netSales, tax, refunds, subtotal, discount, byMethod, collected,
+             orderCount: completed.length, grossProfit, margin, trend, cogs }
+  }, [completed, productMeta, priorRevenue])
 
   const methodLabel = {
     cash: t('cash'), card: t('card'), gift_card: t('giftCard'),
@@ -208,20 +262,23 @@ function SummaryTab({ completed, filtered, cardSummary, t }) {
     transfer: t('other'), check: t('other'), other: t('other'),
   }
 
+  const trendStr = m.trend === null ? null
+    : `${m.trend >= 0 ? '▲' : '▼'} ${Math.abs(m.trend).toFixed(0)}%`
+
   return (
     <div>
       {/* Top KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <Kpi label={t('totalCollected')} value={money(m.collected)} accent="#006AFF"/>
+        <Kpi label={t('totalCollected')} value={money(m.collected)} accent="#006AFF" sub={trendStr} subColor={m.trend>=0?'#16a34a':'#dc2626'}/>
         <Kpi label={t('totalSales')} value={money(m.totalSales)} accent="#16a34a"/>
-        <Kpi label={t('taxCollected')} value={money(m.tax)} accent="#0891b2"/>
+        <Kpi label={t('profit')} value={money(m.grossProfit)} accent="#a855f7" sub={`${m.margin.toFixed(1)}% ${t('profit').toLowerCase()}`}/>
         <Kpi label={t('refunds')} value={money(m.refunds)} accent="#dc2626"/>
       </div>
       <div className="grid grid-cols-4 gap-3 mb-5">
         <Kpi label={t('netSales')} value={money(m.netSales)} small/>
         <Kpi label={t('ordersCount')} value={m.orderCount} small/>
+        <Kpi label={t('taxCollected')} value={money(m.tax)} small/>
         <Kpi label={t('discount')} value={money(m.discount)} small/>
-        <Kpi label={t('netSales')+' / '+t('ordersCount')} value={money(m.orderCount?m.totalSales/m.orderCount:0)} small/>
       </div>
 
       {/* Payment method breakdown */}
@@ -396,11 +453,12 @@ function SalesTab({ completed, productCosts, t }) {
   )
 }
 
-function Kpi({ label, value, accent='#006AFF', small=false }) {
+function Kpi({ label, value, accent='#006AFF', small=false, sub=null, subColor='#888' }) {
   return (
     <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
       <div className="text-[11px] text-[#888] font-bold uppercase tracking-wider mb-1">{label}</div>
       <div className={`${small?'text-[18px]':'text-[24px]'} font-bold font-mono`} style={{color:accent}}>{value}</div>
+      {sub && <div className="text-[11px] font-bold mt-0.5" style={{color:subColor}}>{sub}</div>}
     </div>
   )
 }
