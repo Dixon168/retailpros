@@ -343,21 +343,24 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
       <div className="flex flex-col gap-4" style={{width:'42%', maxWidth:'520px'}}>
 
         {/* Right-top: big last-scanned photo */}
-        <div className="flex-1 min-h-0 rounded-2xl flex flex-col items-center justify-center p-5"
+        <div className="flex-1 min-h-0 rounded-2xl flex flex-col items-center justify-center p-4 overflow-hidden"
           style={{background:'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)', border:'2px solid #80B2FF'}}>
           {lastItem ? (
             <>
               {lastItem.image_url
-                ? <img src={lastItem.image_url} alt="" className="rounded-2xl object-cover shadow-lg mb-3"
-                    style={{maxHeight:'46vh', maxWidth:'100%', width:'auto'}}/>
-                : <div className="rounded-2xl flex items-center justify-center mb-3 shadow-lg"
-                    style={{background:'#fff', color:'#94a3b8', width:'200px', height:'200px'}}>
-                    <span className="text-[40px] font-black">{(lastItem.name||'').substring(0,2).toUpperCase()}</span>
+                ? <img src={lastItem.image_url} alt="" className="rounded-2xl object-contain shadow-lg mb-2 min-h-0"
+                    style={{flex:'1 1 auto', maxWidth:'100%', maxHeight:'100%'}}
+                    onError={(e)=>{ e.currentTarget.style.display='none' }}/>
+                : <div className="rounded-2xl flex items-center justify-center mb-2 shadow-lg flex-shrink-0"
+                    style={{background:'#fff', color:'#94a3b8', width:'160px', height:'160px'}}>
+                    <span className="text-[36px] font-black">{(lastItem.name||'').substring(0,2).toUpperCase()}</span>
                   </div>}
-              <div className="text-[11px] font-bold uppercase tracking-wider mb-0.5" style={{color:'#1e40af'}}>✓ {t.just_added}</div>
-              <div className="text-[24px] font-bold text-center leading-tight" style={{color:'#1F1F1F'}}>{lastItem.name}</div>
-              <div className="text-[13px] font-mono mb-1" style={{color:'#666'}}>{fmt(lastItem.unitPrice)} × {lastItem.qty}</div>
-              <div className="text-[40px] font-black font-mono" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>{fmt(heroPrice)}</div>
+              <div className="flex-shrink-0 text-center w-full">
+                <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#1e40af'}}>✓ {t.just_added}</div>
+                <div className="text-[22px] font-bold leading-tight truncate px-2" style={{color:'#1F1F1F'}}>{lastItem.name}</div>
+                <div className="text-[13px] font-mono" style={{color:'#666'}}>{fmt(lastItem.unitPrice)} × {lastItem.qty}</div>
+                <div className="text-[36px] font-black font-mono leading-none mt-1" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>{fmt(heroPrice)}</div>
+              </div>
             </>
           ) : (
             <div className="text-center text-[#94a3b8]">
