@@ -6,6 +6,7 @@
 // All filterable by date range, terminal, and employee. Multi-language.
 
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { startOfDay, endOfDay, subDays } from 'date-fns'
 import { supabase } from '@/lib/supabase'
@@ -17,6 +18,7 @@ const money = (n) => `$${(Number(n) || 0).toFixed(2)}`
 export default function POSDashboardPage() {
   const { tenant, store } = useAuthStore()
   const { t } = useLang()
+  const nav = useNavigate()
   const [tab, setTab]           = useState('summary')   // summary | employee | sales
   const [range, setRange]       = useState('today')
   const [terminalId, setTerminalId] = useState('all')
@@ -134,6 +136,22 @@ export default function POSDashboardPage() {
     enabled: !!tenant?.id,
   })
 
+  // ── Low-stock count (attention strip) ──
+  const { data: lowStockCount = 0 } = useQuery({
+    queryKey: ['dash-lowstock', tenant?.id, store?.id],
+    queryFn: async () => {
+      const { data: products } = await supabase.from('products')
+        .select('id, low_stock_qty, type').eq('tenant_id', tenant.id).neq('type','service').limit(5000)
+      if (!products?.length) return 0
+      const { data: inv } = await supabase.from('inventory')
+        .select('product_id, quantity').eq('tenant_id', tenant.id).eq('store_id', store.id)
+      const stock = {}
+      ;(inv || []).forEach(r => { stock[r.product_id] = r.quantity })
+      return products.filter(p => (stock[p.id] ?? 0) <= (p.low_stock_qty ?? 5)).length
+    },
+    enabled: !!tenant?.id && !!store?.id,
+  })
+
   // ── Apply terminal + employee filters client-side ──
   const filtered = useMemo(() => orders.filter(o => {
     if (terminalId !== 'all' && o.terminal_id !== terminalId) return false
@@ -163,6 +181,11 @@ export default function POSDashboardPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h1 className="text-[22px] font-bold" style={{color:'#1F1F1F'}}>📊 {t('dashboard')}</h1>
         <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => window.print()}
+            className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer"
+            style={{border:'1.5px solid #e5e5e5', background:'#fff', color:'#666'}}>
+            🖨️ {t('print')}
+          </button>
           {/* Terminal filter */}
           <select value={terminalId} onChange={e => setTerminalId(e.target.value)}
             className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer outline-none"
@@ -210,10 +233,27 @@ export default function POSDashboardPage() {
         ))}
       </div>
 
+      {/* Attention strip — low stock + large refunds need action */}
+      {lowStockCount > 0 && (
+        <div className="flex items-center gap-2 rounded-xl px-4 py-2.5 mb-4"
+          style={{background:'#FEF3C7', border:'1px solid #FCD34D'}}>
+          <span className="text-[14px]">⚠️</span>
+          <span className="text-[12px] font-bold text-[#B45309]">{t('needsAttention')}:</span>
+          <span className="text-[12px] text-[#92400E]">
+            <span className="font-bold">{lowStockCount}</span> {t('lowStockAlert')}
+          </span>
+          <button onClick={() => nav('/purchase-orders')}
+            className="ml-auto text-[11px] font-bold cursor-pointer rounded-lg px-2.5 py-1"
+            style={{background:'#fff', color:'#B45309', border:'1px solid #FCD34D'}}>
+            {t('viewDetail')} →
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="text-center py-16 text-[13px] text-[#999]">Loading...</div>
       ) : tab === 'summary' ? (
-        <SummaryTab completed={completed} filtered={filtered} cardSummary={cardSummary} productMeta={productMeta} priorRevenue={priorRevenue} t={t}/>
+        <SummaryTab completed={completed} filtered={filtered} cardSummary={cardSummary} productMeta={productMeta} priorRevenue={priorRevenue} window={window} range={range} t={t}/>
       ) : tab === 'employee' ? (
         <EmployeeTab completed={completed} employees={employees} productMeta={productMeta} t={t}/>
       ) : (
@@ -226,7 +266,7 @@ export default function POSDashboardPage() {
 // ════════════════════════════════════════════════════════════════════
 // SUMMARY TAB
 // ════════════════════════════════════════════════════════════════════
-function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenue, t }) {
+function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenue, window, range, t }) {
   const m = useMemo(() => {
     let totalSales = 0, netSales = 0, tax = 0, refunds = 0, subtotal = 0, discount = 0, cogs = 0
     const byMethod = {}  // method -> { count, amount }
@@ -262,6 +302,29 @@ function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenu
     transfer: t('other'), check: t('other'), other: t('other'),
   }
 
+  // Sales trend buckets — hourly for a single day, daily for week/month.
+  // A store owner wants to see the shape of the period, not just one number.
+  const trendBuckets = useMemo(() => {
+    const oneDay = range === 'today' || (window && (window.end - window.start) <= 86400000 * 1.5)
+    const buckets = new Map()
+    for (const o of completed) {
+      const d = new Date(o.created_at)
+      const key = oneDay
+        ? d.getHours()
+        : `${d.getMonth()+1}/${d.getDate()}`
+      buckets.set(key, (buckets.get(key) || 0) + (Number(o.total) || 0))
+    }
+    let entries
+    if (oneDay) {
+      entries = []
+      for (let h = 8; h <= 21; h++) entries.push([`${h%12||12}${h<12?'a':'p'}`, buckets.get(h) || 0])
+    } else {
+      entries = [...buckets.entries()]
+    }
+    const max = Math.max(1, ...entries.map(e => e[1]))
+    return { entries, max, oneDay }
+  }, [completed, window, range])
+
   const trendStr = m.trend === null ? null
     : `${m.trend >= 0 ? '▲' : '▼'} ${Math.abs(m.trend).toFixed(0)}%`
 
@@ -279,6 +342,32 @@ function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenu
         <Kpi label={t('ordersCount')} value={m.orderCount} small/>
         <Kpi label={t('taxCollected')} value={money(m.tax)} small/>
         <Kpi label={t('discount')} value={money(m.discount)} small/>
+      </div>
+
+      {/* Sales trend (hourly for a day, daily for week/month) */}
+      <div className="rounded-2xl p-4 mb-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
+        <div className="text-[14px] font-bold mb-3" style={{color:'#1F1F1F'}}>
+          📈 {trendBuckets.oneDay ? t('today') : t('totalSales')}
+        </div>
+        {m.totalSales === 0 ? (
+          <div className="text-center py-6 text-[12px] text-[#999]">{t('noData')}</div>
+        ) : (
+          <div className="flex items-end gap-1" style={{height:'120px'}}>
+            {trendBuckets.entries.map(([label, val], i) => (
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full" title={`${label}: ${money(val)}`}>
+                <div className="w-full rounded-t transition-all"
+                  style={{
+                    height: `${Math.max(2, (val / trendBuckets.max) * 100)}%`,
+                    background: val > 0 ? '#006AFF' : '#e5e5e5',
+                    opacity: val > 0 ? (0.55 + 0.45 * (val / trendBuckets.max)) : 0.3,
+                  }}/>
+                <div className="text-[8px] text-[#999] mt-1 whitespace-nowrap" style={{transform: trendBuckets.entries.length > 14 ? 'rotate(-45deg)' : 'none'}}>
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Payment method breakdown */}

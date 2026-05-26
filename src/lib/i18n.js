@@ -127,6 +127,10 @@ export const T = {
   noData:         { en:'No data',      zh:'暂无数据', es:'Sin datos',   ko:'데이터 없음', vi:'Không có dữ liệu' },
   product:        { en:'Product',      zh:'商品',     es:'Producto',    ko:'상품',     vi:'Sản phẩm' },
   searchProduct:  { en:'Search',       zh:'搜索',     es:'Buscar',      ko:'검색',     vi:'Tìm kiếm' },
+  lowStockAlert:  { en:'low stock',    zh:'低库存',   es:'bajo stock',  ko:'재고 부족', vi:'sắp hết hàng' },
+  needsAttention: { en:'Needs attention', zh:'需要关注', es:'Requiere atención', ko:'주의 필요', vi:'Cần chú ý' },
+  viewDetail:     { en:'View',         zh:'查看',     es:'Ver',         ko:'보기',     vi:'Xem' },
+  print:          { en:'Print',        zh:'打印',     es:'Imprimir',    ko:'인쇄',     vi:'In' },
 }
 
 // Hook to use translations
