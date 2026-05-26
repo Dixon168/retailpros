@@ -313,11 +313,13 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
               <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-50"
                 style={isLast ? {background:'#eff6ff'} : {}}>
                 {item.image_url
-                  ? <img src={item.image_url} alt="" className="w-9 h-9 rounded-md object-cover flex-shrink-0"/>
-                  : <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0"
-                      style={{background:'#f1f5f9', color:'#94a3b8'}}>
-                      <span className="text-[9px] font-bold">{item.name.substring(0,2).toUpperCase()}</span>
-                    </div>}
+                  ? <img src={item.image_url} alt="" className="w-9 h-9 rounded-md object-cover flex-shrink-0"
+                      onError={(e)=>{ e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }}/>
+                  : null}
+                <div className="w-9 h-9 rounded-md items-center justify-center flex-shrink-0"
+                  style={{background:'#f1f5f9', color:'#94a3b8', display: item.image_url ? 'none' : 'flex'}}>
+                  <span className="text-[9px] font-bold">{item.name.substring(0,2).toUpperCase()}</span>
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[14px] font-semibold truncate" style={{color:'#1F1F1F'}}>{item.name}</div>
                   <div className="text-[11px] font-mono" style={{color:'#94a3b8'}}>
