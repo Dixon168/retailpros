@@ -121,7 +121,7 @@ export default function ReportsPage() {
         .eq('card_type', 'gift')
         .order('created_at', { ascending: false })
       const { data: txns } = await supabase.from('gift_card_transactions')
-        .select('type, amount, created_at')
+        .select('type, amount, paid_amount, bonus_amount, created_at')
         .eq('tenant_id', tenant.id)
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
@@ -1625,8 +1625,14 @@ function GiftCardReport({ cards, txns, dateFrom, dateTo }) {
   const totalIssued = cards.reduce((s,c) => s + Number(c.init_amount || 0), 0)
   const poolBalance = cards.reduce((s,c) => s + Number(c.balance || 0), 0)
   const totalUsed = totalIssued - poolBalance
-  // Top-ups + redemptions in window
-  const topupsInWindow  = txns.filter(t => t.type === 'topup').reduce((s,t) => s + Number(t.amount), 0)
+  // In-window money flows. For sells + top-ups:
+  //   loaded  = amount onto cards (充值金额, a liability)
+  //   cash    = paid_amount (付款金额, real income)
+  //   bonus   = free promo amount (marketing cost)
+  const loadTx = txns.filter(t => t.type === 'topup' || t.type === 'issue')
+  const loadedInWindow = loadTx.reduce((s,t) => s + Number(t.amount || 0), 0)
+  const cashInWindow   = loadTx.reduce((s,t) => s + Number(t.paid_amount != null ? t.paid_amount : t.amount), 0)
+  const bonusInWindow  = loadTx.reduce((s,t) => s + Number(t.bonus_amount || 0), 0)
   const redeemsInWindow = txns.filter(t => t.type === 'redeem').reduce((s,t) => s + Math.abs(Number(t.amount)), 0)
 
   if (cards.length === 0) return (
@@ -1635,17 +1641,31 @@ function GiftCardReport({ cards, txns, dateFrom, dateTo }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {[
           ['Active Cards',    active.length,                       '#10b981', `of ${cards.length} total`],
-          ['Total Issued',    `$${totalIssued.toFixed(2)}`,        '#3b82f6', 'lifetime value'],
-          ['Pool Balance',    `$${poolBalance.toFixed(2)}`,        '#FA8C16', 'outstanding'],
+          ['Pool Balance',    `$${poolBalance.toFixed(2)}`,        '#FA8C16', 'outstanding liability'],
           ['Total Redeemed',  `$${totalUsed.toFixed(2)}`,          '#dc2626', 'lifetime used'],
-          ['Top-ups (period)', `$${topupsInWindow.toFixed(2)}`,    '#15803d', `redeems $${redeemsInWindow.toFixed(0)}`],
+          ['Redeemed (period)', `$${redeemsInWindow.toFixed(2)}`,  '#9333ea', 'spent this period'],
         ].map(([l,v,c,sub]) => (
           <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
             <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
             <div className="text-[20px] font-bold" style={{color:c}}>{v}</div>
+            <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sell / top-up money flow this period — cash vs loaded vs free */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          ['💵 Cash Collected', `$${cashInWindow.toFixed(2)}`, '#15803d', 'real income (付款金额) — goes to financials'],
+          ['💳 Loaded to Cards', `$${loadedInWindow.toFixed(2)}`, '#3b82f6', 'balance added (充值金额) — card liability'],
+          ['🎁 Promo Bonus Given', `$${bonusInWindow.toFixed(2)}`, '#d97706', 'free amount (marketing cost)'],
+        ].map(([l,v,c,sub]) => (
+          <div key={l} className="rounded-[12px] p-4" style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
+            <div className="text-[11px] font-bold text-[#666] mb-1.5">{l}</div>
+            <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
             <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
           </div>
         ))}
