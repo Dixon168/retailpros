@@ -186,6 +186,8 @@ export default function CustomerDisplayPage() {
   const fmt = (n) => '$' + Number(n || 0).toFixed(2)
   const storeName = cartState?.store?.name || settings?.name || 'RetailPOS'
   const logoUrl = cartState?.store?.logo_url || ds.logo_url
+  const storePhone   = cartState?.store?.phone   || settings?.phone || ''
+  const storeAddress = cartState?.store?.address || ''
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden"
@@ -221,7 +223,7 @@ export default function CustomerDisplayPage() {
 
       {/* ── Body — switches based on mode ── */}
       <div className="flex-1 overflow-hidden">
-        {mode === 'idle'     && <IdleScreen t={t} promos={promos} promoIdx={promoIdx} storeName={storeName} now={clockNow}/>}
+        {mode === 'idle'     && <IdleScreen t={t} promos={promos} promoIdx={promoIdx} storeName={storeName} logoUrl={logoUrl} phone={storePhone} address={storeAddress} now={clockNow}/>}
         {mode === 'active'   && <ActiveScreen t={t} state={cartState} fmt={fmt} settings={ds} lastItem={lastItem}/>}
         {mode === 'payment'  && <PaymentScreen t={t} state={cartState} fmt={fmt}/>}
         {mode === 'tip'      && <TipScreen t={t} state={cartState} fmt={fmt} terminalId={terminalId}/>}
@@ -235,7 +237,7 @@ export default function CustomerDisplayPage() {
 
 
 // ── 1. IDLE — Welcome + promo carousel + clock ──
-function IdleScreen({ t, promos, promoIdx, storeName, now }) {
+function IdleScreen({ t, promos, promoIdx, storeName, logoUrl, phone, address, now }) {
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
@@ -246,6 +248,8 @@ function IdleScreen({ t, promos, promoIdx, storeName, now }) {
           style={{aspectRatio:'16/9'}}>
           <img src={promos[promoIdx]} alt="" className="w-full h-full object-cover transition-opacity"/>
         </div>
+      ) : logoUrl ? (
+        <img src={logoUrl} alt={storeName} className="max-h-40 w-auto object-contain mb-4"/>
       ) : (
         <div className="text-[100px] mb-2">👋</div>
       )}
@@ -256,6 +260,15 @@ function IdleScreen({ t, promos, promoIdx, storeName, now }) {
       <div className="text-[28px] font-bold mb-2" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
         {t.welcome}
       </div>
+
+      {/* Company contact info */}
+      {(phone || address) && (
+        <div className="flex items-center gap-4 text-[15px] text-[#475569] mb-2 flex-wrap justify-center">
+          {phone && <span className="flex items-center gap-1.5">📞 {phone}</span>}
+          {address && <span className="flex items-center gap-1.5">📍 {address}</span>}
+        </div>
+      )}
+
       <div className="text-[16px] text-[#666] mb-1">{greeting}</div>
       <div className="text-[14px] text-[#999]">
         {now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})} · {now.toLocaleDateString()}

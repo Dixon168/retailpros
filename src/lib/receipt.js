@@ -9,7 +9,7 @@ const DEFAULT_PRINTING = {
     cashier: true, customer: true,
     items: true, discount: true, tax: true, total: true,
     paymentMethod: true, change: true,
-    footer: true, thankYou: true, qrCode: false,
+    footer: true, thankYou: true, qrCode: true,
   },
   headerText: 'Welcome!',
   footerText: 'Returns within 30 days with receipt.',
@@ -124,7 +124,19 @@ ${sh.change && change > 0 ? `<div class="row"><span>Change:</span><span>${fmt(ch
 ${dash}
 ${sh.thankYou ? `<div class="center bold">★ Thank you! ★</div>` : ''}
 ${sh.footer && s.footerText ? `<div class="center small gray" style="margin-top:4px;">${escapeHTML(s.footerText)}</div>` : ''}
-${sh.qrCode ? `<div class="center" style="margin-top:10px;"><div style="display:inline-block;width:70px;height:70px;background:#000;padding:4px;"><div style="background:#fff;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#000;">QR</div></div></div>` : ''}
+${sh.qrCode ? (() => {
+  // Real, scannable QR. Encodes a digital-receipt lookup URL so the
+  // customer can pull up this receipt on their phone. The QR image is
+  // generated at print time by the customer's browser (works on any
+  // network — this isn't the sandbox).
+  const base = (storeInfo?.receipt_base_url || (typeof window!=='undefined' ? window.location.origin : '')).replace(/\/$/,'')
+  const qrData = `${base}/r/${encodeURIComponent(order_number||'')}`
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=0&data=${encodeURIComponent(qrData)}`
+  return `<div class="center" style="margin-top:10px;">
+    <img src="${qrSrc}" alt="Scan for digital receipt" style="width:90px;height:90px;"/>
+    <div class="center small gray" style="margin-top:3px;">Scan for digital receipt</div>
+  </div>`
+})() : ''}
 </body></html>`
 }
 

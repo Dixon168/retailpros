@@ -149,7 +149,7 @@ export default function POSPage() {
           taxAmount: totals.taxAmount,
           grandTotal: totals.grandTotal,
         },
-        store: { name: store?.name, logo_url: store?.logo_url },
+        store: { name: store?.name, logo_url: store?.logo_url, phone: store?.phone, address: store?.address },
         ts: Date.now(),
       })
     }
