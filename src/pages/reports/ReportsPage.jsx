@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, format } from 'date-fns'
 import { printReceipt } from '@/lib/receipt'
+import { printShiftReport } from '@/lib/shiftReport'
 import toast from 'react-hot-toast'
 
 const REPORT_NAV = [
@@ -156,6 +157,21 @@ export default function ReportsPage() {
       return orders||[]
     },
     enabled: !!store?.id && activeReport === 'shift',
+  })
+
+  // Closed shift records (cash_drawers) in range — for the history list + reprint
+  const { data: closedShifts = [] } = useQuery({
+    queryKey: ['report-closed-shifts', store?.id, dateFrom, dateTo],
+    queryFn: async () => {
+      const { data } = await supabase.from('cash_drawers')
+        .select('*, users(name)')
+        .eq('tenant_id', tenant.id)
+        .gte('opened_at', dateFrom.toISOString())
+        .lte('opened_at', dateTo.toISOString())
+        .order('opened_at', { ascending: false })
+      return data || []
+    },
+    enabled: !!store?.id && !!tenant?.id && activeReport === 'shift',
   })
 
   // Employee report
@@ -616,6 +632,55 @@ export default function ReportsPage() {
                     <span className="font-mono text-[13px] font-bold" style={{color:c}}>{v}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* Shift history — real closed shifts, each reprintable */}
+              <div className="text-[13px] font-bold mb-3">📋 Shift History</div>
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden mb-5">
+                <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]" style={{gridTemplateColumns:'1.4fr 1fr 1fr 0.9fr 0.9fr 0.9fr 80px'}}>
+                  {['Opened','Closed','Cashier','Opening','Expected','Variance',''].map(h => (
+                    <div key={h} className="px-3 py-2.5 font-mono text-[10px] text-[#999999] uppercase tracking-wider">{h}</div>
+                  ))}
+                </div>
+                {closedShifts.length === 0 ? (
+                  <div className="px-3 py-6 text-center text-[12px] text-[#999]">No shifts in this period</div>
+                ) : closedShifts.map(sh => {
+                  const variance = sh.variance ?? null
+                  const isClosed = !!sh.closed_at
+                  return (
+                    <div key={sh.id} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F5F5F5] items-center" style={{gridTemplateColumns:'1.4fr 1fr 1fr 0.9fr 0.9fr 0.9fr 80px'}}>
+                      <div className="px-3 py-3 text-[11px] text-[#1F1F1F]">{format(new Date(sh.opened_at),'MMM d, h:mm a')}</div>
+                      <div className="px-3 py-3 text-[11px] text-[#666]">
+                        {isClosed ? format(new Date(sh.closed_at),'MMM d, h:mm a') : <span className="text-[#15803D] font-bold">● Open</span>}
+                      </div>
+                      <div className="px-3 py-3 text-[12px]">{sh.users?.name || '—'}</div>
+                      <div className="px-3 py-3 font-mono text-[11px]">${(sh.opening_amount||0).toFixed(2)}</div>
+                      <div className="px-3 py-3 font-mono text-[11px]">{sh.expected_amount!=null?`$${sh.expected_amount.toFixed(2)}`:'—'}</div>
+                      <div className="px-3 py-3 font-mono text-[11px] font-bold" style={{color: variance==null?'#999':variance===0?'#15803D':Math.abs(variance)<0.01?'#15803D':'#CF1322'}}>
+                        {variance!=null?`${variance>=0?'+':''}$${variance.toFixed(2)}`:'—'}
+                      </div>
+                      <div className="px-2 py-3">
+                        <button onClick={async () => {
+                          try {
+                            await printShiftReport({
+                              shift: sh,
+                              closingAmount: sh.closing_amount ?? sh.expected_amount ?? 0,
+                              tenantId: tenant.id,
+                              storeInfo: store,
+                              cashierName: sh.users?.name || '',
+                              terminalName: sh.terminal_name || '',
+                            })
+                            toast.success('Shift report sent to printer')
+                          } catch (e) { toast.error('Print failed: ' + e.message) }
+                        }}
+                          className="rounded-lg px-2 py-1.5 text-[10px] font-bold cursor-pointer"
+                          style={{background:'#006AFF', color:'#fff', border:'none'}}>
+                          🖨 Print
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
 
               {/* Orders */}
