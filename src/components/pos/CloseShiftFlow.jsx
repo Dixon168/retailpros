@@ -21,6 +21,20 @@ const PAY_COLOR = {
 
 const fmt = n => `$${Number(n||0).toFixed(2)}`
 
+// US coin + bill face values for the denomination counter
+const DENOMINATIONS = [
+  { value: 100,   label: '$100' },
+  { value: 50,    label: '$50' },
+  { value: 20,    label: '$20' },
+  { value: 10,    label: '$10' },
+  { value: 5,     label: '$5' },
+  { value: 1,     label: '$1' },
+  { value: 0.25,  label: '25¢' },
+  { value: 0.10,  label: '10¢' },
+  { value: 0.05,  label: '5¢' },
+  { value: 0.01,  label: '1¢' },
+]
+
 export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, terminalName, onClose }) {
   const { closeShift } = useTerminalStore()
   const [summary, setSummary] = useState(null)
@@ -28,6 +42,11 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
   const [counted, setCounted] = useState('')
   const [showPad, setShowPad] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [countMode, setCountMode]     = useState('denom')  // 'denom' | 'manual'
+  const [denomCounts, setDenomCounts] = useState({})        // { faceValue: qtyStr }
+
+  // Denomination total
+  const denomTotal = DENOMINATIONS.reduce((s, d) => s + (parseInt(denomCounts[d.value]) || 0) * d.value, 0)
 
   useEffect(() => {
     let alive = true
@@ -48,7 +67,7 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
   const proceedToCount = () => setStep('count')
 
   const finalize = async ({ withReport }) => {
-    const amt = parseFloat(counted) || 0
+    const amt = countMode === 'denom' ? denomTotal : (parseFloat(counted) || 0)
     setClosing(true)
     try {
       // Capture the report data BEFORE closing (uses live shift state)
@@ -71,14 +90,6 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
     }
   }
 
-  const reprintPreview = async () => {
-    const amt = parseFloat(counted) || (summary?.expected || 0)
-    const s = await buildShiftSummary({ shift, tenantId, closingAmount: amt })
-    const html = buildShiftReportHTML({ summary: s, storeInfo, cashier, terminalName })
-    printReceipt(html, 1)
-    toast.success('Report sent to printer')
-  }
-
   if (step === 'loading') return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl px-6 py-5 text-[13px] font-mono">⏳ Loading shift activity…</div>
@@ -88,7 +99,10 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
   if (!summary) return null
 
   const expected   = summary.expected
-  const variance   = (parseFloat(counted) || 0) - expected
+  // Effective counted amount: denomination total, or the manually typed total
+  const effectiveCounted = countMode === 'denom' ? denomTotal : (parseFloat(counted) || 0)
+  const hasCounted = countMode === 'denom' ? denomTotal > 0 : !!counted
+  const variance   = effectiveCounted - expected
   const varianceOk = Math.abs(variance) < 0.01
 
   return (
@@ -220,18 +234,52 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                 </div>
               </div>
 
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Count what's actually in the drawer</div>
-              <button onClick={() => setShowPad(true)}
-                className="w-full flex items-center rounded-xl px-4 py-3 mb-2 cursor-pointer"
-                style={{background:'#f0fdf4', border:`2px solid ${counted ? '#22c55e' : '#bbf7d0'}`}}>
-                <span className="text-[18px] font-bold text-emerald-700 mr-2">$</span>
-                <span className="flex-1 text-[24px] font-bold font-mono text-right text-emerald-700">
-                  {counted || '0.00'}
-                </span>
-              </button>
-              <div className="text-[10px] text-slate-500 text-center mb-3">Tap to enter — uses a touch numpad</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Count drawer <span className="text-slate-400 normal-case font-normal">(optional)</span></div>
+                <button onClick={() => setCountMode(m => m === 'denom' ? 'manual' : 'denom')}
+                  className="text-[10px] font-bold cursor-pointer rounded px-2 py-0.5"
+                  style={{background:'#eff6ff', color:'#006AFF', border:'1px solid #bfdbfe'}}>
+                  {countMode === 'denom' ? '⌨ Enter total instead' : '🪙 Count by denomination'}
+                </button>
+              </div>
 
-              {counted && (
+              {countMode === 'denom' ? (
+                <div className="rounded-xl mb-3 overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
+                  {DENOMINATIONS.map(d => {
+                    const qty = denomCounts[d.value] || ''
+                    const sub = (parseInt(qty) || 0) * d.value
+                    return (
+                      <div key={d.value} className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 last:border-0">
+                        <span className="text-[12px] font-bold text-slate-600 w-14">{d.label}</span>
+                        <span className="text-[11px] text-slate-400">×</span>
+                        <input value={qty} onChange={e => setDenomCounts(c => ({...c, [d.value]: e.target.value.replace(/[^\d]/g,'')}))}
+                          inputMode="numeric" placeholder="0"
+                          className="w-16 rounded-lg px-2 py-1.5 text-[13px] font-mono text-center outline-none focus:border-[#006AFF]"
+                          style={{border:'1.5px solid #e2e8f0'}}/>
+                        <span className="flex-1 text-right font-mono text-[12px] text-slate-700">{sub>0?fmt(sub):''}</span>
+                      </div>
+                    )
+                  })}
+                  <div className="flex items-center justify-between px-3 py-2.5" style={{background:'#f0fdf4'}}>
+                    <span className="text-[12px] font-bold text-emerald-700">Counted total</span>
+                    <span className="text-[18px] font-bold font-mono text-emerald-700">${denomTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button onClick={() => setShowPad(true)}
+                    className="w-full flex items-center rounded-xl px-4 py-3 mb-2 cursor-pointer"
+                    style={{background:'#f0fdf4', border:`2px solid ${counted ? '#22c55e' : '#bbf7d0'}`}}>
+                    <span className="text-[18px] font-bold text-emerald-700 mr-2">$</span>
+                    <span className="flex-1 text-[24px] font-bold font-mono text-right text-emerald-700">
+                      {counted || '0.00'}
+                    </span>
+                  </button>
+                  <div className="text-[10px] text-slate-500 text-center mb-3">Tap to enter — uses a touch numpad</div>
+                </>
+              )}
+
+              {hasCounted && (
                 <div className="rounded-xl px-4 py-3 mb-3 text-center"
                   style={{
                     background: varianceOk ? '#f0fdf4' : variance > 0 ? '#fffbeb' : '#fee2e2',
@@ -254,24 +302,17 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                   style={{background:'#f1f5f9', color:'#475569', border:'1px solid #e2e8f0'}}>
                   ‹ Back
                 </button>
-                <button onClick={reprintPreview} disabled={closing}
-                  className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer"
-                  style={{background:'#fff', color:'#006AFF', border:'1.5px solid #80B2FF'}}>
-                  🖨 Preview Report
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => finalize({ withReport: false })} disabled={closing || !counted}
-                  className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                  style={{background:'#fff', color:'#1F1F1F', border:'1.5px solid #1F1F1F'}}>
+                <button onClick={() => finalize({ withReport: false })} disabled={closing}
+                  className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer disabled:opacity-40"
+                  style={{background:'#fff', color:'#475569', border:'1px solid #e2e8f0'}}>
                   Close (no print)
                 </button>
-                <button onClick={() => finalize({ withReport: true })} disabled={closing || !counted}
-                  className="flex-1 rounded-lg py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                  style={{background:'#1F1F1F'}}>
-                  {closing ? 'Closing…' : '🖨 Close + Print'}
-                </button>
               </div>
+              <button onClick={() => finalize({ withReport: true })} disabled={closing}
+                className="w-full rounded-lg py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                style={{background:'#1F1F1F'}}>
+                {closing ? 'Closing…' : '🖨 Close Shift + Print Report'}
+              </button>
             </>
           )}
         </div>

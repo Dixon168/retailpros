@@ -408,8 +408,9 @@ export default function POSPage() {
           ) : (
             <button onClick={() => guard('pos.open_shift', 'open a shift', () => setShowOpenShift(true))}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
-              style={{background:'rgba(234,88,12,0.15)', borderColor:'rgba(234,88,12,0.45)', color:'#fb923c'}}
-              title="Click to open shift and enter opening cash float">
+              style={{background:'rgba(220,38,38,0.15)', borderColor:'rgba(220,38,38,0.5)', color:'#f87171'}}
+              title="Shift is closed — open a shift before selling">
+              <span className="w-2 h-2 rounded-full" style={{background:'#dc2626', boxShadow:'0 0 6px #dc2626'}}/>
               ☀️ Open Shift
             </button>
           )}

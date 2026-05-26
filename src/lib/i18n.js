@@ -151,6 +151,7 @@ export const T = {
   newInvoice:     { en:'New Invoice',  zh:'新建发票', es:'Nueva factura', ko:'새 청구서', vi:'Hóa đơn mới' },
   newEstimate:    { en:'New Estimate', zh:'新建报价', es:'Nuevo presupuesto', ko:'새 견적', vi:'Báo giá mới' },
   receivePayment: { en:'Receive Payment', zh:'收款',  es:'Recibir pago', ko:'결제 받기', vi:'Nhận thanh toán' },
+  openShiftFirst: { en:'Open a shift before selling', zh:'销售前请先开班', es:'Abra un turno antes de vender', ko:'판매 전에 교대를 시작하세요', vi:'Mở ca trước khi bán hàng' },
 }
 
 // Hook to use translations

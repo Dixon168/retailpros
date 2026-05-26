@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useTerminalStore } from '@/stores/terminalStore'
 import { useLang } from '@/lib/i18n'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -26,6 +27,7 @@ const SIDE_BTNS = [
 export default function CartPanel({ onRefund, onHold }) {
   const { user, tenant } = useAuthStore()
   const { t } = useLang()
+  const { shiftOpen } = useTerminalStore()
   const {
     items, customer, orderDiscount, totals,
     updateQty, removeItem, setItemNote, setItemEmployee,
@@ -578,7 +580,13 @@ export default function CartPanel({ onRefund, onHold }) {
 
           {/* PAY button */}
           <div className="px-3 pb-3">
-            <button onClick={() => useCartStore.setState({ showPayPanel: true })}
+            <button onClick={() => {
+                if (!shiftOpen) {
+                  toast.error(t('openShiftFirst'), { icon: '🔒' })
+                  return
+                }
+                useCartStore.setState({ showPayPanel: true })
+              }}
               disabled={items.length === 0}
               className="w-full rounded-2xl py-4 text-[16px] font-bold text-white cursor-pointer border-none disabled:opacity-30 transition-all"
               style={{
