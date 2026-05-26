@@ -112,6 +112,60 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     enabled: invoiceSearch.length >= 2 && mode === 'by_invoice' && !selectedOrder,
   })
 
+  // ── Card top-ups on the selected order (for reversal) ──────────────
+  const { data: orderTopups = [] } = useQuery({
+    queryKey: ['order-topups', selectedOrder?.id],
+    queryFn: async () => {
+      if (!selectedOrder?.id) return []
+      const out = []
+      // Member-card top-ups (customer_topups by order_id)
+      const { data: mem } = await supabase.from('customer_topups')
+        .select('id, customer_id, amount, paid_amount, bonus_amount')
+        .eq('order_id', selectedOrder.id).gt('amount', 0)
+      for (const m of (mem || [])) {
+        const { data: cust } = await supabase.from('customers')
+          .select('name, card_number, card_balance').eq('id', m.customer_id).maybeSingle()
+        out.push({ kind:'member', id:m.id, topup:Number(m.amount), paid:Number(m.paid_amount ?? m.amount),
+          customerId:m.customer_id, customerName:cust?.name, cardNumber:cust?.card_number, balance:Number(cust?.card_balance||0) })
+      }
+      // Gift-card top-ups (gift_card_transactions by order_id)
+      const { data: gc } = await supabase.from('gift_card_transactions')
+        .select('id, card_id, amount, paid_amount, type')
+        .eq('order_id', selectedOrder.id).in('type', ['issue','topup'])
+      for (const g of (gc || [])) {
+        const { data: card } = await supabase.from('member_cards')
+          .select('card_number, balance').eq('id', g.card_id).maybeSingle()
+        out.push({ kind:'gift', id:g.id, topup:Number(g.amount), paid:Number(g.paid_amount ?? g.amount),
+          cardNumber:card?.card_number, balance:Number(card?.balance||0) })
+      }
+      return out
+    },
+    enabled: !!selectedOrder?.id,
+  })
+
+  // ── Add a top-up reversal to the cart (verify balance / override) ──
+  const reverseTopup = (tu) => {
+    const enough = tu.balance >= tu.topup
+    const allowNegative = !enough && !!approver  // manager override required when short
+    if (!enough && !approver) {
+      toast.error(`Card balance $${tu.balance.toFixed(2)} < top-up $${tu.topup.toFixed(2)} — manager override required to reverse`, { duration: 6000 })
+      return
+    }
+    useCartStore.getState().addCardReversal({
+      cardKind: tu.kind,
+      topupAmount: tu.topup,
+      paymentAmount: tu.paid,         // refunded to customer (editable in cart)
+      allowNegative,
+      cardNumber: tu.cardNumber,
+      customerId: tu.customerId,
+      customerName: tu.customerName,
+      origOrderId: selectedOrder.id,
+      origOrderNumber: selectedOrder.order_number,
+    })
+    toast.success(`↩ Refund added to cart — reverse $${tu.topup.toFixed(2)} off card, refund $${tu.paid.toFixed(2)}`)
+    onClose()
+  }
+
   // ── Scan product for by_item ──
   const handleProductScan = async (e) => {
     if (e.key !== 'Enter') return
@@ -562,6 +616,46 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                       Original: ${selectedOrder.grand_total?.toFixed(2)}
                     </div>
                   </div>
+
+                  {/* Card top-up reversal (if this order loaded a card) */}
+                  {orderTopups.length > 0 && (
+                    <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #fed7aa', background:'#fff7ed'}}>
+                      <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider"
+                        style={{color:'#c2410c', borderBottom:'1px solid #fed7aa'}}>
+                        💳 Card top-up on this order — reverse it
+                      </div>
+                      {orderTopups.map(tu => {
+                        const enough = tu.balance >= tu.topup
+                        return (
+                          <div key={tu.id} className="px-4 py-3 flex items-center gap-3 border-b border-orange-100 last:border-0">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[13px] font-bold" style={{color:'#1F1F1F'}}>
+                                {tu.kind === 'member' ? '👤 Member' : '🎁 Gift'} top-up ${tu.topup.toFixed(2)}
+                                {tu.cardNumber && <span className="text-[11px] font-mono text-slate-500"> · #{tu.cardNumber}</span>}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                Paid ${tu.paid.toFixed(2)} · Card balance now ${tu.balance.toFixed(2)}
+                              </div>
+                              {!enough && (
+                                <div className="text-[11px] font-bold mt-0.5" style={{color:'#dc2626'}}>
+                                  ⚠️ Balance too low to reverse — {approver ? `override by ${approver.name} OK` : 'manager override required'}
+                                </div>
+                              )}
+                            </div>
+                            <button onClick={() => reverseTopup(tu)}
+                              disabled={!enough && !approver}
+                              className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
+                              style={{background: enough ? '#ea580c' : '#dc2626'}}>
+                              ↩ Reverse
+                            </button>
+                          </div>
+                        )
+                      })}
+                      <div className="px-4 py-2 text-[10px] text-slate-500" style={{background:'#fffbeb'}}>
+                        Reverses the top-up off the card and adds a refund to the cart (editable). Completes when you check out.
+                      </div>
+                    </div>
+                  )}
 
                   {/* Items */}
                   <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>

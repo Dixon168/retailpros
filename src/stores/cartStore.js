@@ -222,6 +222,40 @@ export const useCartStore = create((set, get) => ({
     }))
   },
 
+  // ── Add a card-top-up REVERSAL as a refund cart line ────────────
+  // For voiding/refunding an order that loaded a card. Pulls the top-up
+  // amount back OFF the card and refunds the payment amount to the
+  // customer. Like top-ups, this only executes when the refund order is
+  // completed. The line price is NEGATIVE (money going back to customer)
+  // and editable; the card reversal amount is fixed at the original
+  // top-up amount. Non-taxable.
+  addCardReversal: (payload) => {
+    const label = payload.cardKind === 'member'
+      ? `↩ Refund — Member Top-up $${Number(payload.topupAmount).toFixed(2)}${payload.customerName ? ` (${payload.customerName})` : ''}`
+      : `↩ Refund — Gift Card Top-up $${Number(payload.topupAmount).toFixed(2)}${payload.cardNumber ? ` (#${payload.cardNumber})` : ''}`
+    get()._addItem({
+      productId:  null,
+      name:       label,
+      sku:        payload.cardNumber || '',
+      type:       'card_reversal',
+      qty:        -1,                          // negative = refund
+      unit:       'ea',
+      unitPrice:  payload.paymentAmount,       // editable; line total = -payment
+      isTaxable:  false,
+      taxGroupId: null,
+      isReturn:   true,
+      cardReversal: {
+        cardKind:      payload.cardKind,
+        topupAmount:   payload.topupAmount,
+        allowNegative: !!payload.allowNegative,
+        cardNumber:    payload.cardNumber || null,
+        customerId:    payload.customerId || null,
+        origOrderId:     payload.origOrderId || null,
+        origOrderNumber: payload.origOrderNumber || null,
+      },
+    })
+  },
+
   // ── Add a card top-up / sell as a cart line ──────────────────────
   // Top-ups (gift card sell/top-up, member card top-up) are NOT charged
   // on the spot. They're added to the cart like a product and only
@@ -536,9 +570,9 @@ export const useCartStore = create((set, get) => ({
         product_id:       item.productId,
         product_name:     item.name,
         product_sku:      item.sku || '',
-        // card_topup lines carry no inventory — present them as 'service'
-        // so the atomic submit skips the inventory deduction step.
-        product_type:     item.type === 'card_topup' ? 'service' : item.type,
+        // card_topup / card_reversal lines carry no inventory — present
+        // them as 'service' so the atomic submit skips inventory.
+        product_type:     (item.type === 'card_topup' || item.type === 'card_reversal') ? 'service' : item.type,
         serial_number:    item.serialNumber || '',
         quantity:         item.qty,
         unit:             item.unit || 'ea',
@@ -661,7 +695,7 @@ export const useCartStore = create((set, get) => ({
             amount: ct.topupAmount, paid_amount: ct.paymentAmount,
             bonus_amount: ct.bonusAmount || 0, balance_after: newBal,
             method: 'order', note: ct.note || `Order ${result.order_number}`,
-            staff_id: cashierId,
+            staff_id: cashierId, order_id: result.order_id,
           })
           if (ins.error) throw new Error(ins.error.message)
         }
@@ -669,6 +703,59 @@ export const useCartStore = create((set, get) => ({
       } catch (e) {
         console.error('Card activation:', e)
         toast.error(`⚠️ Order done but card load failed: ${e.message}. Load manually.`, { duration: 8000 })
+      }
+    }
+
+    // ── Execute card-top-up reversals (void/refund of a top-up) ──────
+    // Pull the original top-up amount back off the card. The cash refund
+    // to the customer is already handled by the negative line total in
+    // this order. Balance was verified (or manager-overridden) before the
+    // reversal line was added to the cart.
+    const reversalLines = items.filter(i => i.type === 'card_reversal' && i.cardReversal)
+    for (const line of reversalLines) {
+      const cr = line.cardReversal
+      try {
+        if (cr.cardKind === 'gift') {
+          const { data, error: e } = await supabase.rpc('fn_reverse_gift_card', {
+            p_tenant_id:      tenantId,
+            p_card_number:    cr.cardNumber,
+            p_amount:         cr.topupAmount,
+            p_allow_negative: !!cr.allowNegative,
+            p_user_id:        cashierId,
+            p_order_id:       result.order_id,
+            p_note:           cr.origOrderNumber ? `Reversal of ${cr.origOrderNumber}` : 'Top-up reversed',
+          })
+          if (e || !data?.success) throw new Error(data?.message || e?.message || 'reversal failed')
+        } else if (cr.cardKind === 'member') {
+          const { data: cust } = await supabase.from('customers')
+            .select('card_balance').eq('id', cr.customerId).single()
+          const cur = cust?.card_balance || 0
+          if (cur < cr.topupAmount && !cr.allowNegative) {
+            throw new Error('Insufficient card balance to reverse — manager override required')
+          }
+          const newBal = cur - cr.topupAmount
+          const u = await supabase.from('customers')
+            .update({ card_balance: newBal }).eq('id', cr.customerId)
+          if (u.error) throw new Error(u.error.message)
+          const ins = await supabase.from('customer_topups').insert({
+            tenant_id: tenantId, customer_id: cr.customerId,
+            amount: -cr.topupAmount, paid_amount: null, bonus_amount: 0,
+            balance_after: newBal, method: 'reversal',
+            note: cr.origOrderNumber ? `Reversal of ${cr.origOrderNumber}` : 'Top-up reversed',
+            staff_id: cashierId, order_id: result.order_id,
+          })
+          if (ins.error) throw new Error(ins.error.message)
+        }
+        // Mark the original order refunded/voided
+        if (cr.origOrderId) {
+          await supabase.from('orders')
+            .update({ refund_status: 'full', refunded_at: new Date().toISOString(), refunded_by: cashierId })
+            .eq('id', cr.origOrderId)
+        }
+        toast.success(`↩ Reversed $${Number(cr.topupAmount).toFixed(2)} off the card`)
+      } catch (e) {
+        console.error('Card reversal:', e)
+        toast.error(`⚠️ Refund done but card reversal failed: ${e.message}`, { duration: 8000 })
       }
     }
 

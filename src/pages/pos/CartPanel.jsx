@@ -422,6 +422,11 @@ export default function CartPanel({ onRefund, onHold }) {
                             )}
                             <span className="ml-1 text-slate-400">· no tax</span>
                           </span>
+                        ) : item.type === 'card_reversal' && item.cardReversal ? (
+                          <span className="text-[11px] font-mono" style={{color:'#dc2626'}}>
+                            reverse ${Number(item.cardReversal.topupAmount).toFixed(2)} off card · refund ${Math.abs(item.unitPrice).toFixed(2)}
+                            <span className="ml-1 text-slate-400">· editable · no tax</span>
+                          </span>
                         ) : hasBulk ? (
                           <>
                             <span className="text-[11px] font-mono text-green-700 font-bold">
