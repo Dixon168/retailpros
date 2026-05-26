@@ -3638,6 +3638,7 @@ function DisplaySection({ tenantId }) {
     show_promo_carousel:        true,
     promo_images:               [],   // array of URLs
     logo_url:                   '',
+    display_language:           'en', // language shown on the customer display
   }
   const settings = { ...defaults, ...(tenant?.display_settings || {}) }
 
@@ -3732,6 +3733,29 @@ function DisplaySection({ tenantId }) {
 
       {/* Branding & content */}
       <div className="text-[13px] font-bold mb-2">🎨 Branding & Content</div>
+
+      {/* Display language */}
+      <div className="rounded-xl px-4 py-3 mb-2" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
+        <div className="flex items-center gap-2 mb-1">
+          <span>🌐</span>
+          <span className="text-[13px] font-bold text-[#1F1F1F]">Display language</span>
+        </div>
+        <div className="text-[11px] text-[#666] mb-2.5">
+          The language shown to customers on the display. Set by you — the customer doesn't switch it.
+        </div>
+        <div className="flex gap-2">
+          {[['en','English'],['zh','中文']].map(([code, label]) => (
+            <button key={code} onClick={() => update({ display_language: code })}
+              className="px-4 py-2 rounded-lg text-[12px] font-bold cursor-pointer border-2 transition-all"
+              style={(settings.display_language||'en')===code
+                ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-2 mb-5">
         <ToggleRow icon="⭐" title="Show 'Join Rewards' CTA"
           desc="Non-member customers see a prompt to join your loyalty program"

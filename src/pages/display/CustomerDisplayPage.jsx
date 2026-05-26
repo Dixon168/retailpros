@@ -96,13 +96,11 @@ export default function CustomerDisplayPage() {
   const terminalId = params.terminalId || search.get('terminal') || 'default'
   const tenantId   = search.get('tenant') || null
 
-  const [lang,       setLang]       = useState(localStorage.getItem('display_lang') || 'en')
   const [cartState,  setCartState]  = useState(null)
   const [mode,       setMode]       = useState('idle')   // idle | active | payment | thankyou | tip | sig | contact
   const [promoIdx,   setPromoIdx]   = useState(0)
   const [clockNow,   setClockNow]   = useState(new Date())
   const [lastItem,   setLastItem]   = useState(null)     // most-recently-scanned item, for the hero card
-  const t = T[lang] || T.en
 
   // ── Load tenant display settings (logo, promo images, feature toggles) ──
   const { data: settings } = useQuery({
@@ -118,6 +116,10 @@ export default function CustomerDisplayPage() {
   })
 
   const ds  = settings?.display_settings || {}
+  // Display language is set by the owner in Settings → Customer Display.
+  // The customer does not switch it. Defaults to English.
+  const lang = ds.display_language || 'en'
+  const t = T[lang] || T.en
   const promos = (ds.show_promo_carousel !== false && Array.isArray(ds.promo_images)) ? ds.promo_images : []
 
   // ── Subscribe to POS broadcasts ──
@@ -176,12 +178,6 @@ export default function CustomerDisplayPage() {
     return () => clearInterval(t)
   }, [mode])
 
-  const switchLang = (newLang) => {
-    setLang(newLang)
-    localStorage.setItem('display_lang', newLang)
-    getDisplaySync(terminalId).publish(EVT.LANG_CHANGED, { lang: newLang })
-  }
-
   // ── Helpers ──
   const fmt = (n) => '$' + Number(n || 0).toFixed(2)
   const storeName = cartState?.store?.name || settings?.name || 'RetailPOS'
@@ -201,23 +197,6 @@ export default function CustomerDisplayPage() {
             ? <img src={logoUrl} alt={storeName} className="h-10 w-auto object-contain"/>
             : <div className="text-[28px] font-black" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>RP</div>}
           <div className="text-[18px] font-bold" style={{color:'#1F1F1F'}}>{storeName}</div>
-        </div>
-
-        <div className="flex gap-2">
-          <button onClick={() => switchLang('en')}
-            className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2 transition-all"
-            style={lang==='en'
-              ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
-              : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
-            EN
-          </button>
-          <button onClick={() => switchLang('zh')}
-            className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2 transition-all"
-            style={lang==='zh'
-              ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
-              : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
-            中文
-          </button>
         </div>
       </div>
 
