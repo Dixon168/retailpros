@@ -405,7 +405,6 @@ function TerminalsSection({ tenantId, storeId }) {
                     [term.accept_card,        '💳 Card'],
                     [term.accept_check,       '📝 Check'],
                     [term.accept_member_card, '🏷️ Member'],
-                    [term.accept_on_account,  '📋 Account'],
                   ].filter(([en]) => en !== false).map(([, label]) => (
                     <span key={label} className="text-[9px] font-mono px-1.5 py-0.5 rounded
                       bg-[#F5F5F5] text-[#666666]">{label}</span>
@@ -512,7 +511,6 @@ function TerminalEditForm({ initial, onSave, onClose }) {
                 ['accept_card',        '💳 Card (PAX)'],
                 ['accept_check',       '📝 Check'],
                 ['accept_member_card', '🏷️ Member Card'],
-                ['accept_on_account',  '📋 On Account'],
               ].map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2.5 bg-[#F5F5F5]
                   border border-[#E5E5E5] rounded-lg px-3 py-2.5 cursor-pointer
