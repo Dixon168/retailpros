@@ -157,7 +157,11 @@ export default function POSPage() {
     publishState()
     // Re-publish whenever the cart store changes
     const unsub = useCartStore.subscribe(publishState)
-    return () => { unsub() }
+    // When a Display tab opens (or reopens) it announces itself with HELLO —
+    // answer by re-publishing current state so it leaves the welcome screen
+    // and shows the live cart even if it opened after the POS.
+    const helloUnsub = sync.subscribe(EVT.DISPLAY_HELLO, () => publishState())
+    return () => { unsub(); helloUnsub() }
   }, [terminal?.id, tenant?.id, store?.name, store?.logo_url])
 
   // Auto-open Refund with preloaded order if /pos?refund=<order_id>
