@@ -131,6 +131,26 @@ export const T = {
   needsAttention: { en:'Needs attention', zh:'需要关注', es:'Requiere atención', ko:'주의 필요', vi:'Cần chú ý' },
   viewDetail:     { en:'View',         zh:'查看',     es:'Ver',         ko:'보기',     vi:'Xem' },
   print:          { en:'Print',        zh:'打印',     es:'Imprimir',    ko:'인쇄',     vi:'In' },
+
+  // ── B2B Dashboard ──
+  b2bCenter:      { en:'B2B Center',   zh:'B2B中心',  es:'Centro B2B',  ko:'B2B 센터', vi:'Trung tâm B2B' },
+  outstanding:    { en:'Outstanding',  zh:'未收款',   es:'Pendiente',   ko:'미수금',   vi:'Còn nợ' },
+  overdue:        { en:'Overdue',      zh:'逾期',     es:'Vencido',     ko:'연체',     vi:'Quá hạn' },
+  dueThisWeek:    { en:'Due This Week', zh:'本周到期', es:'Vence esta semana', ko:'이번 주 마감', vi:'Đến hạn tuần này' },
+  paidThisMonth:  { en:'Paid This Month', zh:'本月收款', es:'Pagado este mes', ko:'이번 달 수금', vi:'Đã thu tháng này' },
+  invoicedPeriod: { en:'Invoiced',     zh:'已开票',   es:'Facturado',   ko:'청구액',   vi:'Đã xuất hóa đơn' },
+  collected:      { en:'Collected',    zh:'已收款',   es:'Cobrado',     ko:'수금액',   vi:'Đã thu' },
+  topCustomers:   { en:'Top Customers', zh:'主要客户', es:'Mejores clientes', ko:'주요 고객', vi:'Khách hàng lớn' },
+  arAging:        { en:'A/R Aging',    zh:'应收账龄', es:'Antigüedad CxC', ko:'채권 연령', vi:'Tuổi nợ' },
+  current:        { en:'Current',      zh:'未到期',   es:'Al día',      ko:'정상',     vi:'Hiện tại' },
+  days30:         { en:'1-30 days',    zh:'1-30天',   es:'1-30 días',   ko:'1-30일',   vi:'1-30 ngày' },
+  days60:         { en:'31-60 days',   zh:'31-60天',  es:'31-60 días',  ko:'31-60일',  vi:'31-60 ngày' },
+  days90:         { en:'60+ days',     zh:'60天以上', es:'60+ días',    ko:'60일+',    vi:'60+ ngày' },
+  recentActivity: { en:'Recent Activity', zh:'最近活动', es:'Actividad reciente', ko:'최근 활동', vi:'Hoạt động gần đây' },
+  quickActions:   { en:'Quick Actions', zh:'快捷操作', es:'Acciones rápidas', ko:'빠른 작업', vi:'Thao tác nhanh' },
+  newInvoice:     { en:'New Invoice',  zh:'新建发票', es:'Nueva factura', ko:'새 청구서', vi:'Hóa đơn mới' },
+  newEstimate:    { en:'New Estimate', zh:'新建报价', es:'Nuevo presupuesto', ko:'새 견적', vi:'Báo giá mới' },
+  receivePayment: { en:'Receive Payment', zh:'收款',  es:'Recibir pago', ko:'결제 받기', vi:'Nhận thanh toán' },
 }
 
 // Hook to use translations
