@@ -217,31 +217,9 @@ export default function PayrollPage() {
             </div>
             <div className="divide-y divide-[#F1F5F9]">
               {emp.entries.map(e => (
-                <div key={e.id} className="flex items-center px-4 py-2 gap-3 hover:bg-[#FAFAFA]">
-                  <div className="flex-1">
-                    <div className="text-[12px] font-mono">
-                      {format(new Date(e.clock_in_at), 'EEE MMM d · h:mm a')}
-                      {e.clock_out_at && <> → {format(new Date(e.clock_out_at), 'h:mm a')}</>}
-                      {!e.clock_out_at && <span className="ml-2 text-green-600 font-bold">· still working</span>}
-                    </div>
-                    {e.edit_note && (
-                      <div className="text-[10px] text-[#9333ea] mt-0.5 italic">
-                        edited: {e.edit_note}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right text-[11px] font-mono w-[80px]">
-                    {e.duration_min != null
-                      ? `${Math.floor(e.duration_min/60)}h ${e.duration_min%60}m`
-                      : <span className="text-[#999]">—</span>}
-                  </div>
-                  <div className="text-right text-[12px] font-mono font-bold w-[80px]">
-                    {e.earned_amount != null ? `$${Number(e.earned_amount).toFixed(2)}` : <span className="text-[#999]">—</span>}
-                  </div>
-                  <button onClick={()=>tryEdit(e)}
-                    className="rounded-md px-2 py-1 text-[10px] cursor-pointer"
-                    style={{background:'#F1F5F9', color:'#475569', border:'1px solid #E5E5E5'}}>Edit</button>
-                </div>
+                <EntryRow key={e.id} e={e} editorId={me?.id}
+                  onEditTimes={()=>tryEdit(e)}
+                  onSaved={()=>qc.invalidateQueries({queryKey:['payroll']})}/>
               ))}
             </div>
           </div>
@@ -260,6 +238,84 @@ export default function PayrollPage() {
           action={override.action}
           onApprove={override.onApprove}
           onClose={() => setOverride(null)}/>
+      )}
+    </div>
+  )
+}
+
+
+function EntryRow({ e, editorId, onEditTimes, onSaved }) {
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [noteText, setNoteText] = useState(e.edit_note || '')
+  const [saving, setSaving]     = useState(false)
+
+  const saveNote = async () => {
+    setSaving(true)
+    try {
+      // Note-only update: just set edit_note on this entry, leave times +
+      // earnings untouched (no recompute, no manager override needed).
+      const { error } = await supabase.from('time_clock_entries')
+        .update({ edit_note: noteText.trim() || null, edited_by_user_id: editorId })
+        .eq('id', e.id)
+      if (error) throw error
+      toast.success('Note saved')
+      setNoteOpen(false)
+      onSaved?.()
+    } catch (err) {
+      toast.error('Failed to save note: ' + err.message)
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="px-4 py-2 hover:bg-[#FAFAFA]">
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <div className="text-[12px] font-mono">
+            {format(new Date(e.clock_in_at), 'EEE MMM d · h:mm a')}
+            {e.clock_out_at && <> → {format(new Date(e.clock_out_at), 'h:mm a')}</>}
+            {!e.clock_out_at && <span className="ml-2 text-green-600 font-bold">· still working</span>}
+          </div>
+        </div>
+        <div className="text-right text-[11px] font-mono w-[80px]">
+          {e.duration_min != null
+            ? `${Math.floor(e.duration_min/60)}h ${e.duration_min%60}m`
+            : <span className="text-[#999]">—</span>}
+        </div>
+        <div className="text-right text-[12px] font-mono font-bold w-[80px]">
+          {e.earned_amount != null ? `$${Number(e.earned_amount).toFixed(2)}` : <span className="text-[#999]">—</span>}
+        </div>
+        <button onClick={()=>setNoteOpen(o=>!o)}
+          className="rounded-md px-2 py-1 text-[10px] cursor-pointer"
+          style={{background: e.edit_note ? '#FEF3C7' : '#F1F5F9', color: e.edit_note ? '#92400E' : '#475569', border:'1px solid #E5E5E5'}}>
+          📝 {e.edit_note ? 'Note' : 'Note'}
+        </button>
+        <button onClick={onEditTimes}
+          className="rounded-md px-2 py-1 text-[10px] cursor-pointer"
+          style={{background:'#F1F5F9', color:'#475569', border:'1px solid #E5E5E5'}}>Edit</button>
+      </div>
+
+      {/* Existing note (shown when not editing) */}
+      {!noteOpen && e.edit_note && (
+        <div className="text-[11px] text-[#92400E] mt-1 pl-1 flex items-start gap-1">
+          <span>📝</span><span className="italic">{e.edit_note}</span>
+        </div>
+      )}
+
+      {/* Inline note editor */}
+      {noteOpen && (
+        <div className="mt-2 flex items-center gap-2">
+          <input value={noteText} onChange={ev=>setNoteText(ev.target.value)}
+            autoFocus placeholder="Reason / note for this entry…"
+            onKeyDown={ev=>{ if(ev.key==='Enter') saveNote() }}
+            className="flex-1 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-[#006AFF]"
+            style={{border:'1.5px solid #E5E5E5'}}/>
+          <button onClick={saveNote} disabled={saving}
+            className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
+            style={{background:'#16a34a'}}>{saving?'…':'Save'}</button>
+          <button onClick={()=>{ setNoteOpen(false); setNoteText(e.edit_note||'') }}
+            className="rounded-lg px-2 py-1.5 text-[11px] font-bold cursor-pointer"
+            style={{background:'#fff', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
+        </div>
       )}
     </div>
   )
@@ -378,16 +434,30 @@ function buildPayrollHTML({ storeName, from, to, byEmployee, totals }) {
   const dash = '<div style="text-align:center;color:#888;margin:6px 0;">- - - - - - - - - - - - - - -</div>'
   const dbl  = '<div style="text-align:center;color:#444;margin:6px 0;">============================</div>'
 
-  const rows = byEmployee.map(e => `
+  const rows = byEmployee.map(e => {
+    const entryLines = (e.entries || []).map(en => {
+      const inT  = format(new Date(en.clock_in_at), 'MMM d h:mma')
+      const outT = en.clock_out_at ? format(new Date(en.clock_out_at), 'h:mma') : 'open'
+      const dur  = en.duration_min != null ? `${Math.floor(en.duration_min/60)}h${en.duration_min%60}m` : '—'
+      const noteLine = en.edit_note
+        ? `<div style="font-size:9px;color:#92400E;padding-left:6px;">↳ ${esc(en.edit_note)}</div>`
+        : ''
+      return `
+        <div style="display:flex;justify-content:space-between;font-size:10px;font-family:monospace;color:#333;">
+          <span>${inT} → ${outT}</span><span>${dur}</span>
+        </div>${noteLine}`
+    }).join('')
+    return `
     <div style="font-weight:bold;margin-top:4px;">${esc(e.name)}${e.code ? ` <span style="font-family:monospace;font-size:9px;color:#666;">(${esc(e.code)})</span>` : ''}</div>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;">
       <span>${esc(e.role || '')} · $${Number(e.rate||0).toFixed(2)}/hr · ${e.entries.length} shifts</span>
     </div>
-    <div style="display:flex;justify-content:space-between;font-weight:bold;font-family:monospace;">
+    ${entryLines}
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-family:monospace;border-top:1px dotted #ccc;margin-top:2px;">
       <span>${e.hours.toFixed(2)}h worked</span>
       <span>$${e.earned.toFixed(2)}</span>
     </div>
-  `).join(dash)
+  `}).join(dash)
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Payroll</title>
