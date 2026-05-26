@@ -457,10 +457,11 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
         {/* ── TOP-UP HISTORY ── */}
         {activeTab === 'Top-up History' && (
           <div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                ['Total Topped Up', `$${topups.reduce((s,t)=>s+(t.amount||0),0).toFixed(2)}`, '#16a34a'],
-                ['Times', topups.length, '#006AFF'],
+                ['💳 Loaded to Card', `$${topups.reduce((s,t)=>s+(t.amount||0),0).toFixed(2)}`, '#3b82f6'],
+                ['💵 Cash Collected', `$${topups.reduce((s,t)=>s+(t.paid_amount!=null?t.paid_amount:t.amount||0),0).toFixed(2)}`, '#16a34a'],
+                ['🎁 Bonus Given', `$${topups.reduce((s,t)=>s+(t.bonus_amount||0),0).toFixed(2)}`, '#d97706'],
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
                   <div className="text-[10px] text-slate-400 mb-1">{l}</div>
@@ -471,7 +472,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
             {topups.length === 0 ? <EmptyState msg="No top-up history yet"/> : (
               <table className="w-full border-collapse rounded-xl overflow-hidden" style={{border:'1px solid #e2e8f0'}}>
                 <thead><tr>
-                  {['Date','Amount','Method','Staff','Note'].map(h=>(
+                  {['Date','Loaded','Paid','Bonus','Method','Staff','Note'].map(h=>(
                     <th key={h} className="px-3 py-2 text-left text-[10px] font-bold uppercase text-slate-500"
                       style={{background:'#f8fafc',borderBottom:'1px solid #e2e8f0'}}>{h}</th>
                   ))}
@@ -479,7 +480,9 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                 <tbody>{topups.map((t,i)=>(
                   <tr key={i} className="hover:bg-green-50/30" style={{borderBottom:'1px solid #f1f5f9'}}>
                     <td className="px-3 py-2.5 text-[11px] text-slate-500">{new Date(t.created_at).toLocaleDateString()} {new Date(t.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                    <td className="px-3 py-2.5 text-[14px] font-bold font-mono text-green-600">+${(t.amount||0).toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-[14px] font-bold font-mono text-blue-600">+${(t.amount||0).toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-[12px] font-mono text-green-600">${(t.paid_amount!=null?t.paid_amount:t.amount||0).toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-[12px] font-mono" style={{color:(t.bonus_amount||0)>0?'#d97706':'#cbd5e1'}}>{(t.bonus_amount||0)>0?`+$${t.bonus_amount.toFixed(2)}`:'—'}</td>
                     <td className="px-3 py-2.5"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize" style={{background:'#eff6ff',color:'#2563eb'}}>{t.method||'cash'}</span></td>
                     <td className="px-3 py-2.5 text-[11px] text-slate-500">{t.staff_name||'—'}</td>
                     <td className="px-3 py-2.5 text-[11px] text-slate-400">{t.note||'—'}</td>
@@ -495,16 +498,24 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
 }
 
 // ── Top Up Modal ──
-function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
-  const [amount,  setAmount]  = useState('')
+export function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
+  const [amount,  setAmount]  = useState('')   // 充值金额 — loaded onto card
+  const [payAmt,  setPayAmt]  = useState('')   // 付款金额 — cash collected
+  const [payTouched, setPayTouched] = useState(false)
   const [method,  setMethod]  = useState('cash')
   const [note,    setNote]    = useState('')
   const [saving,  setSaving]  = useState(false)
   const [showPad, setShowPad] = useState(true)
 
+  // Keep payment synced to top-up until the cashier edits payment (promo)
+  const setTopup = (v) => { setAmount(v); if (!payTouched) setPayAmt(v) }
+  const bonus = Math.max(0, (parseFloat(amount)||0) - (parseFloat(payAmt)||0))
+
   const handleSave = async () => {
     const amt = parseFloat(amount)
-    if (!amt || amt <= 0) { toast.error('Enter amount'); return }
+    const paid = payAmt === '' ? amt : parseFloat(payAmt)
+    if (!amt || amt <= 0) { toast.error('Enter top-up amount'); return }
+    if (paid < 0) { toast.error('Payment cannot be negative'); return }
     setSaving(true)
     try {
       const newBal = (customer.card_balance||0) + amt
@@ -512,11 +523,12 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
       if (r1.error) throw new Error(`Update balance: ${r1.error.message}`)
       const r2 = await supabase.from('customer_topups').insert({
         tenant_id: tenantId, customer_id: customer.id,
-        amount: amt, method, note: note||null,
+        amount: amt, paid_amount: paid, bonus_amount: Math.max(0, amt - paid),
+        balance_after: newBal, method, note: note||null,
         staff_id: userId, staff_name: userName,
       })
       if (r2.error) throw new Error(`Save topup: ${r2.error.message}`)
-      toast.success(`✓ Topped up $${amt.toFixed(2)}`)
+      toast.success(`✓ Loaded $${amt.toFixed(2)}${amt!==paid?` (paid $${paid.toFixed(2)})`:''}`)
       onSave({ card_balance: newBal })
     } catch(e) {
       console.error(e)
@@ -541,11 +553,11 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
         </div>
 
         <div className="p-5 flex flex-col gap-4">
-          {/* Amount display */}
+          {/* Amount display (充值金额) */}
           <button onClick={() => setShowPad(true)}
             className="w-full rounded-2xl py-4 text-center cursor-pointer border-2 transition-all"
             style={{border: amount?'2px solid #86efac':'2px dashed #e2e8f0', background: amount?'#f0fdf4':'#f8fafc'}}>
-            <div className="text-[11px] text-slate-400 mb-1">Top Up Amount</div>
+            <div className="text-[11px] text-slate-400 mb-1">Top Up Amount (充值金额 — onto card)</div>
             <div className="text-[36px] font-bold font-mono" style={{color: amount?'#16a34a':'#94a3b8'}}>
               ${amount ? parseFloat(amount).toFixed(2) : '0.00'}
             </div>
@@ -554,7 +566,7 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
           {/* Quick amounts */}
           <div className="grid grid-cols-4 gap-2">
             {[20, 50, 100, 200].map(q => (
-              <button key={q} onClick={() => setAmount(String(q))}
+              <button key={q} onClick={() => setTopup(String(q))}
                 className="rounded-xl py-2.5 text-[13px] font-bold cursor-pointer border-2 transition-all"
                 style={parseFloat(amount)===q
                   ? {background:'#16a34a', borderColor:'#16a34a', color:'#fff'}
@@ -563,6 +575,27 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
               </button>
             ))}
           </div>
+
+          {/* Payment amount (付款金额) */}
+          <div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Payment Amount (付款金额 — cash collected)</div>
+            <div className="flex items-center rounded-xl px-3" style={{border:'1.5px solid #e2e8f0', background:'#fff'}}>
+              <span className="text-[15px] text-slate-400 mr-1">$</span>
+              <input type="number" step="0.01" min="0" value={payAmt}
+                onChange={e=>{ setPayTouched(true); setPayAmt(e.target.value) }}
+                placeholder="0.00"
+                className="flex-1 py-2.5 text-[15px] outline-none border-none bg-transparent font-mono font-bold"/>
+            </div>
+            <div className="text-[10px] text-slate-400 mt-1">Defaults to top-up. Lower it for promos (e.g. pay $100, load $120).</div>
+          </div>
+
+          {/* Bonus indicator */}
+          {bonus > 0 && (
+            <div className="rounded-xl px-3 py-2 text-center text-[12px] font-bold"
+              style={{background:'#dcfce7', color:'#166534', border:'1px solid #86efac'}}>
+              🎁 Promo bonus: member gets ${bonus.toFixed(2)} free
+            </div>
+          )}
 
           {/* Method */}
           <div>
@@ -621,9 +654,9 @@ function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
 
       {showPad && (
         <NumPad title="Top Up Amount" prefix="$"
-          value={amount} onChange={setAmount}
+          value={amount} onChange={setTopup}
           allowNegative={false} allowDecimal={true}
-          onConfirm={v => { setAmount(v.toFixed(2)); setShowPad(false) }}
+          onConfirm={v => { setTopup(v.toFixed(2)); setShowPad(false) }}
           onClose={() => setShowPad(false)}/>
       )}
     </div>

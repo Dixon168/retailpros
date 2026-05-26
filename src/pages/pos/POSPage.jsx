@@ -23,6 +23,7 @@ import DiscountPanel from './panels/DiscountPanel'
 import PaymentPanel from './panels/PaymentPanel'
 import RefundPanel from './panels/RefundPanel'
 import GiftCardPanel from '@/components/pos/GiftCardPanel'
+import MemberCardTopup from '@/components/pos/MemberCardTopup'
 import { OpenShiftModal } from '@/components/pos/ShiftModal'
 import CloseShiftFlow from '@/components/pos/CloseShiftFlow'
 import { useTerminalStore } from '@/stores/terminalStore'
@@ -55,6 +56,8 @@ export default function POSPage() {
   const [showRecall,     setShowRecall]     = useState(false)
   const [showPoints,     setShowPoints]     = useState(false)
   const [showGiftCard,   setShowGiftCard]   = useState(false)
+  const [showTopupChoose, setShowTopupChoose] = useState(false)
+  const [showMemberTopup, setShowMemberTopup] = useState(false)
   const [showOpenItem,   setShowOpenItem]   = useState(false)
   const [showOpenShift,  setShowOpenShift]  = useState(false)
   const [showCloseShift, setShowCloseShift] = useState(false)
@@ -313,7 +316,7 @@ export default function POSPage() {
       })
       if (ok) toast.success('📌 Order held')
     }},
-    { id:'giftcard', label:'Gift Card', icon:'🎁', action: () => guard('pos.gift_card', 'manage gift cards', () => setShowGiftCard(true)) },
+    { id:'topup', label:'Top Up', icon:'💳', action: () => guard('pos.gift_card', 'manage cards', () => setShowTopupChoose(true)) },
     ...(drawerEnabled ? [
       { id:'drawer', label:'Cash Drawer', icon:'💰', action: handleOpenDrawer },
     ] : []),
@@ -555,6 +558,38 @@ export default function POSPage() {
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
 
     {showGiftCard && <GiftCardPanel onClose={() => setShowGiftCard(false)}/>}
+    {showMemberTopup && <MemberCardTopup onClose={() => setShowMemberTopup(false)}/>}
+    {showTopupChoose && (
+      <div className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+        style={{background:'rgba(0,0,0,0.5)'}} onClick={() => setShowTopupChoose(false)}>
+        <div className="rounded-2xl overflow-hidden" style={{width:'440px', maxWidth:'100%', background:'#fff', boxShadow:'0 20px 50px rgba(0,0,0,0.3)'}}
+          onClick={e=>e.stopPropagation()}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{background:'#1F1F1F'}}>
+            <div className="flex items-center gap-2">
+              <span className="text-[22px]">💳</span>
+              <div className="text-[16px] font-bold text-white">Top Up — choose card type</div>
+            </div>
+            <button onClick={() => setShowTopupChoose(false)} className="w-9 h-9 rounded-full bg-white/20 border-none cursor-pointer text-white text-[18px] flex items-center justify-center">✕</button>
+          </div>
+          <div className="p-5 grid grid-cols-2 gap-3">
+            <button onClick={() => { setShowTopupChoose(false); setShowGiftCard(true) }}
+              className="rounded-2xl p-5 cursor-pointer border-2 transition-all text-center hover:shadow-md"
+              style={{background:'#fff7ed', borderColor:'#fed7aa'}}>
+              <div className="text-[40px] mb-2">🎁</div>
+              <div className="text-[15px] font-bold" style={{color:'#1F1F1F'}}>Gift Card</div>
+              <div className="text-[11px] text-slate-500 mt-1">Not named. Sell or top up by card number.</div>
+            </button>
+            <button onClick={() => { setShowTopupChoose(false); setShowMemberTopup(true) }}
+              className="rounded-2xl p-5 cursor-pointer border-2 transition-all text-center hover:shadow-md"
+              style={{background:'#eff6ff', borderColor:'#bfdbfe'}}>
+              <div className="text-[40px] mb-2">👤</div>
+              <div className="text-[15px] font-bold" style={{color:'#1F1F1F'}}>Member Card</div>
+              <div className="text-[11px] text-slate-500 mt-1">Tied to a member. Search by card #, phone, or name.</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {showOpenShift && <OpenShiftModal onClose={() => setShowOpenShift(false)}/>}
 
