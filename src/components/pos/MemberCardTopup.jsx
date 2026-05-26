@@ -30,8 +30,10 @@ export default function MemberCardTopup({ onClose }) {
   }
 
   return (
+    <>
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-      style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
+      style={{background:'rgba(0,0,0,0.5)', display: picked ? 'none' : 'flex'}}
+      onClick={onClose}>
       <div className="rounded-2xl overflow-hidden flex flex-col"
         style={{width:'560px', maxWidth:'100%', maxHeight:'90vh', background:'#fff', boxShadow:'0 20px 50px rgba(0,0,0,0.3)'}}
         onClick={e=>e.stopPropagation()}>
@@ -101,10 +103,12 @@ export default function MemberCardTopup({ onClose }) {
           )}
         </div>
       </div>
+    </div>
 
       {/* Reuse the exact same TopupModal as the Members page — but in POS
           we add to the cart instead of charging immediately. The balance
-          activates only when the whole order is paid in full. */}
+          activates only when the whole order is paid in full. Rendered as a
+          sibling so cancelling it returns cleanly to the search. */}
       {picked && (
         <TopupModal customer={picked} tenantId={tenant?.id} userId={user?.id} userName={user?.name}
           onAddToCart={(payload) => {
@@ -114,6 +118,6 @@ export default function MemberCardTopup({ onClose }) {
           }}
           onClose={() => setPicked(null)}/>
       )}
-    </div>
+    </>
   )
 }

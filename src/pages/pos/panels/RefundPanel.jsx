@@ -90,6 +90,8 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
   const [processing, setProcessing] = useState(false)
   const [done,       setDone]       = useState(false)
   const [summary,    setSummary]    = useState(null)
+  const [openAmt,    setOpenAmt]    = useState('')
+  const [openReason, setOpenReason] = useState('')
 
   useEffect(() => {
     if (step === 'scan' && scanRef.current) scanRef.current.focus()
@@ -217,6 +219,24 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     const init = {}
     order.order_items?.forEach(item => { init[item.id] = 0 })
     setReturnQtys(init)
+  }
+
+  // ── Open-amount refund → add a custom refund line to cart ──────────
+  const confirmOpenAmount = () => {
+    const amt = parseFloat(openAmt)
+    if (!amt || amt <= 0) { toast.error('Enter a refund amount'); return }
+    useCartStore.getState()._addItem({
+      productId: null,
+      name: openReason.trim() ? `↩ Refund — ${openReason.trim()}` : '↩ Refund — Open Amount',
+      unitPrice: amt,
+      qty: -1,
+      unit: 'ea',
+      type: 'service',          // non-inventory
+      isTaxable: false,
+      isReturn: true,
+    })
+    toast.success(`↩ $${amt.toFixed(2)} refund added — complete at checkout`)
+    onClose()
   }
 
   // ── Confirm return by invoice → add to cart (executes on checkout) ──
@@ -384,6 +404,25 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                   </div>
                   <span className="ml-auto text-slate-300 text-[20px]">›</span>
                 </button>
+
+                {/* Open Amount */}
+                <button onClick={() => setMode('open_amount')}
+                  className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
+                  style={{border:'2px solid #e2e8f0', background:'#fff'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#ea580c';e.currentTarget.style.background='#fff7ed'}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
+                    style={{background:'#ffedd5'}}>
+                    💵
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-bold text-slate-800">Open Amount</div>
+                    <div className="text-[12px] text-slate-400 mt-0.5">
+                      Refund a custom dollar amount — no item or invoice needed
+                    </div>
+                  </div>
+                  <span className="ml-auto text-slate-300 text-[20px]">›</span>
+                </button>
               </div>
             </div>
           )}
@@ -464,6 +503,64 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                   style={{background:'#000000'}}>
                   ↩ Add Returns to Cart
                 </button>
+              )}
+            </div>
+          )}
+
+          {/* ── OPEN AMOUNT MODE ── */}
+          {!done && mode === 'open_amount' && (
+            <div className="p-5 flex flex-col gap-4">
+              <button onClick={() => setShowOpenPad(true)}
+                className="w-full rounded-2xl py-5 text-center cursor-pointer border-2 transition-all"
+                style={{border: openAmt?'2px solid #fdba74':'2px dashed #e2e8f0', background: openAmt?'#fff7ed':'#f8fafc'}}>
+                <div className="text-[11px] text-slate-400 mb-1">Refund Amount</div>
+                <div className="text-[40px] font-bold font-mono" style={{color: openAmt?'#ea580c':'#94a3b8'}}>
+                  ${openAmt ? parseFloat(openAmt).toFixed(2) : '0.00'}
+                </div>
+              </button>
+
+              <div className="grid grid-cols-4 gap-2">
+                {[5,10,20,50].map(q => (
+                  <button key={q} onClick={() => setOpenAmt(String(q))}
+                    className="rounded-xl py-2.5 text-[13px] font-bold cursor-pointer border-2 transition-all"
+                    style={parseFloat(openAmt)===q
+                      ? {background:'#ea580c', borderColor:'#ea580c', color:'#fff'}
+                      : {background:'#fff7ed', borderColor:'#fed7aa', color:'#ea580c'}}>
+                    ${q}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Reason / note (optional)</div>
+                <input value={openReason} onChange={e=>setOpenReason(e.target.value)}
+                  placeholder="e.g. price adjustment, goodwill"
+                  className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
+              </div>
+
+              <div className="rounded-xl p-3 text-[11px]"
+                style={{background:'#fff7ed', color:'#9a3412', border:'1px solid #fed7aa'}}>
+                💡 Adds a custom refund to the cart. It's editable there and only completes when you check out.
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={() => { setMode(null); setOpenAmt(''); setOpenReason('') }}
+                  className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border"
+                  style={{background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>‹ Back</button>
+                <button onClick={confirmOpenAmount} disabled={!openAmt}
+                  className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
+                  style={{background:'#ea580c'}}>
+                  ↩ Add ${openAmt ? parseFloat(openAmt).toFixed(2) : '0.00'} Refund to Cart
+                </button>
+              </div>
+
+              {showOpenPad && (
+                <NumPad title="Refund Amount" prefix="$"
+                  value={openAmt} onChange={setOpenAmt}
+                  allowNegative={false} allowDecimal={true}
+                  onConfirm={v => { setOpenAmt(v.toFixed(2)); setShowOpenPad(false) }}
+                  onClose={() => setShowOpenPad(false)}/>
               )}
             </div>
           )}
