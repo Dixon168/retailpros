@@ -52,6 +52,10 @@ const T = {
     just_added: 'Just added',
     you_saved: 'You saved',
     today: 'today',
+    walkin_customer: 'Walk-in Customer',
+    guest: 'Guest checkout',
+    tier: 'Tier',
+    earn_points: 'Join & earn points on this purchase',
   },
   zh: {
     welcome: '欢迎光临',
@@ -87,6 +91,10 @@ const T = {
     just_added: '刚扫入',
     you_saved: '您节省了',
     today: '今天',
+    walkin_customer: '散客',
+    guest: '免登记结账',
+    tier: '等级',
+    earn_points: '加入会员，本单即可累积积分',
   },
 }
 
@@ -357,29 +365,52 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
           )}
         </div>
 
-        {/* Customer / Join CTA */}
+        {/* Customer card — shows for BOTH members and walk-ins */}
         {customer ? (
-          <div className="flex-shrink-0 rounded-2xl px-4 py-2.5"
+          <div className="flex-shrink-0 rounded-2xl px-4 py-3"
             style={{background:'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'}}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-bold text-[#7c2d12] uppercase tracking-wider">{t.member}</div>
-                <div className="text-[17px] font-bold" style={{color:'#1F1F1F'}}>👋 {customer.name}</div>
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-[18px] font-black"
+                style={{background:'#fff', color:'#b45309'}}>
+                {(customer.name||'?').charAt(0).toUpperCase()}
               </div>
-              <div className="text-right">
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-bold text-[#7c2d12] uppercase tracking-wider">
+                  {t.member}{customer.tier_name ? ` · ${customer.tier_name}` : ''}
+                </div>
+                <div className="text-[18px] font-bold truncate" style={{color:'#1F1F1F'}}>{customer.name}</div>
+                {customer.phone && <div className="text-[11px] font-mono" style={{color:'#7c2d12'}}>📞 {customer.phone}</div>}
+              </div>
+              <div className="text-right flex-shrink-0">
                 <div className="text-[9px] text-[#7c2d12] uppercase">{t.points}</div>
-                <div className="text-[20px] font-bold font-mono" style={{color:'#1F1F1F'}}>
+                <div className="text-[24px] font-bold font-mono leading-none" style={{color:'#1F1F1F'}}>
                   {(customer.loyalty_points || 0).toLocaleString()}
                 </div>
               </div>
             </div>
           </div>
-        ) : settings?.show_join_cta !== false ? (
-          <div className="flex-shrink-0 rounded-2xl px-4 py-2.5 text-center"
-            style={{background:'#1F1F1F', color:'#FFD700'}}>
-            <div className="text-[13px] font-bold">⭐ {t.join_member}</div>
+        ) : (
+          // Walk-in is a customer too — give it a proper card
+          <div className="flex-shrink-0 rounded-2xl px-4 py-3"
+            style={{background:'#f1f5f9', border:'1px solid #e2e8f0'}}>
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-[20px]"
+                style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+                🚶
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[18px] font-bold" style={{color:'#1F1F1F'}}>{t.walkin_customer}</div>
+                <div className="text-[11px]" style={{color:'#64748b'}}>{t.guest}</div>
+              </div>
+              {settings?.show_join_cta !== false && (
+                <div className="text-right flex-shrink-0 rounded-xl px-3 py-1.5"
+                  style={{background:'#1F1F1F'}}>
+                  <div className="text-[11px] font-bold leading-tight" style={{color:'#FFD700', maxWidth:'140px'}}>⭐ {t.earn_points}</div>
+                </div>
+              )}
+            </div>
           </div>
-        ) : null}
+        )}
 
         {/* Right-bottom: totals */}
         <div className="flex-shrink-0 px-5 py-4 rounded-2xl"

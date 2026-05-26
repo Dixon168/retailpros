@@ -123,7 +123,7 @@ export default function POSPage() {
           const bulk = s.lineBulk(i)
           return {
             id: i.id, name: i.name, qty: i.qty,
-            unitPrice: i.unitPrice, image_url: i.image_url,
+            unitPrice: i.unitPrice, image_url: i.imageUrl || i.image_url || null,
             itemDiscount: i.itemDiscount, note: i.note,
             // Send bulk info so display can show the discount + breakdown.
             // Keep the shape lean — Display only needs lineTotal + savings + hint.
@@ -139,6 +139,7 @@ export default function POSPage() {
           id: s.customer.id, name: s.customer.name,
           loyalty_points: s.customer.loyalty_points,
           tier_name: s.customer.tier_name,
+          phone: s.customer.phone, email: s.customer.email,
         } : null,
         orderDiscount: s.orderDiscount,
         appliedCoupon: s.appliedCoupon ? { code: s.appliedCoupon.code } : null,
