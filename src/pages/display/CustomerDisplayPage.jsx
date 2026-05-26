@@ -118,7 +118,7 @@ export default function CustomerDisplayPage() {
   })
 
   const ds  = settings?.display_settings || {}
-  const promos = Array.isArray(ds.promo_images) ? ds.promo_images : []
+  const promos = (ds.show_promo_carousel !== false && Array.isArray(ds.promo_images)) ? ds.promo_images : []
 
   // ── Subscribe to POS broadcasts ──
   useEffect(() => {
