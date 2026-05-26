@@ -49,6 +49,9 @@ const T = {
     none: 'No Receipt',
     enter_email: 'Enter email address',
     enter_phone_long: 'Enter phone number',
+    just_added: 'Just added',
+    you_saved: 'You saved',
+    today: 'today',
   },
   zh: {
     welcome: '欢迎光临',
@@ -81,6 +84,9 @@ const T = {
     none: '不要收据',
     enter_email: '输入邮箱',
     enter_phone_long: '输入手机号',
+    just_added: '刚扫入',
+    you_saved: '您节省了',
+    today: '今天',
   },
 }
 
@@ -95,6 +101,7 @@ export default function CustomerDisplayPage() {
   const [mode,       setMode]       = useState('idle')   // idle | active | payment | thankyou | tip | sig | contact
   const [promoIdx,   setPromoIdx]   = useState(0)
   const [clockNow,   setClockNow]   = useState(new Date())
+  const [lastItem,   setLastItem]   = useState(null)     // most-recently-scanned item, for the hero card
   const t = T[lang] || T.en
 
   // ── Load tenant display settings (logo, promo images, feature toggles) ──
@@ -118,8 +125,23 @@ export default function CustomerDisplayPage() {
     const sync = getDisplaySync(terminalId)
 
     const u1 = sync.subscribe(EVT.CART_STATE, (data) => {
-      setCartState(data)
-      // Auto mode based on cart content (unless POS explicitly set a mode)
+      setCartState(prev => {
+        // Detect the most-recently-scanned item for the "just added" hero:
+        // the item whose qty grew, or a brand-new line. Compare to previous.
+        try {
+          const newItems = data?.items || []
+          const oldItems = prev?.items || []
+          const oldMap = {}
+          oldItems.forEach(i => { oldMap[i.id] = i.qty })
+          let changed = null
+          for (const it of newItems) {
+            if (!(it.id in oldMap) || it.qty > oldMap[it.id]) changed = it
+          }
+          if (changed) setLastItem({ ...changed, _at: Date.now() })
+          else if (newItems.length === 0) setLastItem(null)
+        } catch {}
+        return data
+      })
       if (data?.items?.length > 0) setMode(m => m === 'thankyou' || m === 'idle' ? 'active' : m)
       else setMode(m => m === 'thankyou' ? 'thankyou' : 'idle')
     })
@@ -200,7 +222,7 @@ export default function CustomerDisplayPage() {
       {/* ── Body — switches based on mode ── */}
       <div className="flex-1 overflow-hidden">
         {mode === 'idle'     && <IdleScreen t={t} promos={promos} promoIdx={promoIdx} storeName={storeName} now={clockNow}/>}
-        {mode === 'active'   && <ActiveScreen t={t} state={cartState} fmt={fmt} settings={ds}/>}
+        {mode === 'active'   && <ActiveScreen t={t} state={cartState} fmt={fmt} settings={ds} lastItem={lastItem}/>}
         {mode === 'payment'  && <PaymentScreen t={t} state={cartState} fmt={fmt}/>}
         {mode === 'tip'      && <TipScreen t={t} state={cartState} fmt={fmt} terminalId={terminalId}/>}
         {mode === 'sig'      && <SignatureScreen t={t} state={cartState} fmt={fmt} terminalId={terminalId}/>}
@@ -259,14 +281,38 @@ function appVersion() {
 
 
 // ── 2. ACTIVE — Live cart with items + totals ──
-function ActiveScreen({ t, state, fmt, settings }) {
+function ActiveScreen({ t, state, fmt, settings, lastItem }) {
   const items = state?.items || []
   const totals = state?.totals || { subtotal:0, discountAmt:0, taxAmount:0, grandTotal:0 }
   const customer = state?.customer
   const totalQty = items.reduce((s,i) => s + i.qty, 0)
+  // Total money saved = order/coupon discount + bulk savings
+  const totalSaved = (totals.discountAmt || 0) + (totals.bulkSavings || 0)
 
   return (
     <div className="h-full flex flex-col">
+      {/* Just-scanned hero — big photo + price of the item the cashier just
+          added, so the customer can confirm it on the spot. */}
+      {lastItem && (
+        <div className="flex-shrink-0 mx-6 mt-4 rounded-2xl px-5 py-4 flex items-center gap-4"
+          style={{background:'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)', border:'2px solid #80B2FF'}}>
+          {lastItem.image_url
+            ? <img src={lastItem.image_url} alt="" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 shadow-md"/>
+            : <div className="w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{background:'#fff', color:'#94a3b8'}}>
+                <span className="text-[18px] font-bold">{(lastItem.name||'').substring(0,2).toUpperCase()}</span>
+              </div>}
+          <div className="flex-1 min-w-0">
+            <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#1e40af'}}>✓ {t.just_added}</div>
+            <div className="text-[22px] font-bold truncate" style={{color:'#1F1F1F'}}>{lastItem.name}</div>
+            <div className="text-[13px] font-mono" style={{color:'#666'}}>{fmt(lastItem.unitPrice)} × {lastItem.qty}</div>
+          </div>
+          <div className="text-[28px] font-black font-mono flex-shrink-0" style={{color:'#006AFF'}}>
+            {fmt(lastItem.bulk ? lastItem.bulk.lineTotal : lastItem.unitPrice * lastItem.qty)}
+          </div>
+        </div>
+      )}
+
       {/* Member / Join CTA */}
       {customer ? (
         <div className="flex-shrink-0 mx-6 mt-4 rounded-2xl px-5 py-3"
@@ -364,11 +410,11 @@ function ActiveScreen({ t, state, fmt, settings }) {
             {fmt(totals.grandTotal)}
           </div>
         </div>
-        {totals.bulkSavings > 0 && (
+        {totalSaved > 0 && (
           <div className="mt-3 rounded-xl px-3 py-2 text-center"
             style={{background:'#dcfce7', border:'1.5px solid #86efac'}}>
             <span className="text-[13px] font-black" style={{color:'#166534'}}>
-              🎉 You saved {fmt(totals.bulkSavings)} today!
+              🎉 {t.you_saved} {fmt(totalSaved)} {t.today}!
             </span>
           </div>
         )}
