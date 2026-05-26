@@ -82,21 +82,25 @@ export default function DashboardPage() {
       const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0]
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
-      const [orders, products, customers, topProds, lowStock, weekOrders, yesterdayOrders] = await Promise.all([
-        supabase.from('orders').select('id,grand_total', {count:'exact'}).eq('tenant_id',tenant.id).gte('created_at',today),
+      const [orders, products, customers, topProds, lowStock, weekOrders, yesterdayOrders, b2bToday, overdue] = await Promise.all([
+        supabase.from('orders').select('id,total', {count:'exact'}).eq('tenant_id',tenant.id).gte('created_at',today),
         supabase.from('products').select('id',{count:'exact'}).eq('tenant_id',tenant.id).eq('is_active',true),
         supabase.from('customers').select('id',{count:'exact'}).eq('tenant_id',tenant.id),
         // Top products this month
         supabase.from('order_items').select('product_id, quantity, products(name)')
           .eq('tenant_id',tenant.id).gte('created_at',monthStart).limit(200),
         // Low stock
-        supabase.from('products').select('name, inventory(quantity)')
-          .eq('tenant_id',tenant.id).eq('is_active',true).eq('track_inventory',true).limit(50),
+        supabase.from('products').select('name, low_stock_qty, inventory(quantity)')
+          .eq('tenant_id',tenant.id).eq('is_active',true).eq('track_inventory',true).limit(500),
         // Last 7 days revenue
-        supabase.from('orders').select('grand_total, created_at')
+        supabase.from('orders').select('total, created_at')
           .eq('tenant_id',tenant.id)
           .gte('created_at', new Date(Date.now()-7*86400000).toISOString()),
-        supabase.from('orders').select('grand_total').eq('tenant_id',tenant.id).gte('created_at',yesterday).lt('created_at',today),
+        supabase.from('orders').select('total').eq('tenant_id',tenant.id).gte('created_at',yesterday).lt('created_at',today),
+        // B2B invoiced today
+        supabase.from('invoices').select('total, status').eq('tenant_id',tenant.id).gte('created_at',today),
+        // Overdue A/R
+        supabase.from('invoices').select('balance_due, due_date, status').eq('tenant_id',tenant.id),
       ])
 
       // Aggregate top products
@@ -109,25 +113,50 @@ export default function DashboardPage() {
 
       // Low stock list
       const lowStockList = (lowStock.data||[])
-        .map(p=>({name:p.name, qty: p.inventory?.reduce((a,i)=>a+(i.quantity||0),0)||0}))
-        .filter(p=>p.qty<=5).slice(0,5)
+        .map(p=>({name:p.name, qty: p.inventory?.reduce((a,i)=>a+(i.quantity||0),0)||0, threshold: p.low_stock_qty ?? 5}))
+        .filter(p=>p.qty<=p.threshold).slice(0,5)
+      const lowStockCount = (lowStock.data||[])
+        .filter(p => (p.inventory?.reduce((a,i)=>a+(i.quantity||0),0)||0) <= (p.low_stock_qty ?? 5)).length
 
       // 7-day revenue by day
       const dayMap = {}
       weekOrders.data?.forEach(o => {
         const day = o.created_at?.split('T')[0]
-        if (day) dayMap[day] = (dayMap[day]||0) + (o.grand_total||0)
+        if (day) dayMap[day] = (dayMap[day]||0) + (o.total||0)
       })
       const weekRevenue = Object.entries(dayMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([day,rev])=>({day,rev}))
 
+      // B2B invoiced today (exclude draft/void)
+      const b2bToday_ = (b2bToday.data||[])
+        .filter(i => !['draft','void'].includes(i.status))
+        .reduce((s,i)=>s+(i.total||0),0)
+
+      // Overdue A/R
+      const todayMid = new Date(); todayMid.setHours(0,0,0,0)
+      let overdueAmt = 0, overdueCount = 0
+      ;(overdue.data||[]).forEach(i => {
+        const bal = i.balance_due || 0
+        if (bal <= 0 || ['paid','void','draft'].includes(i.status)) return
+        const due = i.due_date ? new Date(i.due_date) : null
+        if (due) { due.setHours(0,0,0,0); if (due < todayMid) { overdueAmt += bal; overdueCount++ } }
+      })
+
+      const retailRevenue = orders.data?.reduce((s,o)=>s+(o.total||0),0) || 0
+
       return {
         todayOrders:     orders.count    || 0,
-        todayRevenue:    orders.data?.reduce((s,o)=>s+(o.grand_total||0),0) || 0,
-        yesterdayRevenue: yesterdayOrders.data?.reduce((s,o)=>s+(o.grand_total||0),0) || 0,
+        todayRevenue:    retailRevenue,
+        retailRevenue,
+        b2bRevenue:      b2bToday_,
+        totalToday:      retailRevenue + b2bToday_,
+        yesterdayRevenue: yesterdayOrders.data?.reduce((s,o)=>s+(o.total||0),0) || 0,
         totalProducts:   products.count  || 0,
         totalCustomers:  customers.count || 0,
         topProducts,
         lowStock:        lowStockList,
+        lowStockCount,
+        overdueAmt,
+        overdueCount,
         weekRevenue,
       }
     },
@@ -211,21 +240,21 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        {/* All-channel total + retail/B2B split */}
+        <div className="grid grid-cols-4 gap-4 mb-4">
           {[
-            ["Today's Orders",   stats.todayOrders,                                                    '#006AFF', '🛒', null],
-            ["Today's Revenue",  `$${(stats.todayRevenue||0).toFixed(2)}`,                             '#16a34a', '💰', revenueChange],
-            ['Active Products',  stats.totalProducts,                                                  '#0891b2', '📦', null],
-            ['Total Customers',  stats.totalCustomers,                                                 '#006AFF', '👥', null],
+            ["Today · All Channels", `$${(stats.totalToday||0).toFixed(2)}`, '#1F1F1F', '🏪', null],
+            ['🛒 Retail Today',      `$${(stats.retailRevenue||0).toFixed(2)}`, '#006AFF', '', revenueChange],
+            ['💼 B2B Today',         `$${(stats.b2bRevenue||0).toFixed(2)}`, '#d97706', '', null],
+            ["Today's Orders",       stats.todayOrders, '#16a34a', '🧾', null],
           ].map(([label, value, color, icon, change]) => (
             <div key={label} className="rounded-2xl p-4 shadow-sm" style={{background:'#fff', border:'1.5px solid #e2e8f0'}}>
               <div className="flex justify-between items-start mb-2">
                 <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</div>
-                <span className="text-[20px]">{icon}</span>
+                {icon && <span className="text-[20px]">{icon}</span>}
               </div>
-              <div className="text-[28px] font-bold" style={{color}}>{value}</div>
-              {change !== null && (
+              <div className="text-[26px] font-bold" style={{color}}>{value}</div>
+              {change !== null && change !== undefined && (
                 <div className={`text-[11px] font-semibold mt-1 ${parseFloat(change)>=0?'text-green-600':'text-red-500'}`}>
                   {parseFloat(change)>=0?'↑':'↓'} {Math.abs(change)}% vs yesterday
                 </div>
@@ -233,6 +262,27 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Attention strip — overdue A/R + low stock */}
+        {(stats.overdueCount > 0 || stats.lowStockCount > 0) && (
+          <div className="flex items-center gap-3 rounded-xl px-4 py-2.5 mb-5 flex-wrap"
+            style={{background:'#FEF3C7', border:'1px solid #FCD34D'}}>
+            <span className="text-[14px]">⚠️</span>
+            <span className="text-[12px] font-bold text-[#B45309]">Needs attention:</span>
+            {stats.overdueCount > 0 && (
+              <button onClick={() => navigate('/b2b-center')}
+                className="text-[12px] text-[#92400E] cursor-pointer bg-transparent border-none">
+                💼 <span className="font-bold">${(stats.overdueAmt||0).toFixed(0)}</span> overdue ({stats.overdueCount}) →
+              </button>
+            )}
+            {stats.lowStockCount > 0 && (
+              <button onClick={() => navigate('/purchase-orders')}
+                className="text-[12px] text-[#92400E] cursor-pointer bg-transparent border-none">
+                📦 <span className="font-bold">{stats.lowStockCount}</span> low stock →
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Main layout: Menu + AI Assistant */}
         <div className="grid gap-6" style={{gridTemplateColumns:'1fr 380px'}}>
