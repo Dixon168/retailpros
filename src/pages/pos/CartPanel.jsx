@@ -414,7 +414,15 @@ export default function CartPanel({ onRefund, onHold }) {
                       </div>
 
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {hasBulk ? (
+                        {item.type === 'card_topup' && item.cardTopup ? (
+                          <span className="text-[11px] font-mono" style={{color:'#0369a1'}}>
+                            load ${Number(item.cardTopup.topupAmount).toFixed(2)} · pay ${Number(item.cardTopup.paymentAmount).toFixed(2)}
+                            {item.cardTopup.bonusAmount > 0 && (
+                              <span className="font-bold" style={{color:'#16a34a'}}> · 🎁 +${Number(item.cardTopup.bonusAmount).toFixed(2)}</span>
+                            )}
+                            <span className="ml-1 text-slate-400">· no tax</span>
+                          </span>
+                        ) : hasBulk ? (
                           <>
                             <span className="text-[11px] font-mono text-green-700 font-bold">
                               {item.qty}× bulk

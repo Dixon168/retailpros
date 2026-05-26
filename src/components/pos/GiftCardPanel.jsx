@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useCartStore } from '@/stores/cartStore'
 import toast from 'react-hot-toast'
 
 const TABS = [
@@ -122,49 +123,26 @@ function LoadTab({ tenant, user, onDone }) {
     if (!tAmt || tAmt <= 0) { toast.error('Enter a valid top-up amount'); return }
     if (pAmt < 0) { toast.error('Payment amount cannot be negative'); return }
 
-    setSaving(true)
-    try {
-      if (phase === 'topup') {
-        const { data, error } = await supabase.rpc('fn_topup_gift_card', {
-          p_tenant_id:   tenant.id,
-          p_card_number: existing.card_number,
-          p_amount:      tAmt,
-          p_paid_amount: pAmt,
-          p_user_id:     user?.id || null,
-          p_note:        note || null,
-        })
-        if (error || !data?.success) { toast.error(data?.message || error?.message || 'Top-up failed'); return }
-        toast.success(`✓ Loaded $${tAmt.toFixed(2)} — new balance $${data.balance.toFixed(2)}`)
-        setResult({ mode:'topup', card_number: existing.card_number, balance: data.balance,
-                    topup: tAmt, paid: pAmt, bonus: data.bonus_amount, card_type: cardType })
-      } else {
-        const { data, error } = await supabase.rpc('fn_create_gift_card', {
-          p_tenant_id:       tenant.id,
-          p_card_number:     card.trim(),
-          p_amount:          tAmt,
-          p_paid_amount:     pAmt,
-          p_card_type:       cardType,
-          p_expire_days:     expireDays ? parseInt(expireDays) : null,
-          p_recipient_name:  cardType === 'member' ? (recipient || null) : null,
-          p_recipient_phone: cardType === 'member' ? (phone || null) : null,
-          p_note:            note || null,
-          p_user_id:         user?.id || null,
-        })
-        if (error || !data?.success) { toast.error(data?.message || error?.message || 'Failed to create card'); return }
-        toast.success(`✓ Card ${card.trim()} issued — $${tAmt.toFixed(2)}`)
-        setResult({ mode:'new', card_number: card.trim(), balance: tAmt,
-                    topup: tAmt, paid: pAmt, bonus: data.bonus_amount, expires_at: data.expires_at, card_type: cardType })
-      }
-      qc.invalidateQueries({ queryKey:['gift-cards'] })
-      qc.invalidateQueries({ queryKey:['member-cards'] })
-      qc.invalidateQueries({ queryKey:['gift-card-history'] })
-      setPhase('done')
-    } catch (e) {
-      console.error('Card load:', e)
-      toast.error(e?.message || 'Failed')
-    } finally {
-      setSaving(false)
-    }
+    // Add to cart — gift card is sold/topped up like a product, and only
+    // activated when the whole order is paid in full.
+    useCartStore.getState().addCardTopup({
+      cardKind: 'gift',
+      topupAmount: tAmt, paymentAmount: pAmt,
+      bonusAmount: Math.max(0, tAmt - pAmt),
+      cardNumber: phase === 'new' ? card.trim() : existing.card_number,
+      isNewCard: phase === 'new',
+      meta: {
+        cardNumber: phase === 'new' ? card.trim() : existing.card_number,
+        isNewCard:  phase === 'new',
+        cardType:   cardType,
+        expireDays: expireDays ? parseInt(expireDays) : null,
+        recipientName:  cardType === 'member' ? (recipient || null) : null,
+        recipientPhone: cardType === 'member' ? (phone || null) : null,
+        note: note || null,
+      },
+    })
+    toast.success('🛒 Added to order — pay to activate')
+    onDone?.()
   }
 
   const reset = () => {
@@ -394,9 +372,7 @@ function LoadTab({ tenant, user, onDone }) {
           className="flex-[2] rounded-lg py-3 text-[14px] font-bold cursor-pointer border-none disabled:opacity-50"
           style={{background:'#006AFF', color:'#FFFFFF'}}>
           {saving ? 'Saving...'
-            : isNew
-              ? `${cardType==='member'?'👤':'🎁'} Create + Load $${parseFloat(topupAmt||0).toFixed(2)}`
-              : `⬆️ Top up $${parseFloat(topupAmt||0).toFixed(2)}`}
+            : `🛒 Add to Order $${parseFloat(payAmt || topupAmt || 0).toFixed(2)}`}
         </button>
       </div>
 

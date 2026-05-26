@@ -498,7 +498,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
 }
 
 // ── Top Up Modal ──
-export function TopupModal({ customer, tenantId, userId, userName, onSave, onClose }) {
+export function TopupModal({ customer, tenantId, userId, userName, onSave, onClose, onAddToCart }) {
   const [amount,  setAmount]  = useState('')   // 充值金额 — loaded onto card
   const [payAmt,  setPayAmt]  = useState('')   // 付款金额 — cash collected
   const [payTouched, setPayTouched] = useState(false)
@@ -516,6 +516,19 @@ export function TopupModal({ customer, tenantId, userId, userName, onSave, onClo
     const paid = payAmt === '' ? amt : parseFloat(payAmt)
     if (!amt || amt <= 0) { toast.error('Enter top-up amount'); return }
     if (paid < 0) { toast.error('Payment cannot be negative'); return }
+
+    // POS context: don't charge now — add to cart, activate on full payment
+    if (onAddToCart) {
+      onAddToCart({
+        cardKind: 'member',
+        topupAmount: amt, paymentAmount: paid,
+        bonusAmount: Math.max(0, amt - paid),
+        customerName: customer.name,
+        meta: { customerId: customer.id, cardNumber: customer.card_number || null, note: note || null },
+      })
+      return
+    }
+
     setSaving(true)
     try {
       const newBal = (customer.card_balance||0) + amt
@@ -646,7 +659,9 @@ export function TopupModal({ customer, tenantId, userId, userName, onSave, onClo
             <button onClick={handleSave} disabled={saving || !amount}
               className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
               style={{background:'#00B23B'}}>
-              {saving ? '⏳' : `✓ Top Up $${amount ? parseFloat(amount).toFixed(2) : '0.00'}`}
+              {saving ? '⏳' : onAddToCart
+                ? `🛒 Add to Order $${payAmt ? parseFloat(payAmt).toFixed(2) : (amount?parseFloat(amount).toFixed(2):'0.00')}`
+                : `✓ Top Up $${amount ? parseFloat(amount).toFixed(2) : '0.00'}`}
             </button>
           </div>
         </div>

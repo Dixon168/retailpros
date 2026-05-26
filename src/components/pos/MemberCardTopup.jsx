@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useCartStore } from '@/stores/cartStore'
 import { TopupModal } from '@/pages/customers/CustomersPage'
 import toast from 'react-hot-toast'
 
@@ -50,13 +51,13 @@ export default function MemberCardTopup({ onClose }) {
         {/* Search */}
         <div className="p-5 flex flex-col gap-3 overflow-y-auto" style={{background:'#FAFAFA'}}>
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Find member <span className="font-normal normal-case text-slate-400">— card #, phone, or name</span>
+            Find member <span className="font-normal normal-case text-slate-400">— phone, card number, or name</span>
           </div>
           <div className="flex gap-2">
             <input autoFocus value={search}
               onChange={e=>setSearch(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter') doSearch() }}
-              placeholder="168  ·  (347) 827-9999  ·  Albert"
+              placeholder="Enter phone number, card number, or name to look up"
               className="flex-1 rounded-lg px-3 py-3 text-[15px] outline-none font-bold"
               style={{border:'2px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}/>
             <button onClick={doSearch} disabled={loading || !search}
@@ -101,10 +102,16 @@ export default function MemberCardTopup({ onClose }) {
         </div>
       </div>
 
-      {/* Reuse the exact same TopupModal as the Members page */}
+      {/* Reuse the exact same TopupModal as the Members page — but in POS
+          we add to the cart instead of charging immediately. The balance
+          activates only when the whole order is paid in full. */}
       {picked && (
         <TopupModal customer={picked} tenantId={tenant?.id} userId={user?.id} userName={user?.name}
-          onSave={() => { toast.success('✓ Member card topped up'); setPicked(null); onClose() }}
+          onAddToCart={(payload) => {
+            useCartStore.getState().addCardTopup(payload)
+            toast.success('🛒 Added to order — pay to activate')
+            setPicked(null); onClose()
+          }}
           onClose={() => setPicked(null)}/>
       )}
     </div>

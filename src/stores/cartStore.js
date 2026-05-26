@@ -222,6 +222,46 @@ export const useCartStore = create((set, get) => ({
     }))
   },
 
+  // ── Add a card top-up / sell as a cart line ──────────────────────
+  // Top-ups (gift card sell/top-up, member card top-up) are NOT charged
+  // on the spot. They're added to the cart like a product and only
+  // activated when the whole order is paid in full (status completed).
+  // The line is NON-TAXABLE — tax only applies when the card is later
+  // spent on goods, never on loading money onto it.
+  //   payload: {
+  //     cardKind: 'gift' | 'member',
+  //     topupAmount,        // 充值金额 — what lands on the card
+  //     paymentAmount,      // 付款金额 — cash the customer pays (line price)
+  //     bonusAmount,        // free promo amount (= topup - payment)
+  //     // gift:   cardNumber, isNewCard, recipientName, recipientPhone, expireDays, cardType
+  //     // member: customerId, customerName, cardNumber
+  //     meta: {...}         // everything fn needs to activate on completion
+  //   }
+  addCardTopup: (payload) => {
+    const label = payload.cardKind === 'member'
+      ? `💳 Member Card Top-up${payload.customerName ? ` — ${payload.customerName}` : ''}`
+      : `🎁 Gift Card ${payload.isNewCard ? 'Sale' : 'Top-up'}${payload.cardNumber ? ` — #${payload.cardNumber}` : ''}`
+    get()._addItem({
+      productId:   null,
+      name:        label,
+      sku:         payload.cardNumber || '',
+      type:        'card_topup',          // special line type
+      qty:         1,
+      unit:        'ea',
+      unitPrice:   payload.paymentAmount, // customer pays the PAYMENT amount
+      isTaxable:   false,                 // loading money is never taxed
+      taxGroupId:  null,
+      // card activation details (read on order completion)
+      cardTopup: {
+        cardKind:       payload.cardKind,
+        topupAmount:    payload.topupAmount,
+        paymentAmount:  payload.paymentAmount,
+        bonusAmount:    payload.bonusAmount || Math.max(0, payload.topupAmount - payload.paymentAmount),
+        ...payload.meta,
+      },
+    })
+  },
+
   // ── 修改数量 ──
   updateQty: (itemId, newQty) => {
     if (newQty < 1) return
@@ -496,7 +536,9 @@ export const useCartStore = create((set, get) => ({
         product_id:       item.productId,
         product_name:     item.name,
         product_sku:      item.sku || '',
-        product_type:     item.type,
+        // card_topup lines carry no inventory — present them as 'service'
+        // so the atomic submit skips the inventory deduction step.
+        product_type:     item.type === 'card_topup' ? 'service' : item.type,
         serial_number:    item.serialNumber || '',
         quantity:         item.qty,
         unit:             item.unit || 'ea',
@@ -567,6 +609,67 @@ export const useCartStore = create((set, get) => ({
           style: { background:'#FEF3C7', color:'#B45309', fontWeight:600 }
         })
       })
+    }
+
+    // ── Activate any card top-ups now that the order is paid in full ──
+    // These were added as non-taxable cart lines and intentionally NOT
+    // executed until payment succeeded. Now that the order is completed,
+    // load the balances. Done per-line so one failure is reported but
+    // doesn't roll back the (already completed) sale.
+    const topupLines = items.filter(i => i.type === 'card_topup' && i.cardTopup)
+    for (const line of topupLines) {
+      const ct = line.cardTopup
+      try {
+        if (ct.cardKind === 'gift') {
+          if (ct.isNewCard) {
+            const { data, error: e } = await supabase.rpc('fn_create_gift_card', {
+              p_tenant_id:       tenantId,
+              p_card_number:     ct.cardNumber,
+              p_amount:          ct.topupAmount,
+              p_paid_amount:     ct.paymentAmount,
+              p_card_type:       ct.cardType || 'gift',
+              p_expire_days:     ct.expireDays || null,
+              p_recipient_name:  ct.recipientName || null,
+              p_recipient_phone: ct.recipientPhone || null,
+              p_note:            ct.note || null,
+              p_user_id:         cashierId,
+              p_order_id:        result.order_id,
+            })
+            if (e || !data?.success) throw new Error(data?.message || e?.message || 'card create failed')
+          } else {
+            const { data, error: e } = await supabase.rpc('fn_topup_gift_card', {
+              p_tenant_id:   tenantId,
+              p_card_number: ct.cardNumber,
+              p_amount:      ct.topupAmount,
+              p_paid_amount: ct.paymentAmount,
+              p_user_id:     cashierId,
+              p_order_id:    result.order_id,
+              p_note:        ct.note || null,
+            })
+            if (e || !data?.success) throw new Error(data?.message || e?.message || 'top-up failed')
+          }
+        } else if (ct.cardKind === 'member') {
+          // Member card lives on the customer record + customer_topups log
+          const { data: cust } = await supabase.from('customers')
+            .select('card_balance').eq('id', ct.customerId).single()
+          const newBal = (cust?.card_balance || 0) + ct.topupAmount
+          const u = await supabase.from('customers')
+            .update({ card_balance: newBal }).eq('id', ct.customerId)
+          if (u.error) throw new Error(u.error.message)
+          const ins = await supabase.from('customer_topups').insert({
+            tenant_id: tenantId, customer_id: ct.customerId,
+            amount: ct.topupAmount, paid_amount: ct.paymentAmount,
+            bonus_amount: ct.bonusAmount || 0, balance_after: newBal,
+            method: 'order', note: ct.note || `Order ${result.order_number}`,
+            staff_id: cashierId,
+          })
+          if (ins.error) throw new Error(ins.error.message)
+        }
+        toast.success(`💳 ${ct.cardKind === 'member' ? 'Member' : 'Gift'} card loaded $${Number(ct.topupAmount).toFixed(2)}`)
+      } catch (e) {
+        console.error('Card activation:', e)
+        toast.error(`⚠️ Order done but card load failed: ${e.message}. Load manually.`, { duration: 8000 })
+      }
     }
 
     get().clearCart()
