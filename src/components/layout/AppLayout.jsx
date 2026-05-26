@@ -101,7 +101,7 @@ export default function AppLayout() {
         <div className="flex items-center gap-2 px-3 py-3.5 border-b" style={{borderColor:'#2A2A2A', minHeight:'52px'}}>
           {!collapsed && (
             <>
-              <div className="text-[15px] font-bold text-white">RetailPOS</div>
+              <div className="text-[15px] font-bold text-white">Retail Pro</div>
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded ml-1 flex-shrink-0"
                 style={{background:'rgba(0,106,255,0.2)', color:'#80B2FF'}}>
                 BACK OFFICE
@@ -199,10 +199,14 @@ export default function AppLayout() {
           </div>
         </div>
 
-        {/* Software version footer — bottom of sidebar */}
+        {/* Software brand + version footer — bottom of sidebar */}
         {!collapsed && (
           <div className="px-3 py-2 text-center" style={{borderTop:'1px solid #2A2A2A', background:'#161616'}}>
-            <div className="text-[9px] font-mono" style={{color:'#666'}}>
+            <div className="text-[10px] font-bold" style={{color:'#80B2FF'}}>Retail Pro</div>
+            <div className="text-[8px] mt-0.5 leading-tight" style={{color:'#666'}}>
+              powered by All in One Payment Solution
+            </div>
+            <div className="text-[8px] font-mono mt-1" style={{color:'#555'}}>
               {APP_VERSION_LABEL}
             </div>
           </div>

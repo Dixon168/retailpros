@@ -206,6 +206,11 @@ export default function CustomerDisplayPage() {
             : <div className="text-[28px] font-black" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>RP</div>}
           <div className="text-[18px] font-bold" style={{color:'#1F1F1F'}}>{storeName}</div>
         </div>
+        {/* Software brand (subtle, doesn't compete with the store's name) */}
+        <div className="text-right leading-tight">
+          <div className="text-[13px] font-bold" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>Retail Pro</div>
+          <div className="text-[8px]" style={{color:'#94a3b8'}}>powered by All in One Payment Solution</div>
+        </div>
       </div>
 
       {/* ── Body — switches based on mode ── */}
