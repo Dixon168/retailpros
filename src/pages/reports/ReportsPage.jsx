@@ -1,6 +1,6 @@
 // src/pages/reports/ReportsPage.jsx
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, format } from 'date-fns'
@@ -47,6 +47,7 @@ function getDateRange(preset) {
 
 export default function ReportsPage() {
   const { tenant, store } = useAuthStore()
+  const qc = useQueryClient()
   const [activeReport, setActiveReport] = useState('sales')
   const [datePreset, setDatePreset] = useState('week')
   const [dateFrom, dateTo] = getDateRange(datePreset)
@@ -225,7 +226,16 @@ export default function ReportsPage() {
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
         .order('created_at', { ascending: false })
-      return { voided: voided || [], refunds: refunds || [] }
+      // Unresolved card-activation failures (sale finalized but card load/
+      // reversal failed) — surfaced so staff can reconcile.
+      let failures = []
+      try {
+        const { data: f } = await supabase.from('card_activation_failures')
+          .select('*').eq('tenant_id', tenant.id).eq('resolved', false)
+          .order('created_at', { ascending: false }).limit(50)
+        failures = f || []
+      } catch (_) { /* table may not exist yet */ }
+      return { voided: voided || [], refunds: refunds || [], failures }
     },
     enabled: !!tenant?.id && activeReport === 'refunds',
   })
@@ -659,10 +669,39 @@ export default function ReportsPage() {
           {activeReport === 'refunds' && (() => {
             const voided  = refundData?.voided  || []
             const refunds = refundData?.refunds || []
+            const failures = refundData?.failures || []
             const voidTotal   = voided.reduce((s,o)=>s+Math.abs(Number(o.total||0)),0)
             const refundTotal = refunds.reduce((s,r)=>s+Number(r.amount||0),0)
             return (
               <div className="space-y-5">
+                {/* Card-activation failures need attention — money out of sync */}
+                {failures.length > 0 && (
+                  <div className="rounded-[12px] p-4" style={{background:'#fef2f2', border:'2px solid #fca5a5'}}>
+                    <div className="text-[13px] font-bold mb-2" style={{color:'#b91c1c'}}>
+                      ⚠️ {failures.length} card action(s) need reconciliation
+                    </div>
+                    <div className="text-[11px] text-[#7f1d1d] mb-3">
+                      These sales completed but the card load/reversal didn't finish. Load or adjust the card manually, then mark resolved.
+                    </div>
+                    <div className="bg-white rounded-lg overflow-hidden" style={{border:'1px solid #fecaca'}}>
+                      {failures.map(f => (
+                        <div key={f.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-red-50 last:border-0">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[12px] font-bold">{f.kind === 'reversal' ? '↩ Reversal' : '💳 Top-up'} · {f.card_kind} · {f.order_number || '—'}</div>
+                            <div className="text-[10px] text-slate-500 truncate">
+                              ${Number(f.detail?.topupAmount || 0).toFixed(2)} · {f.error?.slice(0,60)} · {new Date(f.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+                            </div>
+                          </div>
+                          <button onClick={async()=>{ await supabase.from('card_activation_failures').update({resolved:true}).eq('id', f.id); qc.invalidateQueries({queryKey:['report-refunds']}); toast.success('Marked resolved') }}
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white flex-shrink-0"
+                            style={{background:'#16a34a'}}>
+                            ✓ Resolved
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-4 gap-3">
                   {[
                     ['Refunds', `$${refundTotal.toFixed(2)}`, '#ef4444', `${refunds.length} transaction(s)`],
