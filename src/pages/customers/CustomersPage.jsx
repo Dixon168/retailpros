@@ -690,7 +690,7 @@ export function TopupModal({ customer, tenantId, userId, userName, onSave, onClo
 }
 
 // ── Add Customer Modal ──
-function AddCustomerModal({ tenantId, onSave, onClose }) {
+export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
   const { data: memberLevels = [] } = useQuery({
     queryKey: ['member-levels'],
     queryFn: async () => {
@@ -702,7 +702,7 @@ function AddCustomerModal({ tenantId, onSave, onClose }) {
   const [form, setForm] = useState({
     name:'', phone:'', email:'', birthday:'',
     gender:'', address:'', notes:'',
-    card_number:'', member_level:'', card_expire_date:'',
+    card_number: prefillCard || '', member_level:'', card_expire_date:'',
   })
   const setF = (k,v) => setForm(f=>({...f,[k]:v}))
   const [saving, setSaving] = useState(false)
