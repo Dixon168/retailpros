@@ -685,7 +685,7 @@ export const useCartStore = create((set, get) => ({
         } else if (ct.cardKind === 'member') {
           // Member card lives on the customer record + customer_topups log
           const { data: cust } = await supabase.from('customers')
-            .select('card_balance').eq('id', ct.customerId).single()
+            .select('card_balance').eq('id', ct.customerId).maybeSingle()
           const newBal = (cust?.card_balance || 0) + ct.topupAmount
           const u = await supabase.from('customers')
             .update({ card_balance: newBal }).eq('id', ct.customerId)
@@ -728,7 +728,7 @@ export const useCartStore = create((set, get) => ({
           if (e || !data?.success) throw new Error(data?.message || e?.message || 'reversal failed')
         } else if (cr.cardKind === 'member') {
           const { data: cust } = await supabase.from('customers')
-            .select('card_balance').eq('id', cr.customerId).single()
+            .select('card_balance').eq('id', cr.customerId).maybeSingle()
           const cur = cust?.card_balance || 0
           if (cur < cr.topupAmount && !cr.allowNegative) {
             throw new Error('Insufficient card balance to reverse — manager override required')
