@@ -50,11 +50,14 @@ export default function MemberCardTopup({ onClose }) {
 
   const doSearch = async () => {
     if (!term) { toast.error('Enter card #, phone, or name'); return }
+    // Strip characters that have special meaning in a PostgREST .or() filter
+    const safe = term.replace(/[,()*%\\]/g, ' ').trim()
+    if (!safe) { setResults([]); return }
     setLoading(true)
     const { data } = await supabase.from('customers')
       .select('id, name, phone, card_number, card_balance, member_level, loyalty_points')
       .eq('tenant_id', tenant.id).eq('is_active', true)
-      .or(`name.ilike.%${term}%,phone.ilike.%${term}%,card_number.ilike.%${term}%`)
+      .or(`name.ilike.%${safe}%,phone.ilike.%${safe}%,card_number.ilike.%${safe}%`)
       .order('name').limit(25)
     setLoading(false)
     setResults(data || [])
@@ -62,7 +65,7 @@ export default function MemberCardTopup({ onClose }) {
 
   // Search existing members to attach this card number to
   const doAssignSearch = async () => {
-    const q = assignSearch.trim()
+    const q = assignSearch.trim().replace(/[,()*%\\]/g, ' ').trim()
     if (!q) { toast.error('Enter phone or name'); return }
     const { data } = await supabase.from('customers')
       .select('id, name, phone, card_number, card_balance')

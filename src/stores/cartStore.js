@@ -683,26 +683,32 @@ export const useCartStore = create((set, get) => ({
             if (e || !data?.success) throw new Error(data?.message || e?.message || 'top-up failed')
           }
         } else if (ct.cardKind === 'member') {
-          // Member card lives on the customer record + customer_topups log
-          const { data: cust } = await supabase.from('customers')
-            .select('card_balance').eq('id', ct.customerId).maybeSingle()
-          const newBal = (cust?.card_balance || 0) + ct.topupAmount
-          const u = await supabase.from('customers')
-            .update({ card_balance: newBal }).eq('id', ct.customerId)
-          if (u.error) throw new Error(u.error.message)
-          const ins = await supabase.from('customer_topups').insert({
-            tenant_id: tenantId, customer_id: ct.customerId,
-            amount: ct.topupAmount, paid_amount: ct.paymentAmount,
-            bonus_amount: ct.bonusAmount || 0, balance_after: newBal,
-            method: 'order', note: ct.note || `Order ${result.order_number}`,
-            staff_id: cashierId, order_id: result.order_id,
+          // Member card: atomic balance change in the DB (no read-then-write
+          // race between registers). Logs the customer_topups row too.
+          const { data, error: e } = await supabase.rpc('fn_member_topup', {
+            p_tenant_id:   tenantId,
+            p_customer_id: ct.customerId,
+            p_amount:      ct.topupAmount,
+            p_paid_amount: ct.paymentAmount,
+            p_bonus:       ct.bonusAmount || 0,
+            p_user_id:     cashierId,
+            p_order_id:    result.order_id,
+            p_note:        ct.note || `Order ${result.order_number}`,
           })
-          if (ins.error) throw new Error(ins.error.message)
+          if (e || !data?.success) throw new Error(data?.message || e?.message || 'member top-up failed')
         }
         toast.success(`💳 ${ct.cardKind === 'member' ? 'Member' : 'Gift'} card loaded $${Number(ct.topupAmount).toFixed(2)}`)
       } catch (e) {
         console.error('Card activation:', e)
-        toast.error(`⚠️ Order done but card load failed: ${e.message}. Load manually.`, { duration: 8000 })
+        // Persist the failure so the sale (already paid) isn't silently
+        // out of sync with the card. Staff can reconcile from this log.
+        try {
+          await supabase.from('card_activation_failures').insert({
+            tenant_id: tenantId, order_id: result.order_id, order_number: result.order_number,
+            kind: 'topup', card_kind: ct.cardKind, detail: ct, error: String(e?.message || e),
+          })
+        } catch (_) { /* best effort */ }
+        toast.error(`⚠️ Order paid but card load failed: ${e.message}. Logged for reconciliation — load manually.`, { duration: 10000 })
       }
     }
 
@@ -727,24 +733,16 @@ export const useCartStore = create((set, get) => ({
           })
           if (e || !data?.success) throw new Error(data?.message || e?.message || 'reversal failed')
         } else if (cr.cardKind === 'member') {
-          const { data: cust } = await supabase.from('customers')
-            .select('card_balance').eq('id', cr.customerId).maybeSingle()
-          const cur = cust?.card_balance || 0
-          if (cur < cr.topupAmount && !cr.allowNegative) {
-            throw new Error('Insufficient card balance to reverse — manager override required')
-          }
-          const newBal = cur - cr.topupAmount
-          const u = await supabase.from('customers')
-            .update({ card_balance: newBal }).eq('id', cr.customerId)
-          if (u.error) throw new Error(u.error.message)
-          const ins = await supabase.from('customer_topups').insert({
-            tenant_id: tenantId, customer_id: cr.customerId,
-            amount: -cr.topupAmount, paid_amount: null, bonus_amount: 0,
-            balance_after: newBal, method: 'reversal',
-            note: cr.origOrderNumber ? `Reversal of ${cr.origOrderNumber}` : 'Top-up reversed',
-            staff_id: cashierId, order_id: result.order_id,
+          const { data, error: e } = await supabase.rpc('fn_member_reverse', {
+            p_tenant_id:      tenantId,
+            p_customer_id:    cr.customerId,
+            p_amount:         cr.topupAmount,
+            p_allow_negative: !!cr.allowNegative,
+            p_user_id:        cashierId,
+            p_order_id:       result.order_id,
+            p_note:           cr.origOrderNumber ? `Reversal of ${cr.origOrderNumber}` : 'Top-up reversed',
           })
-          if (ins.error) throw new Error(ins.error.message)
+          if (e || !data?.success) throw new Error(data?.message || e?.message || 'member reversal failed')
         }
         // Mark the original order refunded/voided
         if (cr.origOrderId) {
@@ -755,7 +753,13 @@ export const useCartStore = create((set, get) => ({
         toast.success(`↩ Reversed $${Number(cr.topupAmount).toFixed(2)} off the card`)
       } catch (e) {
         console.error('Card reversal:', e)
-        toast.error(`⚠️ Refund done but card reversal failed: ${e.message}`, { duration: 8000 })
+        try {
+          await supabase.from('card_activation_failures').insert({
+            tenant_id: tenantId, order_id: result.order_id, order_number: result.order_number,
+            kind: 'reversal', card_kind: cr.cardKind, detail: cr, error: String(e?.message || e),
+          })
+        } catch (_) { /* best effort */ }
+        toast.error(`⚠️ Refund done but card reversal failed: ${e.message}. Logged for reconciliation.`, { duration: 10000 })
       }
     }
 

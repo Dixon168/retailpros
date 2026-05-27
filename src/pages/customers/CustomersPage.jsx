@@ -542,18 +542,20 @@ export function TopupModal({ customer, tenantId, userId, userName, onSave, onClo
 
     setSaving(true)
     try {
-      const newBal = (customer.card_balance||0) + amt
-      const r1 = await supabase.from('customers').update({ card_balance: newBal }).eq('id', customer.id)
-      if (r1.error) throw new Error(`Update balance: ${r1.error.message}`)
-      const r2 = await supabase.from('customer_topups').insert({
-        tenant_id: tenantId, customer_id: customer.id,
-        amount: amt, paid_amount: paid, bonus_amount: Math.max(0, amt - paid),
-        balance_after: newBal, method, note: note||null,
-        staff_id: userId, staff_name: userName,
+      // Atomic balance change (avoids lost updates if two staff top up the
+      // same member at once).
+      const { data, error } = await supabase.rpc('fn_member_topup', {
+        p_tenant_id:   tenantId,
+        p_customer_id: customer.id,
+        p_amount:      amt,
+        p_paid_amount: paid,
+        p_bonus:       Math.max(0, amt - paid),
+        p_user_id:     userId,
+        p_note:        note || null,
       })
-      if (r2.error) throw new Error(`Save topup: ${r2.error.message}`)
+      if (error || !data?.success) throw new Error(data?.message || error?.message || 'Top-up failed')
       toast.success(`✓ Loaded $${amt.toFixed(2)}${amt!==paid?` (paid $${paid.toFixed(2)})`:''}`)
-      onSave({ card_balance: newBal })
+      onSave({ card_balance: data.balance })
     } catch(e) {
       console.error(e)
       toast.error(e.message)
