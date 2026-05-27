@@ -581,7 +581,7 @@ export default function PaymentPanel() {
     <Overlay onClose={paxState!=='idle'?undefined:close}>
       {/* Full screen no-scroll container */}
       <div className="rounded-lg overflow-hidden shadow-xl"
-        style={{width:'min(1080px, 96vw)', height:'min(92vh, 820px)', maxHeight:'92vh', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto minmax(0,1fr) auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
+        style={{width:'min(1240px, 98vw)', height:'min(94vh, 880px)', maxHeight:'94vh', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto minmax(0,1fr) auto', gridTemplateColumns:'280px minmax(0, 1fr) 260px'}}>
 
         {/* ══ HEADER - full width ══ */}
         <div className="col-span-3 flex items-center justify-between px-6 py-4"
@@ -772,83 +772,136 @@ export default function PaymentPanel() {
           <div className="rounded-lg overflow-hidden flex-1 flex flex-col" style={{background:'#fff', border:'1.5px solid #e2e8f0', minHeight:0}}>
             <div className="px-4 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest flex-shrink-0"
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
-              Payment Method
+              1. Select Method   ·   2. Enter Amount   ·   3. Add Payment
             </div>
-            {/* Scrollable upper region: methods, PAX state, amount display, quick amounts */}
-            <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto" style={{minHeight:0}}>
-              {/* Method buttons */}
-              <div className="flex-shrink-0 grid gap-2" style={{gridTemplateColumns:`repeat(${Math.min(enabledMethods.length,4)},1fr)`}}>
-                {enabledMethods.map(m=>(
-                  <button key={m.id} onClick={()=>setSelMethod(m.id)}
-                    className="flex flex-col items-center py-2.5 rounded-xl cursor-pointer border-2 transition-all"
-                    style={selMethod===m.id?{background:m.bg,borderColor:m.color}:{background:'#f8fafc',borderColor:'#e2e8f0'}}>
-                    <span className="text-[18px]">{m.icon}</span>
-                    <span className="text-[10px] font-bold mt-0.5"
-                      style={{color:selMethod===m.id?m.color:'#64748b'}}>{m.label}</span>
-                  </button>
-                ))}
+            {/* Scrollable upper region */}
+            <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto" style={{minHeight:0}}>
+
+              {/* ── STEP 1: Method buttons ── grid auto-wraps so 5+ methods stay readable */}
+              <div className="flex-shrink-0">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Method</div>
+                <div className="grid gap-2"
+                  style={{gridTemplateColumns:`repeat(${enabledMethods.length<=3?enabledMethods.length:4},minmax(0,1fr))`}}>
+                  {enabledMethods.map(m=>{
+                    const sel = selMethod===m.id
+                    return (
+                      <button key={m.id} onClick={()=>setSelMethod(m.id)}
+                        className="flex flex-col items-center justify-center py-3 rounded-xl cursor-pointer border-2 transition-all"
+                        style={sel
+                          ? {background:m.bg, borderColor:m.color, boxShadow:`0 0 0 3px ${m.color}22`}
+                          : {background:'#fff', borderColor:'#e2e8f0'}}>
+                        <span className="text-[22px]">{m.icon}</span>
+                        <span className="text-[11px] font-bold mt-1 text-center leading-tight"
+                          style={{color:sel?m.color:'#475569'}}>{m.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* PAX overlay */}
+              {/* PAX overlay (replaces amount area while waiting/approved/declined) */}
               {paxState!=='idle' && (
-                <div className="rounded-xl p-4 text-center flex-shrink-0"
+                <div className="rounded-xl p-5 text-center flex-shrink-0"
                   style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
-                  <div className="text-[32px]">{PAX_STATE[paxState]?.icon}</div>
-                  <div className="text-[14px] font-bold text-slate-800">{PAX_STATE[paxState]?.label}</div>
+                  <div className="text-[40px]">{PAX_STATE[paxState]?.icon}</div>
+                  <div className="text-[15px] font-bold text-slate-800 mt-1">{PAX_STATE[paxState]?.label}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">via PAX terminal</div>
                   {paxState==='waiting'&&(
                     <button onClick={async()=>{ await paxCancel({paxIp:terminal.pax_ip,paxPort:terminal.pax_port}); setPaxState('idle') }}
-                      className="mt-2 rounded-xl px-4 py-2 text-[11px] font-bold cursor-pointer border"
+                      className="mt-3 rounded-xl px-4 py-2 text-[11px] font-bold cursor-pointer border"
                       style={{background:'#fff1f2',borderColor:'#fca5a5',color:'#dc2626'}}>Cancel</button>
                   )}
                 </div>
               )}
 
-              {/* Amount display + quick amounts (action button below, always visible) */}
+              {/* ── STEP 2: Amount input + (the missing) CHANGE display ── */}
               {paxState==='idle' && remaining>0 && (
-                <>
+                <div className="flex-shrink-0">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Amount Tendered</div>
                   <button onClick={()=>setShowPayPad(true)}
-                    className="flex-shrink-0 w-full rounded-lg px-4 py-3 text-left cursor-pointer border-2 transition-all"
-                    style={{borderColor:'#80B2FF', background:'#E6F0FF'}}>
-                    <div className="text-[10px] text-indigo-400 mb-0.5">Payment {payments.length+1} Amount</div>
-                    <div className="text-[30px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>
+                    className="w-full rounded-xl px-5 py-4 text-left cursor-pointer border-2 transition-all"
+                    style={{borderColor:'#006AFF', background:'#EFF6FF'}}>
+                    <div className="text-[10px] font-bold text-slate-500">Payment #{payments.length+1}</div>
+                    <div className="text-[42px] font-bold font-mono leading-none mt-1" style={{color:'#006AFF'}}>
                       ${payInput||remaining.toFixed(2)}
                     </div>
                   </button>
-                  <div className="flex-shrink-0 flex gap-2">
-                    {[Math.ceil(remaining/5)*5, Math.ceil(remaining/10)*10, Math.ceil(remaining/20)*20, remaining]
-                      .filter((v,i,a)=>v>=remaining&&a.indexOf(v)===i).slice(0,4)
-                      .map(q=>(
+                  {/* Live CHANGE display — big and obvious so the cashier never misses what to hand back */}
+                  {(() => {
+                    const tendered = parseFloat(payInput) || 0
+                    const liveChange = selMethod==='cash' && tendered > remaining ? tendered - remaining : 0
+                    if (liveChange <= 0) return null
+                    return (
+                      <div className="mt-2 rounded-xl px-5 py-3 flex items-center justify-between"
+                        style={{background:'#ECFDF5', border:'2px solid #34D399'}}>
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider" style={{color:'#047857'}}>Change Due</div>
+                          <div className="text-[11px] text-slate-500">give back to customer</div>
+                        </div>
+                        <div className="text-[36px] font-bold font-mono leading-none" style={{color:'#16a34a'}}>
+                          ${liveChange.toFixed(2)}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+
+              {/* ── STEP 3: Quick amount buttons — fixed bills the cashier handles ── */}
+              {paxState==='idle' && remaining>0 && (
+                <div className="flex-shrink-0">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Quick Amounts</div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[10, 20, 50, 100].map(q => {
+                      const isSel = parseFloat(payInput) === q
+                      return (
                         <button key={q} onClick={()=>setPayInput(q.toFixed(2))}
-                          className="flex-1 rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2 transition-all"
-                          style={parseFloat(payInput)===q?{background:'#E6F0FF',borderColor:'#006AFF',color:'#006AFF'}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
-                          {q===remaining?'Exact':'$'+q}
+                          className="rounded-xl py-3 text-[15px] font-bold cursor-pointer border-2 transition-all"
+                          style={isSel
+                            ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
+                            : {background:'#fff', borderColor:'#cbd5e1', color:'#0f172a'}}>
+                          ${q}
                         </button>
-                      ))
-                    }
+                      )
+                    })}
+                    {/* "Exact" — the most-used button for card / member / gift */}
+                    <button onClick={()=>setPayInput(remaining.toFixed(2))}
+                      className="rounded-xl py-3 text-[12px] font-bold cursor-pointer border-2 transition-all"
+                      style={parseFloat(payInput)===Number(remaining.toFixed(2))
+                        ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
+                        : {background:'#FEF3C7', borderColor:'#FCD34D', color:'#92400E'}}>
+                      Exact<br/>${remaining.toFixed(2)}
+                    </button>
                   </div>
-                </>
+                </div>
               )}
 
               {paxState==='idle' && remaining<=0 && (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-[48px] mb-2">✅</div>
-                    <div className="text-[16px] font-bold text-green-600">Fully Paid!</div>
-                    {change>0 && <div className="text-[14px] font-bold text-blue-600 mt-1">Change: ${change.toFixed(2)}</div>}
+                    <div className="text-[64px] mb-2">✅</div>
+                    <div className="text-[20px] font-bold text-green-600">Fully Paid!</div>
+                    {change>0 && (
+                      <div className="mt-3 rounded-xl px-6 py-3 inline-flex items-center gap-3"
+                        style={{background:'#ECFDF5', border:'2px solid #34D399'}}>
+                        <span className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#047857'}}>Change</span>
+                        <span className="text-[32px] font-bold font-mono" style={{color:'#16a34a'}}>${change.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Pinned action button — always visible, never scrolls away */}
+            {/* ── Pinned ADD PAYMENT button — always visible at bottom ── */}
             {paxState==='idle' && remaining>0 && (
-              <div className="flex-shrink-0 p-3 pt-2" style={{borderTop:'1px solid #f1f5f9', background:'#fff'}}>
+              <div className="flex-shrink-0 p-3" style={{borderTop:'1px solid #e2e8f0', background:'#f8fafc'}}>
                 <button onClick={handleAddPayment} disabled={processing}
-                  className="w-full rounded-lg py-3.5 text-[16px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-                  style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+                  className="w-full rounded-xl py-4 text-[17px] font-bold text-white cursor-pointer border-none disabled:opacity-50 transition-all"
+                  style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 6px 20px rgba(0,0,0,0.18)'}}>
                   {processing
                     ? '⏳ Processing...'
-                    : `${METHODS.find(m=>m.id===selMethod)?.icon} Add ${METHODS.find(m=>m.id===selMethod)?.label} — $${payInput||remaining.toFixed(2)}`}
+                    : `${METHODS.find(m=>m.id===selMethod)?.icon}  Add ${METHODS.find(m=>m.id===selMethod)?.label}  —  $${payInput||remaining.toFixed(2)}`}
                 </button>
               </div>
             )}
@@ -929,9 +982,15 @@ export default function PaymentPanel() {
           </button>
           <button onClick={()=>handleComplete()}
             disabled={processing||(paid<liveTotal-0.005)}
-            className="flex-1 rounded-lg py-4 text-[18px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-            style={{background:'#00B23B', boxShadow:'0 4px 20px rgba(22,163,74,0.35)'}}>
-            {processing?'⏳ Processing...': remaining<=0 ? `✓ Complete Order — $${liveTotal.toFixed(2)}` : `Complete ($${paid.toFixed(2)} of $${liveTotal.toFixed(2)})`}
+            className="flex-1 rounded-lg py-4 text-[18px] font-bold text-white cursor-pointer border-none disabled:opacity-40 transition-all"
+            style={paid >= liveTotal - 0.005
+              ? {background:'#16a34a', boxShadow:'0 6px 24px rgba(22,163,74,0.45)'}
+              : {background:'#94a3b8', boxShadow:'none'}}>
+            {processing
+              ? '⏳ Processing...'
+              : remaining<=0
+                ? `✓ Complete Order — $${liveTotal.toFixed(2)}`
+                : `Complete  ($${paid.toFixed(2)} of $${liveTotal.toFixed(2)})`}
           </button>
         </div>
       </div>
