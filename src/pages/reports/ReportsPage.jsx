@@ -214,6 +214,28 @@ export default function ReportsPage() {
     enabled: !!tenant?.id && activeReport === 'refunds',
   })
 
+  // ── Inventory report — real stock on hand + value ──
+  const { data: invData } = useQuery({
+    queryKey: ['report-inventory', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('products')
+        .select('id, name, sku, cost, price, low_stock_qty, track_inventory, is_active, inventory(quantity)')
+        .eq('tenant_id', tenant.id).eq('is_active', true)
+        .order('name').limit(2000)
+      return (data || []).map(p => {
+        const qty = (p.inventory || []).reduce((a,i)=>a+Number(i.quantity||0),0)
+        return {
+          id:p.id, name:p.name, sku:p.sku, qty,
+          cost:Number(p.cost||0), price:Number(p.price||0),
+          threshold: p.low_stock_qty ?? 5, track: p.track_inventory,
+          costValue: qty * Number(p.cost||0),
+          retailValue: qty * Number(p.price||0),
+        }
+      })
+    },
+    enabled: !!tenant?.id && activeReport === 'inventory',
+  })
+
   // Shift report
   const { data: shiftData } = useQuery({
     queryKey: ['report-shift', store?.id, dateFrom, dateTo],
@@ -1024,13 +1046,74 @@ export default function ReportsPage() {
             </div>
           )}
 
+          {/* ── INVENTORY REPORT ── */}
+          {activeReport === 'inventory' && (() => {
+            const rows = (invData || []).filter(p => p.track)
+            const totalCost   = rows.reduce((s,p)=>s+p.costValue,0)
+            const totalRetail = rows.reduce((s,p)=>s+p.retailValue,0)
+            const lowStock    = rows.filter(p => p.qty <= p.threshold)
+            const outStock    = rows.filter(p => p.qty <= 0)
+            return (
+              <div className="space-y-5">
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    ['Tracked Items', rows.length, '#3b82f6', 'inventory-tracked'],
+                    ['Stock Value (Cost)', `$${totalCost.toFixed(2)}`, '#16a34a', 'what it cost you'],
+                    ['Stock Value (Retail)', `$${totalRetail.toFixed(2)}`, '#8b5cf6', 'at selling price'],
+                    ['Low / Out', `${lowStock.length} / ${outStock.length}`, '#dc2626', 'need restock'],
+                  ].map(([l,v,c,sub]) => (
+                    <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                      <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+                      <div className="text-[20px] font-bold" style={{color:c}}>{v}</div>
+                      <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {lowStock.length > 0 && (
+                  <div className="rounded-[12px] p-4" style={{background:'#fef2f2', border:'1px solid #fecaca'}}>
+                    <div className="text-[12px] font-bold mb-2" style={{color:'#dc2626'}}>⚠️ Low / out of stock ({lowStock.length})</div>
+                    <div className="flex flex-wrap gap-2">
+                      {lowStock.slice(0,30).map(p => (
+                        <span key={p.id} className="rounded-full px-3 py-1 text-[11px] font-bold"
+                          style={{background:'#fff', color:p.qty<=0?'#dc2626':'#d97706', border:`1px solid ${p.qty<=0?'#fca5a5':'#fcd34d'}`}}>
+                          {p.name} · {p.qty}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                  <div className="grid bg-[#F8FAFC] text-[10px] font-mono font-bold text-[#666] uppercase tracking-wider"
+                    style={{gridTemplateColumns:'2fr 1fr 0.8fr 1fr 1fr'}}>
+                    {['Product','SKU','On Hand','Cost Value','Retail Value'].map(h=>(<div key={h} className="px-3 py-2.5">{h}</div>))}
+                  </div>
+                  {rows.slice(0, 200).map(p => (
+                    <div key={p.id} className="grid border-b border-[#E5E5E5] last:border-0 items-center hover:bg-[#F8FAFC]"
+                      style={{gridTemplateColumns:'2fr 1fr 0.8fr 1fr 1fr'}}>
+                      <div className="px-3 py-2.5 text-[12px] font-semibold">{p.name}</div>
+                      <div className="px-3 py-2.5 text-[11px] font-mono text-[#666]">{p.sku || '—'}</div>
+                      <div className="px-3 py-2.5 text-[12px] font-mono font-bold"
+                        style={{color: p.qty<=0?'#dc2626':p.qty<=p.threshold?'#d97706':'#1F1F1F'}}>{p.qty}</div>
+                      <div className="px-3 py-2.5 text-[12px] font-mono">${p.costValue.toFixed(2)}</div>
+                      <div className="px-3 py-2.5 text-[12px] font-mono">${p.retailValue.toFixed(2)}</div>
+                    </div>
+                  ))}
+                  {rows.length > 200 && (
+                    <div className="px-4 py-2 text-[11px] text-[#999] text-center">Showing first 200 of {rows.length} items</div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Remaining placeholders */}
-          {['inventory'].includes(activeReport) && (
+          {[].includes(activeReport) && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center text-[#999999]">
                 <div className="text-4xl mb-3 opacity-30">{REPORT_NAV.find(r=>r.id===activeReport)?.icon}</div>
                 <div className="text-[14px] font-bold">{REPORT_NAV.find(r=>r.id===activeReport)?.label}</div>
-                <div className="text-[11px] font-mono mt-2 opacity-60">Full implementation coming in next build</div>
               </div>
             </div>
           )}
