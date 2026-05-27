@@ -106,8 +106,31 @@ CREATE POLICY caf_tenant ON card_activation_failures
   WITH CHECK (tenant_id = (SELECT tenant_id FROM users WHERE id = auth.uid()));
 
 
+-- ── Atomic inventory restore (used by product refunds) ─────────────
+CREATE OR REPLACE FUNCTION fn_restore_inventory(
+  p_tenant_id  UUID,
+  p_product_id UUID,
+  p_store_id   UUID,
+  p_qty        NUMERIC
+) RETURNS JSONB LANGUAGE plpgsql AS $func$
+BEGIN
+  IF p_product_id IS NULL OR p_qty <= 0 THEN
+    RETURN jsonb_build_object('success', true, 'skipped', true);
+  END IF;
+  INSERT INTO inventory (tenant_id, product_id, store_id, quantity)
+  VALUES (p_tenant_id, p_product_id, p_store_id, p_qty)
+  ON CONFLICT (tenant_id, product_id, store_id)
+  DO UPDATE SET quantity = inventory.quantity + p_qty, updated_at = NOW();
+  RETURN jsonb_build_object('success', true);
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$func$;
+
+
 NOTIFY pgrst, 'reload schema';
 
 SELECT 'fn_member_topup'   AS section, EXISTS(SELECT 1 FROM pg_proc WHERE proname='fn_member_topup')::TEXT AS ok
 UNION ALL SELECT 'fn_member_reverse', EXISTS(SELECT 1 FROM pg_proc WHERE proname='fn_member_reverse')::TEXT
+UNION ALL SELECT 'fn_restore_inventory', EXISTS(SELECT 1 FROM pg_proc WHERE proname='fn_restore_inventory')::TEXT
 UNION ALL SELECT 'card_activation_failures', EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='card_activation_failures')::TEXT;

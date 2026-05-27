@@ -787,16 +787,13 @@ export const useCartStore = create((set, get) => ({
               .select('quantity, returned_qty, product_id').eq('id', l.refund.orderItemId).single()
             const newRet = (oi?.returned_qty || 0) + Math.abs(l.qty)
             await supabase.from('order_items').update({ returned_qty: newRet }).eq('id', l.refund.orderItemId)
-            // restore inventory for this product
+            // restore inventory for this product — atomic upsert (no
+            // read-then-write race if the same item is refunded elsewhere)
             if (oi?.product_id) {
-              const { data: inv } = await supabase.from('inventory')
-                .select('quantity').eq('tenant_id', tenantId).eq('product_id', oi.product_id).eq('store_id', storeId).maybeSingle()
-              if (inv) {
-                await supabase.from('inventory').update({ quantity: (inv.quantity||0) + Math.abs(l.qty) })
-                  .eq('tenant_id', tenantId).eq('product_id', oi.product_id).eq('store_id', storeId)
-              } else {
-                await supabase.from('inventory').insert({ tenant_id: tenantId, product_id: oi.product_id, store_id: storeId, quantity: Math.abs(l.qty) })
-              }
+              await supabase.rpc('fn_restore_inventory', {
+                p_tenant_id: tenantId, p_product_id: oi.product_id,
+                p_store_id: storeId, p_qty: Math.abs(l.qty),
+              })
             }
           }
           // recompute refund_status on the original order
