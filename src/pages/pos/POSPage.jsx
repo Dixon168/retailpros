@@ -320,6 +320,7 @@ export default function POSPage() {
     ...(drawerEnabled ? [
       { id:'drawer', label:'Cash Drawer', icon:'💰', action: handleOpenDrawer },
     ] : []),
+    { id:'recall', label:'Recall', icon:'🔄', action: () => setShowRecall(true) },
     { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
@@ -575,6 +576,16 @@ export default function POSPage() {
       {showRefund     && <RefundPanel
         preloadOrder={refundPreload}
         onClose={() => { setShowRefund(false); setRefundPreload(null) }} />}
+      {showRecall && <RecallPanel
+        onClose={() => setShowRecall(false)}
+        onRefund={(order) => { setRefundPreload(order); setShowRefund(true) }}
+        onReprint={async (order) => {
+          try {
+            const { buildReceiptHTML, printReceipt, getPrintingSettings } = await import('@/lib/receipt')
+            const html = buildReceiptHTML(order, getPrintingSettings(), { name: store?.name, address: store?.address, phone: store?.phone })
+            printReceipt(html, 1)
+          } catch (e) { toast.error('Could not reprint: ' + (e?.message || e)) }
+        }} />}
 
     {showPoints && <PointsRedeemModal onClose={() => setShowPoints(false)}/>}
 

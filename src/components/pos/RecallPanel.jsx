@@ -23,7 +23,7 @@ function getStatus(order) {
   return 'completed'
 }
 
-export function RecallPanel({ onClose }) {
+export function RecallPanel({ onClose, onRefund, onReprint }) {
   const { user, tenant, terminal } = useAuthStore()
   const cartItems = useCartStore(s => s.items)
   const qc = useQueryClient()
@@ -45,7 +45,7 @@ export function RecallPanel({ onClose }) {
     queryFn: async () => {
       if (filter === 'held') return []
       let q = supabase.from('orders')
-        .select('id,order_number,grand_total,created_at,status,refund_status,order_items(id,product_id,quantity,unit_price,products(name,unit)),customers(name,phone)')
+        .select('id,order_number,total,created_at,status,refund_status,order_items(id,product_id,quantity,unit_price,products(name,unit)),customers(name,phone)')
         .eq('tenant_id', tenant.id)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -224,7 +224,7 @@ export function RecallPanel({ onClose }) {
                       </div>
                     </div>
                     <div className="text-[15px] font-bold font-mono flex-shrink-0" style={{color:'#1F1F1F'}}>
-                      ${parseFloat(order.grand_total||0).toFixed(2)}
+                      ${parseFloat(order.total||0).toFixed(2)}
                     </div>
                   </div>
                 )
@@ -303,7 +303,7 @@ export function RecallPanel({ onClose }) {
                 <div className="flex justify-between text-[15px] font-bold">
                   <span>Total</span>
                   <span className="font-mono" style={{color:'#006AFF'}}>
-                    ${parseFloat(selected.total || selected.grand_total || 0).toFixed(2)}
+                    ${parseFloat(selected.total || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -326,8 +326,17 @@ export function RecallPanel({ onClose }) {
                   </button>
                 </>
               ) : (
-                <div className="text-[11px] text-slate-400 text-center py-2">
-                  Completed order — view only
+                <div className="flex gap-2">
+                  <button onClick={() => { onClose(); onRefund?.(selected) }}
+                    className="flex-1 rounded-2xl py-3.5 text-[14px] font-bold text-white cursor-pointer border-none"
+                    style={{background:'#ea580c'}}>
+                    ↩️ Refund / Return
+                  </button>
+                  <button onClick={() => onReprint?.(selected)}
+                    className="flex-1 rounded-2xl py-3.5 text-[14px] font-bold cursor-pointer border"
+                    style={{background:'#fff', borderColor:'#cbd5e1', color:'#1F1F1F'}}>
+                    🧾 Reprint Receipt
+                  </button>
                 </div>
               )}
             </div>
