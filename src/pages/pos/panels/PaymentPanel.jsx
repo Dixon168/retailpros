@@ -520,7 +520,7 @@ export default function PaymentPanel() {
     <Overlay onClose={paxState!=='idle'?undefined:close}>
       {/* Full screen no-scroll container */}
       <div className="rounded-lg overflow-hidden shadow-xl"
-        style={{width:'min(1080px, 96vw)', height:'min(88vh, 800px)', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto 1fr auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
+        style={{width:'min(1080px, 96vw)', height:'min(92vh, 820px)', maxHeight:'92vh', background:'#FFFFFF', display:'grid', gridTemplateRows:'auto minmax(0,1fr) auto', gridTemplateColumns:'260px minmax(0, 1fr) 240px'}}>
 
         {/* ══ HEADER - full width ══ */}
         <div className="col-span-3 flex items-center justify-between px-6 py-4"
@@ -702,7 +702,7 @@ export default function PaymentPanel() {
                 style={taxExempt?{background:'#eff6ff',borderColor:'#2563eb'}:{background:'#f8fafc',borderColor:'#e2e8f0'}}>
                 <span className="text-[20px]">🏛️</span>
                 <span className="text-[10px] font-bold mt-1" style={{color:taxExempt?'#2563eb':'#64748b'}}>Tax Exempt</span>
-                <span className="text-[9px]" style={{color:taxExempt?'#2563eb':'#94a3b8'}}>{taxExempt?'ON':'tap to set'}</span>
+                <span className="text-[9px] font-bold" style={{color:taxExempt?'#2563eb':'#94a3b8'}}>{taxExempt?'● ON · tap to turn off':'○ OFF · tap to exempt'}</span>
               </button>
             </div>
           </div>
