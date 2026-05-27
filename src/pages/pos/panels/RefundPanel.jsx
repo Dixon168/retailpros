@@ -102,10 +102,13 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
     queryKey: ['refund-search', invoiceSearch, tenant?.id],
     queryFn: async () => {
       if (invoiceSearch.length < 2) return []
+      // Strip PostgREST filter metacharacters from the typed/pasted term
+      const q = invoiceSearch.trim().replace(/[,()*%\\]/g, ' ').trim()
+      if (!q) return []
       const { data } = await supabase.from('orders')
         .select('*, order_items(*, products(name, unit, price, image_url)), customers(name)')
         .eq('tenant_id', tenant.id)
-        .or(`order_number.ilike.%${invoiceSearch}%`)
+        .or(`order_number.ilike.%${q}%`)
         .in('status', ['completed','partially_refunded'])
         .order('created_at', { ascending: false })
         .limit(8)
@@ -585,18 +588,22 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
               {!selectedOrder && (
                 <>
                   <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
-                    <div className="px-4 py-3 flex items-center gap-3"
+                    <div className="px-4 py-3 flex items-center gap-2"
                       style={{background:'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
                       <span className="text-[18px]">🔍</span>
-                      <button onClick={() => setShowKB(true)}
-                        className="flex-1 text-left border-none outline-none text-[13px] bg-transparent cursor-pointer"
-                        style={{color: invoiceSearch ? '#1F1F1F' : '#94a3b8'}}>
-                        {invoiceSearch || 'Scan or enter invoice number...'}
-                      </button>
+                      <input autoFocus value={invoiceSearch}
+                        onChange={e => setInvoiceSearch(e.target.value)}
+                        placeholder="Scan, type, or paste invoice # (or customer name)"
+                        className="flex-1 border-none outline-none text-[14px] bg-transparent"
+                        style={{color:'#1F1F1F'}}/>
                       {invoiceSearch && (
                         <button onClick={() => setInvoiceSearch('')}
-                          className="text-slate-400 bg-transparent border-none cursor-pointer">✕</button>
+                          className="text-slate-400 bg-transparent border-none cursor-pointer text-[16px]">✕</button>
                       )}
+                      <button onClick={() => setShowKB(true)}
+                        title="On-screen keyboard"
+                        className="text-[16px] bg-transparent border-none cursor-pointer"
+                        style={{color:'#94a3b8'}}>⌨️</button>
                     </div>
 
                     {/* Results */}
@@ -613,7 +620,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                           <div className="text-[11px] text-slate-400 mt-0.5">
                             {new Date(order.created_at).toLocaleDateString()} ·
                             {order.customers?.name || 'Walk-in'} ·
-                            ${order.grand_total?.toFixed(2)}
+                            ${Number(order.total || 0).toFixed(2)}
                           </div>
                         </div>
                         <span className="text-slate-300 text-[18px]">›</span>
