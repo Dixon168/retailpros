@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { useCartStore } from '@/stores/cartStore'
 import { TopupModal, AddCustomerModal } from '@/pages/customers/CustomersPage'
+import { searchCustomers } from '@/lib/customerSearch'
 import toast from 'react-hot-toast'
 
 export default function MemberCardTopup({ onClose }) {
@@ -50,29 +51,18 @@ export default function MemberCardTopup({ onClose }) {
 
   const doSearch = async () => {
     if (!term) { toast.error('Enter card #, phone, or name'); return }
-    // Strip characters that have special meaning in a PostgREST .or() filter
-    const safe = term.replace(/[,()*%\\]/g, ' ').trim()
-    if (!safe) { setResults([]); return }
     setLoading(true)
-    const { data } = await supabase.from('customers')
-      .select('id, name, phone, card_number, card_balance, member_level, loyalty_points')
-      .eq('tenant_id', tenant.id).eq('is_active', true)
-      .or(`name.ilike.%${safe}%,phone.ilike.%${safe}%,card_number.ilike.%${safe}%`)
-      .order('name').limit(25)
+    const data = await searchCustomers(tenant.id, term, { activeOnly: true, limit: 25 })
     setLoading(false)
-    setResults(data || [])
+    setResults(data)
   }
 
   // Search existing members to attach this card number to
   const doAssignSearch = async () => {
-    const q = assignSearch.trim().replace(/[,()*%\\]/g, ' ').trim()
+    const q = assignSearch.trim()
     if (!q) { toast.error('Enter phone or name'); return }
-    const { data } = await supabase.from('customers')
-      .select('id, name, phone, card_number, card_balance')
-      .eq('tenant_id', tenant.id).eq('is_active', true)
-      .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
-      .order('name').limit(25)
-    setAssignResults(data || [])
+    const data = await searchCustomers(tenant.id, q, { activeOnly: true, limit: 25 })
+    setAssignResults(data)
   }
 
   // Attach the searched card number to an existing member, then continue

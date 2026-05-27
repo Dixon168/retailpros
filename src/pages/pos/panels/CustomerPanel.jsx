@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
+import { searchCustomers } from '@/lib/customerSearch'
 import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
 import toast from 'react-hot-toast'
 
@@ -33,47 +34,7 @@ export default function CustomerPanel() {
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customer-search', tenant?.id, search],
-    queryFn: async () => {
-      const raw = (search || '').trim()
-      const safe = raw.replace(/[,()*%\\]/g, ' ').trim()
-      const digits = raw.replace(/\D/g, '')   // digits only, for phone matching
-      let q = supabase.from('customers')
-        .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier, card_number, card_balance')
-        .eq('tenant_id', tenant.id).eq('is_active', true)
-      if (safe) {
-        const ors = [
-          `name.ilike.%${safe}%`,
-          `phone.ilike.%${safe}%`,
-          `code.ilike.%${safe}%`,
-          `email.ilike.%${safe}%`,
-          `card_number.ilike.%${safe}%`,
-        ]
-        // If the user typed digits (a phone), also match phones that are
-        // stored WITH formatting, e.g. (347) 996-6666 vs 3479966666.
-        if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`)
-        q = q.or(ors.join(','))
-      }
-      let { data } = await q.order('name').limit(40)
-      data = data || []
-      // Fallback: if the indexed search found nothing, pull active
-      // customers and match by digits-only phone OR loose name, so phone
-      // formatting (spaces/dashes/parens) or odd casing never blocks it.
-      if (data.length === 0 && safe) {
-        const { data: all } = await supabase.from('customers')
-          .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier, card_number, card_balance, is_active')
-          .eq('tenant_id', tenant.id).limit(1000)
-        const lower = safe.toLowerCase()
-        data = (all || []).filter(c => {
-          const ph = (c.phone || '').replace(/\D/g,'')
-          return (digits.length >= 3 && ph.includes(digits))
-            || (c.name || '').toLowerCase().includes(lower)
-            || (c.email || '').toLowerCase().includes(lower)
-            || (c.code || '').toLowerCase().includes(lower)
-            || (c.card_number || '').toLowerCase().includes(lower)
-        })
-      }
-      return data
-    },
+    queryFn: () => searchCustomers(tenant.id, search, { activeOnly: false, limit: 40 }),
     enabled: !!tenant?.id,
   })
 
