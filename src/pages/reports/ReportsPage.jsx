@@ -130,18 +130,55 @@ export default function ReportsPage() {
     enabled: !!tenant?.id && activeReport === 'giftcards',
   })
 
-  // Tax summary
+  // Tax summary — pull line items so we can exclude non-taxable lines
+  // (card top-ups are non-taxable) and compute the real taxable base.
   const { data: taxData } = useQuery({
     queryKey: ['report-tax', tenant?.id, dateFrom, dateTo],
     queryFn: async () => {
       const { data } = await supabase.from('orders')
-        .select('tax_amount, tax_breakdown, total, subtotal')
+        .select('tax_amount, tax_breakdown, total, subtotal, status, order_items(line_total, product_type, tax_amount)')
         .eq('tenant_id', tenant.id).eq('status', 'completed')
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
       return data||[]
     },
     enabled: !!tenant?.id && activeReport === 'tax',
+  })
+
+  // ── Profit & Loss — real data ──
+  // Revenue counts MERCHANDISE only. Card top-ups (product_type 'service'
+  // with no product_id, i.e. loaded money) are a liability, NOT revenue,
+  // so they're excluded. COGS = products.cost × qty for sold goods.
+  const { data: pnlData } = useQuery({
+    queryKey: ['report-pnl', tenant?.id, dateFrom, dateTo],
+    queryFn: async () => {
+      const { data: orders } = await supabase.from('orders')
+        .select('id, total, subtotal, tax_amount, discount_amount, coupon_discount, status, created_at, order_items(product_id, quantity, line_total, product_type, products(cost, name))')
+        .eq('tenant_id', tenant.id).eq('status', 'completed')
+        .gte('created_at', dateFrom.toISOString())
+        .lte('created_at', dateTo.toISOString())
+      let revenue = 0, cogs = 0, refunds = 0, discounts = 0, topupsExcluded = 0
+      for (const o of (orders || [])) {
+        const isRefundOrder = Number(o.total) < 0
+        for (const it of (o.order_items || [])) {
+          // Exclude loaded money (card top-ups / reversals): no product_id
+          const isCardMoney = !it.product_id && it.product_type === 'service'
+          if (isCardMoney) { topupsExcluded += Number(it.line_total || 0); continue }
+          const lt = Number(it.line_total || 0)
+          if (lt < 0 || isRefundOrder) { refunds += Math.abs(lt) }
+          else { revenue += lt }
+          const c = Number(it.products?.cost || 0) * Number(it.quantity || 0)
+          if (lt >= 0 && !isRefundOrder) cogs += c
+          else cogs -= c   // returned goods come back, reduce COGS
+        }
+        discounts += Number(o.discount_amount || 0) + Number(o.coupon_discount || 0)
+      }
+      const netRevenue = revenue - refunds
+      const grossProfit = netRevenue - cogs
+      const margin = netRevenue > 0 ? (grossProfit / netRevenue) * 100 : 0
+      return { revenue, refunds, netRevenue, cogs, grossProfit, margin, discounts, topupsExcluded }
+    },
+    enabled: !!tenant?.id && activeReport === 'pnl',
   })
 
   // Shift report
@@ -547,13 +584,50 @@ export default function ReportsPage() {
           )}
 
           {/* ── TAX REPORT ── */}
-          {activeReport === 'tax' && (
+          {activeReport === 'tax' && (() => {
+            // Real tax figures. Taxable base excludes non-taxable lines
+            // (card top-ups). We sum each order's taxable line_totals; if an
+            // order has no line detail, fall back to its subtotal.
+            const rows = taxData || []
+            let taxableBase = 0, taxCollected = 0, txns = 0
+            const byRate = {}
+            for (const o of rows) {
+              const items = o.order_items || []
+              let orderTaxable = 0
+              if (items.length) {
+                for (const it of items) {
+                  const isCardMoney = it.product_type === 'service'
+                  if (isCardMoney) continue
+                  if (Number(it.tax_amount || 0) > 0 || Number(it.line_total) >= 0) {
+                    // only count lines that actually bore tax toward the base
+                    if (Number(it.tax_amount || 0) > 0) orderTaxable += Number(it.line_total || 0)
+                  }
+                }
+              } else {
+                orderTaxable = Number(o.subtotal || 0)
+              }
+              taxableBase += orderTaxable
+              taxCollected += Number(o.tax_amount || 0)
+              if (Number(o.tax_amount || 0) !== 0) txns++
+              // aggregate by tax_breakdown if present
+              const bd = o.tax_breakdown
+              if (bd && typeof bd === 'object') {
+                for (const [name, info] of Object.entries(bd)) {
+                  const amt = typeof info === 'object' ? Number(info.amount||info.tax||0) : Number(info||0)
+                  const rate = typeof info === 'object' ? (info.rate ?? null) : null
+                  if (!byRate[name]) byRate[name] = { amount:0, rate, count:0 }
+                  byRate[name].amount += amt; byRate[name].count++
+                }
+              }
+            }
+            const rateRows = Object.entries(byRate)
+            return (
             <div>
               <div className="grid grid-cols-3 gap-3 mb-5">
                 {[
-                  ['Taxable Sales', `$${(taxData||[]).reduce((s,o)=>s+(o.subtotal||0),0).toFixed(2)}`, '#3b82f6'],
-                  ['Tax Collected', `$${(taxData||[]).reduce((s,o)=>s+(o.tax_amount||0),0).toFixed(2)}`, '#f59e0b'],
-                  ['Transactions', (taxData||[]).length, undefined],
+                  ['Taxable Sales', `$${taxableBase.toFixed(2)}`, '#3b82f6'],
+                  ['Tax Collected', `$${taxCollected.toFixed(2)}`, '#f59e0b'],
+                  ['Taxable Transactions', txns, undefined],
                 ].map(([l,v,c]) => (
                   <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
                     <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
@@ -561,31 +635,37 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
-                <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
-                  {['Tax Name','Rate','Taxable Sales','Tax Amount','Transactions'].map(h => (
-                    <div key={h} className="px-4 py-2.5 font-mono text-[10px] text-[#999999] uppercase tracking-wider">{h}</div>
-                  ))}
-                </div>
-                {[
-                  ['State Tax (CA)',  '6.00%', '$22,800', '$1,368', '142'],
-                  ['County Tax',      '0.25%', '$22,800', '$57',    '142'],
-                  ['City Tax (LA)',   '1.00%', '$22,800', '$228',   '142'],
-                ].map(row => (
-                  <div key={row[0]} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F5F5F5] transition-colors" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
-                    {row.map((cell,i) => (
-                      <div key={i} className={`px-4 py-3 text-[12px] ${i===1?'font-mono text-[#FA8C16] font-bold':i>=2?'font-mono font-semibold':''}`}>{cell}</div>
+              {rateRows.length > 0 ? (
+                <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                  <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr'}}>
+                    {['Tax Name','Rate','Tax Amount','Transactions'].map(h => (
+                      <div key={h} className="px-4 py-2.5 font-mono text-[10px] text-[#999999] uppercase tracking-wider">{h}</div>
                     ))}
                   </div>
-                ))}
-                <div className="grid bg-[#F5F5F5]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr'}}>
-                  {['TOTAL','7.25%','$22,800','$1,653','142'].map((cell,i) => (
-                    <div key={i} className={`px-4 py-3 text-[12px] font-bold ${i===1?'font-mono text-[#FA8C16]':i>=2?'font-mono text-[#00B23B]':''}`}>{cell}</div>
+                  {rateRows.map(([name, info]) => (
+                    <div key={name} className="grid border-b border-[#E5E5E5] last:border-0" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr'}}>
+                      <div className="px-4 py-3 text-[12px]">{name}</div>
+                      <div className="px-4 py-3 text-[12px] font-mono text-[#FA8C16] font-bold">{info.rate!=null?`${(info.rate*100).toFixed(2)}%`:'—'}</div>
+                      <div className="px-4 py-3 text-[12px] font-mono font-semibold">${info.amount.toFixed(2)}</div>
+                      <div className="px-4 py-3 text-[12px] font-mono">{info.count}</div>
+                    </div>
                   ))}
+                  <div className="grid bg-[#F5F5F5]" style={{gridTemplateColumns:'2fr 1fr 1fr 1fr'}}>
+                    <div className="px-4 py-3 text-[12px] font-bold">TOTAL</div>
+                    <div className="px-4 py-3"></div>
+                    <div className="px-4 py-3 text-[12px] font-bold font-mono text-[#00B23B]">${taxCollected.toFixed(2)}</div>
+                    <div className="px-4 py-3 text-[12px] font-bold font-mono">{txns}</div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-5 text-[12px] text-[#666]">
+                  Total tax collected this period: <b>${taxCollected.toFixed(2)}</b> on <b>${taxableBase.toFixed(2)}</b> of taxable sales.
+                  <div className="mt-2 text-[11px] text-[#999]">Per-rate breakdown appears here when orders carry tax detail. Card top-ups are excluded — loading a card is never taxed.</div>
+                </div>
+              )}
             </div>
-          )}
+            )
+          })()}
 
           {/* ── STATION & SHIFT ── */}
           {activeReport === 'shift' && (
@@ -786,8 +866,56 @@ export default function ReportsPage() {
             <PaymentReport orders={orders} payments={salesData?.payments || []} totalRevenue={totalRevenue}/>
           )}
 
+          {/* ── PROFIT & LOSS ── */}
+          {activeReport === 'pnl' && (
+            <div>
+              <div className="grid grid-cols-4 gap-3 mb-5">
+                {[
+                  ['Net Revenue',  `$${(pnlData?.netRevenue||0).toFixed(2)}`, '#3b82f6', 'merchandise, after refunds'],
+                  ['COGS',         `$${(pnlData?.cogs||0).toFixed(2)}`,       '#dc2626', 'cost of goods sold'],
+                  ['Gross Profit', `$${(pnlData?.grossProfit||0).toFixed(2)}`,'#16a34a', `${(pnlData?.margin||0).toFixed(1)}% margin`],
+                  ['Discounts',    `$${(pnlData?.discounts||0).toFixed(2)}`,  '#d97706', 'given this period'],
+                ].map(([l,v,c,sub]) => (
+                  <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                    <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+                    <div className="text-[22px] font-bold" style={{color:c}}>{v}</div>
+                    <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                {[
+                  ['Gross Merchandise Sales', pnlData?.revenue||0, false],
+                  ['Less: Refunds / Returns', -(pnlData?.refunds||0), false],
+                  ['= Net Revenue', pnlData?.netRevenue||0, true],
+                  ['Less: Cost of Goods Sold', -(pnlData?.cogs||0), false],
+                  ['= Gross Profit', pnlData?.grossProfit||0, true],
+                ].map(([label, amt, bold], i) => (
+                  <div key={i} className="flex justify-between px-5 py-3 border-b border-[#F1F5F9] last:border-0"
+                    style={bold ? {background:'#F8FAFC'} : {}}>
+                    <span className={`text-[13px] ${bold?'font-bold':''}`} style={{color: bold?'#1F1F1F':'#666'}}>{label}</span>
+                    <span className={`text-[14px] font-mono ${bold?'font-bold':''}`}
+                      style={{color: amt<0?'#dc2626':bold?'#16a34a':'#1F1F1F'}}>
+                      {amt<0?'-':''}${Math.abs(amt).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-[12px] p-4 text-[11px]"
+                style={{background:'#EFF6FF', color:'#1e40af', border:'1px solid #BFDBFE'}}>
+                💡 Card top-ups are excluded from revenue — loading money onto a card is a liability (deferred revenue), not a sale. Revenue is recognized when the card is later spent.
+                {pnlData?.topupsExcluded > 0 && (
+                  <span className="font-bold"> Excluded this period: ${pnlData.topupsExcluded.toFixed(2)} in card loads.</span>
+                )}
+                <br/>COGS uses each product's cost × quantity. Set product costs accurately for a true margin.
+              </div>
+            </div>
+          )}
+
           {/* Remaining placeholders */}
-          {['pnl','inventory'].includes(activeReport) && (
+          {['inventory'].includes(activeReport) && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center text-[#999999]">
                 <div className="text-4xl mb-3 opacity-30">{REPORT_NAV.find(r=>r.id===activeReport)?.icon}</div>
