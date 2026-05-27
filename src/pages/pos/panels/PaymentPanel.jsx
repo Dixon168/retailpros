@@ -365,11 +365,11 @@ export default function PaymentPanel() {
       if (r.success) {
         setPaxState('approved')
         addPayment({ method:'card', amount, reference:r.approvalCode, cardType:r.cardType, maskedPan:r.maskedPan })
-        // Match the cash flow: if this charge fully covered the total,
-        // auto-complete the order — no extra Complete tap needed.
+        // Don't auto-complete. Cashier hits Complete to finish — same flow
+        // as cash, so they always get the change/receipt confirmation page.
         const newPaid = paid + amount
         if (newPaid >= liveTotal - 0.005) {
-          setTimeout(() => { setPaxState('idle'); handleComplete(newPaid) }, 600)
+          setTimeout(()=>{ setPaxState('idle'); toast.success('✓ Card approved — tap Complete to finish', { duration: 3000 }) }, 1500)
         } else {
           setTimeout(()=>setPaxState('idle'),2000)
         }
@@ -412,13 +412,16 @@ export default function PaymentPanel() {
 
     if (selMethod==='card' && terminal?.pax_enabled) { handleCardPax(amount); return }
     const newPaid = paid + amount
-    const willFullyCover = newPaid >= liveTotal - 0.005
     addPayment({ method:selMethod, amount })
     setPayInput('')
-    if (willFullyCover) {
-      // Auto-finish. Pass the freshly-computed total to handleComplete so
-      // it doesn't read a stale `paid` from a not-yet-flushed re-render.
-      handleComplete(newPaid)
+    // No auto-finish — the cashier always confirms with the green Complete
+    // button. Just toast the state so they know where they are.
+    if (newPaid >= liveTotal - 0.005) {
+      const overpay = newPaid - liveTotal
+      toast.success(overpay > 0.005
+        ? `✓ Fully paid · Change $${overpay.toFixed(2)} — tap Complete to finish`
+        : `✓ Fully paid — tap Complete to finish`,
+        { duration: 3000 })
     } else {
       toast(`$${(liveTotal - newPaid).toFixed(2)} remaining — add another payment`, { icon:'💳', duration: 2500 })
     }
@@ -533,20 +536,26 @@ export default function PaymentPanel() {
       const receiptOrder = { ...orderSnapshot, order_number: result.order_number }
       const html = buildReceiptHTML(receiptOrder, settings, storeInfo)
 
+      // Auto-print here if configured, so the slip starts coming out
+      // while the cashier reads the confirmation page.
+      let didAutoPrint = false
       if (settings.autoMode === 'auto') {
-        // Auto print + auto close
         printReceipt(html, settings.copies || 1)
-        setTimeout(() => { close(); window.location.href = '/pos' }, 600)
-      } else if (settings.autoMode === 'manual' && !settings.enableEmail && !settings.enableSms) {
-        // Skip prompt, just close
-        close()
-        window.location.href = '/pos'
-      } else {
-        // Show prompt: ask mode OR (manual mode + email/sms enabled)
-        setReceiptPrompt({ html, orderNumber: result.order_number, settings })
-        setProcessing(false)
-        // Don't close yet — user will click an action in the modal
+        didAutoPrint = true
       }
+      // ALWAYS show the confirmation page now — it shows the change due
+      // (the cashier needs to see what to hand back to the customer) and
+      // any receipt options (print again, email, sms, skip). This is the
+      // explicit end-of-transaction screen that prevents missed change.
+      setReceiptPrompt({
+        html,
+        orderNumber: result.order_number,
+        settings,
+        changeDue: Math.max(0, totalPaid - liveTotal),
+        autoPrinted: didAutoPrint,
+      })
+      setProcessing(false)
+      // Don't close yet — user clicks Done/Print/Email/SMS in the modal
     } catch (err) {
       console.error('Payment submit error:', err)
       toast.error(err?.message || 'Payment failed — see console')
@@ -1092,6 +1101,8 @@ export default function PaymentPanel() {
           customerId={customer?.id}
           customerEmail={customer?.email}
           customerPhone={customer?.phone}
+          changeDue={receiptPrompt.changeDue || 0}
+          autoPrinted={!!receiptPrompt.autoPrinted}
           onDone={finishAndClose}
         />
       )}
@@ -1102,7 +1113,7 @@ export default function PaymentPanel() {
 // ════════════════════════════════════════════════
 // 🧾 ReceiptPromptModal — Square white-theme style
 // ════════════════════════════════════════════════
-function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId, customerEmail, customerPhone, onDone }) {
+function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId, customerEmail, customerPhone, changeDue = 0, autoPrinted = false, onDone }) {
   const [email, setEmail] = useState(customerEmail || '')
   const [phone, setPhone] = useState(customerPhone || '')
   const [busy,  setBusy]  = useState(false)
@@ -1210,21 +1221,39 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
             </div>
             <div className="text-[18px] font-semibold" style={{color:'#1F1F1F'}}>Order Complete</div>
             <div className="text-[12px] font-mono mt-1" style={{color:'#666666'}}>#{orderNumber}</div>
+
+            {/* CHANGE DUE — the most important thing the cashier needs to see */}
+            {changeDue > 0.005 && (
+              <div className="mt-4 mx-auto rounded-2xl px-6 py-5 inline-flex flex-col items-center"
+                style={{background:'#ECFDF5', border:'2.5px solid #16a34a', minWidth:'280px'}}>
+                <div className="text-[11px] font-bold uppercase tracking-widest" style={{color:'#047857'}}>
+                  Change Due to Customer
+                </div>
+                <div className="text-[56px] font-bold font-mono leading-none mt-1" style={{color:'#16a34a'}}>
+                  ${changeDue.toFixed(2)}
+                </div>
+                <div className="text-[11px] mt-1" style={{color:'#047857'}}>hand back to customer</div>
+              </div>
+            )}
           </div>
 
           <div className="px-6 py-5 space-y-5" style={{background:'#FAFAFA'}}>
 
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{color:'#666666'}}>Paper Receipt</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{color:'#666666'}}>
+                Paper Receipt{autoPrinted && <span className="ml-2 text-[#00B23B]">· already printed</span>}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={handlePrint} disabled={busy}
                   className="rounded-lg py-5 px-3 cursor-pointer active:scale-[0.98] transition-all disabled:opacity-50"
-                  style={done.printChoice === 'yes'
+                  style={done.printChoice === 'yes' || autoPrinted
                     ? { background:'#E6F7EC', border:'2px solid #00B23B', color:'#00B23B' }
                     : { background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F' }}>
                   <div className="text-[28px] mb-1.5">🖨️</div>
-                  <div className="text-[15px] font-semibold">{done.printChoice === 'yes' ? 'Printed ✓' : 'Print'}</div>
-                  <div className="text-[11px] mt-0.5" style={{color: done.printChoice === 'yes' ? '#00B23B' : '#666666'}}>{settings.copies||1} cop{settings.copies>1?'ies':'y'}</div>
+                  <div className="text-[15px] font-semibold">
+                    {done.printChoice === 'yes' ? 'Printed ✓' : autoPrinted ? 'Reprint' : 'Print'}
+                  </div>
+                  <div className="text-[11px] mt-0.5" style={{color: (done.printChoice === 'yes' || autoPrinted) ? '#00B23B' : '#666666'}}>{settings.copies||1} cop{settings.copies>1?'ies':'y'}</div>
                 </button>
                 <button onClick={handleNoPrint} disabled={busy}
                   className="rounded-lg py-5 px-3 cursor-pointer active:scale-[0.98] transition-all disabled:opacity-50"
