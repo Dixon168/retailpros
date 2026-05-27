@@ -57,6 +57,23 @@ export default function CustomersPage() {
           .eq('tenant_id', tenant.id).eq('is_active', true).limit(500)
         data = (all || []).filter(c => (c.phone || '').replace(/\D/g,'').includes(digits))
       }
+      // When SEARCHING, rank by best match (exact > starts-with > contains).
+      // With no search term we keep the plain alphabetical browse list.
+      if (safe) {
+        const lower = safe.toLowerCase()
+        const score = (c) => {
+          let s = 0
+          const ph = (c.phone || '').replace(/\D/g, '')
+          const name = (c.name || '').toLowerCase()
+          const card = (c.card_number || '').toLowerCase()
+          if (digits.length >= 3) { if (ph === digits) s += 1000; else if (ph.startsWith(digits)) s += 600; else if (ph.includes(digits)) s += 300 }
+          if (card === lower) s += 900; else if (card.startsWith(lower)) s += 500; else if (card && card.includes(lower)) s += 200
+          if (name === lower) s += 800; else if (name.startsWith(lower)) s += 400; else if (name.includes(lower)) s += 150
+          if ((c.code || '').toLowerCase() === lower) s += 700
+          return s
+        }
+        data = [...data].sort((a, b) => score(b) - score(a) || (a.name || '').localeCompare(b.name || ''))
+      }
       return data
     },
     enabled: !!tenant?.id,
