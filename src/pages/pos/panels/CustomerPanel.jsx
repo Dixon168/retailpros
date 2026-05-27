@@ -55,13 +55,22 @@ export default function CustomerPanel() {
       }
       let { data } = await q.order('name').limit(40)
       data = data || []
-      // Client-side fallback: match by digits-only phone so formatting
-      // (spaces, dashes, parens) never blocks a lookup.
-      if (digits.length >= 4 && data.length === 0) {
+      // Fallback: if the indexed search found nothing, pull active
+      // customers and match by digits-only phone OR loose name, so phone
+      // formatting (spaces/dashes/parens) or odd casing never blocks it.
+      if (data.length === 0 && safe) {
         const { data: all } = await supabase.from('customers')
-          .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier, card_number, card_balance')
-          .eq('tenant_id', tenant.id).eq('is_active', true).limit(500)
-        data = (all || []).filter(c => (c.phone || '').replace(/\D/g,'').includes(digits))
+          .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier, card_number, card_balance, is_active')
+          .eq('tenant_id', tenant.id).limit(1000)
+        const lower = safe.toLowerCase()
+        data = (all || []).filter(c => {
+          const ph = (c.phone || '').replace(/\D/g,'')
+          return (digits.length >= 3 && ph.includes(digits))
+            || (c.name || '').toLowerCase().includes(lower)
+            || (c.email || '').toLowerCase().includes(lower)
+            || (c.code || '').toLowerCase().includes(lower)
+            || (c.card_number || '').toLowerCase().includes(lower)
+        })
       }
       return data
     },
@@ -155,8 +164,9 @@ export default function CustomerPanel() {
                   placeholder="Search name, phone, email, code..."
                   className="flex-1 border-none outline-none py-2.5 text-[13px] bg-transparent"
                   style={{color:'#1F1F1F'}}/>
-                {search && <button onClick={()=>setSearch('')}
-                  className="text-slate-400 bg-transparent border-none cursor-pointer">✕</button>}
+                {search && <button onClick={()=>{ setSearch(''); searchRef.current?.focus() }}
+                  className="text-[11px] font-bold px-2 py-1 rounded-md bg-transparent border cursor-pointer"
+                  style={{color:'#64748b', borderColor:'#cbd5e1'}}>Clear</button>}
               </div>
             </div>
 
@@ -214,7 +224,8 @@ export default function CustomerPanel() {
                         )}
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5">
-                        {c.phone || c.email || '—'}
+                        {c.phone || c.email || '—'}{c.card_number ? ` · 💳 #${c.card_number}` : ''}
+                        {c.is_active === false ? <span className="text-[#dc2626] font-bold"> · inactive</span> : ''}
                       </div>
                       <div className="flex gap-2 mt-1">
                         {c.loyalty_points > 0 && (
