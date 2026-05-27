@@ -72,9 +72,17 @@ export default function MemberCardTopup({ onClose }) {
           {/* Results */}
           {results !== null && (
             results.length === 0 ? (
-              <div className="rounded-lg px-3 py-6 text-center text-[13px]"
-                style={{background:'#fff', border:'1px solid #e2e8f0', color:'#94a3b8'}}>
-                No member found. Add the member from the Members page first, then come back to top up.
+              <div className="rounded-xl px-4 py-6 text-center"
+                style={{background:'#fff', border:'1px solid #e2e8f0'}}>
+                <div className="text-[28px] mb-2">🔍</div>
+                <div className="text-[13px] font-bold mb-1" style={{color:'#1F1F1F'}}>No member found for “{search.trim()}”</div>
+                <div className="text-[12px] text-slate-500 mb-3">Member cards are tied to a member. Add them first, then top up.</div>
+                <a href="/customers" target="_blank" rel="noreferrer"
+                  className="inline-block rounded-lg px-4 py-2.5 text-[12px] font-bold cursor-pointer no-underline"
+                  style={{background:'#006AFF', color:'#fff'}}>
+                  + Add a member on the Members page
+                </a>
+                <div className="text-[10px] text-slate-400 mt-2">Opens in a new tab — add the member, then come back and search again.</div>
               </div>
             ) : (
               <div className="rounded-xl overflow-hidden" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
