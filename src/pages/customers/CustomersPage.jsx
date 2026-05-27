@@ -257,7 +257,11 @@ export default function CustomersPage() {
 }
 
 // ── Customer Detail ──
-function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, setActiveTab, onTopup, onEdit, onRefresh }) {
+export function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab: tabProp, setActiveTab: setTabProp, onTopup, onEdit, onRefresh }) {
+  // Allow embedding without external tab state (POS popup mode).
+  const [localTab, setLocalTab] = useState('Details')
+  const activeTab = tabProp ?? localTab
+  const setActiveTab = setTabProp ?? setLocalTab
   const ts = TIER_STYLE[c.tier||c.member_level?.split(' ')[0]?.toLowerCase()] || TIER_STYLE.regular
   const isExpired  = c.card_expire_date && new Date(c.card_expire_date) < new Date()
   const isExpiring = c.card_expire_date && !isExpired && new Date(c.card_expire_date) < new Date(Date.now()+30*86400000)
@@ -268,7 +272,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
     queryKey: ['customer-orders', c.id],
     queryFn: async () => {
       const { data } = await supabase.from('orders')
-        .select('id,order_number,grand_total,created_at,status,refund_status')
+        .select('id,order_number,total,created_at,status,refund_status')
         .eq('customer_id', c.id).order('created_at',{ascending:false}).limit(50)
       return data || []
     },
@@ -417,9 +421,9 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
           <div>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                ['Total Spent', `$${orders.reduce((s,o)=>s+(o.grand_total||0),0).toFixed(2)}`, '#16a34a'],
+                ['Total Spent', `$${orders.reduce((s,o)=>s+(o.total||0),0).toFixed(2)}`, '#16a34a'],
                 ['Transactions', orders.length, '#006AFF'],
-                ['Avg Order', orders.length>0?`$${(orders.reduce((s,o)=>s+(o.grand_total||0),0)/orders.length).toFixed(2)}`:'—', '#f59e0b'],
+                ['Avg Order', orders.length>0?`$${(orders.reduce((s,o)=>s+(o.total||0),0)/orders.length).toFixed(2)}`:'—', '#f59e0b'],
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
                   <div className="text-[10px] text-slate-400 mb-1">{l}</div>
@@ -442,7 +446,7 @@ function CustomerDetail({ customer: c, tenantId, userId, userName, activeTab, se
                     <tr key={i} className="hover:bg-blue-50/30" style={{borderBottom:'1px solid #f1f5f9'}}>
                       <td className="px-3 py-2.5 text-[12px] text-slate-600">{new Date(o.created_at).toLocaleDateString()} {new Date(o.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
                       <td className="px-3 py-2.5 text-[12px] font-mono font-bold" style={{color:'#006AFF'}}>{o.order_number}</td>
-                      <td className="px-3 py-2.5 text-[13px] font-bold font-mono">${(o.grand_total||0).toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-[13px] font-bold font-mono">${(o.total||0).toFixed(2)}</td>
                       <td className="px-3 py-2.5"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:`${sc[status]}20`,color:sc[status]}}>{status}</span></td>
                     </tr>
                   )
@@ -887,7 +891,7 @@ export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
 }
 
 // ── Edit Customer Modal ──
-function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
+export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
   const { data: memberLevels = [] } = useQuery({
     queryKey: ['member-levels'],
     queryFn: async () => {
