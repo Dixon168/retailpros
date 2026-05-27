@@ -496,6 +496,18 @@ export default function PaymentPanel() {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['inventory'] })
       qc.invalidateQueries({ queryKey: ['lowstock-list'] })
+      // Order-list views so the freshly-saved sale shows up immediately
+      // when the cashier opens Recall / Dashboard / Reports / Member detail.
+      qc.invalidateQueries({ queryKey: ['recall-orders'] })
+      qc.invalidateQueries({ queryKey: ['dash-orders'] })
+      qc.invalidateQueries({ queryKey: ['dash-orders-prior'] })
+      qc.invalidateQueries({ queryKey: ['pos-reports-orders'] })
+      qc.invalidateQueries({ queryKey: ['customer-orders'] })
+      // Customer side-effects: stats (total spent, last order, points) changed.
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customer-search'] })
+      qc.invalidateQueries({ queryKey: ['customer-total'] })
+      qc.invalidateQueries({ queryKey: ['customer-points'] })
 
       // ── Auto-open cash drawer if any cash was used ──
       // Only fires when (a) drawer is enabled, (b) "open_on_cash" is on,

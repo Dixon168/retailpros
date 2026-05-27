@@ -57,6 +57,11 @@ export function RecallPanel({ onClose, onRefund, onReprint }) {
       return data || []
     },
     enabled: !!tenant?.id && filter !== 'held',
+    // Always re-pull when Recall is opened. Cached snapshots become stale
+    // the moment a sale completes; the user expects to see their just-made
+    // order, not a snapshot from a minute ago.
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const allOrders = filter === 'held' ? [] : dbOrders
