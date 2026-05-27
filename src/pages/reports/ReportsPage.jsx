@@ -15,6 +15,7 @@ const REPORT_NAV = [
   { id:'payments',  icon:'💳', label:'Payment Methods',      group:'Sales' },
   { id:'discounts', icon:'✂️', label:'Discounts',            group:'Sales' },
   { id:'giftcards', icon:'💳', label:'Gift & Member Cards', group:'Sales' },
+  { id:'refunds',   icon:'↩️', label:'Refunds & Voids',     group:'Financial' },
   { id:'tax',       icon:'🧾', label:'Tax Report',           group:'Financial' },
   { id:'pnl',       icon:'💰', label:'Profit & Loss',        group:'Financial' },
   { id:'aging',     icon:'📋', label:'Accounts Receivable',  group:'Financial' },
@@ -190,6 +191,27 @@ export default function ReportsPage() {
       return { revenue, refunds, netRevenue, cogs, grossProfit, margin, discounts, topupsExcluded }
     },
     enabled: !!tenant?.id && activeReport === 'pnl',
+  })
+
+  // ── Refunds & Voids report ──
+  const { data: refundData } = useQuery({
+    queryKey: ['report-refunds', tenant?.id, dateFrom, dateTo],
+    queryFn: async () => {
+      const { data: voided } = await supabase.from('orders')
+        .select('id, order_number, total, voided_at, voided_by_name, voided_approved_by_name, created_at')
+        .eq('tenant_id', tenant.id).eq('status', 'voided')
+        .gte('voided_at', dateFrom.toISOString())
+        .lte('voided_at', dateTo.toISOString())
+        .order('voided_at', { ascending: false })
+      const { data: refunds } = await supabase.from('refund_records')
+        .select('*')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dateFrom.toISOString())
+        .lte('created_at', dateTo.toISOString())
+        .order('created_at', { ascending: false })
+      return { voided: voided || [], refunds: refunds || [] }
+    },
+    enabled: !!tenant?.id && activeReport === 'refunds',
   })
 
   // Shift report
@@ -595,6 +617,83 @@ export default function ReportsPage() {
           )}
 
           {/* ── TAX REPORT ── */}
+          {/* ── REFUNDS & VOIDS ── */}
+          {activeReport === 'refunds' && (() => {
+            const voided  = refundData?.voided  || []
+            const refunds = refundData?.refunds || []
+            const voidTotal   = voided.reduce((s,o)=>s+Math.abs(Number(o.total||0)),0)
+            const refundTotal = refunds.reduce((s,r)=>s+Number(r.amount||0),0)
+            return (
+              <div className="space-y-5">
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    ['Refunds', `$${refundTotal.toFixed(2)}`, '#ef4444', `${refunds.length} transaction(s)`],
+                    ['Voids', `$${voidTotal.toFixed(2)}`, '#64748b', `${voided.length} order(s)`],
+                    ['Total Reversed', `$${(refundTotal+voidTotal).toFixed(2)}`, '#dc2626', 'refunds + voids'],
+                    ['Overrides Used', refunds.filter(r=>r.approved_by_name).length + voided.filter(o=>o.voided_approved_by_name).length, '#d97706', 'needed manager approval'],
+                  ].map(([l,v,c,sub]) => (
+                    <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                      <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+                      <div className="text-[20px] font-bold" style={{color:c}}>{v}</div>
+                      <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Refunds list */}
+                <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                  <div className="px-4 py-3 text-[13px] font-bold" style={{borderBottom:'1px solid #E5E5E5'}}>↩️ Refunds ({refunds.length})</div>
+                  {refunds.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-[12px] text-[#999]">No refunds in this period</div>
+                  ) : (
+                    <>
+                      <div className="grid bg-[#F8FAFC] text-[10px] font-mono font-bold text-[#666] uppercase tracking-wider"
+                        style={{gridTemplateColumns:'1fr 1fr 0.8fr 1.4fr 1fr 1fr'}}>
+                        {['When','Orig Order','Amount','Items','By','Approved'].map(h=>(<div key={h} className="px-3 py-2.5">{h}</div>))}
+                      </div>
+                      {refunds.map(r => (
+                        <div key={r.id} className="grid border-b border-[#E5E5E5] last:border-0 items-center hover:bg-[#F8FAFC]"
+                          style={{gridTemplateColumns:'1fr 1fr 0.8fr 1.4fr 1fr 1fr'}}>
+                          <div className="px-3 py-2.5 text-[10px] text-[#666]">{new Date(r.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+                          <div className="px-3 py-2.5 text-[11px] font-mono">{r.original_order_number || '—'}</div>
+                          <div className="px-3 py-2.5 text-[12px] font-mono font-bold text-[#ef4444]">${Number(r.amount||0).toFixed(2)}</div>
+                          <div className="px-3 py-2.5 text-[10px] text-[#666]">{Array.isArray(r.items) ? r.items.map(i=>`${i.name||'item'}×${i.qty}`).join(', ').slice(0,40) : '—'}</div>
+                          <div className="px-3 py-2.5 text-[11px]">{r.refunded_by_name || '—'}</div>
+                          <div className="px-3 py-2.5 text-[10px]">{r.approved_by_name ? <span className="text-[#d97706] font-bold">🔐 {r.approved_by_name}</span> : '—'}</div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+
+                {/* Voids list */}
+                <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                  <div className="px-4 py-3 text-[13px] font-bold" style={{borderBottom:'1px solid #E5E5E5'}}>🚫 Voided Orders ({voided.length})</div>
+                  {voided.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-[12px] text-[#999]">No voids in this period</div>
+                  ) : (
+                    <>
+                      <div className="grid bg-[#F8FAFC] text-[10px] font-mono font-bold text-[#666] uppercase tracking-wider"
+                        style={{gridTemplateColumns:'1fr 1fr 0.8fr 1fr 1fr'}}>
+                        {['When','Order','Amount','By','Approved'].map(h=>(<div key={h} className="px-3 py-2.5">{h}</div>))}
+                      </div>
+                      {voided.map(o => (
+                        <div key={o.id} className="grid border-b border-[#E5E5E5] last:border-0 items-center hover:bg-[#F8FAFC]"
+                          style={{gridTemplateColumns:'1fr 1fr 0.8fr 1fr 1fr'}}>
+                          <div className="px-3 py-2.5 text-[10px] text-[#666]">{o.voided_at ? new Date(o.voided_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}</div>
+                          <div className="px-3 py-2.5 text-[11px] font-mono">{o.order_number}</div>
+                          <div className="px-3 py-2.5 text-[12px] font-mono font-bold text-[#64748b]">${Math.abs(Number(o.total||0)).toFixed(2)}</div>
+                          <div className="px-3 py-2.5 text-[11px]">{o.voided_by_name || '—'}</div>
+                          <div className="px-3 py-2.5 text-[10px]">{o.voided_approved_by_name ? <span className="text-[#d97706] font-bold">🔐 {o.voided_approved_by_name}</span> : '—'}</div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
           {activeReport === 'tax' && (() => {
             // Real tax figures. Taxable base excludes non-taxable lines
             // (card top-ups). We sum each order's taxable line_totals; if an
