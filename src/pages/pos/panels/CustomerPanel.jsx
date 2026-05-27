@@ -38,6 +38,19 @@ export default function CustomerPanel() {
     enabled: !!tenant?.id,
   })
 
+  // Diagnostic: how many customers exist for THIS tenant at all? Helps tell
+  // a search miss apart from "no customers under this store / wrong tenant".
+  const { data: custTotal } = useQuery({
+    queryKey: ['customer-total', tenant?.id],
+    queryFn: async () => {
+      const { count } = await supabase.from('customers')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenant.id)
+      return count || 0
+    },
+    enabled: !!tenant?.id,
+  })
+
   const handleSelect = (customer) => {
     setCustomer(customer)
     close()
@@ -148,11 +161,23 @@ export default function CustomerPanel() {
                 <div className="flex flex-col items-center py-10 text-slate-400">
                   <div className="text-[32px] mb-2">😕</div>
                   <div className="text-[13px]">No customer found</div>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    {custTotal === 0
+                      ? 'This store has no customers yet'
+                      : `Searched ${custTotal} customer(s) in this store by name, phone (any format), code, email & card #`}
+                  </div>
                   <button onClick={()=>setMode('add')}
                     className="mt-3 px-4 py-2 rounded-xl text-[12px] font-bold cursor-pointer border-none"
                     style={{background:'#E6F0FF', color:'#006AFF'}}>
                     + Add "{search}" as new customer
                   </button>
+                </div>
+              )}
+
+              {customers.length > 0 && search && (
+                <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400"
+                  style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
+                  {customers.length} match{customers.length>1?'es':''} — tap to select
                 </div>
               )}
 
