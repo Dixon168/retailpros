@@ -370,23 +370,28 @@ export default function PaymentPanel() {
   }
 
   const handleAddPayment = async () => {
+    // Hard guard against double-clicks while a completion is in flight.
+    if (processing) return
     const amount = parseFloat(payInput) || remaining
     if (amount<=0) { toast.error('Enter amount'); return }
     if (selMethod==='card' && terminal?.pax_enabled) { handleCardPax(amount); return }
-    addPayment({ method:selMethod, amount })
-    setPayInput('')  // clear so the next payment starts fresh
     const newPaid = paid + amount
-    // Full payment reached → auto-finish. Partial → stay so the cashier
-    // picks the next method and enters its amount (the new payment shows
-    // in the right-hand Payments list).
-    if (newPaid >= liveTotal - 0.005) {
-      setTimeout(()=>handleComplete(newPaid), 400)
+    const willFullyCover = newPaid >= liveTotal - 0.005
+    addPayment({ method:selMethod, amount })
+    setPayInput('')
+    if (willFullyCover) {
+      // Auto-finish. Pass the freshly-computed total to handleComplete so
+      // it doesn't read a stale `paid` from a not-yet-flushed re-render.
+      handleComplete(newPaid)
     } else {
       toast(`$${(liveTotal - newPaid).toFixed(2)} remaining — add another payment`, { icon:'💳', duration: 2500 })
     }
   }
 
   const handleComplete = async (overridePaid) => {
+    // Guard against double-fire: a stray Complete-button click while the
+    // auto-complete (from a fully-covering Add Cash) is already in flight.
+    if (processing) return
     // Use the explicit override when provided (auto-complete passes the
     // freshly-computed total), otherwise the live paid sum.
     const totalPaid = (typeof overridePaid === 'number') ? overridePaid : paid
@@ -713,6 +718,7 @@ export default function PaymentPanel() {
               style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
               Payment Method
             </div>
+            {/* Scrollable upper region: methods, PAX state, amount display, quick amounts */}
             <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto" style={{minHeight:0}}>
               {/* Method buttons */}
               <div className="flex-shrink-0 grid gap-2" style={{gridTemplateColumns:`repeat(${Math.min(enabledMethods.length,4)},1fr)`}}>
@@ -741,7 +747,7 @@ export default function PaymentPanel() {
                 </div>
               )}
 
-              {/* Amount display + quick amounts */}
+              {/* Amount display + quick amounts (action button below, always visible) */}
               {paxState==='idle' && remaining>0 && (
                 <>
                   <button onClick={()=>setShowPayPad(true)}
@@ -764,11 +770,6 @@ export default function PaymentPanel() {
                       ))
                     }
                   </div>
-                  <button onClick={handleAddPayment}
-                    className="flex-shrink-0 w-full rounded-lg py-3.5 text-[16px] font-bold text-white cursor-pointer border-none"
-                    style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
-                    {METHODS.find(m=>m.id===selMethod)?.icon} Add {METHODS.find(m=>m.id===selMethod)?.label} — ${payInput||remaining.toFixed(2)}
-                  </button>
                 </>
               )}
 
@@ -782,6 +783,19 @@ export default function PaymentPanel() {
                 </div>
               )}
             </div>
+
+            {/* Pinned action button — always visible, never scrolls away */}
+            {paxState==='idle' && remaining>0 && (
+              <div className="flex-shrink-0 p-3 pt-2" style={{borderTop:'1px solid #f1f5f9', background:'#fff'}}>
+                <button onClick={handleAddPayment} disabled={processing}
+                  className="w-full rounded-lg py-3.5 text-[16px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
+                  style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+                  {processing
+                    ? '⏳ Processing...'
+                    : `${METHODS.find(m=>m.id===selMethod)?.icon} Add ${METHODS.find(m=>m.id===selMethod)?.label} — $${payInput||remaining.toFixed(2)}`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
