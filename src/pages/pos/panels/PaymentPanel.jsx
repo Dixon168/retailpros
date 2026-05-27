@@ -364,7 +364,14 @@ export default function PaymentPanel() {
       if (r.success) {
         setPaxState('approved')
         addPayment({ method:'card', amount, reference:r.approvalCode, cardType:r.cardType, maskedPan:r.maskedPan })
-        setTimeout(()=>setPaxState('idle'),2000)
+        // Match the cash flow: if this charge fully covered the total,
+        // auto-complete the order — no extra Complete tap needed.
+        const newPaid = paid + amount
+        if (newPaid >= liveTotal - 0.005) {
+          setTimeout(() => { setPaxState('idle'); handleComplete(newPaid) }, 600)
+        } else {
+          setTimeout(()=>setPaxState('idle'),2000)
+        }
       } else { setPaxState(r.status==='cancelled'?'cancelled':'declined'); setTimeout(()=>setPaxState('idle'),2000) }
     } catch(e) { setPaxState('error'); toast.error('PAX: '+e.message); setTimeout(()=>setPaxState('idle'),3000) }
   }
@@ -372,8 +379,36 @@ export default function PaymentPanel() {
   const handleAddPayment = async () => {
     // Hard guard against double-clicks while a completion is in flight.
     if (processing) return
-    const amount = parseFloat(payInput) || remaining
+    let amount = parseFloat(payInput) || remaining
     if (amount<=0) { toast.error('Enter amount'); return }
+
+    // ── Method-aware guardrails ─────────────────────────────────────
+    // Cash is the only method that can be over-paid (change goes back to
+    // the customer). For card / gift / member / check, accepting more
+    // than the remaining amount is nonsensical — you'd be overcharging,
+    // and there's no way to refund "change" off a card. Cap to remaining.
+    if (selMethod !== 'cash' && amount > remaining + 0.005) {
+      const capped = Math.max(0, remaining)
+      toast(`Capped to remaining $${capped.toFixed(2)} — ${selMethod === 'gift_card' ? 'gift card' : selMethod === 'member_card' ? 'member card' : 'this method'} can't give cash change`,
+        { icon:'ℹ️', duration: 2500 })
+      amount = capped
+      if (amount <= 0) return
+    }
+
+    // Gift / member card payments need to fit within the card's balance.
+    // The actual card lookup + atomic deduction happens at checkout, but
+    // we validate against the SELECTED customer's card here to prevent
+    // accepting a payment the card can't cover.
+    if (selMethod === 'member_card') {
+      const bal = Number(customer?.card_balance || 0)
+      if (!customer) { toast.error('Select a member first to pay by member card'); return }
+      if (bal <= 0)  { toast.error(`Member card has no balance`); return }
+      if (amount > bal + 0.005) {
+        toast(`Member card has $${bal.toFixed(2)} — capping to balance`, { icon:'ℹ️', duration: 2500 })
+        amount = bal
+      }
+    }
+
     if (selMethod==='card' && terminal?.pax_enabled) { handleCardPax(amount); return }
     const newPaid = paid + amount
     const willFullyCover = newPaid >= liveTotal - 0.005
@@ -817,14 +852,27 @@ export default function PaymentPanel() {
               </div>
             ) : payments.map((p,i)=>{
               const m = METHODS.find(x=>x.id===p.method)
+              // PAX-charged card payments cannot be removed by ✕ — the
+              // money already left the customer's card. They have to be
+              // voided/refunded through the card processor on the order
+              // record. Other methods (cash, member, gift, check) are
+              // staged-only at this point and safe to remove.
+              const isPaxCharged = p.method === 'card' && p.reference
               return (
                 <div key={i} className="rounded-lg p-3 flex-shrink-0"
                   style={{background:m?.bg||'#f8fafc', border:`1.5px solid ${m?.border||'#e2e8f0'}`}}>
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider" style={{color:m?.color}}>#{i+1} {m?.label}</span>
-                    <button onClick={()=>removePayment(i)}
-                      className="w-5 h-5 rounded-full border-none cursor-pointer text-[10px] font-bold flex items-center justify-center"
-                      style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>✕</button>
+                    {isPaxCharged ? (
+                      <span title="Card already charged — refund through Returns after the sale"
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                        style={{background:'#fef3c7', color:'#92400e'}}>🔒 charged</span>
+                    ) : (
+                      <button onClick={()=>removePayment(i)}
+                        title="Remove this payment"
+                        className="w-5 h-5 rounded-full border-none cursor-pointer text-[10px] font-bold flex items-center justify-center"
+                        style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>✕</button>
+                    )}
                   </div>
                   <div className="text-[20px] font-bold font-mono" style={{color:m?.color}}>${p.amount.toFixed(2)}</div>
                   {p.maskedPan&&<div className="text-[9px] text-slate-400 mt-0.5">•••• {p.maskedPan.slice(-4)}</div>}
