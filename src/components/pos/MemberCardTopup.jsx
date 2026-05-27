@@ -52,7 +52,7 @@ export default function MemberCardTopup({ onClose }) {
   const doSearch = async () => {
     if (!term) { toast.error('Enter card #, phone, or name'); return }
     setLoading(true)
-    const data = await searchCustomers(tenant.id, term, { activeOnly: true, limit: 25 })
+    const data = await searchCustomers(tenant.id, term, { activeOnly: true, limit: 10 })
     setLoading(false)
     setResults(data)
   }
@@ -61,7 +61,7 @@ export default function MemberCardTopup({ onClose }) {
   const doAssignSearch = async () => {
     const q = assignSearch.trim()
     if (!q) { toast.error('Enter phone or name'); return }
-    const data = await searchCustomers(tenant.id, q, { activeOnly: true, limit: 25 })
+    const data = await searchCustomers(tenant.id, q, { activeOnly: true, limit: 10 })
     setAssignResults(data)
   }
 

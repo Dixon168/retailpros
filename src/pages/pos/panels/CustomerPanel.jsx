@@ -34,7 +34,7 @@ export default function CustomerPanel() {
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customer-search', tenant?.id, search],
-    queryFn: () => searchCustomers(tenant.id, search, { activeOnly: false, limit: 40 }),
+    queryFn: () => searchCustomers(tenant.id, search, { activeOnly: false, limit: 10 }),
     enabled: !!tenant?.id,
   })
 
