@@ -14,7 +14,7 @@ const REPORT_NAV = [
   { id:'products',  icon:'📦', label:'Product Sales',        group:'Sales' },
   { id:'payments',  icon:'💳', label:'Payment Methods',      group:'Sales' },
   { id:'discounts', icon:'✂️', label:'Discounts',            group:'Sales' },
-  { id:'giftcards', icon:'🎁', label:'Gift Cards',           group:'Sales' },
+  { id:'giftcards', icon:'💳', label:'Gift & Member Cards', group:'Sales' },
   { id:'tax',       icon:'🧾', label:'Tax Report',           group:'Financial' },
   { id:'pnl',       icon:'💰', label:'Profit & Loss',        group:'Financial' },
   { id:'aging',     icon:'📋', label:'Accounts Receivable',  group:'Financial' },
@@ -111,10 +111,11 @@ export default function ReportsPage() {
     enabled: !!tenant?.id && activeReport === 'products',
   })
 
-  // ── Phase 10: Gift cards aggregate report
+  // ── Cards report: gift cards + member (VIP) cards ──
   const { data: giftCardData } = useQuery({
-    queryKey: ['report-giftcards', tenant?.id],
+    queryKey: ['report-giftcards', tenant?.id, dateFrom, dateTo],
     queryFn: async () => {
+      // Gift cards (member_cards table, type gift)
       const { data: cards } = await supabase.from('member_cards')
         .select('id, card_number, card_type, init_amount, balance, status, expires_at, created_at, last_used_at, customers(name)')
         .eq('tenant_id', tenant.id)
@@ -125,7 +126,17 @@ export default function ReportsPage() {
         .eq('tenant_id', tenant.id)
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
-      return { cards: cards || [], txns: txns || [] }
+      // Member (VIP) cards live on customers; top-ups in customer_topups
+      const { data: memberCards } = await supabase.from('customers')
+        .select('id, name, card_number, card_balance')
+        .eq('tenant_id', tenant.id)
+        .not('card_number', 'is', null)
+      const { data: memberTopups } = await supabase.from('customer_topups')
+        .select('amount, paid_amount, bonus_amount, method, created_at')
+        .eq('tenant_id', tenant.id)
+        .gte('created_at', dateFrom.toISOString())
+        .lte('created_at', dateTo.toISOString())
+      return { cards: cards || [], txns: txns || [], memberCards: memberCards || [], memberTopups: memberTopups || [] }
     },
     enabled: !!tenant?.id && activeReport === 'giftcards',
   })
@@ -858,7 +869,7 @@ export default function ReportsPage() {
 
           {/* ── GIFT CARDS (Phase 10) ── */}
           {activeReport === 'giftcards' && (
-            <GiftCardReport cards={giftCardData?.cards || []} txns={giftCardData?.txns || []} dateFrom={dateFrom} dateTo={dateTo}/>
+            <GiftCardReport cards={giftCardData?.cards || []} txns={giftCardData?.txns || []} memberCards={giftCardData?.memberCards || []} memberTopups={giftCardData?.memberTopups || []} dateFrom={dateFrom} dateTo={dateTo}/>
           )}
 
           {/* ── PAYMENT METHODS (Phase 10 — promote from sales overview) ── */}
@@ -1748,7 +1759,7 @@ function DiscountReport({ stats, orderCount, pointsRate, orders }) {
 
 
 // ── GIFT CARDS REPORT ─────────────────────────────────────────────
-function GiftCardReport({ cards, txns, dateFrom, dateTo }) {
+function GiftCardReport({ cards, txns, memberCards, memberTopups, dateFrom, dateTo }) {
   const active = cards.filter(c => c.status === 'active')
   const totalIssued = cards.reduce((s,c) => s + Number(c.init_amount || 0), 0)
   const poolBalance = cards.reduce((s,c) => s + Number(c.balance || 0), 0)
@@ -1842,12 +1853,60 @@ function GiftCardReport({ cards, txns, dateFrom, dateTo }) {
           )
         })}
       </div>
+
+      {/* ── Member (VIP) cards ── */}
+      {(() => {
+        const memberCount = memberCards.length
+        const memberPool = memberCards.reduce((s,m) => s + Number(m.card_balance||0), 0)
+        const memLoaded = memberTopups.reduce((s,t) => s + Number(t.amount||0), 0)
+        const memCash   = memberTopups.reduce((s,t) => s + Number(t.paid_amount != null ? t.paid_amount : t.amount||0), 0)
+        const memBonus  = memberTopups.reduce((s,t) => s + Number(t.bonus_amount||0), 0)
+        return (
+          <div className="mt-6">
+            <div className="text-[14px] font-bold mb-3">👤 Member (VIP) Cards</div>
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {[
+                ['Member Cards', memberCount, '#8b5cf6', 'with a card number'],
+                ['💵 Cash Collected', `$${memCash.toFixed(2)}`, '#15803d', 'real income (付款金额)'],
+                ['💳 Loaded to Cards', `$${memLoaded.toFixed(2)}`, '#3b82f6', 'balance added (充值金额)'],
+                ['Pool Balance', `$${memberPool.toFixed(2)}`, '#FA8C16', 'outstanding liability'],
+              ].map(([l,v,c,sub]) => (
+                <div key={l} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
+                  <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">{l}</div>
+                  <div className="text-[20px] font-bold" style={{color:c}}>{v}</div>
+                  <div className="text-[10px] text-[#999999] mt-1">{sub}</div>
+                </div>
+              ))}
+            </div>
+            {memBonus > 0 && (
+              <div className="rounded-[12px] p-3 mb-4 text-[12px] text-center font-bold"
+                style={{background:'#fff7ed', color:'#9a3412', border:'1px solid #fed7aa'}}>
+                🎁 Promo bonus given to members this period: ${memBonus.toFixed(2)}
+              </div>
+            )}
+            {memberCount > 0 ? (
+              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] overflow-hidden">
+                <div className="grid bg-[#F8FAFC] text-[10px] font-mono font-bold text-[#666] uppercase tracking-wider"
+                  style={{gridTemplateColumns:'1.4fr 1.4fr 1fr'}}>
+                  {['Card #','Member','Balance'].map(h=>(<div key={h} className="px-3 py-2.5">{h}</div>))}
+                </div>
+                {memberCards.slice(0, 50).map(m => (
+                  <div key={m.id} className="grid border-b border-[#E5E5E5] last:border-0 items-center" style={{gridTemplateColumns:'1.4fr 1.4fr 1fr'}}>
+                    <div className="px-3 py-2.5 font-mono text-[11px] font-bold text-[#8b5cf6]">{m.card_number}</div>
+                    <div className="px-3 py-2.5 text-[12px]">{m.name || '—'}</div>
+                    <div className="px-3 py-2.5 font-mono text-[12px] font-bold">${Number(m.card_balance||0).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[12px] text-[#999] px-1">No member cards yet.</div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }
-
-
-// ── PAYMENT METHODS REPORT (now a dedicated page) ────────────────
 function PaymentReport({ orders, payments, totalRevenue }) {
   const breakdown = {}
   payments.forEach(p => {
