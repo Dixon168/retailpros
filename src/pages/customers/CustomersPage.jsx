@@ -1,5 +1,5 @@
 // src/pages/customers/CustomersPage.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -49,6 +49,17 @@ export default function CustomersPage() {
 
   const totalBalance = customers.reduce((s,c)=>s+(c.card_balance||0),0)
   const totalPoints  = customers.reduce((s,c)=>s+(c.loyalty_points||0),0)
+
+  // Deep-link: /customers?edit=<id> opens that member's edit form directly
+  // (used by the POS member-card top-up "+ Add card" shortcut).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const editId = params.get('edit')
+    if (editId && customers.length) {
+      const m = customers.find(c => c.id === editId)
+      if (m) { setSelected(m); setShowEdit(true) }
+    }
+  }, [customers])
 
   return (
     <div className="h-full flex" style={{background:'#FFFFFF'}}>

@@ -86,26 +86,44 @@ export default function MemberCardTopup({ onClose }) {
               </div>
             ) : (
               <div className="rounded-xl overflow-hidden" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
-                {results.map(m => (
-                  <button key={m.id} onClick={()=>setPicked(m)}
-                    className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer border-none border-b border-slate-100 last:border-0 text-left hover:bg-blue-50/40 transition-all"
-                    style={{background:'transparent'}}>
+                {results.map(m => {
+                  const hasCard = !!(m.card_number && String(m.card_number).trim())
+                  return (
+                  <div key={m.id}
+                    className="w-full flex items-center gap-3 px-4 py-3 border-b border-slate-100 last:border-0 text-left transition-all"
+                    style={{background: hasCard ? 'transparent' : '#fffbeb'}}>
                     <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[16px] font-black"
-                      style={{background:'#eff6ff', color:'#006AFF'}}>
+                      style={{background: hasCard ? '#eff6ff' : '#fef3c7', color: hasCard ? '#006AFF' : '#d97706'}}>
                       {(m.name||'?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[14px] font-bold truncate" style={{color:'#1F1F1F'}}>{m.name}</div>
-                      <div className="text-[11px] text-slate-500">
-                        {m.card_number ? `Card #${m.card_number}` : 'No card #'}{m.phone ? ` · ${m.phone}` : ''}
-                      </div>
+                      {hasCard ? (
+                        <div className="text-[11px] text-slate-500">
+                          Card #{m.card_number}{m.phone ? ` · ${m.phone}` : ''}
+                        </div>
+                      ) : (
+                        <div className="text-[11px] font-bold" style={{color:'#d97706'}}>
+                          ⚠️ No card number — must add a card before topping up{m.phone ? ` · ${m.phone}` : ''}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-[10px] text-slate-400 uppercase">Balance</div>
-                      <div className="text-[15px] font-bold font-mono" style={{color:'#16a34a'}}>${(m.card_balance||0).toFixed(2)}</div>
-                    </div>
-                  </button>
-                ))}
+                    {hasCard ? (
+                      <button onClick={()=>setPicked(m)}
+                        className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none text-white flex-shrink-0"
+                        style={{background:'#006AFF'}}>
+                        Top up · ${(m.card_balance||0).toFixed(2)}
+                      </button>
+                    ) : (
+                      <a href={`/customers?edit=${m.id}`} target="_blank" rel="noreferrer"
+                        className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer no-underline flex-shrink-0"
+                        style={{background:'#fff', color:'#d97706', border:'1px solid #fcd34d'}}>
+                        + Add card
+                      </a>
+                    )}
+                  </div>
+                  )
+                })}
               </div>
             )
           )}
