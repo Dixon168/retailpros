@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { searchCustomers } from '@/lib/customerSearch'
+import MemberDetailPopup from '@/components/pos/MemberDetailPopup'
 import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
 import toast from 'react-hot-toast'
 
@@ -13,6 +14,7 @@ export default function CustomerPanel() {
   const { tenant }         = useAuthStore()
   const qc                 = useQueryClient()
   const [search, setSearch]   = useState('')
+  const [previewMember, setPreviewMember] = useState(null)
   const [mode, setMode]       = useState('search') // 'search' | 'add'
   const [saving, setSaving]   = useState(false)
   const [showKB, setShowKB]   = useState(false)
@@ -191,51 +193,59 @@ export default function CustomerPanel() {
                 }
                 const ts = TIER_STYLE[c.tier] || TIER_STYLE[c.type] || {bg:'#E6F0FF',color:'#006AFF'}
                 return (
-                  <button key={c.id} onClick={()=>handleSelect(c)}
-                    className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer border-none text-left transition-all hover:bg-blue-50"
+                  <div key={c.id}
+                    className="w-full flex items-center gap-2 px-4 py-3 border-none text-left transition-all hover:bg-blue-50"
                     style={{borderBottom:'1px solid #f8fafc', background:'#fff'}}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0"
-                      style={{background:'#000000'}}>
-                      {initials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-bold text-slate-800">{c.name}</span>
-                        {c.tier && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
-                            style={ts}>{c.tier}</span>
-                        )}
-                        {c.type === 'vip' && !c.tier && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-600">VIP</span>
-                        )}
+                    <button onClick={()=>handleSelect(c)}
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer border-none bg-transparent text-left p-0">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0"
+                        style={{background:'#000000'}}>
+                        {initials}
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        {c.phone || c.email || '—'}{c.card_number ? ` · 💳 #${c.card_number}` : ''}
-                        {c.is_active === false ? <span className="text-[#dc2626] font-bold"> · inactive</span> : ''}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-bold text-slate-800">{c.name}</span>
+                          {c.tier && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
+                              style={ts}>{c.tier}</span>
+                          )}
+                          {c.type === 'vip' && !c.tier && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-600">VIP</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {c.phone || c.email || '—'}{c.card_number ? ` · 💳 #${c.card_number}` : ''}
+                          {c.is_active === false ? <span className="text-[#dc2626] font-bold"> · inactive</span> : ''}
+                        </div>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          {c.loyalty_points > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{background:'#fdf4ff', color:'#006AFF'}}>
+                              💎 {c.loyalty_points} pts
+                            </span>
+                          )}
+                          {c.credit_balance > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{background:'#fff1f2', color:'#e11d48'}}>
+                              Owes ${c.credit_balance.toFixed(2)}
+                            </span>
+                          )}
+                          {c.card_balance > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{background:'#ecfdf5', color:'#16a34a'}}>
+                              💳 ${Number(c.card_balance).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-2 mt-1">
-                        {c.loyalty_points > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                            style={{background:'#fdf4ff', color:'#006AFF'}}>
-                            💎 {c.loyalty_points} pts
-                          </span>
-                        )}
-                        {c.credit_balance > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                            style={{background:'#fff1f2', color:'#e11d48'}}>
-                            Owes ${c.credit_balance.toFixed(2)}
-                          </span>
-                        )}
-                        {c.card_balance > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                            style={{background:'#ecfdf5', color:'#16a34a'}}>
-                            💳 ${Number(c.card_balance).toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-slate-300 text-[18px]">›</span>
-                  </button>
+                    </button>
+                    <button onClick={()=>setPreviewMember(c)}
+                      title="View member details"
+                      className="text-[10px] font-bold px-2.5 py-1.5 rounded-md cursor-pointer border flex-shrink-0"
+                      style={{background:'#fff', borderColor:'#cbd5e1', color:'#475569'}}>
+                      Details
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -334,6 +344,13 @@ export default function CustomerPanel() {
           </div>
         )}
       </div>
+      {previewMember && (
+        <MemberDetailPopup
+          customer={previewMember}
+          tenantId={tenant?.id}
+          onClose={() => setPreviewMember(null)}
+        />
+      )}
     </div>
     </>
   )

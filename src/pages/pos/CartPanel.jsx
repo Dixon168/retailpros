@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
 import NumPad from '@/components/ui/NumPad'
 import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
+import MemberDetailPopup from '@/components/pos/MemberDetailPopup'
 import { calculateBulkPrice, getActiveBulkTiers } from '@/lib/bulkPricing'
 import toast from 'react-hot-toast'
 
@@ -36,6 +37,7 @@ export default function CartPanel({ onRefund, onHold }) {
   } = useCartStore()
 
   const [activeAction, setActiveAction] = useState(null)
+  const [showMemberDetail, setShowMemberDetail] = useState(false)
   const [inputVal,     setInputVal]     = useState('')
   const [discType,     setDiscType]     = useState('pct')
   const [photoViewer,  setPhotoViewer]  = useState(null)
@@ -214,19 +216,45 @@ export default function CartPanel({ onRefund, onHold }) {
           </button>
         </div>
 
-        {/* Customer bar */}
-        <div onClick={() => useCartStore.setState({ showCustPanel: true })}
-          className="px-3 py-2 flex items-center gap-2 cursor-pointer flex-shrink-0"
-          style={{borderBottom:'1px solid #f1f5f9'}}
-          onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
-          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-          <span className="text-slate-400">👤</span>
-          <span className="text-[12px] text-slate-600 flex-1">{customer?.name || t('walkIn')}</span>
-          {customer?.tier && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
-              style={{background:'#E6F0FF', color:'#006AFF'}}>{customer.tier.toUpperCase()}</span>
+        {/* Customer bar — shows key info at a glance + a way into full detail */}
+        <div className="px-3 py-2 flex items-center gap-2 flex-shrink-0"
+          style={{borderBottom:'1px solid #f1f5f9'}}>
+          <button onClick={() => useCartStore.setState({ showCustPanel: true })}
+            className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer border-none bg-transparent text-left py-0.5 rounded-md"
+            onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <span className="text-slate-400 flex-shrink-0">{customer ? '👤' : '🚶'}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] font-bold text-slate-700 truncate">{customer?.name || t('walkIn')}</span>
+                {customer?.tier && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0"
+                    style={{background:'#E6F0FF', color:'#006AFF'}}>{customer.tier.toUpperCase()}</span>
+                )}
+                {customer?.member_level && !customer?.tier && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0"
+                    style={{background:'#fef3c7', color:'#92400e'}}>{customer.member_level}</span>
+                )}
+              </div>
+              {customer && (
+                <div className="flex items-center gap-2 text-[10px] mt-0.5">
+                  {customer.card_number && <span className="font-mono text-slate-500">💳 #{customer.card_number}</span>}
+                  {customer.card_balance > 0 && <span className="font-bold" style={{color:'#16a34a'}}>${Number(customer.card_balance).toFixed(2)} bal</span>}
+                  {customer.loyalty_points > 0 && <span className="font-bold" style={{color:'#7c3aed'}}>💎 {customer.loyalty_points} pts</span>}
+                  {customer.credit_balance > 0 && <span className="font-bold" style={{color:'#dc2626'}}>Owes ${Number(customer.credit_balance).toFixed(2)}</span>}
+                </div>
+              )}
+            </div>
+            <span className="text-slate-300 text-[12px] flex-shrink-0">{customer ? 'change' : '›'}</span>
+          </button>
+          {customer && (
+            <button onClick={() => setShowMemberDetail(true)}
+              title="View member details"
+              className="text-[10px] font-bold px-2.5 py-1 rounded-md cursor-pointer border flex-shrink-0"
+              style={{background:'#fff', borderColor:'#cbd5e1', color:'#475569'}}>
+              Details
+            </button>
           )}
-          <span className="text-slate-300 text-[12px]">›</span>
         </div>
 
         {/* Discount type selector — shows when disc action active */}
@@ -635,6 +663,14 @@ export default function CartPanel({ onRefund, onHold }) {
         <PhotoViewer
           product={{ name: photoViewer.name, image_url: photoViewer.imageUrl, price: photoViewer.unitPrice, inventory: photoViewer.inventory }}
           onClose={() => setPhotoViewer(null)}
+        />
+      )}
+
+      {showMemberDetail && customer && (
+        <MemberDetailPopup
+          customer={customer}
+          tenantId={tenant?.id}
+          onClose={() => setShowMemberDetail(false)}
         />
       )}
     </div>
