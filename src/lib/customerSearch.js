@@ -9,7 +9,7 @@
 //   • sanitizes the term against PostgREST filter metacharacters
 import { supabase } from '@/lib/supabase'
 
-const COLS = 'id, code, name, phone, email, type, tier, credit_balance, loyalty_points, card_number, card_balance, is_active'
+const COLS = 'id, code, name, phone, email, loyalty_points, credit_balance, card_number, card_balance, is_active, member_level'
 
 export async function searchCustomers(tenantId, term, { activeOnly = false, limit = 40 } = {}) {
   if (!tenantId) return []

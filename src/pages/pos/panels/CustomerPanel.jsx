@@ -101,10 +101,10 @@ export default function CustomerPanel() {
           <span className="text-[22px]">👥</span>
           <div className="flex-1">
             <div className="text-[16px] font-bold text-white">
-              {mode === 'search' ? 'Select Customer' : 'Add New Customer'}
+              {mode === 'search' ? 'Select Member' : 'Add New Member'}
             </div>
             <div className="text-[11px] text-white/80">
-              {mode === 'search' ? 'Search or add new' : 'Fill in customer details'}
+              {mode === 'search' ? 'Search or add new' : 'Fill in member details'}
             </div>
           </div>
           <button onClick={close}
@@ -113,7 +113,7 @@ export default function CustomerPanel() {
 
         {/* Tab switcher */}
         <div className="flex flex-shrink-0" style={{borderBottom:'1px solid #e2e8f0'}}>
-          {[['search','🔍 Search'],['add','➕ New Customer']].map(([m,l])=>(
+          {[['search','🔍 Search'],['add','➕ New Member']].map(([m,l])=>(
             <button key={m} onClick={()=>setMode(m)}
               className="flex-1 py-2.5 text-[12px] font-semibold cursor-pointer border-none border-b-2 transition-all"
               style={{
@@ -152,7 +152,7 @@ export default function CustomerPanel() {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] flex-shrink-0"
                   style={{background:'#f1f5f9'}}>🚶</div>
                 <div>
-                  <div className="text-[13px] font-semibold text-slate-700">Walk-in Customer</div>
+                  <div className="text-[13px] font-semibold text-slate-700">Walk-in (no member)</div>
                   <div className="text-[11px] text-slate-400">No account needed</div>
                 </div>
               </button>
@@ -160,16 +160,16 @@ export default function CustomerPanel() {
               {customers.length === 0 && search && (
                 <div className="flex flex-col items-center py-10 text-slate-400">
                   <div className="text-[32px] mb-2">😕</div>
-                  <div className="text-[13px]">No customer found</div>
+                  <div className="text-[13px]">No member found</div>
                   <div className="text-[10px] text-slate-400 mt-1">
                     {custTotal === 0
-                      ? 'This store has no customers yet'
-                      : `Searched ${custTotal} customer(s) in this store by name, phone (any format), code, email & card #`}
+                      ? 'This store has no members yet'
+                      : `Searched ${custTotal} member(s) in this store by name, phone (any format), code, email & card #`}
                   </div>
                   <button onClick={()=>setMode('add')}
                     className="mt-3 px-4 py-2 rounded-xl text-[12px] font-bold cursor-pointer border-none"
                     style={{background:'#E6F0FF', color:'#006AFF'}}>
-                    + Add "{search}" as new customer
+                    + Add "{search}" as new member
                   </button>
                 </div>
               )}
