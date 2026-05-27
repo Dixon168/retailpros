@@ -321,7 +321,6 @@ export default function POSPage() {
       { id:'drawer', label:'Cash Drawer', icon:'💰', action: handleOpenDrawer },
     ] : []),
     { id:'recall', label:'Recall', icon:'🔄', action: () => setShowRecall(true) },
-    { id:'orders',  label:t('orders'),   icon:'📋', action: () => { window.location.href='/orders' } },
   ]
 
   return (
