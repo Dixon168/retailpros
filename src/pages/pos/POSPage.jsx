@@ -356,13 +356,34 @@ export default function POSPage() {
           {/* 📺 Open Customer Display — pops the customer-facing screen in a
               new window that can be dragged to a second monitor. The cart
               state mirrors live via BroadcastChannel. */}
-          <button onClick={() => {
+          <button onClick={async () => {
             const tid = terminal?.id || tenant?.id || 'default'
             const url = `/display/${tid}?tenant=${tenant?.id || ''}`
+
+            // Best path: ask the OS for the screen layout and put the
+            // customer display straight onto the SECOND monitor, fullscreen.
+            // Needs the Window Management permission (Chrome/Edge). Falls
+            // back to a normal window the cashier drags over otherwise.
+            try {
+              if ('getScreenDetails' in window) {
+                const details = await window.getScreenDetails()
+                const ext = details.screens.find(s => !s.isPrimary) || details.currentScreen
+                if (ext && !ext.isPrimary) {
+                  const w = window.open(url, 'rpos-display',
+                    `left=${ext.availLeft},top=${ext.availTop},width=${ext.availWidth},height=${ext.availHeight}`)
+                  if (w) {
+                    toast.success('📺 Customer display sent to the second monitor')
+                    return
+                  }
+                }
+              }
+            } catch (e) { /* permission denied or unsupported — fall through */ }
+
+            // Fallback: open a normal full-size window/tab to drag over.
             const w = window.open(url, 'rpos-display',
-              'popup,width=1024,height=768,toolbar=no,menubar=no,location=no,status=no')
-            if (!w) toast.error('Pop-up blocked — please allow pop-ups for this site')
-            else toast.success('📺 Customer display opened — drag to second monitor')
+              'width=1280,height=800,toolbar=no,menubar=no,location=no,status=no')
+            if (!w) toast.error('Pop-up blocked — allow pop-ups for this site, then tap 📺 again')
+            else toast.success('📺 Customer display opened — drag it to the second monitor & press F11 for fullscreen')
           }}
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-bold cursor-pointer border transition-all"
             style={{background:'rgba(0,106,255,0.12)', borderColor:'rgba(0,106,255,0.4)', color:'#60a5fa'}}
