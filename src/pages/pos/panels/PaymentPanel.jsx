@@ -1,6 +1,6 @@
 // src/pages/pos/panels/PaymentPanel.jsx
 import { useState, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -29,12 +29,13 @@ const PAX_STATE = {
 }
 
 const METHODS = [
-  { id:'cash',          icon:'💵', label:'Cash',       color:'#16a34a', bg:'#f0fdf4', border:'#86efac' },
-  { id:'card',          icon:'💳', label:'Card',       color:'#2563eb', bg:'#eff6ff', border:'#93c5fd' },
-  { id:'member_card',   icon:'🏷️', label:'VIP',       color:'#006AFF', bg:'#fdf4ff', border:'#d8b4fe' },
-  { id:'gift_card',     icon:'🎁', label:'Gift',       color:'#ea580c', bg:'#fff7ed', border:'#fed7aa' },
-  { id:'bank_transfer', icon:'🏦', label:'Transfer',   color:'#0891b2', bg:'#f0f9ff', border:'#7dd3fc' },
-  { id:'check',         icon:'📝', label:'Check',      color:'#ca8a04', bg:'#fffbeb', border:'#fde047' },
+  { id:'cash',          icon:'💵', label:'Cash',          color:'#16a34a', bg:'#f0fdf4', border:'#86efac' },
+  { id:'credit_card',   icon:'💳', label:'Credit Card',   color:'#0f766e', bg:'#f0fdfa', border:'#5eead4' },
+  { id:'card',          icon:'📱', label:'Card (PAX)',    color:'#2563eb', bg:'#eff6ff', border:'#93c5fd' },
+  { id:'member_card',   icon:'🏷️', label:'VIP',          color:'#006AFF', bg:'#fdf4ff', border:'#d8b4fe' },
+  { id:'gift_card',     icon:'🎁', label:'Gift',          color:'#ea580c', bg:'#fff7ed', border:'#fed7aa' },
+  { id:'bank_transfer', icon:'🏦', label:'Transfer',      color:'#0891b2', bg:'#f0f9ff', border:'#7dd3fc' },
+  { id:'check',         icon:'📝', label:'Check',         color:'#ca8a04', bg:'#fffbeb', border:'#fde047' },
 ]
 
 function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
@@ -549,12 +550,32 @@ export default function PaymentPanel() {
     window.location.href = '/pos'
   }
 
-  const enabledMethods = METHODS.filter(m => {
-    if (m.id==='card') return terminal?.accept_card !== false
-    if (m.id==='cash') return terminal?.accept_cash !== false
-    if (m.id==='check') return terminal?.accept_check !== false
-    return true
+  // ── Which payment methods this merchant has turned on ─────────────
+  // Set in Settings → Payment Config. Falls back to a sane default if
+  // the merchant hasn't configured anything yet (cash + credit_card).
+  const { data: paymentCfg } = useQuery({
+    queryKey: ['payment-config-methods', tenant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('payment_configs')
+        .select('enabled_payment_methods')
+        .eq('tenant_id', tenant.id).maybeSingle()
+      return data || null
+    },
+    enabled: !!tenant?.id,
   })
+  const enabledIds = Array.isArray(paymentCfg?.enabled_payment_methods) && paymentCfg.enabled_payment_methods.length
+    ? paymentCfg.enabled_payment_methods
+    : ['cash','credit_card']
+
+  const enabledMethods = METHODS.filter(m => enabledIds.includes(m.id))
+
+  // If selected method was turned off (e.g. config changed mid-session),
+  // fall back to the first enabled one so the panel never gets stuck.
+  useEffect(() => {
+    if (enabledMethods.length && !enabledMethods.some(m => m.id === selMethod)) {
+      setSelMethod(enabledMethods[0].id)
+    }
+  }, [enabledIds.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Overlay onClose={paxState!=='idle'?undefined:close}>

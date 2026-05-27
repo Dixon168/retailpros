@@ -1872,16 +1872,32 @@ function PaymentSection({ tenantId }) {
     cp_merchant_id: '', cp_username: '', cp_password: '', cp_endpoint: 'https://fts.cardconnect.com',
     refund_days_limit: '', require_pin_for_refund: true, require_pin_for_void: true,
     auto_batch_close: true, auto_batch_close_time: '02:00',
+    enabled_payment_methods: ['cash','credit_card'],
   })
   const [loaded, setLoaded] = useState(false)
   const u = (k,v) => setForm(p => ({...p,[k]:v}))
+  const toggleMethod = (id) => {
+    setForm(p => {
+      const cur = Array.isArray(p.enabled_payment_methods) ? p.enabled_payment_methods : []
+      const next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]
+      // Always keep at least one method enabled so the POS isn't broken.
+      if (next.length === 0) { toast.error('At least one payment method must be enabled'); return p }
+      return { ...p, enabled_payment_methods: next }
+    })
+  }
 
   useQuery({
     queryKey: ['payment-config', tenantId],
     queryFn: async () => {
       const { data } = await supabase.from('payment_configs')
         .select('*').eq('tenant_id', tenantId).maybeSingle()
-      if (data) { setForm(f => ({ ...f, ...data })); setLoaded(true) }
+      if (data) {
+        // Default the methods list if the row exists but the column is null/empty
+        const m = Array.isArray(data.enabled_payment_methods) && data.enabled_payment_methods.length
+          ? data.enabled_payment_methods : ['cash','credit_card']
+        setForm(f => ({ ...f, ...data, enabled_payment_methods: m }))
+        setLoaded(true)
+      }
       return data
     },
     enabled: !!tenantId && !loaded,
@@ -1894,16 +1910,60 @@ function PaymentSection({ tenantId }) {
       configured_at: new Date().toISOString(),
     })
     qc.invalidateQueries(['payment-config'])
+    qc.invalidateQueries(['payment-config-methods'])   // refresh POS panel
     toast.success('Payment configuration saved')
   }
 
   return (
     <div className="max-w-[560px]">
-      <SectionTitle>💳 Card Payment Configuration</SectionTitle>
+      <SectionTitle>💳 Payment Configuration</SectionTitle>
+
+      {/* ── Payment methods the cashier can choose at checkout ── */}
+      <Card className="mb-4">
+        <CardTitle>Payment Methods Shown in POS</CardTitle>
+        <div className="text-[12px] text-[#666] mb-3">
+          Pick which payment methods appear on the checkout screen. The cashier will only see what you turn on here.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id:'cash',          icon:'💵', label:'Cash',         hint:'Counted in drawer' },
+            { id:'credit_card',   icon:'💳', label:'Credit Card',  hint:'Manual record (use any external terminal)' },
+            { id:'card',          icon:'📱', label:'Card (PAX)',   hint:'Auto-charge via PAX terminal — requires PAX setup' },
+            { id:'member_card',   icon:'🏷️', label:'Member / VIP', hint:'Pay from member stored balance' },
+            { id:'gift_card',     icon:'🎁', label:'Gift Card',    hint:'Redeem a gift card' },
+            { id:'bank_transfer', icon:'🏦', label:'Bank Transfer',hint:'Wire / Zelle / etc.' },
+            { id:'check',         icon:'📝', label:'Check',        hint:'Paper check' },
+          ].map(m => {
+            const on = Array.isArray(form.enabled_payment_methods) && form.enabled_payment_methods.includes(m.id)
+            return (
+              <button key={m.id} onClick={() => toggleMethod(m.id)} type="button"
+                className="flex items-start gap-2 p-3 rounded-[10px] cursor-pointer border-2 text-left transition-all"
+                style={on
+                  ? {background:'#EFF6FF', borderColor:'#006AFF'}
+                  : {background:'#fff', borderColor:'#e2e8f0'}}>
+                <span className="text-[20px] flex-shrink-0">{m.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-bold" style={{color: on ? '#006AFF' : '#1F1F1F'}}>{m.label}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                      style={on ? {background:'#006AFF', color:'#fff'} : {background:'#f1f5f9', color:'#94a3b8'}}>
+                      {on ? 'ON' : 'OFF'}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-[#666] mt-0.5">{m.hint}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+        <div className="text-[10px] text-[#999] mt-3">
+          💡 <b>Card (PAX)</b> is the auto-charge option — only turn it on if you've connected a PAX terminal in <i>Terminals & PAX</i>. <b>Credit Card</b> is a manual record like Cash (no machine connection) — use it if you swipe on your own external terminal.
+        </div>
+      </Card>
 
       <div className="bg-[#006AFF]/8 border border-blue-500/20 rounded-[10px] px-4 py-3 mb-5
         text-[12px] text-[#666666]">
-        💡 CardPointe credentials are provided by RetailPOS support. Contact us to get your merchant account set up.
+        💡 CardPointe credentials below are only for merchants using the CardPointe gateway. Most users can ignore this section.
       </div>
 
       <Card className="mb-4">
