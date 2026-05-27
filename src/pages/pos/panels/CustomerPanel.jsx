@@ -34,13 +34,36 @@ export default function CustomerPanel() {
   const { data: customers = [] } = useQuery({
     queryKey: ['customer-search', tenant?.id, search],
     queryFn: async () => {
+      const raw = (search || '').trim()
+      const safe = raw.replace(/[,()*%\\]/g, ' ').trim()
+      const digits = raw.replace(/\D/g, '')   // digits only, for phone matching
       let q = supabase.from('customers')
-        .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier')
+        .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier, card_number, card_balance')
         .eq('tenant_id', tenant.id).eq('is_active', true)
-      if (search)
-        q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,email.ilike.%${search}%`)
-      const { data } = await q.order('name').limit(20)
-      return data || []
+      if (safe) {
+        const ors = [
+          `name.ilike.%${safe}%`,
+          `phone.ilike.%${safe}%`,
+          `code.ilike.%${safe}%`,
+          `email.ilike.%${safe}%`,
+          `card_number.ilike.%${safe}%`,
+        ]
+        // If the user typed digits (a phone), also match phones that are
+        // stored WITH formatting, e.g. (347) 996-6666 vs 3479966666.
+        if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`)
+        q = q.or(ors.join(','))
+      }
+      let { data } = await q.order('name').limit(40)
+      data = data || []
+      // Client-side fallback: match by digits-only phone so formatting
+      // (spaces, dashes, parens) never blocks a lookup.
+      if (digits.length >= 4 && data.length === 0) {
+        const { data: all } = await supabase.from('customers')
+          .select('id, code, name, phone, email, type, credit_balance, loyalty_points, tier, card_number, card_balance')
+          .eq('tenant_id', tenant.id).eq('is_active', true).limit(500)
+        data = (all || []).filter(c => (c.phone || '').replace(/\D/g,'').includes(digits))
+      }
+      return data
     },
     enabled: !!tenant?.id,
   })

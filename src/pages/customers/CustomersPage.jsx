@@ -33,7 +33,14 @@ export default function CustomersPage() {
       let q = supabase.from('customers')
         .select('id,code,name,phone,email,loyalty_points,credit_balance,is_active,created_at,card_number,card_balance,card_expire_date,member_level,member_since,birthday,gender')
         .eq('tenant_id', tenant.id).eq('is_active', true)
-      if (search) q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%,code.ilike.%${search}%,card_number.ilike.%${search}%,email.ilike.%${search}%`)
+      const raw = (search || '').trim()
+      const safe = raw.replace(/[,()*%\\]/g, ' ').trim()
+      const digits = raw.replace(/\D/g, '')
+      if (safe) {
+        const ors = [`name.ilike.%${safe}%`,`phone.ilike.%${safe}%`,`code.ilike.%${safe}%`,`card_number.ilike.%${safe}%`,`email.ilike.%${safe}%`]
+        if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`)
+        q = q.or(ors.join(','))
+      }
       if (filter === 'vip')       q = q.eq('member_level', 'Level 4 - Platinum')
       if (filter === 'owes')      q = q.gt('credit_balance',0)
       if (filter === 'balance')   q = q.gt('card_balance',0)
@@ -41,8 +48,16 @@ export default function CustomersPage() {
         const soon = new Date(Date.now()+30*86400000).toISOString().split('T')[0]
         q = q.lte('card_expire_date', soon).gte('card_expire_date', new Date().toISOString().split('T')[0])
       }
-      const { data } = await q.order('name').limit(100)
-      return data || []
+      let { data } = await q.order('name').limit(100)
+      data = data || []
+      // Digits-only phone fallback so formatting never blocks a lookup
+      if (digits.length >= 4 && data.length === 0 && filter === 'all') {
+        const { data: all } = await supabase.from('customers')
+          .select('id,code,name,phone,email,loyalty_points,credit_balance,is_active,created_at,card_number,card_balance,card_expire_date,member_level,member_since,birthday,gender')
+          .eq('tenant_id', tenant.id).eq('is_active', true).limit(500)
+        data = (all || []).filter(c => (c.phone || '').replace(/\D/g,'').includes(digits))
+      }
+      return data
     },
     enabled: !!tenant?.id,
   })
