@@ -127,9 +127,15 @@ export default function ReportsPage() {
         .eq('tenant_id', tenant.id)
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
+      // All-time gift-card loads (for lifetime loaded/used analysis)
+      const { data: allGiftTx } = await supabase.from('gift_card_transactions')
+        .select('card_id, type, amount')
+        .eq('tenant_id', tenant.id).in('type', ['issue','topup'])
+      const loadedByCard = {}
+      for (const t of (allGiftTx || [])) loadedByCard[t.card_id] = (loadedByCard[t.card_id]||0) + Number(t.amount||0)
       // Member (VIP) cards live on customers; top-ups in customer_topups
       const { data: memberCards } = await supabase.from('customers')
-        .select('id, name, card_number, card_balance')
+        .select('id, name, card_number, card_balance, card_expire_date')
         .eq('tenant_id', tenant.id)
         .not('card_number', 'is', null)
       const { data: memberTopups } = await supabase.from('customer_topups')
@@ -137,7 +143,17 @@ export default function ReportsPage() {
         .eq('tenant_id', tenant.id)
         .gte('created_at', dateFrom.toISOString())
         .lte('created_at', dateTo.toISOString())
-      return { cards: cards || [], txns: txns || [], memberCards: memberCards || [], memberTopups: memberTopups || [] }
+      // All-time member loads per customer
+      const { data: allMemTx } = await supabase.from('customer_topups')
+        .select('customer_id, amount')
+        .eq('tenant_id', tenant.id).gt('amount', 0)
+      const loadedByMember = {}
+      for (const t of (allMemTx || [])) loadedByMember[t.customer_id] = (loadedByMember[t.customer_id]||0) + Number(t.amount||0)
+      return {
+        cards: cards || [], txns: txns || [],
+        memberCards: memberCards || [], memberTopups: memberTopups || [],
+        loadedByCard, loadedByMember,
+      }
     },
     enabled: !!tenant?.id && activeReport === 'giftcards',
   })
@@ -990,7 +1006,7 @@ export default function ReportsPage() {
 
           {/* ── GIFT CARDS (Phase 10) ── */}
           {activeReport === 'giftcards' && (
-            <GiftCardReport cards={giftCardData?.cards || []} txns={giftCardData?.txns || []} memberCards={giftCardData?.memberCards || []} memberTopups={giftCardData?.memberTopups || []} dateFrom={dateFrom} dateTo={dateTo}/>
+            <GiftCardReport cards={giftCardData?.cards || []} txns={giftCardData?.txns || []} memberCards={giftCardData?.memberCards || []} memberTopups={giftCardData?.memberTopups || []} loadedByCard={giftCardData?.loadedByCard || {}} loadedByMember={giftCardData?.loadedByMember || {}} dateFrom={dateFrom} dateTo={dateTo}/>
           )}
 
           {/* ── PAYMENT METHODS (Phase 10 — promote from sales overview) ── */}
@@ -1941,7 +1957,46 @@ function DiscountReport({ stats, orderCount, pointsRate, orders }) {
 
 
 // ── GIFT CARDS REPORT ─────────────────────────────────────────────
-function GiftCardReport({ cards, txns, memberCards, memberTopups, dateFrom, dateTo }) {
+function GiftCardReport({ cards, txns, memberCards, memberTopups, loadedByCard, loadedByMember, dateFrom, dateTo }) {
+  const [lowThreshold, setLowThreshold] = useState(10)
+  const now = Date.now()
+  const SOON_DAYS = 30
+  const soonMs = SOON_DAYS * 86400000
+
+  // Build a uniform analysis over a set of cards.
+  const analyze = (items) => {
+    let count=0, loaded=0, balance=0, unusedCount=0, unusedBal=0
+    let expiredCount=0, expiredBal=0, soonCount=0, soonBal=0, lowCount=0, lowBal=0
+    for (const it of items) {
+      count++
+      loaded += it.loaded
+      balance += it.balance
+      const isExpired = it.expiresAt && it.expiresAt < now
+      const isSoon = it.expiresAt && it.expiresAt >= now && it.expiresAt < now + soonMs
+      if (it.loaded > 0 && it.balance >= it.loaded - 0.005) { unusedCount++; unusedBal += it.balance }
+      if (isExpired) { expiredCount++; expiredBal += it.balance }
+      if (isSoon)    { soonCount++; soonBal += it.balance }
+      if (it.balance > 0 && it.balance <= lowThreshold) { lowCount++; lowBal += it.balance }
+    }
+    const used = loaded - balance
+    return { count, loaded, used, balance, unusedCount, unusedBal, expiredCount, expiredBal, soonCount, soonBal, lowCount, lowBal }
+  }
+
+  const giftItems = cards.map(c => ({
+    balance: Number(c.balance||0),
+    loaded:  Number(loadedByCard[c.id] ?? c.init_amount ?? 0),
+    expiresAt: c.expires_at ? new Date(c.expires_at).getTime() : null,
+    status: c.status,
+  }))
+  const memberItems = memberCards.map(m => ({
+    balance: Number(m.card_balance||0),
+    loaded:  Number(loadedByMember[m.id] ?? m.card_balance ?? 0),
+    expiresAt: m.card_expire_date ? new Date(m.card_expire_date).getTime() : null,
+    status: 'active',
+  }))
+  const giftA = analyze(giftItems)
+  const memberA = analyze(memberItems)
+
   const active = cards.filter(c => c.status === 'active')
   const totalIssued = cards.reduce((s,c) => s + Number(c.init_amount || 0), 0)
   const poolBalance = cards.reduce((s,c) => s + Number(c.balance || 0), 0)
@@ -1956,12 +2011,56 @@ function GiftCardReport({ cards, txns, memberCards, memberTopups, dateFrom, date
   const bonusInWindow  = loadTx.reduce((s,t) => s + Number(t.bonus_amount || 0), 0)
   const redeemsInWindow = txns.filter(t => t.type === 'redeem').reduce((s,t) => s + Math.abs(Number(t.amount)), 0)
 
-  if (cards.length === 0) return (
-    <EmptyState icon="🎁" label="No gift cards issued yet"/>
+  if (cards.length === 0 && memberCards.length === 0) return (
+    <EmptyState icon="💳" label="No cards issued yet"/>
+  )
+
+  // Reusable lifecycle panel for a card type
+  const Lifecycle = ({ title, icon, a, accent }) => (
+    <div className="rounded-[12px] overflow-hidden" style={{border:`1px solid #E5E5E5`}}>
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{background:'#F8FAFC', borderBottom:'1px solid #E5E5E5'}}>
+        <span className="text-[13px] font-bold">{icon} {title}</span>
+        <span className="text-[11px] text-[#666]">{a.count} card(s)</span>
+      </div>
+      <div className="grid grid-cols-4 gap-px" style={{background:'#F1F5F9'}}>
+        {[
+          ['Total Loaded', `$${a.loaded.toFixed(2)}`, '#3b82f6', 'all-time topped up'],
+          ['Total Used', `$${a.used.toFixed(2)}`, '#9333ea', 'spent'],
+          ['Balance (沉淀)', `$${a.balance.toFixed(2)}`, accent, 'sitting on cards — your liability'],
+          ['Unused Cards', `${a.unusedCount}`, '#64748b', `$${a.unusedBal.toFixed(2)} never spent`],
+          ['Expiring ≤30d', `${a.soonCount}`, '#d97706', `$${a.soonBal.toFixed(2)} at risk`],
+          ['Expired', `${a.expiredCount}`, '#dc2626', `$${a.expiredBal.toFixed(2)} balance`],
+          [`Low ≤ $${lowThreshold}`, `${a.lowCount}`, '#0891b2', `$${a.lowBal.toFixed(2)} left`],
+          ['Active Value', `$${(a.balance - a.expiredBal).toFixed(2)}`, '#16a34a', 'usable balance'],
+        ].map(([l,v,c,sub]) => (
+          <div key={l} className="p-3" style={{background:'#fff'}}>
+            <div className="text-[9px] font-mono text-[#999] uppercase tracking-wider mb-1">{l}</div>
+            <div className="text-[18px] font-bold" style={{color:c}}>{v}</div>
+            <div className="text-[9px] text-[#999] mt-0.5">{sub}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 
   return (
     <div className="space-y-5">
+      {/* Stored-value lifecycle analysis (gift + member) */}
+      <div className="flex items-center justify-between">
+        <div className="text-[14px] font-bold">💳 Stored-Value Overview</div>
+        <div className="flex items-center gap-2 text-[11px] text-[#666]">
+          Low-balance threshold:
+          <span className="font-mono">$</span>
+          <input type="number" min="0" value={lowThreshold}
+            onChange={e=>setLowThreshold(Math.max(0, parseFloat(e.target.value)||0))}
+            className="w-16 rounded-md px-2 py-1 text-[12px] font-mono outline-none"
+            style={{border:'1.5px solid #e2e8f0'}}/>
+        </div>
+      </div>
+      {cards.length > 0 && <Lifecycle title="Gift Cards" icon="🎁" a={giftA} accent="#ea580c"/>}
+      {memberCards.length > 0 && <Lifecycle title="Member (VIP) Cards" icon="👤" a={memberA} accent="#8b5cf6"/>}
+
+      {cards.length > 0 && (<>
       <div className="grid grid-cols-4 gap-3">
         {[
           ['Active Cards',    active.length,                       '#10b981', `of ${cards.length} total`],
@@ -2035,6 +2134,7 @@ function GiftCardReport({ cards, txns, memberCards, memberTopups, dateFrom, date
           )
         })}
       </div>
+      </>)}
 
       {/* ── Member (VIP) cards ── */}
       {(() => {
