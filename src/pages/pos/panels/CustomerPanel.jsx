@@ -92,7 +92,7 @@ export default function CustomerPanel() {
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       style={{background:'rgba(15,23,42,0.6)', backdropFilter:'blur(2px)'}}
       onClick={close}>
-      <div className="rounded-2xl overflow-hidden shadow-md w-[480px] max-h-[90vh] flex flex-col"
+      <div className="rounded-2xl overflow-hidden shadow-md w-[620px] max-w-[96vw] max-h-[90vh] flex flex-col"
         style={{background:'#fff'}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -224,6 +224,12 @@ export default function CustomerPanel() {
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                             style={{background:'#fff1f2', color:'#e11d48'}}>
                             Owes ${c.credit_balance.toFixed(2)}
+                          </span>
+                        )}
+                        {c.card_balance > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                            style={{background:'#ecfdf5', color:'#16a34a'}}>
+                            💳 ${Number(c.card_balance).toFixed(2)}
                           </span>
                         )}
                       </div>

@@ -39,12 +39,13 @@ export async function searchCustomers(tenantId, term, { activeOnly = false, limi
     if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`)
     q = q.or(ors.join(','))
   }
-  let { data } = await q.order('name').limit(limit)
+  // Pull candidates, then rank by best match below (not alphabetical).
+  let { data } = await q.limit(Math.max(limit * 5, 50))
   data = data || []
 
   // Fallback: nothing matched via the indexed query — pull a wider set and
   // match client-side on digits-only phone or loose text so formatting and
-  // an inactive flag never hide a real member. Capped to `limit`.
+  // an inactive flag never hide a real member.
   if (data.length === 0) {
     let fq = supabase.from('customers').select(COLS).eq('tenant_id', tenantId).limit(1000)
     if (activeOnly) fq = fq.eq('is_active', true)
@@ -52,13 +53,39 @@ export async function searchCustomers(tenantId, term, { activeOnly = false, limi
     const lower = safe.toLowerCase()
     data = (all || []).filter(c => {
       const ph = (c.phone || '').replace(/\D/g, '')
-      if (fullPhone) return ph.includes(digits)   // finished number → exact
+      if (fullPhone) return ph.includes(digits)
       return (digits.length >= 3 && ph.includes(digits))
         || (c.name || '').toLowerCase().includes(lower)
         || (c.email || '').toLowerCase().includes(lower)
         || (c.code || '').toLowerCase().includes(lower)
         || (c.card_number || '').toLowerCase().includes(lower)
-    }).slice(0, limit)
+    })
   }
-  return data
+
+  // ── Best-match ranking ──
+  // Higher score = better. Exact field == term beats "starts with" beats
+  // "contains". Phone digits and card number weigh heavily for POS use.
+  const lower = safe.toLowerCase()
+  const score = (c) => {
+    let s = 0
+    const ph = (c.phone || '').replace(/\D/g, '')
+    const name = (c.name || '').toLowerCase()
+    const card = (c.card_number || '').toLowerCase()
+    if (digits.length >= 3) {
+      if (ph === digits) s += 1000            // exact phone
+      else if (ph.startsWith(digits)) s += 600
+      else if (ph.includes(digits)) s += 300
+    }
+    if (card === lower) s += 900
+    else if (card.startsWith(lower)) s += 500
+    else if (card && card.includes(lower)) s += 200
+    if (name === lower) s += 800
+    else if (name.startsWith(lower)) s += 400
+    else if (name.includes(lower)) s += 150
+    if ((c.code || '').toLowerCase() === lower) s += 700
+    if ((c.email || '').toLowerCase().includes(lower)) s += 100
+    return s
+  }
+  data.sort((a, b) => score(b) - score(a) || (a.name || '').localeCompare(b.name || ''))
+  return data.slice(0, limit)
 }
