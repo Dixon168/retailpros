@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import NumPad from '@/components/ui/NumPad'
+import { normalizeCard, checkCardAvailable } from '@/lib/cardNumber'
 import toast from 'react-hot-toast'
 
 const TIER_STYLE = {
@@ -745,9 +746,36 @@ export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
   const setF = (k,v) => setForm(f=>({...f,[k]:v}))
   const [saving, setSaving] = useState(false)
 
+  // Live availability check on card_number (debounced) — prevents the
+  // user from saving with a card # already assigned to someone else.
+  const [cardCheck, setCardCheck] = useState({ status:'idle' })
+  useEffect(() => {
+    const card = normalizeCard(form.card_number)
+    if (!card) { setCardCheck({ status:'empty' }); return }
+    if (card.length < 2) { setCardCheck({ status:'short' }); return }
+    setCardCheck({ status:'checking' })
+    let alive = true
+    const t = setTimeout(async () => {
+      const r = await checkCardAvailable(tenantId, card)
+      if (!alive) return
+      if (r.available) setCardCheck({ status:'ok' })
+      else if (r.reason === 'taken') setCardCheck({ status:'taken', conflictName: r.conflictName })
+      else setCardCheck({ status:'short' })
+    }, 300)
+    return () => { alive = false; clearTimeout(t) }
+  }, [form.card_number, tenantId])
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name required'); return }
     if (!form.phone.trim()) { toast.error('Phone required'); return }
+    const card = normalizeCard(form.card_number)
+    if (!card) { toast.error('Card number is required for every member'); return }
+    if (card.length < 2) { toast.error('Card number too short'); return }
+    const avail = await checkCardAvailable(tenantId, card)
+    if (!avail.available && avail.reason === 'taken') {
+      toast.error(`Card #${card} is already used by ${avail.conflictName}`)
+      return
+    }
     setSaving(true)
     try {
       const code = 'C' + Date.now().toString().slice(-6)
@@ -758,21 +786,25 @@ export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
         name:         form.name.trim(),
         phone:        form.phone || null,
         email:        form.email || null,
+        card_number:  card,
         is_active:    true,
       }
       // Add optional fields safely
       // type removed - has DB constraint
       if (form.notes)            payload.notes            = form.notes
-      if (form.card_number)      payload.card_number      = form.card_number
       if (form.member_level)     payload.member_level     = form.member_level
       if (form.card_expire_date) payload.card_expire_date = form.card_expire_date
       if (form.birthday)         payload.birthday         = form.birthday
       if (form.address)          payload.billing_address  = form.address
       if (form.gender)           payload.gender           = form.gender
 
-      console.log('Inserting customer payload:', payload)
       const { data, error } = await supabase.from('customers').insert(payload).select().single()
-      if (error) { console.error('Insert error:', error); throw error }
+      if (error) {
+        if (error.code === '23505' && /card_number/i.test(error.message || '')) {
+          throw new Error(`Card #${card} is already used by another member`)
+        }
+        throw error
+      }
       toast.success(`✓ ${form.name} added!`)
       onSave(data)
     } catch(e) { toast.error(e.message) }
@@ -829,10 +861,34 @@ export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
             <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">Membership</div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Card Number</div>
-                <input value={form.card_number} onChange={e=>setF('card_number',e.target.value)} placeholder="e.g. 168"
-                  className="w-full rounded-xl px-3 py-2 text-[13px] font-mono outline-none"
-                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}/>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase">
+                    Card Number <span style={{color:'#dc2626'}}>*</span>
+                  </div>
+                  {cardCheck.status === 'checking' && (
+                    <span className="text-[10px] text-slate-400">checking...</span>
+                  )}
+                  {cardCheck.status === 'ok' && (
+                    <span className="text-[10px] font-bold" style={{color:'#16a34a'}}>✓ Available</span>
+                  )}
+                  {cardCheck.status === 'taken' && (
+                    <span className="text-[10px] font-bold" style={{color:'#dc2626'}}>
+                      ✗ Used by {cardCheck.conflictName}
+                    </span>
+                  )}
+                  {cardCheck.status === 'short' && (
+                    <span className="text-[10px] text-slate-400">too short</span>
+                  )}
+                </div>
+                <input value={form.card_number} onChange={e=>setF('card_number',e.target.value)}
+                  placeholder="Scan or type the # on the back" autoComplete="off"
+                  className="w-full rounded-xl px-3 py-2 text-[13px] font-mono font-bold outline-none"
+                  style={{
+                    border: cardCheck.status === 'taken' ? '2px solid #dc2626'
+                          : cardCheck.status === 'ok'    ? '2px solid #16a34a'
+                          : '1.5px solid #e2e8f0',
+                    background:'#fff'
+                  }}/>
               </div>
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Member Level</div>
@@ -879,10 +935,15 @@ export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
           <button onClick={onClose}
             className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer border"
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
-          <button onClick={handleSave} disabled={saving||!form.name.trim()||!form.phone.trim()}
+          <button onClick={handleSave}
+            disabled={saving||!form.name.trim()||!form.phone.trim()||cardCheck.status!=='ok'}
             className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#000000'}}>
-            {saving ? '⏳ Saving...' : '✓ Add Customer'}
+            {saving ? '⏳ Saving...'
+              : cardCheck.status === 'taken' ? '✗ Card # taken'
+              : cardCheck.status === 'empty' ? 'Enter card #'
+              : cardCheck.status === 'checking' ? '⏳ Checking...'
+              : '✓ Add Member'}
           </button>
         </div>
       </div>
@@ -911,9 +972,36 @@ export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
   const setF = (k,v) => setForm(f=>({...f,[k]:v}))
   const [saving, setSaving] = useState(false)
 
+  // Live availability check on card_number — same as the Add modal but
+  // excludes the customer being edited (their existing card # is fine).
+  const [cardCheck, setCardCheck] = useState({ status:'ok' })
+  useEffect(() => {
+    const card = normalizeCard(form.card_number)
+    if (!card) { setCardCheck({ status:'empty' }); return }
+    if (card.length < 2) { setCardCheck({ status:'short' }); return }
+    setCardCheck({ status:'checking' })
+    let alive = true
+    const t = setTimeout(async () => {
+      const r = await checkCardAvailable(tenantId, card, customer.id)
+      if (!alive) return
+      if (r.available) setCardCheck({ status:'ok' })
+      else if (r.reason === 'taken') setCardCheck({ status:'taken', conflictName: r.conflictName })
+      else setCardCheck({ status:'short' })
+    }, 300)
+    return () => { alive = false; clearTimeout(t) }
+  }, [form.card_number, tenantId, customer.id])
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name required'); return }
     if (!form.phone.trim()) { toast.error('Phone required'); return }
+    const card = normalizeCard(form.card_number)
+    if (!card) { toast.error('Card number is required'); return }
+    if (card.length < 2) { toast.error('Card number too short'); return }
+    const avail = await checkCardAvailable(tenantId, card, customer.id)
+    if (!avail.available && avail.reason === 'taken') {
+      toast.error(`Card #${card} is already used by ${avail.conflictName}`)
+      return
+    }
     setSaving(true)
     try {
       const payload = {
@@ -923,7 +1011,7 @@ export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
         gender:           form.gender || null,
         type:             'regular',
         notes:            form.notes || null,
-        card_number:      form.card_number || null,
+        card_number:      card,
         member_level:     form.member_level || 'Level 1',
         card_expire_date: form.card_expire_date || null,
         referrer:         form.referrer || null,
@@ -932,7 +1020,12 @@ export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
       if (form.birthday) payload.birthday = form.birthday
       const { data, error } = await supabase.from('customers').update(payload)
         .eq('id', customer.id).select().single()
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505' && /card_number/i.test(error.message || '')) {
+          throw new Error(`Card #${card} is already used by another member`)
+        }
+        throw error
+      }
       toast.success('✓ Updated!')
       onSave(data)
     } catch(e) { toast.error(e.message) }
@@ -983,14 +1076,31 @@ export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
           <div className="rounded-xl p-4" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
             <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">Membership</div>
             <div className="grid grid-cols-2 gap-3">
-              {[['card_number','Card Number'],['card_expire_date','Expire Date']].map(([k,l])=>(
-                <div key={k}>
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">{l}</div>
-                  <input type={k==='card_expire_date'?'date':'text'} value={form[k]} onChange={e=>setF(k,e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-                    style={{border:'1.5px solid #e2e8f0',background:'#fff'}}/>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase">
+                    Card Number <span style={{color:'#dc2626'}}>*</span>
+                  </div>
+                  {cardCheck.status === 'checking' && <span className="text-[10px] text-slate-400">checking...</span>}
+                  {cardCheck.status === 'ok' && <span className="text-[10px] font-bold" style={{color:'#16a34a'}}>✓ Available</span>}
+                  {cardCheck.status === 'taken' && <span className="text-[10px] font-bold" style={{color:'#dc2626'}}>✗ Used by {cardCheck.conflictName}</span>}
+                  {cardCheck.status === 'short' && <span className="text-[10px] text-slate-400">too short</span>}
                 </div>
-              ))}
+                <input value={form.card_number} onChange={e=>setF('card_number',e.target.value)}
+                  className="w-full rounded-xl px-3 py-2 text-[13px] font-mono font-bold outline-none"
+                  style={{
+                    border: cardCheck.status === 'taken' ? '2px solid #dc2626'
+                          : cardCheck.status === 'ok'    ? '2px solid #16a34a'
+                          : '1.5px solid #e2e8f0',
+                    background:'#fff'
+                  }}/>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Expire Date</div>
+                <input type="date" value={form.card_expire_date} onChange={e=>setF('card_expire_date',e.target.value)}
+                  className="w-full rounded-xl px-3 py-2 text-[13px] outline-none"
+                  style={{border:'1.5px solid #e2e8f0',background:'#fff'}}/>
+              </div>
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Member Level</div>
                 <select value={form.member_level} onChange={e=>setF('member_level',e.target.value)}
@@ -1021,10 +1131,14 @@ export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
           <button onClick={onClose}
             className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer border"
             style={{background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>Cancel</button>
-          <button onClick={handleSave} disabled={saving}
+          <button onClick={handleSave} disabled={saving || cardCheck.status!=='ok'}
             className="flex-[2] rounded-xl py-3 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background:'#000000'}}>
-            {saving ? '⏳ Saving...' : '✓ Save Changes'}
+            {saving ? '⏳ Saving...'
+              : cardCheck.status==='taken' ? '✗ Card # taken'
+              : cardCheck.status==='empty' ? 'Card # required'
+              : cardCheck.status==='checking' ? '⏳ Checking...'
+              : '✓ Save Changes'}
           </button>
         </div>
       </div>

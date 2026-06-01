@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { searchCustomers } from '@/lib/customerSearch'
+import { normalizeCard, checkCardAvailable } from '@/lib/cardNumber'
 import MemberDetailPopup from '@/components/pos/MemberDetailPopup'
 import { TouchKeyboard } from '@/components/ui/TouchKeyboard'
 import toast from 'react-hot-toast'
@@ -27,8 +28,27 @@ export default function CustomerPanel() {
     name: '', phone: '', email: '',
     birthday: '', gender: '', address: '',
     type: 'regular', notes: '',
+    card_number: '',
   })
   const setF = (k, v) => setForm(f => ({...f, [k]: v}))
+  // Live card-number availability check (debounced) — prevents the
+  // cashier from assigning a card # already used by another member.
+  const [cardCheck, setCardCheck] = useState({ status:'idle' }) // idle|checking|ok|taken|short|empty
+  useEffect(() => {
+    const card = normalizeCard(form.card_number)
+    if (!card) { setCardCheck({ status:'empty' }); return }
+    if (card.length < 2) { setCardCheck({ status:'short' }); return }
+    setCardCheck({ status:'checking' })
+    let alive = true
+    const t = setTimeout(async () => {
+      const r = await checkCardAvailable(tenant?.id, card)
+      if (!alive) return
+      if (r.available) setCardCheck({ status:'ok' })
+      else if (r.reason === 'taken') setCardCheck({ status:'taken', conflictName: r.conflictName })
+      else setCardCheck({ status:'short' })
+    }, 300)
+    return () => { alive = false; clearTimeout(t) }
+  }, [form.card_number, tenant?.id])
 
   useEffect(() => {
     if (mode === 'search') setTimeout(() => searchRef.current?.focus(), 100)
@@ -60,6 +80,16 @@ export default function CustomerPanel() {
 
   const handleAdd = async () => {
     if (!form.name.trim()) { toast.error('Name required'); return }
+    const card = normalizeCard(form.card_number)
+    if (!card) { toast.error('Card number is required for every member'); return }
+    if (card.length < 2) { toast.error('Card number too short'); return }
+    // One more uniqueness check right before insert — the live check is
+    // debounced 300ms, so a fast cashier could submit during that window.
+    const avail = await checkCardAvailable(tenant.id, card)
+    if (!avail.available && avail.reason === 'taken') {
+      toast.error(`Card #${card} is already used by ${avail.conflictName}`)
+      return
+    }
     setSaving(true)
     try {
       // Generate customer code
@@ -75,11 +105,17 @@ export default function CustomerPanel() {
         billing_address: form.address || null,
         type:         form.type,
         notes:        form.notes || null,
+        card_number:  card,
         is_active:    true,
         loyalty_points: 0,
         credit_balance: 0,
       }).select().single()
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505' && /card_number/i.test(error.message || '')) {
+          throw new Error(`Card #${card} is already used by another member`)
+        }
+        throw error
+      }
       qc.invalidateQueries(['customer-search'])
       toast.success(`✓ ${form.name} added!`)
       handleSelect(data)
@@ -262,11 +298,42 @@ export default function CustomerPanel() {
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Basic Info</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name *</div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name <span style={{color:'#dc2626'}}>*</span></div>
                     <input value={form.name} onChange={e=>setF('name',e.target.value)}
                       placeholder="Customer name" autoFocus
                       className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none font-semibold"
                       style={{border:'1.5px solid #e2e8f0', background:'#fff'}}/>
+                  </div>
+                  {/* Card # — REQUIRED. Scan / type. Live availability check. */}
+                  <div className="col-span-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-[10px] font-semibold text-slate-500 uppercase">
+                        Member Card # <span style={{color:'#dc2626'}}>*</span>
+                      </div>
+                      {cardCheck.status === 'checking' && (
+                        <span className="text-[10px] text-slate-400">checking...</span>
+                      )}
+                      {cardCheck.status === 'ok' && (
+                        <span className="text-[10px] font-bold" style={{color:'#16a34a'}}>✓ Available</span>
+                      )}
+                      {cardCheck.status === 'taken' && (
+                        <span className="text-[10px] font-bold" style={{color:'#dc2626'}}>
+                          ✗ Used by {cardCheck.conflictName}
+                        </span>
+                      )}
+                      {cardCheck.status === 'short' && (
+                        <span className="text-[10px] text-slate-400">too short</span>
+                      )}
+                    </div>
+                    <input value={form.card_number} onChange={e=>setF('card_number',e.target.value)}
+                      placeholder="Scan or type the card on the back" autoComplete="off"
+                      className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none font-mono font-bold"
+                      style={{
+                        border: cardCheck.status === 'taken' ? '2px solid #dc2626'
+                              : cardCheck.status === 'ok'    ? '2px solid #16a34a'
+                              : '1.5px solid #e2e8f0',
+                        background:'#fff'
+                      }}/>
                   </div>
                   <div>
                     <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Phone</div>
@@ -335,10 +402,15 @@ export default function CustomerPanel() {
               </div>
 
               {/* Save button */}
-              <button onClick={handleAdd} disabled={saving || !form.name.trim()}
+              <button onClick={handleAdd}
+                disabled={saving || !form.name.trim() || cardCheck.status !== 'ok'}
                 className="w-full rounded-2xl py-4 text-[15px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
                 style={{background:'#000000'}}>
-                {saving ? '⏳ Saving...' : '✓ Add Customer & Select'}
+                {saving ? '⏳ Saving...'
+                  : cardCheck.status === 'taken' ? '✗ Card # taken — change it'
+                  : cardCheck.status === 'empty' ? 'Enter card # to continue'
+                  : cardCheck.status === 'checking' ? '⏳ Checking card #...'
+                  : '✓ Add Member & Select'}
               </button>
             </div>
           </div>
