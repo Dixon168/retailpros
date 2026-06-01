@@ -232,6 +232,7 @@ export default function POSPage() {
         .select(`*,
                  inventory(quantity, store_id),
                  promotions(type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules),
+                 promotion_products(promotion:promotions(id,type,is_active,sale_start,sale_end,sale_type,sale_value,bulk_tiers,time_rules)),
                  subcategories(id, name, categories(id, name, emoji, color))`)
         .eq('tenant_id', tenant.id)
         .eq('is_active', true)
@@ -243,13 +244,27 @@ export default function POSPage() {
       if (selectedTag)
         q = q.contains('tags', [selectedTag])
       const { data } = await q.order('sort_order').order('name').limit(80)
-      // Filter inventory[] to only the current store so qty shows per-store
-      return (data || []).map(p => ({
-        ...p,
-        inventory: store?.id
-          ? (p.inventory || []).filter(i => i.store_id === store.id)
-          : (p.inventory || []),
-      }))
+      // Filter inventory[] to only the current store so qty shows per-store,
+      // and merge join-table promos into the legacy promotions[] array so
+      // the existing cart logic finds them either way.
+      return (data || []).map(p => {
+        const joinPromos = (p.promotion_products || [])
+          .map(pp => pp.promotion).filter(Boolean)
+        const mergedPromos = [...(p.promotions || []), ...joinPromos]
+        // De-dupe by id (a legacy promo could be referenced both ways)
+        const seen = new Set()
+        const promos = mergedPromos.filter(pr => {
+          if (!pr?.id || seen.has(pr.id)) return false
+          seen.add(pr.id); return true
+        })
+        return {
+          ...p,
+          promotions: promos,
+          inventory: store?.id
+            ? (p.inventory || []).filter(i => i.store_id === store.id)
+            : (p.inventory || []),
+        }
+      })
     },
     enabled: !!tenant?.id,
   })
