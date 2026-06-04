@@ -145,3 +145,35 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
   transition: border-color 0.15s;
 }
 .sq-input:focus { border-color: var(--sq-blue); box-shadow: 0 0 0 3px var(--sq-blue-light); }
+
+/* ════════════════════════════════════════════════
+   🌿 B2B PREMIUM-SAAS THEME (Dixon's design spec)
+   Scoped: only applies inside <div class="b2b-theme">.
+   Used by B2B invoice / customer / report pages so the
+   change doesn't affect the POS look.
+   ════════════════════════════════════════════════ */
+.b2b-theme {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: #f6f4ee;
+  color: #11211b;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+.b2b-theme h1,
+.b2b-theme h2,
+.b2b-theme h3,
+.b2b-theme .font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+@layer components {
+  .btn       { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-primary { @apply btn bg-moss-700 text-white hover:bg-moss-800; }
+  .btn-ghost   { @apply btn bg-transparent text-ink hover:bg-black/5; }
+  .btn-outline { @apply btn border border-black/15 bg-white text-ink hover:bg-black/5; }
+  .btn-danger  { @apply btn bg-clay text-white hover:opacity-90; }
+  .input { @apply w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-moss-600 focus:ring-2 focus:ring-moss-600/20 placeholder:text-black/30; }
+  .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/55; }
+  .card  { @apply rounded-2xl border border-black/[.07] bg-white shadow-[0_1px_3px_rgba(17,33,27,.06)]; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+}

@@ -90,162 +90,168 @@ export default function InvoicesPage() {
   }, [invoices])
 
   return (
-    <div className="max-w-[1200px] mx-auto p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <div className="text-[22px] font-bold text-[#1F1F1F]">📄 Invoices</div>
-          <div className="text-[12px] text-[#666] mt-1">
-            Total outstanding: <span className="font-bold font-mono text-[#CF1322]">${counts.totalOwed.toFixed(2)}</span>
-            {counts.overdue > 0 && (
-              <> · <span className="font-bold text-[#CF1322]">{counts.overdue} overdue</span></>
+    <div className="b2b-theme">
+      <div className="max-w-[1200px] mx-auto px-6 py-8">
+
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="font-display text-3xl text-ink leading-tight">Invoices</h1>
+            <p className="text-sm text-ink/55 mt-1">
+              Total outstanding <span className="font-semibold tabular-nums text-clay">${counts.totalOwed.toFixed(2)}</span>
+              {counts.overdue > 0 && (
+                <> · <span className="font-semibold text-clay">{counts.overdue} overdue</span></>
+              )}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setShowReceive(true)} className="btn-outline">
+              Receive Payment
+            </button>
+            <button onClick={() => setShowCreate(true)} className="btn-primary">
+              + New Invoice
+            </button>
+          </div>
+        </div>
+
+        {/* ── Search + filters ── */}
+        <div className="mb-5 space-y-3">
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by invoice number or company name…"
+            className="input"/>
+          <div className="flex gap-2 flex-wrap">
+            <FilterTab active={statusFilter==='all'}     onClick={() => setStatusFilter('all')}     count={counts.all}>All</FilterTab>
+            <FilterTab active={statusFilter==='draft'}   onClick={() => setStatusFilter('draft')}   count={counts.draft}>Draft</FilterTab>
+            <FilterTab active={statusFilter==='unpaid'}  onClick={() => setStatusFilter('unpaid')}  count={counts.unpaid}>Unpaid</FilterTab>
+            <FilterTab active={statusFilter==='overdue'} onClick={() => setStatusFilter('overdue')} count={counts.overdue} red>Overdue</FilterTab>
+            <FilterTab active={statusFilter==='paid'}    onClick={() => setStatusFilter('paid')}    count={counts.paid}>Paid</FilterTab>
+          </div>
+        </div>
+
+        {/* ── List ── */}
+        {isLoading ? (
+          <div className="card p-12 text-center text-sm text-ink/55">Loading invoices…</div>
+        ) : filtered.length === 0 ? (
+          <div className="card p-12 text-center">
+            <div className="font-display text-2xl text-ink mb-1">
+              {invoices.length === 0 ? 'No invoices yet' : 'No invoices match your filter'}
+            </div>
+            <p className="text-sm text-ink/55 mb-4">
+              {invoices.length === 0
+                ? 'Create your first invoice to start tracking what your wholesale customers owe.'
+                : 'Try clearing your search or picking a different filter.'}
+            </p>
+            {invoices.length === 0 && (
+              <button onClick={() => setShowCreate(true)} className="btn-primary">
+                Create your first invoice
+              </button>
             )}
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowReceive(true)}
-            className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-            style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
-            💰 Receive Payment
-          </button>
-          <button onClick={() => setShowCreate(true)}
-            className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-            + New Invoice
-          </button>
-        </div>
-      </div>
-
-      {/* Search + filter */}
-      <div className="mb-4 space-y-3">
-        <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="🔍 Search by invoice number or company name..."
-          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
-        <div className="flex gap-2 flex-wrap">
-          <FilterTab active={statusFilter==='all'}     onClick={() => setStatusFilter('all')}     count={counts.all}>All</FilterTab>
-          <FilterTab active={statusFilter==='draft'}   onClick={() => setStatusFilter('draft')}   count={counts.draft}>📝 Draft</FilterTab>
-          <FilterTab active={statusFilter==='unpaid'}  onClick={() => setStatusFilter('unpaid')}  count={counts.unpaid} highlight>📤 Unpaid</FilterTab>
-          <FilterTab active={statusFilter==='overdue'} onClick={() => setStatusFilter('overdue')} count={counts.overdue} red>⚠️ Overdue</FilterTab>
-          <FilterTab active={statusFilter==='paid'}    onClick={() => setStatusFilter('paid')}    count={counts.paid}>✅ Paid</FilterTab>
-        </div>
-      </div>
-
-      {/* List */}
-      {isLoading ? (
-        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center text-[#666] text-[13px]">
-          Loading...
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-12 text-center">
-          <div className="text-[48px] mb-2 opacity-30">📄</div>
-          <div className="text-[14px] font-bold text-[#1F1F1F] mb-1">
-            {invoices.length === 0 ? 'No invoices yet' : 'No invoices match your filter'}
+        ) : (
+          <div className="card overflow-hidden">
+            {/* table header */}
+            <div className="grid bg-sand/60 border-b border-black/[.06]"
+              style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 100px 110px 110px'}}>
+              {['Invoice','Company','Status','Due Date','Days Past','Balance','Total'].map((h,i) => (
+                <div key={h} className={`px-4 py-3 text-xs uppercase tracking-wide font-semibold text-ink/50 ${i>=4 ? 'text-right' : ''}`}>{h}</div>
+              ))}
+            </div>
+            {/* rows */}
+            <div className="divide-y divide-black/[.06]">
+              {filtered.map(inv => {
+                const st = STATUS_BADGE[inv.status] || STATUS_BADGE.draft
+                const isOverdue = inv.days_overdue > 0 && inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'voided'
+                const badgeCls =
+                  isOverdue                                       ? 'bg-clay/10 text-clay'
+                  : inv.status === 'paid'                         ? 'bg-moss-50 text-moss-700'
+                  : (inv.status === 'sent' || inv.status === 'viewed') ? 'bg-moss-50 text-moss-700'
+                  : inv.status === 'partial'                      ? 'bg-clay/10 text-clay'
+                  :                                                 'bg-black/5 text-ink/70'
+                return (
+                  <div key={inv.id} onClick={() => setViewingInv(inv)}
+                    className="grid items-center hover:bg-sand/40 cursor-pointer transition-colors"
+                    style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 100px 110px 110px'}}>
+                    <div className="px-4 py-3.5 font-semibold text-ink tabular-nums">
+                      {inv.invoice_number}
+                      {inv.source_estimate_id && (
+                        <span className="ml-1.5 text-xs text-ink/40" title="From estimate">·</span>
+                      )}
+                    </div>
+                    <div className="px-4 py-3.5 text-sm text-ink truncate">
+                      {inv.company_name || <span className="text-ink/40">—</span>}
+                    </div>
+                    <div className="px-4 py-3.5">
+                      <span className={`badge ${badgeCls}`}>
+                        {isOverdue ? 'Overdue' : st.label}
+                      </span>
+                    </div>
+                    <div className="px-4 py-3.5 text-sm text-ink/65">
+                      {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : <span className="text-ink/40">—</span>}
+                    </div>
+                    <div className={`px-4 py-3.5 text-right text-sm tabular-nums ${isOverdue ? 'text-clay font-semibold' : 'text-ink/40'}`}>
+                      {isOverdue ? `${inv.days_overdue}d` : '—'}
+                    </div>
+                    <div className={`px-4 py-3.5 text-right tabular-nums font-semibold ${
+                      (inv.balance_due || 0) > 0 ? 'text-clay' : 'text-moss-700'
+                    }`}>
+                      ${(inv.balance_due || 0).toFixed(2)}
+                    </div>
+                    <div className="px-4 py-3.5 text-right tabular-nums text-ink">
+                      ${(inv.total || 0).toFixed(2)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          {invoices.length === 0 && (
-            <button onClick={() => setShowCreate(true)}
-              className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
-              Create your first invoice
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
-          <div className="grid border-b border-[#E5E5E5] bg-[#F5F5F5]"
-            style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 100px 110px 110px'}}>
-            {['Invoice #','Company','Status','Due Date','Days Past','Balance','Total'].map(h => (
-              <div key={h} className="px-3.5 py-2.5 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
-            ))}
-          </div>
-          {filtered.map(inv => {
-            const st = STATUS_BADGE[inv.status] || STATUS_BADGE.draft
-            const isOverdue = inv.days_overdue > 0 && inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'voided'
-            return (
-              <div key={inv.id} onClick={() => setViewingInv(inv)}
-                className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] cursor-pointer"
-                style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 100px 110px 110px'}}>
-                <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#006AFF]">
-                  {inv.invoice_number}
-                  {inv.source_estimate_id && (
-                    <span className="ml-1 text-[9px] text-[#999]" title="From estimate">📝</span>
-                  )}
-                </div>
-                <div className="px-3.5 py-3 text-[13px] text-[#1F1F1F] truncate">
-                  {inv.company_name || '—'}
-                </div>
-                <div className="px-3.5 py-3">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded"
-                    style={isOverdue ? { background:'#FEE2E2', color:'#CF1322' } : { background:st.bg, color:st.color }}>
-                    {isOverdue ? 'Overdue' : st.label}
-                  </span>
-                </div>
-                <div className="px-3.5 py-3 text-[12px] text-[#666]">
-                  {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}
-                </div>
-                <div className="px-3.5 py-3 text-[12px] font-bold"
-                  style={{color: isOverdue ? '#CF1322' : '#999'}}>
-                  {isOverdue ? `${inv.days_overdue}d` : '—'}
-                </div>
-                <div className="px-3.5 py-3 text-right font-mono text-[13px] font-bold"
-                  style={{color: (inv.balance_due || 0) > 0 ? '#CF1322' : '#15803D'}}>
-                  ${(inv.balance_due || 0).toFixed(2)}
-                </div>
-                <div className="px-3.5 py-3 text-right font-mono text-[13px] text-[#1F1F1F]">
-                  ${(inv.total || 0).toFixed(2)}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+        )}
 
-      {showCreate && (
-        <CreateInvoiceModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => {
-            setShowCreate(false)
-            qc.invalidateQueries({ queryKey: ['invoices-list'] })
-            qc.invalidateQueries({ queryKey: ['stock-rows'] })
-          }}
-        />
-      )}
-      {showReceive && (
-        <ReceivePaymentModal
-          onClose={() => setShowReceive(false)}
-          onDone={() => {
-            setShowReceive(false)
-            qc.invalidateQueries({ queryKey: ['invoices-list'] })
-          }}
-        />
-      )}
-      {viewingInv && (
-        <InvoiceDetailModal
-          invoice={viewingInv}
-          onClose={() => setViewingInv(null)}
-          onChanged={() => {
-            // Invoice changes affect: list view, stock pages, AND POS cart
-            // (because Send / Void changes inventory.quantity)
-            qc.invalidateQueries({ queryKey: ['invoices-list'] })
-            qc.invalidateQueries({ queryKey: ['stock-rows'] })
-            qc.invalidateQueries({ queryKey: ['pos-products'] })
-            qc.invalidateQueries({ queryKey: ['products'] })  // BackOffice product list
-          }}
-        />
-      )}
+        {showCreate && (
+          <CreateInvoiceModal
+            onClose={() => setShowCreate(false)}
+            onCreated={() => {
+              setShowCreate(false)
+              qc.invalidateQueries({ queryKey: ['invoices-list'] })
+              qc.invalidateQueries({ queryKey: ['stock-rows'] })
+            }}
+          />
+        )}
+        {showReceive && (
+          <ReceivePaymentModal
+            onClose={() => setShowReceive(false)}
+            onDone={() => {
+              setShowReceive(false)
+              qc.invalidateQueries({ queryKey: ['invoices-list'] })
+            }}
+          />
+        )}
+        {viewingInv && (
+          <InvoiceDetailModal
+            invoice={viewingInv}
+            onClose={() => setViewingInv(null)}
+            onChanged={() => {
+              qc.invalidateQueries({ queryKey: ['invoices-list'] })
+              qc.invalidateQueries({ queryKey: ['stock-rows'] })
+              qc.invalidateQueries({ queryKey: ['pos-products'] })
+              qc.invalidateQueries({ queryKey: ['products'] })
+            }}
+          />
+        )}
+      </div>
     </div>
   )
 }
 
-function FilterTab({ active, onClick, count, highlight, red, children }) {
+function FilterTab({ active, onClick, count, red, children }) {
+  // Pill-style tabs that match the premium-SaaS look. Active gets the
+  // moss/clay solid; inactive is a quiet white pill with a hairline border.
+  const activeBg  = red ? 'bg-clay text-white border-transparent' : 'bg-moss-700 text-white border-transparent'
+  const inactive  = 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
   return (
     <button onClick={onClick}
-      className="px-3 py-2 rounded-lg text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-      style={active
-        ? { background: red ? '#CF1322' : '#006AFF', color:'#FFFFFF', border:'none' }
-        : { background:'#FFFFFF',
-            color: red ? '#CF1322' : highlight ? '#006AFF' : '#1F1F1F',
-            border:'1px solid #E5E5E5' }}>
-      {children} <span className="ml-1 opacity-75">({count})</span>
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${active ? activeBg : inactive}`}>
+      {children}
+      <span className={`text-xs ${active ? 'opacity-80' : 'text-ink/40'}`}>({count})</span>
     </button>
   )
 }
