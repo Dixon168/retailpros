@@ -99,75 +99,65 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
   })
 
   return (
-    <div className="fixed inset-0 z-[600] flex justify-end" style={{background:'rgba(0,0,0,0.45)'}}>
-      <div className="w-full max-w-[480px] bg-white shadow-2xl flex flex-col h-full">
+    <div className="b2b-theme fixed inset-0 z-[600] flex justify-end" style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="w-full max-w-[480px] bg-sand shadow-2xl flex flex-col h-full">
         {/* Header */}
-        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0"
-          style={{borderBottom:'1px solid #E5E5E5'}}>
+        <div className="px-6 py-5 flex items-center justify-between flex-shrink-0 bg-white"
+          style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
           <div>
-            <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">📜 History</div>
-            <div className="text-[15px] font-bold text-[#1F1F1F]">{invoiceNumber}</div>
+            <div className="label">History</div>
+            <div className="font-display text-xl text-ink">{invoiceNumber}</div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-            style={{background:'#F5F5F5', border:'none'}}>✕</button>
+          <button onClick={onClose} className="w-9 h-9 rounded-lg cursor-pointer text-base bg-black/[.04] hover:bg-black/[.08] border-none">✕</button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {isLoading ? (
-            <div className="text-[13px] text-[#666]">Loading...</div>
+            <div className="text-sm text-ink/55">Loading…</div>
           ) : entries.length === 0 ? (
-            <div className="rounded-lg p-6 text-center"
-              style={{background:'#F9FAFB', border:'1px dashed #E5E5E5'}}>
-              <div className="text-[32px] mb-2 opacity-40">📜</div>
-              <div className="text-[13px] text-[#666]">No edits yet</div>
-              <div className="text-[11px] text-[#999] mt-1">
-                Any future changes will appear here.
-              </div>
+            <div className="card p-8 text-center">
+              <p className="text-sm text-ink/55">No edits yet.</p>
+              <p className="text-xs text-ink/40 mt-1">Future changes will appear here.</p>
             </div>
           ) : (
             entries.map((e) => {
-              const meta = ACTION_LABEL[e.action] || { icon: '•', label: e.action, color: '#666' }
+              const meta = ACTION_LABEL[e.action] || { icon: '•', label: e.action }
               const userName = e.users?.full_name || e.users?.email
                 || (e.action === 'auto_close' ? 'System (automatic)' : 'Unknown user')
               const changes = e.changes || {}
               return (
-                <div key={e.id} className="rounded-xl p-4"
-                  style={{background:'#FFFFFF', border:'1px solid #E5E5E5'}}>
-                  <div className="flex items-center justify-between mb-2">
+                <div key={e.id} className="card p-4">
+                  <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-[18px]">{meta.icon}</span>
-                      <span className="text-[13px] font-bold" style={{color: meta.color}}>{meta.label}</span>
+                      <span className="text-base">{meta.icon}</span>
+                      <span className="text-sm font-semibold text-ink">{meta.label}</span>
                     </div>
-                    <span className="text-[11px] text-[#999]">{fmtDateTime(e.created_at)}</span>
+                    <span className="text-xs text-ink/45">{fmtDateTime(e.created_at)}</span>
                   </div>
-                  <div className="text-[11px] text-[#666] mb-3">by {userName}</div>
+                  <div className="text-xs text-ink/55 mb-3">by {userName}</div>
 
-                  {/* Simple scalar changes (status, total, etc.) */}
                   {Object.entries(changes)
                     .filter(([k]) => k !== 'items')
                     .map(([field, val]) => (
-                      <div key={field} className="text-[11px] mb-1.5">
-                        <span className="font-semibold text-[#666]">{field}:</span>{' '}
-                        <span className="line-through text-[#CF1322]">{fmtValue(val?.from, $)}</span>
-                        <span className="mx-1 text-[#666]">→</span>
-                        <span className="font-semibold text-[#15803D]">{fmtValue(val?.to, $)}</span>
+                      <div key={field} className="text-xs mb-1.5">
+                        <span className="font-semibold text-ink/65">{field}:</span>{' '}
+                        <span className="line-through text-clay">{fmtValue(val?.from, $)}</span>
+                        <span className="mx-1 text-ink/40">→</span>
+                        <span className="font-semibold text-moss-700">{fmtValue(val?.to, $)}</span>
                       </div>
                     ))}
 
-                  {/* Items diff — side-by-side */}
                   {changes.items && (
-                    <div className="mt-3 pt-3" style={{borderTop:'1px dashed #E5E5E5'}}>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#666] mb-2">
-                        Line items
-                      </div>
+                    <div className="mt-3 pt-3" style={{borderTop:'1px dashed rgba(0,0,0,0.08)'}}>
+                      <div className="label mb-2">Line items</div>
                       <div className="space-y-2">
-                        <div className="rounded-lg p-2" style={{background:'#FEF2F2', border:'1px solid #FECACA'}}>
-                          <div className="text-[10px] font-bold text-[#CF1322] mb-1">Before</div>
+                        <div className="rounded-lg p-2.5 bg-clay/[.06] border border-clay/20">
+                          <div className="text-[10px] font-bold text-clay uppercase tracking-wide mb-1">Before</div>
                           <ItemsTable items={changes.items.from} $={$}/>
                         </div>
-                        <div className="rounded-lg p-2" style={{background:'#F0FDF4', border:'1px solid #86EFAC'}}>
-                          <div className="text-[10px] font-bold text-[#15803D] mb-1">After</div>
+                        <div className="rounded-lg p-2.5 bg-moss-50 border border-moss-600/30">
+                          <div className="text-[10px] font-bold text-moss-700 uppercase tracking-wide mb-1">After</div>
                           <ItemsTable items={changes.items.to} $={$}/>
                         </div>
                       </div>
@@ -175,7 +165,7 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
                   )}
 
                   {e.notes && (
-                    <div className="mt-2 text-[11px] text-[#666] italic">{e.notes}</div>
+                    <div className="mt-2 text-xs text-ink/55 italic">{e.notes}</div>
                   )}
                 </div>
               )
@@ -184,12 +174,8 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 flex-shrink-0" style={{borderTop:'1px solid #E5E5E5'}}>
-          <button onClick={onClose}
-            className="w-full rounded-lg py-2.5 text-[13px] font-bold cursor-pointer"
-            style={{background:'#F5F5F5', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-            Close
-          </button>
+        <div className="px-5 py-4 flex-shrink-0 bg-white" style={{borderTop:'1px solid rgba(0,0,0,0.06)'}}>
+          <button onClick={onClose} className="btn-outline w-full">Close</button>
         </div>
       </div>
     </div>

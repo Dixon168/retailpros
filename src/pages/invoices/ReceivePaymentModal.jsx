@@ -173,30 +173,27 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
   }
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
-      <div className="rounded-2xl overflow-hidden flex flex-col" style={{
-        width:'780px', maxWidth:'100%', maxHeight:'92vh', background:'#FFFFFF',
-        boxShadow:'0 20px 50px rgba(0,0,0,0.3)'
+    <div className="b2b-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
+      <div className="card overflow-hidden flex flex-col" style={{
+        width:'780px', maxWidth:'100%', maxHeight:'92vh'
       }}>
         {/* Header */}
-        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
+        <div className="px-6 py-5 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
           <div>
-            <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">Receive Payment</div>
-            <div className="text-[16px] font-bold text-[#1F1F1F]">Record cash, check, ACH, or card</div>
+            <div className="label">Receive Payment</div>
+            <div className="font-display text-xl text-ink">Record cash, check, ACH, or card</div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-            style={{background:'#F5F5F5', border:'none'}}>✕</button>
+          <button onClick={onClose} className="w-9 h-9 rounded-lg cursor-pointer text-base bg-black/[.04] hover:bg-black/[.08] border-none">✕</button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-sand/30">
           {/* Customer + date */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <FieldLabel>Company *</FieldLabel>
               <select value={customerId} onChange={e => { setCustomerId(e.target.value); setAllocations({}) }}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"
-                style={{borderColor: customerId ? '#006AFF' : '#E5E5E5'}}>
+                className="input cursor-pointer">
                 <option value="">— Select company —</option>
                 {customers.map(c => (
                   <option key={c.id} value={c.id}>{c.company_name}</option>
@@ -205,22 +202,22 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
             </div>
             <div>
               <FieldLabel>Payment date</FieldLabel>
-              <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"/>
+              <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} className="input cursor-pointer"/>
             </div>
           </div>
 
           {/* Method + reference */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <FieldLabel>Payment method</FieldLabel>
               <div className="grid grid-cols-3 gap-1.5">
                 {PAYMENT_METHODS.map(m => (
                   <button key={m.value} type="button" onClick={() => setMethod(m.value)}
-                    className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96] truncate"
-                    style={method === m.value
-                      ? { background:'#E6F0FF', color:'#006AFF', border:'1px solid #006AFF' }
-                      : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
+                    className={`rounded-lg border px-2.5 py-2 text-xs font-semibold transition active:scale-[.97] truncate ${
+                      method === m.value
+                        ? 'bg-moss-50 text-moss-700 border-moss-600'
+                        : 'bg-white text-ink border-black/[.1] hover:bg-sand/60'
+                    }`}>
                     {m.label}
                   </button>
                 ))}
@@ -236,83 +233,80 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
 
           {/* Open invoices */}
           {!customerId ? (
-            <div className="rounded-xl p-8 text-center"
-              style={{background:'#FAFAFA', border:'1px dashed #E5E5E5'}}>
-              <div className="text-[36px] mb-2 opacity-30">🏢</div>
-              <div className="text-[13px] text-[#666]">Select a company to see their open invoices</div>
+            <div className="rounded-2xl p-10 text-center border border-dashed border-black/15 bg-white">
+              <div className="font-display text-lg text-ink mb-1">Pick a company</div>
+              <p className="text-sm text-ink/55">Their open invoices will appear here for you to allocate this payment against.</p>
             </div>
           ) : openInvoices.length === 0 ? (
-            <div className="rounded-xl p-8 text-center"
-              style={{background:'#DCFCE7', border:'1px solid #15803D'}}>
-              <div className="text-[36px] mb-2">✅</div>
-              <div className="text-[13px] font-bold text-[#15803D]">No outstanding invoices for this company</div>
+            <div className="rounded-2xl p-10 text-center bg-moss-50 border border-moss-600/30">
+              <div className="font-display text-lg text-moss-800">No outstanding invoices</div>
+              <p className="text-sm text-moss-700/70 mt-1">This company is all caught up.</p>
             </div>
           ) : (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <div className="text-[11px] font-bold text-[#1F1F1F]">
-                  Outstanding invoices ({openInvoices.length}) · Total owed: <span className="font-mono">{$}${totalOpen.toFixed(2)}</span>
+                <div className="text-xs font-semibold text-ink">
+                  Outstanding invoices ({openInvoices.length}) · Total owed
+                  <span className="ml-1 tabular-nums text-clay">{$}${totalOpen.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-1.5">
                   <button onClick={() => autoApply(totalOpen)}
-                    className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                    style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
-                    💯 Pay all
+                    className="rounded-lg border border-moss-600 text-moss-700 bg-white px-2.5 py-1 text-xs font-semibold cursor-pointer hover:bg-moss-50">
+                    Pay all
                   </button>
                   <button onClick={() => setAllocations({})}
-                    className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                    style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>
+                    className="rounded-lg border border-black/[.1] text-ink/60 bg-white px-2.5 py-1 text-xs font-semibold cursor-pointer hover:bg-sand/60">
                     Clear
                   </button>
                 </div>
               </div>
 
-              <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl overflow-hidden">
-                <div className="grid bg-[#F5F5F5] border-b border-[#E5E5E5]"
-                  style={{gridTemplateColumns:'1.2fr 1fr 1fr 100px 110px'}}>
-                  {['Invoice #', 'Due Date', 'Total', 'Balance', 'Apply'].map(h => (
-                    <div key={h} className="px-3 py-2 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
+              <div className="card overflow-hidden">
+                <div className="grid bg-sand/60 border-b border-black/[.06]"
+                  style={{gridTemplateColumns:'1.2fr 1fr 1fr 100px 120px'}}>
+                  {['Invoice', 'Due Date', 'Total', 'Balance', 'Apply'].map((h,i) => (
+                    <div key={h} className={`px-3 py-2.5 text-xs uppercase tracking-wide font-semibold text-ink/50 ${i>=2 && i<=3 ? 'text-right' : ''}`}>{h}</div>
                   ))}
                 </div>
-                {openInvoices.map(inv => {
-                  const overdue = inv.due_date && new Date(inv.due_date) < new Date()
-                  const allocAmt = parseFloat(allocations[inv.id] || 0)
-                  const wouldClose = allocAmt > 0 && allocAmt >= (inv.balance_due || 0) - 0.01
-                  return (
-                    <div key={inv.id} className="grid border-b border-[#E5E5E5] last:border-0 items-center"
-                      style={{gridTemplateColumns:'1.2fr 1fr 1fr 100px 110px',
-                              background: allocAmt > 0 ? '#F0F8FF' : '#FFFFFF'}}>
-                      <div className="px-3 py-2.5 font-mono text-[12px] font-bold text-[#006AFF]">
-                        {inv.invoice_number}
+                <div className="divide-y divide-black/[.06]">
+                  {openInvoices.map(inv => {
+                    const overdue = inv.due_date && new Date(inv.due_date) < new Date()
+                    const allocAmt = parseFloat(allocations[inv.id] || 0)
+                    const wouldClose = allocAmt > 0 && allocAmt >= (inv.balance_due || 0) - 0.01
+                    return (
+                      <div key={inv.id} className={`grid items-center transition-colors ${allocAmt > 0 ? 'bg-moss-50/60' : 'bg-white hover:bg-sand/40'}`}
+                        style={{gridTemplateColumns:'1.2fr 1fr 1fr 100px 120px'}}>
+                        <div className="px-3 py-3 font-semibold text-ink tabular-nums">
+                          {inv.invoice_number}
+                        </div>
+                        <div className={`px-3 py-3 text-sm ${overdue ? 'text-clay font-semibold' : 'text-ink/65'}`}>
+                          {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}
+                        </div>
+                        <div className="px-3 py-3 text-right tabular-nums text-sm text-ink/65">
+                          {$}${(inv.total || 0).toFixed(2)}
+                        </div>
+                        <div className="px-3 py-3 text-right tabular-nums font-semibold text-clay">
+                          {$}${(inv.balance_due || 0).toFixed(2)}
+                        </div>
+                        <div className="px-2 py-2">
+                          <DualInput compact mode="decimal" prefix={$}
+                            value={allocations[inv.id] || ''}
+                            onChange={(v) => setAlloc(inv.id, v)}
+                            placeholder="0.00"
+                            kbTitle={`Apply to ${inv.invoice_number}`}/>
+                          {wouldClose && (
+                            <div className="text-[9px] text-moss-700 font-semibold mt-0.5 text-center">→ paid in full</div>
+                          )}
+                        </div>
                       </div>
-                      <div className="px-3 py-2.5 text-[11px]"
-                        style={{color: overdue ? '#CF1322' : '#666'}}>
-                        {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}
-                        {overdue && <span className="ml-1 text-[9px] font-bold">⚠️</span>}
-                      </div>
-                      <div className="px-3 py-2.5 text-right font-mono text-[12px] text-[#666]">
-                        {$}${(inv.total || 0).toFixed(2)}
-                      </div>
-                      <div className="px-3 py-2.5 text-right font-mono text-[12px] font-bold text-[#CF1322]">
-                        {$}${(inv.balance_due || 0).toFixed(2)}
-                      </div>
-                      <div className="px-2 py-2">
-                        <DualInput compact mode="decimal" prefix={$}
-                          value={allocations[inv.id] || ''}
-                          onChange={(v) => setAlloc(inv.id, v)}
-                          placeholder="0.00"
-                          kbTitle={`Apply to ${inv.invoice_number}`}/>
-                        {wouldClose && (
-                          <div className="text-[9px] text-[#15803D] font-bold mt-0.5 text-center">→ PAID</div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-                <div className="bg-[#FAFAFA] border-t border-[#E5E5E5] px-4 py-3 flex justify-between items-center">
-                  <span className="text-[12px] font-bold text-[#1F1F1F]">Total payment</span>
-                  <span className="font-mono text-[18px] font-bold"
-                    style={{color: totalAllocated > 0 ? '#15803D' : '#999'}}>
+                    )
+                  })}
+                </div>
+                <div className="bg-sand/60 border-t border-black/[.06] px-4 py-3.5 flex justify-between items-center">
+                  <span className="text-sm font-semibold text-ink">Total payment</span>
+                  <span className={`tabular-nums text-2xl font-display font-semibold ${
+                    totalAllocated > 0 ? 'text-moss-700' : 'text-ink/30'
+                  }`}>
                     {$}${totalAllocated.toFixed(2)}
                   </span>
                 </div>
@@ -327,16 +321,10 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 flex gap-2 flex-shrink-0" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
-          <button onClick={onClose}
-            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
-            style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-            Cancel
-          </button>
-          <button onClick={submit} disabled={saving || totalAllocated <= 0 || !customerId}
-            className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-            style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
-            {saving ? 'Saving...' : `💰 Receive ${$}${totalAllocated.toFixed(2)}`}
+        <div className="px-6 py-4 flex gap-2 flex-shrink-0 bg-white" style={{borderTop:'1px solid rgba(0,0,0,0.06)'}}>
+          <button onClick={onClose} className="btn-outline flex-1">Cancel</button>
+          <button onClick={submit} disabled={saving || totalAllocated <= 0 || !customerId} className="btn-primary flex-1">
+            {saving ? 'Saving…' : `Receive ${$}${totalAllocated.toFixed(2)}`}
           </button>
         </div>
       </div>
@@ -345,5 +333,5 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
 }
 
 function FieldLabel({ children }) {
-  return <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">{children}</div>
+  return <div className="label">{children}</div>
 }

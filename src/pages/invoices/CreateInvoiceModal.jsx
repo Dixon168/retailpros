@@ -421,41 +421,34 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
 
   return (
     <>
-      <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
-        <div className="rounded-2xl overflow-hidden flex flex-col" style={{
-          width:'820px', maxWidth:'100%', maxHeight:'92vh', background:'#FFFFFF',
-          boxShadow:'0 20px 50px rgba(0,0,0,0.3)'
+      <div className="b2b-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
+        <div className="card overflow-hidden flex flex-col" style={{
+          width:'820px', maxWidth:'100%', maxHeight:'92vh'
         }}>
-          {/* Loading state for edit mode — wait until we've fetched the
-              invoice. Otherwise the form briefly shows as if creating a
-              new invoice ("Pick a company" header, empty items) which
-              is confusing. */}
           {isEdit && !loadedInvoice ? (
             <div className="flex-1 flex items-center justify-center p-16" style={{minHeight:'400px'}}>
               <div className="text-center">
-                <div className="text-[32px] mb-3 animate-pulse">📋</div>
-                <div className="text-[13px] font-bold text-[#1F1F1F]">Loading invoice...</div>
-                <div className="text-[11px] text-[#666] mt-1">Fetching items + stock levels</div>
+                <div className="font-display text-xl text-ink mb-1">Loading invoice…</div>
+                <div className="text-xs text-ink/55">Fetching items + stock levels</div>
               </div>
             </div>
           ) : (
           <>
           {/* Header */}
-          <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div className="px-6 py-5 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
             <div>
-              <div className="text-[11px] font-bold text-[#666] uppercase tracking-wider">
+              <div className="label">
                 {isEdit
-                  ? (isLocked ? '🔒 Invoice Locked' : `✏️ Edit Invoice`)
+                  ? (isLocked ? 'Invoice Locked' : `Edit Invoice`)
                   : 'New Invoice'}
               </div>
-              <div className="text-[16px] font-bold text-[#1F1F1F]">
+              <div className="font-display text-xl text-ink">
                 {loadedInvoice?.invoice_number
                   ? `${loadedInvoice.invoice_number} · ${selectedCustomer?.company_name || ''}`
                   : (selectedCustomer?.company_name || 'Pick a company')}
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-              style={{background:'#F5F5F5', border:'none'}}>✕</button>
+            <button onClick={onClose} className="w-9 h-9 rounded-lg cursor-pointer text-base bg-black/[.04] hover:bg-black/[.08] border-none">✕</button>
           </div>
 
           {/* Locked banner — only in edit mode for voided/closed invoices */}
@@ -782,39 +775,31 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
           })()}
 
           {/* Footer */}
-          <div className="px-5 py-4 flex gap-2 flex-shrink-0" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
-            <button onClick={onClose}
-              className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer"
-              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+          <div className="px-6 py-4 flex gap-2 flex-shrink-0 bg-white" style={{borderTop:'1px solid rgba(0,0,0,0.06)'}}>
+            <button onClick={onClose} className="btn-outline flex-1">
               {isLocked ? 'Close' : 'Cancel'}
             </button>
-            {/* Hide Save button entirely when invoice is locked. The user can
-                still view all fields but cannot submit changes. */}
             {!isLocked && (
               <button onClick={create} disabled={saving || !customerId || items.length === 0}
-                className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
+                className="btn-primary flex-1"
                 style={(() => {
-                  // Edit mode: simple blue Save (no Pay Now logic here)
-                  if (isEdit) {
-                    return { background: '#006AFF', color: '#FFFFFF', border: 'none' }
-                  }
+                  if (isEdit) return undefined
                   const enteredAmt = parseFloat(payAmount) || 0
-                  const isFull = payNow && enteredAmt >= totals.total - 0.005
+                  const isFull    = payNow && enteredAmt >= totals.total - 0.005
                   const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
-                  return {
-                    background: isFull ? '#15803D' : isPartial ? '#B45309' : '#006AFF',
-                    color: '#FFFFFF',
-                    border: 'none',
-                  }
+                  // Moss for full / partial (positive money in); default moss for create
+                  if (isFull)    return { background: '#2f5f49' }   // moss-700
+                  if (isPartial) return { background: '#c2603b' }   // clay (partial = caution)
+                  return undefined
                 })()}>
                 {(() => {
-                  if (saving) return isEdit ? 'Saving...' : (payNow ? 'Processing...' : 'Creating...')
-                  if (isEdit) return `💾 Save Changes · $${totals.total.toFixed(2)}`
+                  if (saving) return isEdit ? 'Saving…' : (payNow ? 'Processing…' : 'Creating…')
+                  if (isEdit) return `Save Changes · $${totals.total.toFixed(2)}`
                   const enteredAmt = parseFloat(payAmount) || 0
-                  const isFull = payNow && enteredAmt >= totals.total - 0.005
+                  const isFull    = payNow && enteredAmt >= totals.total - 0.005
                   const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
-                  if (isFull)    return `💰 Create + Pay in Full · $${totals.total.toFixed(2)}`
-                  if (isPartial) return `💰 Create + Deposit · $${enteredAmt.toFixed(2)}`
+                  if (isFull)    return `Create + Pay in Full · $${totals.total.toFixed(2)}`
+                  if (isPartial) return `Create + Deposit · $${enteredAmt.toFixed(2)}`
                   return `Create Invoice · $${totals.total.toFixed(2)}`
                 })()}
               </button>

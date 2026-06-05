@@ -195,40 +195,41 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
-        <div className="rounded-2xl overflow-hidden flex flex-col" style={{
-          width:'820px', maxWidth:'100%', maxHeight:'92vh', background:'#FFFFFF',
-          boxShadow:'0 20px 50px rgba(0,0,0,0.3)'
+      <div className="b2b-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
+        <div className="card overflow-hidden flex flex-col" style={{
+          width:'820px', maxWidth:'100%', maxHeight:'92vh'
         }}>
           {/* Header */}
-          <div className="px-5 py-4 flex items-start justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
+          <div className="px-6 py-5 flex items-start justify-between flex-shrink-0" style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[15px] font-bold text-[#006AFF]">{detail.invoice_number}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded"
-                  style={isOverdue
-                    ? {background:'#FEE2E2', color:'#CF1322'}
-                    : {background:status.bg, color:status.color}}>
+                <span className="font-display text-xl text-ink leading-none">{detail.invoice_number}</span>
+                <span className={`badge ${
+                  isOverdue                                           ? 'bg-clay/10 text-clay'
+                  : detail.status === 'paid'                          ? 'bg-moss-50 text-moss-700'
+                  : (detail.status === 'sent' || detail.status === 'viewed') ? 'bg-moss-50 text-moss-700'
+                  : detail.status === 'partial'                       ? 'bg-clay/10 text-clay'
+                  :                                                     'bg-black/5 text-ink/70'
+                }`}>
                   {isOverdue ? 'Overdue' : status.label}
                 </span>
                 {detail.source_estimate_id && (
-                  <span className="text-[10px] text-[#666] font-bold">📝 from Estimate</span>
+                  <span className="text-xs text-ink/55">· from Estimate</span>
                 )}
               </div>
-              <div className="text-[14px] font-bold text-[#1F1F1F]">{customer?.company_name || 'Unknown'}</div>
-              <div className="text-[11px] text-[#666] mt-0.5">
+              <div className="text-sm font-semibold text-ink">{customer?.company_name || 'Unknown'}</div>
+              <div className="text-xs text-ink/55 mt-0.5">
                 {[
                   detail.invoice_date && `Date: ${new Date(detail.invoice_date).toLocaleDateString()}`,
                   detail.due_date && `Due: ${new Date(detail.due_date).toLocaleDateString()}`,
                 ].filter(Boolean).join(' · ')}
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]"
-              style={{background:'#F5F5F5', border:'none'}}>✕</button>
+            <button onClick={onClose} className="w-9 h-9 rounded-lg cursor-pointer text-base bg-black/[.04] hover:bg-black/[.08] border-none">✕</button>
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-sand/30">
             {/* Draft hint — this invoice hasn't been issued yet */}
             {detail.status === 'draft' && (
               <div className="rounded-lg p-4 flex items-center justify-between"
@@ -453,89 +454,66 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 flex gap-2 flex-shrink-0 flex-wrap items-center" style={{background:'#FAFAFA', borderTop:'1px solid #E5E5E5'}}>
-            <button onClick={onClose}
-              className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
-              style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
-              Close
-            </button>
+          <div className="px-6 py-4 flex gap-2 flex-shrink-0 flex-wrap items-center bg-white" style={{borderTop:'1px solid rgba(0,0,0,0.06)'}}>
+            <button onClick={onClose} className="btn-outline">Close</button>
 
-            {/* Print group — primary action prominent */}
-            <div className="flex items-stretch rounded-lg overflow-hidden" style={{border:'1px solid #1F1F1F'}}>
+            {/* Print group */}
+            <div className="flex items-stretch rounded-lg overflow-hidden border border-ink/80">
               <button onClick={printInvoice} title="Print or Save as PDF"
-                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#1F1F1F', color:'#FFFFFF', border:'none'}}>
-                🖨️ Print / PDF
+                className="px-4 py-2.5 text-sm font-semibold cursor-pointer bg-ink text-white border-none">
+                Print / PDF
               </button>
               <button onClick={downloadInvoice} title="Download HTML"
-                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#1F1F1F', border:'none', borderLeft:'1px solid #E5E5E5'}}>
-                📥
+                className="px-3 py-2.5 text-sm font-semibold cursor-pointer bg-white text-ink border-none border-l border-black/10">
+                ↓
               </button>
             </div>
 
-            {/* Packing slip group — separate */}
-            <div className="flex items-stretch rounded-lg overflow-hidden" style={{border:'1px solid #B45309'}}>
+            {/* Packing slip group */}
+            <div className="flex items-stretch rounded-lg overflow-hidden border border-clay/70">
               <button onClick={printPacking} title="Print packing slip (no prices)"
-                className="px-3 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#B45309', border:'none'}}>
-                📦 Packing Slip
+                className="px-3 py-2.5 text-sm font-semibold cursor-pointer bg-white text-clay border-none">
+                Packing Slip
               </button>
               <button onClick={downloadPacking} title="Download packing slip"
-                className="px-2.5 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#B45309', border:'none', borderLeft:'1px solid #FCD34D'}}>
-                📥
+                className="px-2.5 py-2.5 text-sm font-semibold cursor-pointer bg-white text-clay border-none border-l border-clay/30">
+                ↓
               </button>
             </div>
 
-            {/* Edit button — available on any non-terminal status */}
             {canEdit && !showVoidInline && (
-              <button onClick={() => setShowEdit(true)} disabled={updating}
-                className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
-                ✏️ Edit
+              <button onClick={() => setShowEdit(true)} disabled={updating} className="btn-outline">
+                Edit
               </button>
             )}
 
-            {/* History button — always available */}
-            <button onClick={() => setShowAudit(true)} disabled={updating}
-              title="View edit history"
-              className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>
-              📜 History
+            <button onClick={() => setShowAudit(true)} disabled={updating} title="View edit history" className="btn-ghost">
+              History
             </button>
 
             {!isPaidOrVoid && !showVoidInline && (
               <>
                 {detail.status === 'draft' && (
-                  <button onClick={sendInvoice} disabled={updating}
-                    className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                    style={{background:'#006AFF', color:'#fff', border:'1px solid #006AFF'}}>
-                    📤 Send Invoice
+                  <button onClick={sendInvoice} disabled={updating} className="btn-primary">
+                    Send Invoice
                   </button>
                 )}
-                <button onClick={() => setShowVoidInline(true)} disabled={updating}
-                  className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                  style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                <button onClick={() => setShowVoidInline(true)} disabled={updating} className="btn-danger">
                   Void
                 </button>
               </>
             )}
 
             {balanceDue > 0 && !isPaidOrVoid && !showVoidInline && detail.status !== 'draft' && (
-              <button onClick={() => setShowReceive(true)}
-                className="ml-auto rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
-                💰 Receive Payment
+              <button onClick={() => setShowReceive(true)} className="btn-primary ml-auto">
+                Receive Payment
               </button>
             )}
 
-            {/* Close & Lock — only on fully paid invoices, pushes to right */}
             {canClose && !showVoidInline && (
               <button onClick={() => setShowCloseConfirm(true)} disabled={updating}
-                className="ml-auto rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#374151', color:'#FFFFFF', border:'none'}}>
-                🔒 Close &amp; Lock
+                className="ml-auto inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold cursor-pointer bg-ink text-white border-none disabled:opacity-40 active:scale-[.98]">
+                Close &amp; Lock
               </button>
             )}
           </div>
@@ -544,34 +522,28 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
 
       {/* Close & Lock confirmation dialog */}
       {showCloseConfirm && (
-        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4"
+        <div className="b2b-theme fixed inset-0 z-[700] flex items-center justify-center p-4"
           style={{background:'rgba(0,0,0,0.5)'}}>
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="text-[20px] font-bold text-[#1F1F1F] mb-2">
-              🔒 Close &amp; Lock this invoice?
+          <div className="card max-w-md w-full p-6">
+            <div className="font-display text-2xl text-ink mb-2">
+              Close &amp; Lock this invoice?
             </div>
-            <div className="text-[13px] text-[#666] mb-4 leading-relaxed">
-              Once closed, <b>this invoice can never be edited or voided</b>.
-              The numbers are final.
-            </div>
-            <div className="rounded-lg p-3 mb-4 text-[12px]"
-              style={{background:'#FFFBEB', border:'1px solid #FCD34D'}}>
-              <div className="font-bold text-[#92400E] mb-1">If you need to make changes later:</div>
-              <div className="text-[#78350F]">
-                You'll have to issue a separate credit memo or correction invoice.
-                You cannot reopen this one.
+            <p className="text-sm text-ink/65 mb-4 leading-relaxed">
+              Once closed, <b>this invoice can never be edited or voided</b>. The numbers are final.
+            </p>
+            <div className="rounded-lg p-3 mb-4 text-xs bg-clay/[.06] border border-clay/30">
+              <div className="font-semibold text-clay mb-1">If you need to make changes later:</div>
+              <div className="text-clay/90">
+                You'll have to issue a separate credit memo or correction invoice. You cannot reopen this one.
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowCloseConfirm(false)} disabled={updating}
-                className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>
+              <button onClick={() => setShowCloseConfirm(false)} disabled={updating} className="btn-outline flex-1">
                 Cancel
               </button>
               <button onClick={closeAndLock} disabled={updating}
-                className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#374151', color:'#FFFFFF', border:'none'}}>
-                {updating ? 'Locking...' : '🔒 Yes, Close & Lock'}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold cursor-pointer bg-ink text-white border-none disabled:opacity-40 active:scale-[.98]">
+                {updating ? 'Locking…' : 'Yes, Close & Lock'}
               </button>
             </div>
           </div>

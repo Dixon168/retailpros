@@ -254,26 +254,22 @@ export default function B2BCenterPage() {
   }, [recentPayments, invoices, recentEstimates])
 
   return (
-    <div className="max-w-[1300px] mx-auto p-5">
+    <div className="b2b-theme">
+    <div className="max-w-[1300px] mx-auto px-6 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <div className="text-[24px] font-bold text-[#1F1F1F]">💼 {t('b2bCenter')}</div>
-          <div className="text-[12px] text-[#666] mt-1">
-            Estimates · Invoices · Payments · A/R
-          </div>
+          <h1 className="font-display text-3xl text-ink leading-tight">{t('b2bCenter')}</h1>
+          <p className="text-sm text-ink/55 mt-1">Estimates · Invoices · Payments · A/R</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => window.print()}
-            className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer"
-            style={{border:'1.5px solid #e5e5e5', background:'#fff', color:'#666'}}>
-            🖨️ {t('print')}
-          </button>
-          <div className="flex gap-1">
+          <button onClick={() => window.print()} className="btn-outline">{t('print')}</button>
+          <div className="flex gap-1.5">
             {[['week',t('thisWeek')],['month',t('thisMonth')],['quarter','Q']].map(([k,label]) => (
               <button key={k} onClick={() => setRange(k)}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2"
-                style={range===k ? {background:'#006AFF',color:'#fff',borderColor:'#006AFF'} : {background:'#fff',color:'#666',borderColor:'#e5e5e5'}}>
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${
+                  range===k ? 'bg-moss-700 text-white border-transparent' : 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
+                }`}>
                 {label}
               </button>
             ))}
@@ -509,6 +505,7 @@ export default function B2BCenterPage() {
             qc.invalidateQueries({ queryKey: ['b2b-invoices-all'] })
           }}/>
       )}
+    </div>
     </div>
   )
 }

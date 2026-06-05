@@ -105,27 +105,24 @@ export default function B2BReportsPage() {
   }
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="b2b-theme">
+    <div className="px-6 py-8 max-w-[1400px] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h1 className="text-[24px] font-bold tracking-tight" style={{color:'#1F1F1F'}}>
-            📈 B2B Reports
-          </h1>
-          <p className="text-[12px] text-slate-500 mt-0.5">
-            Invoice & A/R performance ·
-            {format(window.start, 'MMM d')} → {format(window.end, 'MMM d, yyyy')}
+          <h1 className="font-display text-3xl text-ink leading-tight">B2B Reports</h1>
+          <p className="text-sm text-ink/55 mt-1">
+            Invoice & A/R performance · {format(window.start, 'MMM d')} → {format(window.end, 'MMM d, yyyy')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           {[
             ['week','7 days'], ['month','30 days'], ['quarter','90 days'], ['year','1 year']
           ].map(([k,label]) => (
             <button key={k} onClick={() => setRange(k)}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2 transition-all"
-              style={range===k
-                ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
-                : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${
+                range===k ? 'bg-moss-700 text-white border-transparent' : 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
+              }`}>
               {label}
             </button>
           ))}
@@ -133,26 +130,27 @@ export default function B2BReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4" style={{borderBottom:'1px solid #e5e5e5'}}>
+      <div className="flex gap-1 mb-6" style={{borderBottom:'1px solid rgba(0,0,0,0.08)'}}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className="px-4 py-2 text-[12px] font-bold cursor-pointer border-none transition-all flex items-center gap-1.5"
+            className="px-4 py-2.5 text-sm font-semibold cursor-pointer border-none transition-all flex items-center gap-1.5 bg-transparent"
             style={tab === t.id
-              ? {background:'transparent', color:'#006AFF', borderBottom:'2px solid #006AFF', marginBottom:'-1px'}
-              : {background:'transparent', color:'#666'}}>
+              ? {color:'#2f5f49', borderBottom:'2px solid #2f5f49', marginBottom:'-1px'}
+              : {color: 'rgba(17,33,27,0.55)'}}>
             <span>{t.icon}</span> {t.label}
           </button>
         ))}
       </div>
 
       {isLoading
-        ? <div className="py-20 text-center text-[12px] text-slate-400">Loading...</div>
+        ? <div className="py-20 text-center text-sm text-ink/40">Loading…</div>
         : tab === 'revenue'   ? <Revenue   invoices={invoices} exportCSV={exportCSV}/>
         : tab === 'customers' ? <Customers invoices={invoices} exportCSV={exportCSV}/>
         : tab === 'aging'     ? <Aging     invoices={invoices} exportCSV={exportCSV}/>
         : tab === 'estimates' ? <Estimates estimates={estimates} exportCSV={exportCSV}/>
         : tab === 'payments'  ? <Payments  payments={payments} exportCSV={exportCSV}/>
         : null}
+    </div>
     </div>
   )
 }
