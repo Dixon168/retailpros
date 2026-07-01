@@ -11,25 +11,21 @@ export default {
         s3:     { DEFAULT: '#1a2236' },
         border: { DEFAULT: '#1e2d42', 2: '#243347' },
         t:      { 2: '#8899b0', 3: '#3d5068' },
-        // ── B2B Invoice premium-SaaS palette (Dixon's design spec) ──
-        // Used by the B2B/invoice pages only. POS keeps its own colors.
-        ink:  '#11211b',
-        moss: {
-          50:  '#f3f7f4',
-          100: '#e3ede7',
-          600: '#3f7a5f',
-          700: '#2f5f49',
-          800: '#264c3b',
+        // ── Linear-style design tokens (Dixon picked style C) ──
+        // Single accent color + slate grays. Applied through
+        // .linear-theme scope so it doesn't clobber the dark POS
+        // dashboard palette above.
+        lx: {           // "lx" = linear-accent
+          50:  '#eef0fc',
+          100: '#dee2f8',
+          500: '#5E6AD2',   // primary
+          600: '#4854c4',   // hover
+          700: '#3b47a8',
         },
-        sand: '#f6f4ee',
-        clay: '#c2603b',
       },
       fontFamily: {
         sans:    ['Syne', 'sans-serif'],
         mono:    ['DM Mono', 'monospace'],
-        // ── B2B fonts (premium SaaS look) ──
-        display: ['"Fraunces"', 'Georgia', 'serif'],
-        jakarta: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
       },
       animation: {
         'pulse-border': 'pulse-border 2s infinite',

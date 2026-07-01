@@ -195,7 +195,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
 
   return (
     <>
-      <div className="b2b-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
+      <div className="linear-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
         <div className="card overflow-hidden flex flex-col" style={{
           width:'820px', maxWidth:'100%', maxHeight:'92vh'
         }}>
@@ -203,22 +203,22 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
           <div className="px-6 py-5 flex items-start justify-between flex-shrink-0" style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-display text-xl text-ink leading-none">{detail.invoice_number}</span>
+                <span className="font-semibold tracking-tight text-xl text-slate-900 leading-none">{detail.invoice_number}</span>
                 <span className={`badge ${
-                  isOverdue                                           ? 'bg-clay/10 text-clay'
-                  : detail.status === 'paid'                          ? 'bg-moss-50 text-moss-700'
-                  : (detail.status === 'sent' || detail.status === 'viewed') ? 'bg-moss-50 text-moss-700'
-                  : detail.status === 'partial'                       ? 'bg-clay/10 text-clay'
-                  :                                                     'bg-black/5 text-ink/70'
+                  isOverdue                                           ? 'bg-red-50 text-red-600'
+                  : detail.status === 'paid'                          ? 'bg-emerald-50 text-emerald-600'
+                  : (detail.status === 'sent' || detail.status === 'viewed') ? 'bg-emerald-50 text-emerald-600'
+                  : detail.status === 'partial'                       ? 'bg-red-50 text-red-600'
+                  :                                                     'bg-black/5 text-slate-600'
                 }`}>
                   {isOverdue ? 'Overdue' : status.label}
                 </span>
                 {detail.source_estimate_id && (
-                  <span className="text-xs text-ink/55">· from Estimate</span>
+                  <span className="text-xs text-slate-500">· from Estimate</span>
                 )}
               </div>
-              <div className="text-sm font-semibold text-ink">{customer?.company_name || 'Unknown'}</div>
-              <div className="text-xs text-ink/55 mt-0.5">
+              <div className="text-sm font-semibold text-slate-900">{customer?.company_name || 'Unknown'}</div>
+              <div className="text-xs text-slate-500 mt-0.5">
                 {[
                   detail.invoice_date && `Date: ${new Date(detail.invoice_date).toLocaleDateString()}`,
                   detail.due_date && `Due: ${new Date(detail.due_date).toLocaleDateString()}`,
@@ -229,7 +229,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-sand/30">
+          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50">
             {/* Draft hint — this invoice hasn't been issued yet */}
             {detail.status === 'draft' && (
               <div className="rounded-lg p-4 flex items-center justify-between"
@@ -464,19 +464,19 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                 Print / PDF
               </button>
               <button onClick={downloadInvoice} title="Download HTML"
-                className="px-3 py-2.5 text-sm font-semibold cursor-pointer bg-white text-ink border-none border-l border-black/10">
+                className="px-3 py-2.5 text-sm font-semibold cursor-pointer bg-white text-slate-900 border-none border-l border-black/10">
                 ↓
               </button>
             </div>
 
             {/* Packing slip group */}
-            <div className="flex items-stretch rounded-lg overflow-hidden border border-clay/70">
+            <div className="flex items-stretch rounded-lg overflow-hidden border border-red-300">
               <button onClick={printPacking} title="Print packing slip (no prices)"
-                className="px-3 py-2.5 text-sm font-semibold cursor-pointer bg-white text-clay border-none">
+                className="px-3 py-2.5 text-sm font-semibold cursor-pointer bg-white text-red-600 border-none">
                 Packing Slip
               </button>
               <button onClick={downloadPacking} title="Download packing slip"
-                className="px-2.5 py-2.5 text-sm font-semibold cursor-pointer bg-white text-clay border-none border-l border-clay/30">
+                className="px-2.5 py-2.5 text-sm font-semibold cursor-pointer bg-white text-red-600 border-none border-l border-red-200">
                 ↓
               </button>
             </div>
@@ -522,18 +522,18 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
 
       {/* Close & Lock confirmation dialog */}
       {showCloseConfirm && (
-        <div className="b2b-theme fixed inset-0 z-[700] flex items-center justify-center p-4"
+        <div className="linear-theme fixed inset-0 z-[700] flex items-center justify-center p-4"
           style={{background:'rgba(0,0,0,0.5)'}}>
           <div className="card max-w-md w-full p-6">
-            <div className="font-display text-2xl text-ink mb-2">
+            <div className="font-semibold tracking-tight text-2xl text-slate-900 mb-2">
               Close &amp; Lock this invoice?
             </div>
-            <p className="text-sm text-ink/65 mb-4 leading-relaxed">
+            <p className="text-sm text-slate-600 mb-4 leading-relaxed">
               Once closed, <b>this invoice can never be edited or voided</b>. The numbers are final.
             </p>
-            <div className="rounded-lg p-3 mb-4 text-xs bg-clay/[.06] border border-clay/30">
-              <div className="font-semibold text-clay mb-1">If you need to make changes later:</div>
-              <div className="text-clay/90">
+            <div className="rounded-lg p-3 mb-4 text-xs bg-red-50 border border-red-200">
+              <div className="font-semibold text-red-600 mb-1">If you need to make changes later:</div>
+              <div className="text-red-600/90">
                 You'll have to issue a separate credit memo or correction invoice. You cannot reopen this one.
               </div>
             </div>

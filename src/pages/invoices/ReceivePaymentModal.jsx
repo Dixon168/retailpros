@@ -173,7 +173,7 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
   }
 
   return (
-    <div className="b2b-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
+    <div className="linear-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
       <div className="card overflow-hidden flex flex-col" style={{
         width:'780px', maxWidth:'100%', maxHeight:'92vh'
       }}>
@@ -181,13 +181,13 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
         <div className="px-6 py-5 flex items-center justify-between flex-shrink-0" style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
           <div>
             <div className="label">Receive Payment</div>
-            <div className="font-display text-xl text-ink">Record cash, check, ACH, or card</div>
+            <div className="font-semibold tracking-tight text-xl text-slate-900">Record cash, check, ACH, or card</div>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-lg cursor-pointer text-base bg-black/[.04] hover:bg-black/[.08] border-none">✕</button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-sand/30">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50">
           {/* Customer + date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -215,8 +215,8 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
                   <button key={m.value} type="button" onClick={() => setMethod(m.value)}
                     className={`rounded-lg border px-2.5 py-2 text-xs font-semibold transition active:scale-[.97] truncate ${
                       method === m.value
-                        ? 'bg-moss-50 text-moss-700 border-moss-600'
-                        : 'bg-white text-ink border-black/[.1] hover:bg-sand/60'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-500'
+                        : 'bg-white text-slate-900 border-black/[.1] hover:bg-slate-50'
                     }`}>
                     {m.label}
                   </button>
@@ -234,38 +234,38 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
           {/* Open invoices */}
           {!customerId ? (
             <div className="rounded-2xl p-10 text-center border border-dashed border-black/15 bg-white">
-              <div className="font-display text-lg text-ink mb-1">Pick a company</div>
-              <p className="text-sm text-ink/55">Their open invoices will appear here for you to allocate this payment against.</p>
+              <div className="font-semibold tracking-tight text-lg text-slate-900 mb-1">Pick a company</div>
+              <p className="text-sm text-slate-500">Their open invoices will appear here for you to allocate this payment against.</p>
             </div>
           ) : openInvoices.length === 0 ? (
-            <div className="rounded-2xl p-10 text-center bg-moss-50 border border-moss-600/30">
-              <div className="font-display text-lg text-moss-800">No outstanding invoices</div>
-              <p className="text-sm text-moss-700/70 mt-1">This company is all caught up.</p>
+            <div className="rounded-2xl p-10 text-center bg-emerald-50 border border-emerald-200">
+              <div className="font-semibold tracking-tight text-lg text-emerald-700">No outstanding invoices</div>
+              <p className="text-sm text-emerald-600/70 mt-1">This company is all caught up.</p>
             </div>
           ) : (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-semibold text-ink">
+                <div className="text-xs font-semibold text-slate-900">
                   Outstanding invoices ({openInvoices.length}) · Total owed
-                  <span className="ml-1 tabular-nums text-clay">{$}${totalOpen.toFixed(2)}</span>
+                  <span className="ml-1 tabular-nums text-red-600">{$}${totalOpen.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-1.5">
                   <button onClick={() => autoApply(totalOpen)}
-                    className="rounded-lg border border-moss-600 text-moss-700 bg-white px-2.5 py-1 text-xs font-semibold cursor-pointer hover:bg-moss-50">
+                    className="rounded-lg border border-emerald-500 text-emerald-600 bg-white px-2.5 py-1 text-xs font-semibold cursor-pointer hover:bg-emerald-50">
                     Pay all
                   </button>
                   <button onClick={() => setAllocations({})}
-                    className="rounded-lg border border-black/[.1] text-ink/60 bg-white px-2.5 py-1 text-xs font-semibold cursor-pointer hover:bg-sand/60">
+                    className="rounded-lg border border-black/[.1] text-slate-500 bg-white px-2.5 py-1 text-xs font-semibold cursor-pointer hover:bg-slate-50">
                     Clear
                   </button>
                 </div>
               </div>
 
               <div className="card overflow-hidden">
-                <div className="grid bg-sand/60 border-b border-black/[.06]"
+                <div className="grid bg-slate-50 border-b border-black/[.06]"
                   style={{gridTemplateColumns:'1.2fr 1fr 1fr 100px 120px'}}>
                   {['Invoice', 'Due Date', 'Total', 'Balance', 'Apply'].map((h,i) => (
-                    <div key={h} className={`px-3 py-2.5 text-xs uppercase tracking-wide font-semibold text-ink/50 ${i>=2 && i<=3 ? 'text-right' : ''}`}>{h}</div>
+                    <div key={h} className={`px-3 py-2.5 text-xs uppercase tracking-wide font-semibold text-slate-500 ${i>=2 && i<=3 ? 'text-right' : ''}`}>{h}</div>
                   ))}
                 </div>
                 <div className="divide-y divide-black/[.06]">
@@ -274,18 +274,18 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
                     const allocAmt = parseFloat(allocations[inv.id] || 0)
                     const wouldClose = allocAmt > 0 && allocAmt >= (inv.balance_due || 0) - 0.01
                     return (
-                      <div key={inv.id} className={`grid items-center transition-colors ${allocAmt > 0 ? 'bg-moss-50/60' : 'bg-white hover:bg-sand/40'}`}
+                      <div key={inv.id} className={`grid items-center transition-colors ${allocAmt > 0 ? 'bg-emerald-50' : 'bg-white hover:bg-slate-50'}`}
                         style={{gridTemplateColumns:'1.2fr 1fr 1fr 100px 120px'}}>
-                        <div className="px-3 py-3 font-semibold text-ink tabular-nums">
+                        <div className="px-3 py-3 font-semibold text-slate-900 tabular-nums">
                           {inv.invoice_number}
                         </div>
-                        <div className={`px-3 py-3 text-sm ${overdue ? 'text-clay font-semibold' : 'text-ink/65'}`}>
+                        <div className={`px-3 py-3 text-sm ${overdue ? 'text-red-600 font-semibold' : 'text-slate-600'}`}>
                           {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}
                         </div>
-                        <div className="px-3 py-3 text-right tabular-nums text-sm text-ink/65">
+                        <div className="px-3 py-3 text-right tabular-nums text-sm text-slate-600">
                           {$}${(inv.total || 0).toFixed(2)}
                         </div>
-                        <div className="px-3 py-3 text-right tabular-nums font-semibold text-clay">
+                        <div className="px-3 py-3 text-right tabular-nums font-semibold text-red-600">
                           {$}${(inv.balance_due || 0).toFixed(2)}
                         </div>
                         <div className="px-2 py-2">
@@ -295,17 +295,17 @@ export default function ReceivePaymentModal({ presetCustomerId, presetInvoiceId,
                             placeholder="0.00"
                             kbTitle={`Apply to ${inv.invoice_number}`}/>
                           {wouldClose && (
-                            <div className="text-[9px] text-moss-700 font-semibold mt-0.5 text-center">→ paid in full</div>
+                            <div className="text-[9px] text-emerald-600 font-semibold mt-0.5 text-center">→ paid in full</div>
                           )}
                         </div>
                       </div>
                     )
                   })}
                 </div>
-                <div className="bg-sand/60 border-t border-black/[.06] px-4 py-3.5 flex justify-between items-center">
-                  <span className="text-sm font-semibold text-ink">Total payment</span>
-                  <span className={`tabular-nums text-2xl font-display font-semibold ${
-                    totalAllocated > 0 ? 'text-moss-700' : 'text-ink/30'
+                <div className="bg-slate-50 border-t border-black/[.06] px-4 py-3.5 flex justify-between items-center">
+                  <span className="text-sm font-semibold text-slate-900">Total payment</span>
+                  <span className={`tabular-nums text-2xl font-semibold tracking-tight font-semibold ${
+                    totalAllocated > 0 ? 'text-emerald-600' : 'text-slate-900/30'
                   }`}>
                     {$}${totalAllocated.toFixed(2)}
                   </span>

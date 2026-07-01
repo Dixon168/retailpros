@@ -87,7 +87,7 @@ export default function AppLayout() {
   const [collapsed,      setCollapsed]      = useState(false)
 
   return (
-    <div className="flex h-screen" style={{background:'#FFFFFF'}}>
+    <div className="linear-theme flex h-screen" style={{background:'#FFFFFF'}}>
 
       {/* ── Left Sidebar ── */}
       <div className="flex flex-col flex-shrink-0 transition-all"

@@ -147,33 +147,75 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .sq-input:focus { border-color: var(--sq-blue); box-shadow: 0 0 0 3px var(--sq-blue-light); }
 
 /* ════════════════════════════════════════════════
-   🌿 B2B PREMIUM-SAAS THEME (Dixon's design spec)
-   Scoped: only applies inside <div class="b2b-theme">.
-   Used by B2B invoice / customer / report pages so the
-   change doesn't affect the POS look.
+   ⚡ LINEAR-STYLE THEME (Dixon picked style C)
+   Applied through .linear-theme scope on the page
+   wrapper so it doesn't clobber the dark POS pages
+   that use their own bg/font tokens.
+
+   Compact, dense, keyboard-friendly. Small radii,
+   subtle borders, Inter body + JetBrains Mono
+   numerics.
    ════════════════════════════════════════════════ */
-.b2b-theme {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  background: #f6f4ee;
-  color: #11211b;
+.linear-theme {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #ffffff;
+  color: #0f172a;                  /* slate-900 */
   -webkit-font-smoothing: antialiased;
   min-height: 100%;
+  font-size: 14px;
+  line-height: 1.5;
 }
-.b2b-theme h1,
-.b2b-theme h2,
-.b2b-theme h3,
-.b2b-theme .font-display {
-  font-family: 'Fraunces', Georgia, serif;
+.linear-theme .font-mono,
+.linear-theme .tabular-nums {
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+/* Kill any stray "font-display" leftovers — force sans */
+.linear-theme .font-display {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
+/* ── Component classes (compact Linear vocabulary) ─────────────
+   Same names as before (.btn, .btn-primary, .card, .input, .label,
+   .badge) so all the pages I already refactored pick up the new
+   look automatically — no second-pass HTML edits needed. */
 @layer components {
-  .btn       { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
-  .btn-primary { @apply btn bg-moss-700 text-white hover:bg-moss-800; }
-  .btn-ghost   { @apply btn bg-transparent text-ink hover:bg-black/5; }
-  .btn-outline { @apply btn border border-black/15 bg-white text-ink hover:bg-black/5; }
-  .btn-danger  { @apply btn bg-clay text-white hover:opacity-90; }
-  .input { @apply w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-moss-600 focus:ring-2 focus:ring-moss-600/20 placeholder:text-black/30; }
-  .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/55; }
-  .card  { @apply rounded-2xl border border-black/[.07] bg-white shadow-[0_1px_3px_rgba(17,33,27,.06)]; }
-  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .btn         { @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-primary { @apply btn bg-lx-500 text-white hover:bg-lx-600 focus:ring-2 focus:ring-lx-500/25; }
+  .btn-outline { @apply btn border border-slate-300 bg-white text-slate-800 hover:bg-slate-50; }
+  .btn-ghost   { @apply btn bg-transparent text-slate-600 hover:bg-slate-100; }
+  .btn-danger  { @apply btn bg-white border border-red-200 text-red-600 hover:bg-red-50; }
+
+  /* Compact input */
+  .input {
+    @apply w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] outline-none transition
+      focus:border-lx-500 focus:ring-2 focus:ring-lx-500/20 placeholder:text-slate-400;
+  }
+  .label { @apply mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500; }
+
+  /* Card = white, thin border, small radius, no shadow. Content
+     provides its own padding. */
+  .card {
+    @apply rounded-lg border border-slate-200 bg-white;
+  }
+
+  /* Badge = small rounded pill with • prefix + status color. */
+  .badge  { @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium; }
+  .badge::before { content: "●"; font-size: 8px; line-height: 1; }
+
+  /* Table skeleton — dense header, hover rows, tabular numerics.
+     Use with divide-y divide-slate-100 on the row container. */
+  .lx-thead {
+    @apply grid bg-slate-50 border-b border-slate-200;
+  }
+  .lx-th {
+    @apply px-2.5 py-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide;
+  }
+  .lx-tr {
+    @apply grid items-center hover:bg-slate-50 cursor-pointer transition-colors text-[13px];
+  }
+  .lx-td { @apply px-2.5 py-1.5 text-slate-800; }
 }
+

@@ -58,19 +58,19 @@ export default function InvoicesTab({ customerId, onChanged }) {
       </div>
 
       {isLoading ? (
-        <div className="card p-10 text-center text-sm text-ink/55">Loading invoices…</div>
+        <div className="card p-10 text-center text-sm text-slate-500">Loading invoices…</div>
       ) : filtered.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-sm text-ink/55">
+          <p className="text-sm text-slate-500">
             {invoices.length === 0 ? 'No invoices yet for this company.' : 'No invoices match this filter.'}
           </p>
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <div className="grid bg-sand/60 border-b border-black/[.06]"
+          <div className="grid bg-slate-50 border-b border-black/[.06]"
             style={{gridTemplateColumns:'1.2fr 1fr 1fr 110px 110px 110px'}}>
             {['Invoice','Date','Due','Status','Total','Balance'].map((h,i) => (
-              <div key={h} className={`px-4 py-3 text-xs uppercase tracking-wide font-semibold text-ink/50 ${i>=4?'text-right':''}`}>{h}</div>
+              <div key={h} className={`px-4 py-3 text-xs uppercase tracking-wide font-semibold text-slate-500 ${i>=4?'text-right':''}`}>{h}</div>
             ))}
           </div>
           <div className="divide-y divide-black/[.06]">
@@ -79,30 +79,30 @@ export default function InvoicesTab({ customerId, onChanged }) {
                             && !['paid','void'].includes(inv.status) && (inv.balance_due || 0) > 0
               const sb = STATUS_BADGE[inv.status] || STATUS_BADGE.sent
               const badgeCls =
-                overdue                          ? 'bg-clay/10 text-clay'
-                : inv.status === 'paid'          ? 'bg-moss-50 text-moss-700'
-                : (inv.status === 'sent' || inv.status === 'viewed') ? 'bg-moss-50 text-moss-700'
-                : inv.status === 'partial'       ? 'bg-clay/10 text-clay'
-                :                                  'bg-black/5 text-ink/70'
+                overdue                          ? 'bg-red-50 text-red-600'
+                : inv.status === 'paid'          ? 'bg-emerald-50 text-emerald-600'
+                : (inv.status === 'sent' || inv.status === 'viewed') ? 'bg-emerald-50 text-emerald-600'
+                : inv.status === 'partial'       ? 'bg-red-50 text-red-600'
+                :                                  'bg-black/5 text-slate-600'
               return (
                 <div key={inv.id} onClick={() => setViewing(inv)}
-                  className="grid items-center hover:bg-sand/40 cursor-pointer transition-colors"
+                  className="grid items-center hover:bg-slate-50 cursor-pointer transition-colors"
                   style={{gridTemplateColumns:'1.2fr 1fr 1fr 110px 110px 110px'}}>
-                  <div className="px-4 py-3 font-semibold text-ink tabular-nums">{inv.invoice_number}</div>
-                  <div className="px-4 py-3 text-sm text-ink/65">
-                    {inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : <span className="text-ink/40">—</span>}
+                  <div className="px-4 py-3 font-semibold text-slate-900 tabular-nums">{inv.invoice_number}</div>
+                  <div className="px-4 py-3 text-sm text-slate-600">
+                    {inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : <span className="text-slate-400">—</span>}
                   </div>
-                  <div className={`px-4 py-3 text-sm ${overdue ? 'text-clay font-semibold' : 'text-ink/65'}`}>
-                    {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : <span className="text-ink/40">—</span>}
+                  <div className={`px-4 py-3 text-sm ${overdue ? 'text-red-600 font-semibold' : 'text-slate-600'}`}>
+                    {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : <span className="text-slate-400">—</span>}
                   </div>
                   <div className="px-4 py-3">
                     <span className={`badge ${badgeCls}`}>
                       {overdue ? 'Overdue' : sb.label}
                     </span>
                   </div>
-                  <div className="px-4 py-3 text-right tabular-nums text-ink">${(inv.total || 0).toFixed(2)}</div>
+                  <div className="px-4 py-3 text-right tabular-nums text-slate-900">${(inv.total || 0).toFixed(2)}</div>
                   <div className={`px-4 py-3 text-right tabular-nums font-semibold ${
-                    (inv.balance_due || 0) > 0 ? 'text-clay' : 'text-moss-700'
+                    (inv.balance_due || 0) > 0 ? 'text-red-600' : 'text-emerald-600'
                   }`}>
                     ${(inv.balance_due || 0).toFixed(2)}
                   </div>
@@ -124,13 +124,13 @@ export default function InvoicesTab({ customerId, onChanged }) {
 }
 
 function FTab({ active, onClick, count, red, children }) {
-  const activeBg = red ? 'bg-clay text-white border-transparent' : 'bg-moss-700 text-white border-transparent'
-  const inactive = 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
+  const activeBg = red ? 'bg-red-600 text-white border-transparent' : 'bg-lx-500 text-white border-transparent'
+  const inactive = 'bg-white text-slate-900 border-black/[.08] hover:bg-slate-50'
   return (
     <button onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${active ? activeBg : inactive}`}>
       {children}
-      <span className={`text-xs ${active ? 'opacity-80' : 'text-ink/40'}`}>({count})</span>
+      <span className={`text-xs ${active ? 'opacity-80' : 'text-slate-400'}`}>({count})</span>
     </button>
   )
 }

@@ -90,17 +90,17 @@ export default function InvoicesPage() {
   }, [invoices])
 
   return (
-    <div className="b2b-theme">
+    <div className="linear-theme">
       <div className="max-w-[1200px] mx-auto px-6 py-8">
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="font-display text-3xl text-ink leading-tight">Invoices</h1>
-            <p className="text-sm text-ink/55 mt-1">
-              Total outstanding <span className="font-semibold tabular-nums text-clay">${counts.totalOwed.toFixed(2)}</span>
+            <h1 className="font-semibold tracking-tight text-3xl text-slate-900 leading-tight">Invoices</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Total outstanding <span className="font-semibold tabular-nums text-red-600">${counts.totalOwed.toFixed(2)}</span>
               {counts.overdue > 0 && (
-                <> · <span className="font-semibold text-clay">{counts.overdue} overdue</span></>
+                <> · <span className="font-semibold text-red-600">{counts.overdue} overdue</span></>
               )}
             </p>
           </div>
@@ -130,13 +130,13 @@ export default function InvoicesPage() {
 
         {/* ── List ── */}
         {isLoading ? (
-          <div className="card p-12 text-center text-sm text-ink/55">Loading invoices…</div>
+          <div className="card p-12 text-center text-sm text-slate-500">Loading invoices…</div>
         ) : filtered.length === 0 ? (
           <div className="card p-12 text-center">
-            <div className="font-display text-2xl text-ink mb-1">
+            <div className="font-semibold tracking-tight text-2xl text-slate-900 mb-1">
               {invoices.length === 0 ? 'No invoices yet' : 'No invoices match your filter'}
             </div>
-            <p className="text-sm text-ink/55 mb-4">
+            <p className="text-sm text-slate-500 mb-4">
               {invoices.length === 0
                 ? 'Create your first invoice to start tracking what your wholesale customers owe.'
                 : 'Try clearing your search or picking a different filter.'}
@@ -150,10 +150,10 @@ export default function InvoicesPage() {
         ) : (
           <div className="card overflow-hidden">
             {/* table header */}
-            <div className="grid bg-sand/60 border-b border-black/[.06]"
+            <div className="grid bg-slate-50 border-b border-black/[.06]"
               style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 100px 110px 110px'}}>
               {['Invoice','Company','Status','Due Date','Days Past','Balance','Total'].map((h,i) => (
-                <div key={h} className={`px-4 py-3 text-xs uppercase tracking-wide font-semibold text-ink/50 ${i>=4 ? 'text-right' : ''}`}>{h}</div>
+                <div key={h} className={`px-4 py-3 text-xs uppercase tracking-wide font-semibold text-slate-500 ${i>=4 ? 'text-right' : ''}`}>{h}</div>
               ))}
             </div>
             {/* rows */}
@@ -162,41 +162,41 @@ export default function InvoicesPage() {
                 const st = STATUS_BADGE[inv.status] || STATUS_BADGE.draft
                 const isOverdue = inv.days_overdue > 0 && inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'voided'
                 const badgeCls =
-                  isOverdue                                       ? 'bg-clay/10 text-clay'
-                  : inv.status === 'paid'                         ? 'bg-moss-50 text-moss-700'
-                  : (inv.status === 'sent' || inv.status === 'viewed') ? 'bg-moss-50 text-moss-700'
-                  : inv.status === 'partial'                      ? 'bg-clay/10 text-clay'
-                  :                                                 'bg-black/5 text-ink/70'
+                  isOverdue                                       ? 'bg-red-50 text-red-600'
+                  : inv.status === 'paid'                         ? 'bg-emerald-50 text-emerald-600'
+                  : (inv.status === 'sent' || inv.status === 'viewed') ? 'bg-emerald-50 text-emerald-600'
+                  : inv.status === 'partial'                      ? 'bg-red-50 text-red-600'
+                  :                                                 'bg-black/5 text-slate-600'
                 return (
                   <div key={inv.id} onClick={() => setViewingInv(inv)}
-                    className="grid items-center hover:bg-sand/40 cursor-pointer transition-colors"
+                    className="grid items-center hover:bg-slate-50 cursor-pointer transition-colors"
                     style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 100px 110px 110px'}}>
-                    <div className="px-4 py-3.5 font-semibold text-ink tabular-nums">
+                    <div className="px-4 py-3.5 font-semibold text-slate-900 tabular-nums">
                       {inv.invoice_number}
                       {inv.source_estimate_id && (
-                        <span className="ml-1.5 text-xs text-ink/40" title="From estimate">·</span>
+                        <span className="ml-1.5 text-xs text-slate-400" title="From estimate">·</span>
                       )}
                     </div>
-                    <div className="px-4 py-3.5 text-sm text-ink truncate">
-                      {inv.company_name || <span className="text-ink/40">—</span>}
+                    <div className="px-4 py-3.5 text-sm text-slate-900 truncate">
+                      {inv.company_name || <span className="text-slate-400">—</span>}
                     </div>
                     <div className="px-4 py-3.5">
                       <span className={`badge ${badgeCls}`}>
                         {isOverdue ? 'Overdue' : st.label}
                       </span>
                     </div>
-                    <div className="px-4 py-3.5 text-sm text-ink/65">
-                      {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : <span className="text-ink/40">—</span>}
+                    <div className="px-4 py-3.5 text-sm text-slate-600">
+                      {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : <span className="text-slate-400">—</span>}
                     </div>
-                    <div className={`px-4 py-3.5 text-right text-sm tabular-nums ${isOverdue ? 'text-clay font-semibold' : 'text-ink/40'}`}>
+                    <div className={`px-4 py-3.5 text-right text-sm tabular-nums ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-400'}`}>
                       {isOverdue ? `${inv.days_overdue}d` : '—'}
                     </div>
                     <div className={`px-4 py-3.5 text-right tabular-nums font-semibold ${
-                      (inv.balance_due || 0) > 0 ? 'text-clay' : 'text-moss-700'
+                      (inv.balance_due || 0) > 0 ? 'text-red-600' : 'text-emerald-600'
                     }`}>
                       ${(inv.balance_due || 0).toFixed(2)}
                     </div>
-                    <div className="px-4 py-3.5 text-right tabular-nums text-ink">
+                    <div className="px-4 py-3.5 text-right tabular-nums text-slate-900">
                       ${(inv.total || 0).toFixed(2)}
                     </div>
                   </div>
@@ -245,13 +245,13 @@ export default function InvoicesPage() {
 function FilterTab({ active, onClick, count, red, children }) {
   // Pill-style tabs that match the premium-SaaS look. Active gets the
   // moss/clay solid; inactive is a quiet white pill with a hairline border.
-  const activeBg  = red ? 'bg-clay text-white border-transparent' : 'bg-moss-700 text-white border-transparent'
-  const inactive  = 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
+  const activeBg  = red ? 'bg-red-600 text-white border-transparent' : 'bg-lx-500 text-white border-transparent'
+  const inactive  = 'bg-white text-slate-900 border-black/[.08] hover:bg-slate-50'
   return (
     <button onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${active ? activeBg : inactive}`}>
       {children}
-      <span className={`text-xs ${active ? 'opacity-80' : 'text-ink/40'}`}>({count})</span>
+      <span className={`text-xs ${active ? 'opacity-80' : 'text-slate-400'}`}>({count})</span>
     </button>
   )
 }

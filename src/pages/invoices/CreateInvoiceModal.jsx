@@ -421,15 +421,15 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
 
   return (
     <>
-      <div className="b2b-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
+      <div className="linear-theme fixed inset-0 z-[400] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}}>
         <div className="card overflow-hidden flex flex-col" style={{
           width:'820px', maxWidth:'100%', maxHeight:'92vh'
         }}>
           {isEdit && !loadedInvoice ? (
             <div className="flex-1 flex items-center justify-center p-16" style={{minHeight:'400px'}}>
               <div className="text-center">
-                <div className="font-display text-xl text-ink mb-1">Loading invoice…</div>
-                <div className="text-xs text-ink/55">Fetching items + stock levels</div>
+                <div className="font-semibold tracking-tight text-xl text-slate-900 mb-1">Loading invoice…</div>
+                <div className="text-xs text-slate-500">Fetching items + stock levels</div>
               </div>
             </div>
           ) : (
@@ -442,7 +442,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                   ? (isLocked ? 'Invoice Locked' : `Edit Invoice`)
                   : 'New Invoice'}
               </div>
-              <div className="font-display text-xl text-ink">
+              <div className="font-semibold tracking-tight text-xl text-slate-900">
                 {loadedInvoice?.invoice_number
                   ? `${loadedInvoice.invoice_number} · ${selectedCustomer?.company_name || ''}`
                   : (selectedCustomer?.company_name || 'Pick a company')}
@@ -787,9 +787,9 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                   const enteredAmt = parseFloat(payAmount) || 0
                   const isFull    = payNow && enteredAmt >= totals.total - 0.005
                   const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
-                  // Moss for full / partial (positive money in); default moss for create
-                  if (isFull)    return { background: '#2f5f49' }   // moss-700
-                  if (isPartial) return { background: '#c2603b' }   // clay (partial = caution)
+                  // Emerald for full-pay (positive), amber for partial (caution).
+                  if (isFull)    return { background: '#059669' }   // emerald-600
+                  if (isPartial) return { background: '#d97706' }   // amber-600
                   return undefined
                 })()}>
                 {(() => {

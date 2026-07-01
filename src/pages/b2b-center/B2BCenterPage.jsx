@@ -254,13 +254,13 @@ export default function B2BCenterPage() {
   }, [recentPayments, invoices, recentEstimates])
 
   return (
-    <div className="b2b-theme">
+    <div className="linear-theme">
     <div className="max-w-[1300px] mx-auto px-6 py-8">
       {/* Header */}
       <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-3xl text-ink leading-tight">{t('b2bCenter')}</h1>
-          <p className="text-sm text-ink/55 mt-1">Estimates · Invoices · Payments · A/R</p>
+          <h1 className="font-semibold tracking-tight text-3xl text-slate-900 leading-tight">{t('b2bCenter')}</h1>
+          <p className="text-sm text-slate-500 mt-1">Estimates · Invoices · Payments · A/R</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => window.print()} className="btn-outline">{t('print')}</button>
@@ -268,7 +268,7 @@ export default function B2BCenterPage() {
             {[['week',t('thisWeek')],['month',t('thisMonth')],['quarter','Q']].map(([k,label]) => (
               <button key={k} onClick={() => setRange(k)}
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${
-                  range===k ? 'bg-moss-700 text-white border-transparent' : 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
+                  range===k ? 'bg-lx-500 text-white border-transparent' : 'bg-white text-slate-900 border-black/[.08] hover:bg-slate-50'
                 }`}>
                 {label}
               </button>

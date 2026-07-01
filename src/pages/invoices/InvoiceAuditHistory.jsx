@@ -99,14 +99,14 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
   })
 
   return (
-    <div className="b2b-theme fixed inset-0 z-[600] flex justify-end" style={{background:'rgba(0,0,0,0.45)'}}>
-      <div className="w-full max-w-[480px] bg-sand shadow-2xl flex flex-col h-full">
+    <div className="linear-theme fixed inset-0 z-[600] flex justify-end" style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="w-full max-w-[480px] bg-slate-50 shadow-2xl flex flex-col h-full">
         {/* Header */}
         <div className="px-6 py-5 flex items-center justify-between flex-shrink-0 bg-white"
           style={{borderBottom:'1px solid rgba(0,0,0,0.06)'}}>
           <div>
             <div className="label">History</div>
-            <div className="font-display text-xl text-ink">{invoiceNumber}</div>
+            <div className="font-semibold tracking-tight text-xl text-slate-900">{invoiceNumber}</div>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-lg cursor-pointer text-base bg-black/[.04] hover:bg-black/[.08] border-none">✕</button>
         </div>
@@ -114,11 +114,11 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {isLoading ? (
-            <div className="text-sm text-ink/55">Loading…</div>
+            <div className="text-sm text-slate-500">Loading…</div>
           ) : entries.length === 0 ? (
             <div className="card p-8 text-center">
-              <p className="text-sm text-ink/55">No edits yet.</p>
-              <p className="text-xs text-ink/40 mt-1">Future changes will appear here.</p>
+              <p className="text-sm text-slate-500">No edits yet.</p>
+              <p className="text-xs text-slate-400 mt-1">Future changes will appear here.</p>
             </div>
           ) : (
             entries.map((e) => {
@@ -131,20 +131,20 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="text-base">{meta.icon}</span>
-                      <span className="text-sm font-semibold text-ink">{meta.label}</span>
+                      <span className="text-sm font-semibold text-slate-900">{meta.label}</span>
                     </div>
-                    <span className="text-xs text-ink/45">{fmtDateTime(e.created_at)}</span>
+                    <span className="text-xs text-slate-400">{fmtDateTime(e.created_at)}</span>
                   </div>
-                  <div className="text-xs text-ink/55 mb-3">by {userName}</div>
+                  <div className="text-xs text-slate-500 mb-3">by {userName}</div>
 
                   {Object.entries(changes)
                     .filter(([k]) => k !== 'items')
                     .map(([field, val]) => (
                       <div key={field} className="text-xs mb-1.5">
-                        <span className="font-semibold text-ink/65">{field}:</span>{' '}
-                        <span className="line-through text-clay">{fmtValue(val?.from, $)}</span>
-                        <span className="mx-1 text-ink/40">→</span>
-                        <span className="font-semibold text-moss-700">{fmtValue(val?.to, $)}</span>
+                        <span className="font-semibold text-slate-600">{field}:</span>{' '}
+                        <span className="line-through text-red-600">{fmtValue(val?.from, $)}</span>
+                        <span className="mx-1 text-slate-400">→</span>
+                        <span className="font-semibold text-emerald-600">{fmtValue(val?.to, $)}</span>
                       </div>
                     ))}
 
@@ -152,12 +152,12 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
                     <div className="mt-3 pt-3" style={{borderTop:'1px dashed rgba(0,0,0,0.08)'}}>
                       <div className="label mb-2">Line items</div>
                       <div className="space-y-2">
-                        <div className="rounded-lg p-2.5 bg-clay/[.06] border border-clay/20">
-                          <div className="text-[10px] font-bold text-clay uppercase tracking-wide mb-1">Before</div>
+                        <div className="rounded-lg p-2.5 bg-red-50 border border-red-200">
+                          <div className="text-[10px] font-bold text-red-600 uppercase tracking-wide mb-1">Before</div>
                           <ItemsTable items={changes.items.from} $={$}/>
                         </div>
-                        <div className="rounded-lg p-2.5 bg-moss-50 border border-moss-600/30">
-                          <div className="text-[10px] font-bold text-moss-700 uppercase tracking-wide mb-1">After</div>
+                        <div className="rounded-lg p-2.5 bg-emerald-50 border border-emerald-200">
+                          <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1">After</div>
                           <ItemsTable items={changes.items.to} $={$}/>
                         </div>
                       </div>
@@ -165,7 +165,7 @@ export default function InvoiceAuditHistory({ invoiceId, invoiceNumber, onClose 
                   )}
 
                   {e.notes && (
-                    <div className="mt-2 text-xs text-ink/55 italic">{e.notes}</div>
+                    <div className="mt-2 text-xs text-slate-500 italic">{e.notes}</div>
                   )}
                 </div>
               )

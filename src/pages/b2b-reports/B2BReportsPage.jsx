@@ -105,13 +105,13 @@ export default function B2BReportsPage() {
   }
 
   return (
-    <div className="b2b-theme">
+    <div className="linear-theme">
     <div className="px-6 py-8 max-w-[1400px] mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-3xl text-ink leading-tight">B2B Reports</h1>
-          <p className="text-sm text-ink/55 mt-1">
+          <h1 className="font-semibold tracking-tight text-3xl text-slate-900 leading-tight">B2B Reports</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Invoice & A/R performance · {format(window.start, 'MMM d')} → {format(window.end, 'MMM d, yyyy')}
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function B2BReportsPage() {
           ].map(([k,label]) => (
             <button key={k} onClick={() => setRange(k)}
               className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition active:scale-[.98] ${
-                range===k ? 'bg-moss-700 text-white border-transparent' : 'bg-white text-ink border-black/[.08] hover:bg-sand/60'
+                range===k ? 'bg-lx-500 text-white border-transparent' : 'bg-white text-slate-900 border-black/[.08] hover:bg-slate-50'
               }`}>
               {label}
             </button>
@@ -143,7 +143,7 @@ export default function B2BReportsPage() {
       </div>
 
       {isLoading
-        ? <div className="py-20 text-center text-sm text-ink/40">Loading…</div>
+        ? <div className="py-20 text-center text-sm text-slate-400">Loading…</div>
         : tab === 'revenue'   ? <Revenue   invoices={invoices} exportCSV={exportCSV}/>
         : tab === 'customers' ? <Customers invoices={invoices} exportCSV={exportCSV}/>
         : tab === 'aging'     ? <Aging     invoices={invoices} exportCSV={exportCSV}/>
