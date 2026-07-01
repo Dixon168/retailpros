@@ -1122,6 +1122,51 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
   const [showPhoneKB, setShowPhoneKB] = useState(false)
   const [quota, setQuota] = useState(null)  // { email_used, email_quota, sms_used, sms_quota, e_rate, s_rate }
 
+  // ── Context stats — kills the "leave POS to check the day / this member"
+  // round-trip. Fetched once when the modal opens. Includes:
+  //   today   = { orders, revenue }  scoped to this tenant, today only
+  //   member  = { visits, spend, lastVisit } (only if this was a member sale)
+  const [ctx, setCtx] = useState({ today: null, member: null })
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        // Today so far — includes the just-completed order
+        const start = new Date(); start.setHours(0,0,0,0)
+        const { data: t } = await supabase.from('orders')
+          .select('total, status')
+          .eq('tenant_id', tenantId)
+          .gte('created_at', start.toISOString())
+          .neq('status', 'void')
+        const today = (t || []).reduce(
+          (a, r) => ({ orders: a.orders + 1, revenue: a.revenue + (Number(r.total) || 0) }),
+          { orders: 0, revenue: 0 }
+        )
+        // This member's lifetime — count + spend + last visit date
+        let member = null
+        if (customerId) {
+          const { data: m } = await supabase.from('orders')
+            .select('total, created_at, status')
+            .eq('tenant_id', tenantId)
+            .eq('customer_id', customerId)
+            .neq('status', 'void')
+            .order('created_at', { ascending: false })
+          if (m && m.length > 0) {
+            member = {
+              visits: m.length,
+              spend:  m.reduce((s, r) => s + (Number(r.total) || 0), 0),
+              // Second row is the "previous" visit; first row is the current sale
+              lastVisit: m[1]?.created_at || null,
+            }
+          }
+        }
+        if (alive) setCtx({ today, member })
+      } catch(e) { /* silent — stats are decoration, not gate-keeping */ }
+    })()
+    return () => { alive = false }
+  }, [tenantId, customerId])
+
   // Fetch quota status once on mount so we can show overage warnings
   useEffect(() => {
     let alive = true
@@ -1233,6 +1278,47 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
                   ${changeDue.toFixed(2)}
                 </div>
                 <div className="text-[11px] mt-1" style={{color:'#047857'}}>hand back to customer</div>
+              </div>
+            )}
+
+            {/* ── Context so far ─ kills the "leave POS to check today"
+                round-trip. Shows today's count/revenue and, if the sale
+                was to a member, that member's lifetime stats. */}
+            {(ctx.today || ctx.member) && (
+              <div className="mt-4 grid gap-2 text-left" style={{
+                gridTemplateColumns: ctx.member ? '1fr 1fr' : '1fr',
+                maxWidth: '440px', margin: '16px auto 0'
+              }}>
+                {ctx.today && (
+                  <div className="rounded-lg px-4 py-3" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide" style={{color:'#64748b'}}>
+                      Today so far
+                    </div>
+                    <div className="text-[22px] font-semibold tabular-nums mt-0.5" style={{color:'#0f172a'}}>
+                      ${ctx.today.revenue.toFixed(2)}
+                    </div>
+                    <div className="text-[11px]" style={{color:'#64748b'}}>
+                      {ctx.today.orders} order{ctx.today.orders === 1 ? '' : 's'}
+                    </div>
+                  </div>
+                )}
+                {ctx.member && (
+                  <div className="rounded-lg px-4 py-3" style={{background:'#eef0fc', border:'1px solid #dee2f8'}}>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide" style={{color:'#4854c4'}}>
+                      This member — lifetime
+                    </div>
+                    <div className="text-[22px] font-semibold tabular-nums mt-0.5" style={{color:'#3b47a8'}}>
+                      ${ctx.member.spend.toFixed(2)}
+                    </div>
+                    <div className="text-[11px]" style={{color:'#4854c4'}}>
+                      {ctx.member.visits} visit{ctx.member.visits === 1 ? '' : 's'}
+                      {ctx.member.lastVisit && (() => {
+                        const days = Math.floor((Date.now() - new Date(ctx.member.lastVisit).getTime()) / 86400000)
+                        return ` · last ${days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days}d ago`}`
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

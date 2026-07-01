@@ -156,9 +156,19 @@ export default function CustomersPage() {
             const initials = c.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()
             const isSelected = selected?.id === c.id
             const isExpiring = c.card_expire_date && new Date(c.card_expire_date) < new Date(Date.now()+30*86400000)
+            // Quick-action helper — selects this customer AND performs the
+            // action in one click, without needing to open the detail pane
+            // first. Kills the row → open detail → click Top-up round-trip.
+            const quickAction = (e, action) => {
+              e.stopPropagation()
+              setSelected(c)
+              if (action === 'topup')   setShowTopup(true)
+              if (action === 'orders')  setActiveTab('Transactions')
+              if (action === 'points')  setActiveTab('Points')
+            }
             return (
               <div key={c.id} onClick={()=>{setSelected(c);setActiveTab('details')}}
-                className="flex items-center gap-3 px-3 py-3 cursor-pointer border-b transition-all"
+                className="group flex items-center gap-3 px-3 py-3 cursor-pointer border-b transition-all"
                 style={{
                   borderColor:'#f8fafc',
                   background: isSelected ? '#eef0fc' : '#fff',
@@ -193,6 +203,32 @@ export default function CustomersPage() {
                     {isExpiring && (
                       <span className="text-[10px] font-bold text-red-500">⚠️ Expiring</span>
                     )}
+                  </div>
+                </div>
+                {/* Quick actions — appear on hover, always visible on the
+                    currently-selected row. Each button jumps straight to
+                    the right action so cashier doesn't need to browse
+                    tabs on the detail pane. */}
+                <div className={`flex flex-col gap-1 flex-shrink-0 ${isSelected ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                  <button onClick={(e) => quickAction(e, 'topup')}
+                    title="Top up card balance"
+                    className="rounded-md px-2 py-1 text-[10px] font-semibold cursor-pointer border"
+                    style={{background:'#fff', borderColor:'#e2e8f0', color:'#0f172a'}}>
+                    💳 Top-up
+                  </button>
+                  <div className="flex gap-1">
+                    <button onClick={(e) => quickAction(e, 'points')}
+                      title="Adjust points"
+                      className="flex-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer border"
+                      style={{background:'#fff', borderColor:'#e2e8f0', color:'#5E6AD2'}}>
+                      ⭐
+                    </button>
+                    <button onClick={(e) => quickAction(e, 'orders')}
+                      title="View transaction history"
+                      className="flex-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer border"
+                      style={{background:'#fff', borderColor:'#e2e8f0', color:'#0f172a'}}>
+                      🧾
+                    </button>
                   </div>
                 </div>
               </div>
