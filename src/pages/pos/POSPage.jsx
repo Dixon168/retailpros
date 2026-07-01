@@ -542,6 +542,14 @@ export default function POSPage() {
 
           {/* Product grid */}
           <ProductGrid products={products} highlightId={highlightProductId}
+            searchQuery={searchQuery}
+            tenantId={tenant?.id}
+            onWalkinAdded={() => {
+              // A walk-in just got sold + saved as a real product; refetch
+              // so it shows up in the grid next time the same term is scanned.
+              qc.invalidateQueries({ queryKey:['pos-products'] })
+              setSearchQuery('')
+            }}
             onPhotoClick={(product) => {
               // Always open the read-only Quick Info first. Editing is a
               // deliberate second tap from inside the preview, which

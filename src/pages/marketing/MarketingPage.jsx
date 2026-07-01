@@ -26,12 +26,67 @@ export default function MarketingPage() {
     queryKey: ['promotions', tenant?.id],
     queryFn: async () => {
       const { data } = await supabase.from('promotions')
-        .select('*, products(name, price, image_url)')
+        .select('*, products(name, price, image_url), promotion_products(product_id)')
         .eq('tenant_id', tenant.id)
         .order('created_at', { ascending: false })
       return data || []
     },
     enabled: !!tenant?.id,
+  })
+
+  // ── Promo usage stats (fuzzy but retroactive) ──────────────────────
+  // Killing the "click promo → open Reports to see if it worked" round-
+  // trip. For each promo, we count how many order lines in the last 30
+  // days sold any of the products tied to that promo. Not perfect (some
+  // of those sales may have been at full price) but tells the merchant
+  // whether the promoted products are moving at all — good enough for
+  // a card summary. Precise per-promo attribution would need adding an
+  // order_items.promotion_id column, which we can do later.
+  const { data: usageByPromo = {} } = useQuery({
+    queryKey: ['promo-usage', tenant?.id],
+    enabled: !!tenant?.id && promos.length > 0,
+    queryFn: async () => {
+      // Build product → promo_ids map
+      const productToPromos = new Map()
+      for (const p of promos) {
+        const ids = new Set()
+        if (p.product_id) ids.add(p.product_id)
+        for (const pp of (p.promotion_products || [])) if (pp.product_id) ids.add(pp.product_id)
+        for (const pid of ids) {
+          if (!productToPromos.has(pid)) productToPromos.set(pid, [])
+          productToPromos.get(pid).push(p.id)
+        }
+      }
+      const allProductIds = [...productToPromos.keys()]
+      if (allProductIds.length === 0) return {}
+
+      // Pull order_items sold in last 30 days for those products
+      const since = new Date(Date.now() - 30*86400000).toISOString()
+      const { data } = await supabase.from('order_items')
+        .select('product_id, qty, line_total, orders!inner(status, created_at, tenant_id)')
+        .in('product_id', allProductIds)
+        .gte('orders.created_at', since)
+        .eq('orders.tenant_id', tenant.id)
+        .neq('orders.status', 'void')
+
+      // Aggregate per promo
+      const out = {}
+      for (const row of (data || [])) {
+        const promoIds = productToPromos.get(row.product_id) || []
+        for (const pid of promoIds) {
+          if (!out[pid]) out[pid] = { orders: new Set(), revenue: 0, qty: 0 }
+          out[pid].orders.add(row.orders?.created_at + '|' + row.product_id) // rough uniqueness
+          out[pid].revenue += Number(row.line_total) || 0
+          out[pid].qty     += Number(row.qty)        || 0
+        }
+      }
+      // Serialize Sets → counts
+      const final = {}
+      for (const [pid, v] of Object.entries(out)) {
+        final[pid] = { orderCount: v.orders.size, revenue: v.revenue, qty: v.qty }
+      }
+      return final
+    },
   })
 
   const displayed = filterType === 'all' ? promos : promos.filter(p => p.type === filterType)
@@ -298,6 +353,30 @@ export default function MarketingPage() {
                         <span className="font-mono">{formatDateRange(promo)}</span>
                       </div>
                     )}
+
+                    {/* Usage — matches merchant question "is this working?" */}
+                    {(() => {
+                      const u = usageByPromo[promo.id]
+                      if (!u) return null
+                      if (u.qty === 0) {
+                        return (
+                          <div className="text-[11px] text-slate-400 italic mb-1.5">
+                            No sales of these products in 30 days
+                          </div>
+                        )
+                      }
+                      return (
+                        <div className="rounded-md px-2.5 py-1.5 mb-1.5"
+                          style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-500">Last 30 days</span>
+                            <span className="font-semibold text-slate-800 tabular-nums">
+                              {u.qty} sold · ${u.revenue.toFixed(0)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                     {/* Smart status badge (combines is_active + dates) */}
                     {(() => {

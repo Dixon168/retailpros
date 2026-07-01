@@ -1,7 +1,9 @@
 // src/pages/pos/ProductGrid.jsx
 import { useState, useRef, useEffect } from 'react'
 import { useCartStore } from '@/stores/cartStore'
+import { supabase } from '@/lib/supabase'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
+import toast from 'react-hot-toast'
 
 const TYPE_BADGE = {
   weight:     { bg: '#d1fae5', color: '#16a34a', label: 'LB' },
@@ -9,9 +11,11 @@ const TYPE_BADGE = {
   service:    { bg: '#ede9fe', color: '#5E6AD2', label: 'SVC' },
 }
 
-export default function ProductGrid({ products, highlightId, onPhotoClick }) {
+export default function ProductGrid({ products, highlightId, onPhotoClick, searchQuery, tenantId, onWalkinAdded }) {
   const { addProduct } = useCartStore()
   const [photoViewer, setPhotoViewer] = useState(null)
+  const [walkinPrice, setWalkinPrice] = useState('')
+  const [walkinSaving, setWalkinSaving] = useState(false)
   const cardRefs = useRef({})  // { [productId]: HTMLElement }
 
   // If parent passes onPhotoClick, that overrides the default zoom behavior.
@@ -39,12 +43,103 @@ export default function ProductGrid({ products, highlightId, onPhotoClick }) {
     tick()
   }, [highlightId, products])
 
+  // ── Walk-in item creation ───────────────────────────────────────
+  // Cashier searches / scans and gets no match. Instead of a dead-end
+  // "no products found", let them ring it up right here: they type a
+  // price, we create a bare product on the fly (name = whatever they
+  // typed, or "Walk-in item" if empty) and add it to the cart. Product
+  // stays in the catalog so the same barcode / SKU will find it next
+  // time. Big round-trip killer — no need to close POS, go to Products,
+  // create the item, come back, re-scan.
+  const createWalkin = async () => {
+    const price = parseFloat(walkinPrice)
+    if (!price || price <= 0) {
+      toast.error('Enter a price first')
+      return
+    }
+    if (!tenantId) { toast.error('Tenant not loaded'); return }
+    setWalkinSaving(true)
+    try {
+      // Reasonable defaults; the merchant can edit later in Products
+      const term = (searchQuery || '').trim()
+      // If they scanned a barcode / SKU (numeric-ish), use it as UPC and give
+      // the item a generic name; otherwise use what they typed as the name.
+      const looksLikeBarcode = /^[0-9]{6,}$/.test(term)
+      const name  = term && !looksLikeBarcode ? term : `Walk-in item ($${price.toFixed(2)})`
+      const upc   = looksLikeBarcode ? term : null
+      const sku   = 'WI-' + Date.now().toString().slice(-6)
+
+      const { data, error } = await supabase.from('products').insert({
+        tenant_id:  tenantId,
+        name,
+        sku,
+        upc,
+        price,
+        is_active:  true,
+        is_enabled: true,
+      }).select().single()
+      if (error) throw error
+
+      // Push into cart immediately so cashier can keep working
+      addProduct({
+        ...data,
+        // Cart expects `inventory` shape even if we didn't seed a stock row
+        inventory: [],
+        promotions: [],
+      })
+      toast.success(`Added: ${name}`)
+      setWalkinPrice('')
+      onWalkinAdded && onWalkinAdded()
+    } catch (e) {
+      toast.error(e.message || 'Could not add walk-in item')
+    } finally {
+      setWalkinSaving(false)
+    }
+  }
+
   if (products.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center text-slate-400">
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="text-center max-w-md w-full">
           <div className="text-[40px] mb-2 opacity-30">📦</div>
-          <div className="text-[13px]">No products found</div>
+          <div className="text-[14px] font-semibold text-slate-500 mb-1">
+            {searchQuery ? `No product matches "${searchQuery}"` : 'No products found'}
+          </div>
+          {/* Walk-in creation — always shown when there's a search term
+              since that's when the cashier hit a dead-end. */}
+          {searchQuery && tenantId && (
+            <>
+              <div className="text-[12px] text-slate-400 mb-4">
+                Ring it up as a walk-in item — we'll save it to your catalog.
+              </div>
+              <div className="rounded-lg p-4 mx-auto text-left"
+                style={{background:'#eef0fc', border:'1px solid #dee2f8', maxWidth:'320px'}}>
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                  Price
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex items-center flex-1 rounded-md bg-white border border-slate-300 px-2.5"
+                    style={{minWidth:0}}>
+                    <span className="text-slate-400 font-mono">$</span>
+                    <input type="number" inputMode="decimal" step="0.01" min="0"
+                      value={walkinPrice} onChange={e => setWalkinPrice(e.target.value)}
+                      autoFocus placeholder="0.00"
+                      onKeyDown={e => { if (e.key === 'Enter') createWalkin() }}
+                      className="flex-1 min-w-0 py-2 px-1 text-[15px] font-mono outline-none border-none bg-transparent"/>
+                  </div>
+                  <button onClick={createWalkin}
+                    disabled={walkinSaving || !parseFloat(walkinPrice)}
+                    className="rounded-md px-4 py-2 text-[13px] font-semibold cursor-pointer text-white border-none disabled:opacity-40"
+                    style={{background:'#5E6AD2'}}>
+                    {walkinSaving ? '…' : 'Add to cart'}
+                  </button>
+                </div>
+                <div className="text-[10px] text-slate-500 mt-2">
+                  Named "{searchQuery}" · saved with SKU auto-generated
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )
