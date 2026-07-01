@@ -579,14 +579,14 @@ export default function ReportsPage() {
         <div className="flex-1 overflow-y-auto p-6">
           {filterCashier !== 'all' && (
             <div className="mb-4 rounded-lg px-4 py-2.5 flex items-center justify-between"
-              style={{background:'#E6F0FF', border:'1px solid #80B2FF'}}>
-              <div className="text-[12px] text-[#006AFF]">
+              style={{background:'#eef0fc', border:'1px solid #dee2f8'}}>
+              <div className="text-[12px] text-[#5E6AD2]">
                 <b>📌 Filtered by:</b> {allEmployees.find(e=>e.id===filterCashier)?.name || 'Selected employee'}
                 <span className="ml-2 text-[10px] text-[#666]">(only orders rung up by this employee)</span>
               </div>
               <button onClick={()=>setFilterCashier('all')}
                 className="rounded-md px-3 py-1 text-[11px] font-bold cursor-pointer border"
-                style={{background:'#fff', color:'#006AFF', borderColor:'#80B2FF'}}>
+                style={{background:'#fff', color:'#5E6AD2', borderColor:'#dee2f8'}}>
                 Clear filter ✕
               </button>
             </div>
@@ -646,7 +646,7 @@ export default function ReportsPage() {
                     .sort(([,a],[,b])=>b-a)
                     .map(([method, amount]) => {
                       const pct = totalRevenue > 0 ? amount/totalRevenue*100 : 0
-                      const colors = { cash:'#10b981', card:'#3b82f6', check:'#06b6d4', bank_transfer:'#006AFF', member_card:'#f59e0b', on_account:'#ec4899' }
+                      const colors = { cash:'#10b981', card:'#3b82f6', check:'#06b6d4', bank_transfer:'#5E6AD2', member_card:'#f59e0b', on_account:'#ec4899' }
                       return (
                         <div key={method} className="flex items-center gap-3">
                           <div className="text-[12px] w-[110px] capitalize">{method.replace('_',' ')}</div>
@@ -918,12 +918,12 @@ export default function ReportsPage() {
                     <div key={sh.id} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F5F5F5] items-center" style={{gridTemplateColumns:'1.4fr 1fr 1fr 0.9fr 0.9fr 0.9fr 80px'}}>
                       <div className="px-3 py-3 text-[11px] text-[#1F1F1F]">{format(new Date(sh.opened_at),'MMM d, h:mm a')}</div>
                       <div className="px-3 py-3 text-[11px] text-[#666]">
-                        {isClosed ? format(new Date(sh.closed_at),'MMM d, h:mm a') : <span className="text-[#15803D] font-bold">● Open</span>}
+                        {isClosed ? format(new Date(sh.closed_at),'MMM d, h:mm a') : <span className="text-[#059669] font-bold">● Open</span>}
                       </div>
                       <div className="px-3 py-3 text-[12px]">{sh.users?.name || '—'}</div>
                       <div className="px-3 py-3 font-mono text-[11px]">${(sh.opening_amount||0).toFixed(2)}</div>
                       <div className="px-3 py-3 font-mono text-[11px]">{sh.expected_amount!=null?`$${sh.expected_amount.toFixed(2)}`:'—'}</div>
-                      <div className="px-3 py-3 font-mono text-[11px] font-bold" style={{color: variance==null?'#999':variance===0?'#15803D':Math.abs(variance)<0.01?'#15803D':'#CF1322'}}>
+                      <div className="px-3 py-3 font-mono text-[11px] font-bold" style={{color: variance==null?'#999':variance===0?'#059669':Math.abs(variance)<0.01?'#059669':'#dc2626'}}>
                         {variance!=null?`${variance>=0?'+':''}$${variance.toFixed(2)}`:'—'}
                       </div>
                       <div className="px-2 py-3">
@@ -941,7 +941,7 @@ export default function ReportsPage() {
                           } catch (e) { toast.error('Print failed: ' + e.message) }
                         }}
                           className="rounded-lg px-2 py-1.5 text-[10px] font-bold cursor-pointer"
-                          style={{background:'#006AFF', color:'#fff', border:'none'}}>
+                          style={{background:'#5E6AD2', color:'#fff', border:'none'}}>
                           🖨 Print
                         </button>
                       </div>
@@ -960,7 +960,7 @@ export default function ReportsPage() {
                 </div>
                 {shiftOrders.slice(0,10).map(o => (
                   <div key={o.id} className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#F5F5F5] transition-colors" style={{gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr'}}>
-                    <div className="px-3.5 py-3 font-mono text-[11px] text-[#006AFF]">{o.order_number}</div>
+                    <div className="px-3.5 py-3 font-mono text-[11px] text-[#5E6AD2]">{o.order_number}</div>
                     <div className="px-3.5 py-3 text-[11px] text-[#666666]">{format(new Date(o.created_at),'h:mm a')}</div>
                     <div className="px-3.5 py-3 text-[12px]">{o.customer_id ? 'Customer' : 'Walk-in'}</div>
                     <div className="px-3.5 py-3 text-[11px] text-[#666666]">
@@ -990,7 +990,7 @@ export default function ReportsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 mb-5">
                 {(empData||[]).map((emp,i) => {
-                  const COLORS = ['#3b82f6','#10b981','#006AFF','#ec4899']
+                  const COLORS = ['#3b82f6','#10b981','#5E6AD2','#ec4899']
                   return (
                     <div key={i} className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[12px] p-4">
                       <div className="flex items-center gap-3 mb-3">
@@ -1902,7 +1902,7 @@ function DiscountReport({ stats, orderCount, pointsRate, orders }) {
   )
 
   const types = [
-    { label:'Manual Discount', amt: stats.manual, color:'#16a34a', bg:'#dcfce7', count: stats.manualOrders, icon:'✂️' },
+    { label:'Manual Discount', amt: stats.manual, color:'#16a34a', bg:'#d1fae5', count: stats.manualOrders, icon:'✂️' },
     { label:'Coupon Codes',    amt: stats.coupon, color:'#c026d3', bg:'#fdf4ff', count: stats.couponOrders, icon:'🎫' },
     { label:'Loyalty Points',  amt: stats.points, color:'#B45309', bg:'#FEF3C7', count: stats.pointsOrders, icon:'⭐' },
   ]
@@ -2118,7 +2118,7 @@ function GiftCardReport({ cards, txns, memberCards, memberTopups, loadedByCard, 
       {/* Sell / top-up money flow this period — cash vs loaded vs free */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          ['💵 Cash Collected', `$${cashInWindow.toFixed(2)}`, '#15803d', 'real income (付款金额) — goes to financials'],
+          ['💵 Cash Collected', `$${cashInWindow.toFixed(2)}`, '#059669', 'real income (付款金额) — goes to financials'],
           ['💳 Loaded to Cards', `$${loadedInWindow.toFixed(2)}`, '#3b82f6', 'balance added (充值金额) — card liability'],
           ['🎁 Promo Bonus Given', `$${bonusInWindow.toFixed(2)}`, '#d97706', 'free amount (marketing cost)'],
         ].map(([l,v,c,sub]) => (
@@ -2144,7 +2144,7 @@ function GiftCardReport({ cards, txns, memberCards, memberTopups, loadedByCard, 
         </div>
         {cards.map(c => {
           const STATUS = {
-            active:   { bg:'#dcfce7', color:'#15803d' },
+            active:   { bg:'#d1fae5', color:'#059669' },
             depleted: { bg:'#f1f5f9', color:'#64748b' },
             expired:  { bg:'#f1f5f9', color:'#64748b' },
             voided:   { bg:'#fee2e2', color:'#dc2626' },
@@ -2188,7 +2188,7 @@ function GiftCardReport({ cards, txns, memberCards, memberTopups, loadedByCard, 
             <div className="grid grid-cols-4 gap-3 mb-4">
               {[
                 ['Member Cards', memberCount, '#8b5cf6', 'with a card number'],
-                ['💵 Cash Collected', `$${memCash.toFixed(2)}`, '#15803d', 'real income (付款金额)'],
+                ['💵 Cash Collected', `$${memCash.toFixed(2)}`, '#059669', 'real income (付款金额)'],
                 ['💳 Loaded to Cards', `$${memLoaded.toFixed(2)}`, '#3b82f6', 'balance added (充值金额)'],
                 ['Pool Balance', `$${memberPool.toFixed(2)}`, '#FA8C16', 'outstanding liability'],
               ].map(([l,v,c,sub]) => (

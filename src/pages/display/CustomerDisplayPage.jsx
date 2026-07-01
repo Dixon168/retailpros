@@ -195,20 +195,20 @@ export default function CustomerDisplayPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden"
-      style={{background:'linear-gradient(135deg, #f8fafc 0%, #e6f0ff 100%)'}}>
+      style={{background:'linear-gradient(135deg, #f8fafc 0%, #eef0fc 100%)'}}>
 
       {/* ── Header (always visible) ── */}
       <div className="flex items-center justify-between px-6 py-3 flex-shrink-0"
-        style={{background:'#fff', borderBottom:'2px solid #006AFF', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+        style={{background:'#fff', borderBottom:'2px solid #5E6AD2', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
         <div className="flex items-center gap-3">
           {logoUrl
             ? <img src={logoUrl} alt={storeName} className="h-10 w-auto object-contain"/>
-            : <div className="text-[28px] font-black" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>RP</div>}
+            : <div className="text-[28px] font-black" style={{color:'#5E6AD2', fontFamily:'Righteous, sans-serif'}}>RP</div>}
           <div className="text-[18px] font-bold" style={{color:'#1F1F1F'}}>{storeName}</div>
         </div>
         {/* Software brand (subtle, doesn't compete with the store's name) */}
         <div className="text-right leading-tight">
-          <div className="text-[13px] font-bold" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>Retail Pro</div>
+          <div className="text-[13px] font-bold" style={{color:'#5E6AD2', fontFamily:'Righteous, sans-serif'}}>Retail Pro</div>
           <div className="text-[8px]" style={{color:'#94a3b8'}}>powered by All in One Payment Solution</div>
         </div>
       </div>
@@ -249,7 +249,7 @@ function IdleScreen({ t, promos, promoIdx, storeName, logoUrl, phone, address, n
       <div className="text-[64px] font-black mb-1 leading-tight" style={{color:'#1F1F1F', fontFamily:'Righteous, sans-serif'}}>
         {storeName}
       </div>
-      <div className="text-[28px] font-bold mb-2" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
+      <div className="text-[28px] font-bold mb-2" style={{color:'#5E6AD2', fontFamily:'Righteous, sans-serif'}}>
         {t.welcome}
       </div>
 
@@ -349,7 +349,7 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
 
         {/* Right-top: big last-scanned photo */}
         <div className="flex-1 min-h-0 rounded-2xl flex flex-col items-center justify-center p-4 overflow-hidden"
-          style={{background:'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)', border:'2px solid #80B2FF'}}>
+          style={{background:'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)', border:'2px solid #dee2f8'}}>
           {lastItem ? (
             <>
               {lastItem.image_url
@@ -364,7 +364,7 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
                 <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#1e40af'}}>✓ {t.just_added}</div>
                 <div className="text-[22px] font-bold leading-tight truncate px-2" style={{color:'#1F1F1F'}}>{lastItem.name}</div>
                 <div className="text-[13px] font-mono" style={{color:'#666'}}>{fmt(lastItem.unitPrice)} × {lastItem.qty}</div>
-                <div className="text-[36px] font-black font-mono leading-none mt-1" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>{fmt(heroPrice)}</div>
+                <div className="text-[36px] font-black font-mono leading-none mt-1" style={{color:'#5E6AD2', fontFamily:'Righteous, sans-serif'}}>{fmt(heroPrice)}</div>
               </div>
             </>
           ) : (
@@ -424,7 +424,7 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
 
         {/* Right-bottom: totals */}
         <div className="flex-shrink-0 px-5 py-4 rounded-2xl"
-          style={{background:'#fff', border:'2px solid #006AFF'}}>
+          style={{background:'#fff', border:'2px solid #5E6AD2'}}>
           <div className="space-y-1 mb-2">
             <Row l={`${t.subtotal} (${totalQty} ${t.items})`} v={fmt(totals.subtotal)}/>
             {totals.bulkSavings > 0 && <Row l="Bulk savings" v={`-${fmt(totals.bulkSavings)}`} color="#16a34a"/>}
@@ -433,13 +433,13 @@ function ActiveScreen({ t, state, fmt, settings, lastItem }) {
           </div>
           <div className="flex justify-between items-baseline pt-2 border-t-2 border-slate-200">
             <div className="text-[13px] uppercase tracking-wider font-bold" style={{color:'#666'}}>{t.total}</div>
-            <div className="text-[44px] font-black font-mono leading-none" style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
+            <div className="text-[44px] font-black font-mono leading-none" style={{color:'#5E6AD2', fontFamily:'Righteous, sans-serif'}}>
               {fmt(totals.grandTotal)}
             </div>
           </div>
           {totalSaved > 0 && (
             <div className="mt-2 rounded-xl px-3 py-1.5 text-center"
-              style={{background:'#dcfce7', border:'1.5px solid #86efac'}}>
+              style={{background:'#d1fae5', border:'1.5px solid #86efac'}}>
               <span className="text-[12px] font-black" style={{color:'#166534'}}>
                 🎉 {t.you_saved} {fmt(totalSaved)} {t.today}!
               </span>
@@ -459,7 +459,7 @@ function PaymentScreen({ t, state, fmt }) {
     <div className="h-full flex flex-col items-center justify-center px-8">
       <div className="text-[20px] text-[#666] mb-2 uppercase tracking-widest">{t.please_pay}</div>
       <div className="text-[140px] font-black font-mono leading-none mb-4"
-        style={{color:'#006AFF', fontFamily:'Righteous, sans-serif'}}>
+        style={{color:'#5E6AD2', fontFamily:'Righteous, sans-serif'}}>
         {fmt(total)}
       </div>
       <div className="text-[14px] text-[#999] animate-pulse">⟳ Processing...</div>
@@ -483,7 +483,7 @@ function TipScreen({ t, state, fmt, terminalId }) {
     return (
       <div className="h-full flex flex-col items-center justify-center px-8">
         <div className="text-[20px] mb-4 font-bold">{t.custom_tip}</div>
-        <div className="text-[64px] font-black font-mono mb-4" style={{color:'#006AFF'}}>
+        <div className="text-[64px] font-black font-mono mb-4" style={{color:'#5E6AD2'}}>
           ${customTip || '0'}
         </div>
         <div className="grid grid-cols-3 gap-3 mb-4" style={{maxWidth:'320px'}}>
@@ -508,7 +508,7 @@ function TipScreen({ t, state, fmt, terminalId }) {
           <button onClick={() => sendTip(parseFloat(customTip)||0)}
             disabled={!customTip || parseFloat(customTip) <= 0}
             className="rounded-xl px-8 py-3 text-[16px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             ✓ {t.submit}
           </button>
         </div>
@@ -529,9 +529,9 @@ function TipScreen({ t, state, fmt, terminalId }) {
               className="rounded-3xl cursor-pointer border-2 active:scale-95 transition-all"
               style={{
                 background:'linear-gradient(135deg, #fff 0%, #f0f9ff 100%)',
-                borderColor:'#006AFF', padding:'28px 16px',
+                borderColor:'#5E6AD2', padding:'28px 16px',
               }}>
-              <div className="text-[44px] font-black" style={{color:'#006AFF'}}>{pct}%</div>
+              <div className="text-[44px] font-black" style={{color:'#5E6AD2'}}>{pct}%</div>
               <div className="text-[18px] font-mono mt-1" style={{color:'#666'}}>{fmt(amt)}</div>
             </button>
           )
@@ -546,7 +546,7 @@ function TipScreen({ t, state, fmt, terminalId }) {
         </button>
         <button onClick={() => setMode('custom')}
           className="flex-1 rounded-xl py-4 text-[16px] font-bold cursor-pointer border-2"
-          style={{background:'#fff', borderColor:'#80B2FF', color:'#006AFF'}}>
+          style={{background:'#fff', borderColor:'#dee2f8', color:'#5E6AD2'}}>
           {t.custom_tip}
         </button>
       </div>
@@ -598,7 +598,7 @@ function SignatureScreen({ t, state, fmt, terminalId }) {
       <div className="text-[14px] text-[#666] mb-4">{fmt(total)}</div>
 
       <div className="rounded-2xl overflow-hidden mb-4 touch-none select-none"
-        style={{background:'#fff', border:'3px dashed #006AFF', width:'100%', maxWidth:'640px', height:'280px', cursor:'crosshair'}}
+        style={{background:'#fff', border:'3px dashed #5E6AD2', width:'100%', maxWidth:'640px', height:'280px', cursor:'crosshair'}}
         onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end}>
         <svg width="100%" height="100%" viewBox="0 0 640 280" preserveAspectRatio="none">
@@ -617,7 +617,7 @@ function SignatureScreen({ t, state, fmt, terminalId }) {
         </button>
         <button onClick={submit} disabled={strokes.length === 0}
           className="flex-[2] rounded-xl py-4 text-[16px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           ✓ {t.submit}
         </button>
       </div>
@@ -654,7 +654,7 @@ function ContactScreen({ t, state, terminalId }) {
             className="rounded-3xl cursor-pointer border-2 active:scale-95 py-8"
             style={{background:'#f0fdf4', borderColor:'#10b981'}}>
             <div className="text-[48px] mb-2">📧</div>
-            <div className="text-[18px] font-bold" style={{color:'#15803d'}}>{t.email}</div>
+            <div className="text-[18px] font-bold" style={{color:'#059669'}}>{t.email}</div>
           </button>
           <button onClick={() => setChannel('sms')}
             className="rounded-3xl cursor-pointer border-2 active:scale-95 py-8"
@@ -682,7 +682,7 @@ function ContactScreen({ t, state, terminalId }) {
         autoFocus
         placeholder={channel === 'email' ? 'customer@example.com' : '(555) 123-4567'}
         className="rounded-2xl px-6 py-4 text-[20px] font-mono text-center mb-4 outline-none"
-        style={{width:'100%', maxWidth:'480px', border:'2px solid #80B2FF', background:'#fff'}}/>
+        style={{width:'100%', maxWidth:'480px', border:'2px solid #dee2f8', background:'#fff'}}/>
       <div className="flex gap-3" style={{width:'100%', maxWidth:'480px'}}>
         <button onClick={() => setChannel(null)}
           className="rounded-xl px-6 py-3 text-[14px] font-bold cursor-pointer border-2"
@@ -691,7 +691,7 @@ function ContactScreen({ t, state, terminalId }) {
         </button>
         <button onClick={submit} disabled={!value}
           className="flex-1 rounded-xl py-3 text-[16px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           ✓ {t.submit}
         </button>
       </div>

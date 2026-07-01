@@ -234,14 +234,14 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                 <FieldLabel>Company *</FieldLabel>
                 <select value={customerId} onChange={e => setCustomerId(e.target.value)}
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"
-                  style={{borderColor: customerId ? '#006AFF' : '#E5E5E5'}}>
+                  style={{borderColor: customerId ? '#5E6AD2' : '#E5E5E5'}}>
                   <option value="">— Select company —</option>
                   {customers.map(c => (
                     <option key={c.id} value={c.id}>{c.company_name}{c.contact_name ? ` · ${c.contact_name}` : ''}</option>
                   ))}
                 </select>
                 {customers.length === 0 && (
-                  <div className="text-[11px] text-[#CF1322] mt-1">⚠️ No companies yet. Add one in Business Customers first.</div>
+                  <div className="text-[11px] text-[#dc2626] mt-1">⚠️ No companies yet. Add one in Business Customers first.</div>
                 )}
                 {selectedCustomer?.payment_terms && (
                   <div className="text-[10px] text-[#666] mt-1">
@@ -274,7 +274,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                 <FieldLabel>Items ({items.length})</FieldLabel>
                 <button onClick={() => setShowProductPicker(true)}
                   className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                  style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                  style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                   + Add Product
                 </button>
               </div>
@@ -286,7 +286,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                   <div className="text-[13px] text-[#666] mb-3">No items yet</div>
                   <button onClick={() => setShowProductPicker(true)}
                     className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer"
-                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                    style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                     + Add your first item
                   </button>
                 </div>
@@ -314,7 +314,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                           )}
                         </div>
                         <div className="px-2 py-2.5 text-right font-mono text-[11px]"
-                          style={{color: stockOK ? '#15803D' : '#CF1322'}}>
+                          style={{color: stockOK ? '#059669' : '#dc2626'}}>
                           {item.stock_qty ?? 0}
                         </div>
                         <div className="px-1 py-2.5">
@@ -341,7 +341,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                         <div className="px-1 py-2.5">
                           <button onClick={() => removeItem(idx)}
                             className="w-6 h-6 rounded text-[12px] cursor-pointer"
-                            style={{background:'#FEE2E2', color:'#CF1322', border:'none'}}>×</button>
+                            style={{background:'#FEE2E2', color:'#dc2626', border:'none'}}>×</button>
                         </div>
                       </div>
                     )
@@ -355,7 +355,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
                       {totals.discount > 0 && (
                         <div className="flex justify-between">
                           <span className="text-[#666]">Discount</span>
-                          <span className="font-mono text-[#CF1322]">−${totals.discount.toFixed(2)}</span>
+                          <span className="font-mono text-[#dc2626]">−${totals.discount.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
@@ -395,7 +395,7 @@ export default function CreateEstimateModal({ onClose, onCreated, presetCustomer
             </button>
             <button onClick={create} disabled={saving || !customerId || items.length === 0}
               className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               {saving ? 'Creating...' : `Create Estimate · $${totals.total.toFixed(2)}`}
             </button>
           </div>

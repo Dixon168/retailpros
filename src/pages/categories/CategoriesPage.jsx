@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 
-const COLORS = ['#3b82f6','#10b981','#f59e0b','#006AFF','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6','#84cc16']
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#5E6AD2','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6','#84cc16']
 const EMOJIS = ['📁','🛒','📱','💻','🍎','🥛','🔧','👕','💊','🏠','🎮','📚','🚗','🎵','💄','🌿','🍕','☕','🔑','💎']
 
 export default function CategoriesPage() {
@@ -142,7 +142,7 @@ export default function CategoriesPage() {
         <div className="px-4 py-3 border-b border-[#E5E5E5] flex items-center justify-between">
           <div className="text-[13px] font-bold">Categories</div>
           <button onClick={() => { setEditItem(null); setShowCatForm(true) }}
-            className="bg-[#006AFF] border-none rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-white cursor-pointer">
+            className="bg-[#5E6AD2] border-none rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-white cursor-pointer">
             + Add
           </button>
         </div>
@@ -173,11 +173,11 @@ export default function CategoriesPage() {
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={e => e.stopPropagation()}>
                       <button onClick={() => { setEditItem(cat); setShowCatForm(true) }}
-                        className="text-[10px] text-[#999999] hover:text-[#006AFF] bg-transparent border-none cursor-pointer px-1">
+                        className="text-[10px] text-[#999999] hover:text-[#5E6AD2] bg-transparent border-none cursor-pointer px-1">
                         ✏
                       </button>
                       <button onClick={() => deleteCategory(cat.id)}
-                        className="text-[10px] text-[#999999] hover:text-[#CF1322] bg-transparent border-none cursor-pointer px-1">
+                        className="text-[10px] text-[#999999] hover:text-[#dc2626] bg-transparent border-none cursor-pointer px-1">
                         ✕
                       </button>
                     </div>
@@ -232,11 +232,11 @@ export default function CategoriesPage() {
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => { setEditItem(sub); setShowSubForm(true) }}
-                        className="text-[10px] text-[#999999] hover:text-[#006AFF] bg-transparent border-none cursor-pointer px-1">
+                        className="text-[10px] text-[#999999] hover:text-[#5E6AD2] bg-transparent border-none cursor-pointer px-1">
                         ✏
                       </button>
                       <button onClick={() => deleteSubcategory(sub.id)}
-                        className="text-[10px] text-[#999999] hover:text-[#CF1322] bg-transparent border-none cursor-pointer px-1">
+                        className="text-[10px] text-[#999999] hover:text-[#dc2626] bg-transparent border-none cursor-pointer px-1">
                         ✕
                       </button>
                     </div>
@@ -300,7 +300,7 @@ export default function CategoriesPage() {
                             </span>
                             <span className="text-[16px]">📦</span>
                             <span className="flex-1 text-[12px] font-semibold">{p.name}</span>
-                            <span className="font-mono text-[12px] text-[#006AFF]">
+                            <span className="font-mono text-[12px] text-[#5E6AD2]">
                               ${parseFloat(p.price||0).toFixed(2)}
                             </span>
                             <div className="flex items-center gap-1.5">
@@ -310,7 +310,7 @@ export default function CategoriesPage() {
                                 defaultValue={p.sort_order}
                                 onBlur={e => updateProductOrder(p.id, e.target.value)}
                                 className="w-12 bg-[#F5F5F5] border border-[#E5E5E5] rounded px-2 py-1
-                                  text-[11px] font-mono text-center outline-none focus:border-[#006AFF]"
+                                  text-[11px] font-mono text-center outline-none focus:border-[#5E6AD2]"
                               />
                             </div>
                           </div>
@@ -371,7 +371,7 @@ function CategoryForm({ initial, onSave, onClose }) {
               {EMOJIS.map(e => (
                 <button key={e} onClick={() => set('emoji', e)}
                   className={`w-8 h-8 rounded-lg text-[16px] border cursor-pointer transition-all ${
-                    form.emoji===e ? 'border-blue-500/50 bg-[#006AFF]/10' : 'border-[#E5E5E5] bg-[#F5F5F5]'
+                    form.emoji===e ? 'border-blue-500/50 bg-[#5E6AD2]/10' : 'border-[#E5E5E5] bg-[#F5F5F5]'
                   }`}>{e}</button>
               ))}
             </div>
@@ -392,12 +392,12 @@ function CategoryForm({ initial, onSave, onClose }) {
             <div className="col-span-2">
               <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">Name *</div>
               <input value={form.name} onChange={e=>set('name',e.target.value)} autoFocus placeholder="e.g. Electronics"
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3.5 py-2.5 text-[13px] outline-none focus:border-[#006AFF] placeholder-[#999999]"/>
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3.5 py-2.5 text-[13px] outline-none focus:border-[#5E6AD2] placeholder-[#999999]"/>
             </div>
             <div>
               <div className="text-[10px] font-mono text-[#999999] uppercase tracking-wider mb-1.5">Sort Order</div>
               <input type="number" value={form.sort_order} onChange={e=>set('sort_order',e.target.value)}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3.5 py-2.5 text-[13px] font-mono outline-none focus:border-[#006AFF]"/>
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3.5 py-2.5 text-[13px] font-mono outline-none focus:border-[#5E6AD2]"/>
             </div>
           </div>
           {/* Preview */}
@@ -410,7 +410,7 @@ function CategoryForm({ initial, onSave, onClose }) {
         <div className="px-5 pb-5 flex gap-2 border-t border-[#E5E5E5] pt-4">
           <button onClick={onClose} className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-2.5 text-[13px] text-[#666666] cursor-pointer">Cancel</button>
           <button onClick={() => { if(form.name.trim()) onSave(form); else toast.error('Name required') }}
-            className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white cursor-pointer">
+            className="flex-[2] bg-[#5E6AD2] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white cursor-pointer">
             {form.id ? '✓ Update' : '✓ Create Category'}
           </button>
         </div>

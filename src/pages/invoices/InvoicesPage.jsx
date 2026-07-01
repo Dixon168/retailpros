@@ -10,11 +10,11 @@ import ReceivePaymentModal from './ReceivePaymentModal'
 
 const STATUS_BADGE = {
   draft:    { bg:'#F5F5F5', color:'#666',    label:'Draft' },
-  sent:     { bg:'#E6F0FF', color:'#006AFF', label:'Sent' },
-  viewed:   { bg:'#E6F0FF', color:'#006AFF', label:'Viewed' },
+  sent:     { bg:'#eef0fc', color:'#5E6AD2', label:'Sent' },
+  viewed:   { bg:'#eef0fc', color:'#5E6AD2', label:'Viewed' },
   partial:  { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
-  paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
-  overdue:  { bg:'#FEE2E2', color:'#CF1322', label:'Overdue' },
+  paid:     { bg:'#d1fae5', color:'#059669', label:'Paid' },
+  overdue:  { bg:'#FEE2E2', color:'#dc2626', label:'Overdue' },
   void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },
   voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
   closed:   { bg:'#E5E7EB', color:'#374151', label:'🔒 Closed' },

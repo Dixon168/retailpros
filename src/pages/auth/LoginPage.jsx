@@ -104,8 +104,8 @@ export default function LoginPage() {
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="you@store.com" autoFocus
               className="w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-[8px]
-                px-3.5 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF]
-                focus:ring-2 focus:ring-[#E6F0FF] transition-all placeholder-[#999999]"/>
+                px-3.5 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2]
+                focus:ring-2 focus:ring-[#eef0fc] transition-all placeholder-[#999999]"/>
           </div>
           <div className="mb-6">
             <label className="block text-[11px] font-semibold text-[#666666] mb-2
@@ -113,8 +113,8 @@ export default function LoginPage() {
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-[8px]
-                px-3.5 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF]
-                focus:ring-2 focus:ring-[#E6F0FF] transition-all placeholder-[#999999]"/>
+                px-3.5 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2]
+                focus:ring-2 focus:ring-[#eef0fc] transition-all placeholder-[#999999]"/>
           </div>
           <button type="submit" disabled={loading}
             className="w-full bg-[#000000] hover:bg-[#1F1F1F] border-none

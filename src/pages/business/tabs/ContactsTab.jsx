@@ -66,7 +66,7 @@ export default function ContactsTab({ customerId, tenantId, onChanged }) {
         </div>
         <button onClick={() => setEditing('new')}
           className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           + Add Contact
         </button>
       </div>
@@ -116,13 +116,13 @@ export default function ContactsTab({ customerId, tenantId, onChanged }) {
                 )}
                 <button onClick={() => setEditing(c)}
                   className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                  style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                  style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                   Edit
                 </button>
                 {!c.is_primary && (
                   <button onClick={() => deleteContact(c)}
                     className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                    style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                    style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                     ✕
                   </button>
                 )}
@@ -230,13 +230,13 @@ function ContactFormModal({ initial, customerId, tenantId, onClose, onSaved }) {
             <label className="flex items-center gap-2 text-[12px] cursor-pointer">
               <input type="checkbox" checked={form.receive_invoice}
                 onChange={e => set('receive_invoice', e.target.checked)}
-                className="accent-[#006AFF]"/>
+                className="accent-[#5E6AD2]"/>
               <span>📧 Send invoices to this contact's email</span>
             </label>
             <label className="flex items-center gap-2 text-[12px] cursor-pointer">
               <input type="checkbox" checked={form.receive_reminder}
                 onChange={e => set('receive_reminder', e.target.checked)}
-                className="accent-[#006AFF]"/>
+                className="accent-[#5E6AD2]"/>
               <span>🔔 Send payment reminders to this contact</span>
             </label>
           </div>
@@ -249,7 +249,7 @@ function ContactFormModal({ initial, customerId, tenantId, onClose, onSaved }) {
           </button>
           <button onClick={save} disabled={saving || !form.name.trim()}
             className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-            style={{background:'#006AFF', border:'none'}}>
+            style={{background:'#5E6AD2', border:'none'}}>
             {saving ? 'Saving...' : initial?.id ? '✓ Save' : '+ Add Contact'}
           </button>
         </div>

@@ -479,14 +479,14 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                   disabled={isEdit}
                   title={isEdit ? 'Cannot change company on an existing invoice — void and recreate to change' : undefined}
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer disabled:bg-[#F0F0F0] disabled:cursor-not-allowed disabled:opacity-70"
-                  style={{borderColor: customerId ? '#006AFF' : '#E5E5E5'}}>
+                  style={{borderColor: customerId ? '#5E6AD2' : '#E5E5E5'}}>
                   <option value="">— Select company —</option>
                   {customers.map(c => (
                     <option key={c.id} value={c.id}>{c.company_name}{c.contact_name ? ` · ${c.contact_name}` : ''}</option>
                   ))}
                 </select>
                 {customers.length === 0 && (
-                  <div className="text-[11px] text-[#CF1322] mt-1">⚠️ No companies yet.</div>
+                  <div className="text-[11px] text-[#dc2626] mt-1">⚠️ No companies yet.</div>
                 )}
                 {selectedCustomer?.payment_terms && (
                   <div className="text-[10px] text-[#666] mt-1">
@@ -533,13 +533,13 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                     }])
                   }}
                     className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}
+                    style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}
                     title="Add a free-form line (deposit, service fee, manual charge). No inventory tracking.">
                     + Custom Line
                   </button>
                   <button onClick={() => setShowProductPicker(true)}
                     className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                    style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                     + Add Product
                   </button>
                 </div>
@@ -552,7 +552,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                   <div className="text-[13px] text-[#666] mb-3">No items yet</div>
                   <button onClick={() => setShowProductPicker(true)}
                     className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer"
-                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                    style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                     + Add your first item
                   </button>
                 </div>
@@ -591,7 +591,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                           )}
                         </div>
                         <div className="px-2 py-2.5 text-right font-mono text-[11px]"
-                          style={{color: stockOK ? '#15803D' : '#CF1322'}}>
+                          style={{color: stockOK ? '#059669' : '#dc2626'}}>
                           {item.is_custom ? <span className="text-[#999]">—</span> : (item.stock_qty ?? 0)}
                         </div>
                         <div className="px-1 py-2.5">
@@ -618,7 +618,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                         <div className="px-1 py-2.5">
                           <button onClick={() => removeItem(idx)}
                             className="w-6 h-6 rounded text-[12px] cursor-pointer"
-                            style={{background:'#FEE2E2', color:'#CF1322', border:'none'}}>×</button>
+                            style={{background:'#FEE2E2', color:'#dc2626', border:'none'}}>×</button>
                         </div>
                       </div>
                     )
@@ -632,7 +632,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                       {totals.discount > 0 && (
                         <div className="flex justify-between">
                           <span className="text-[#666]">Discount</span>
-                          <span className="font-mono text-[#CF1322]">−${totals.discount.toFixed(2)}</span>
+                          <span className="font-mono text-[#dc2626]">−${totals.discount.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
@@ -682,7 +682,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
             const isFull    = payNow && enteredAmt >= totals.total - 0.005
             const isPartial = payNow && enteredAmt > 0 && enteredAmt < totals.total
             const balance   = Math.max(0, totals.total - enteredAmt)
-            const accentColor = isFull ? '#15803D' : isPartial ? '#B45309' : '#E5E5E5'
+            const accentColor = isFull ? '#059669' : isPartial ? '#B45309' : '#E5E5E5'
             const bgColor     = isFull ? '#F0FDF4' : isPartial ? '#FFFBEB' : '#FAFAFA'
             return (
               <div className="px-5 pb-4 flex-shrink-0">
@@ -691,7 +691,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                     <input type="checkbox" checked={payNow}
                       onChange={e => { setPayNow(e.target.checked); if (!e.target.checked) setPayAmount('') }}
                       className="w-4 h-4 cursor-pointer"
-                      style={{accentColor: isFull ? '#15803D' : '#B45309'}}/>
+                      style={{accentColor: isFull ? '#059669' : '#B45309'}}/>
                     <div className="flex-1">
                       <div className="text-[13px] font-bold text-[#1F1F1F]">
                         💰 Receive payment / deposit now
@@ -724,7 +724,7 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                         <div>
                           <FieldLabel>Method</FieldLabel>
                           <select value={payMethod} onChange={e => setPayMethod(e.target.value)}
-                            className="w-full bg-white border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]">
+                            className="w-full bg-white border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#5E6AD2]">
                             <option value="cash">💵 Cash</option>
                             <option value="check">🏦 Check</option>
                             <option value="ach">🔄 ACH</option>
@@ -739,12 +739,12 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                           <FieldLabel>Reference / check #</FieldLabel>
                           <input value={payReference} onChange={e => setPayReference(e.target.value)}
                             placeholder="Optional"
-                            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]"/>
+                            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#5E6AD2]"/>
                         </div>
                         <div>
                           <FieldLabel>Payment date</FieldLabel>
                           <input type="date" value={payDate} onChange={e => setPayDate(e.target.value)}
-                            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#006AFF]"/>
+                            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#5E6AD2]"/>
                         </div>
                       </div>
                       {/* Live preview — total / deposit / balance */}
@@ -756,13 +756,13 @@ export default function CreateInvoiceModal({ onClose, onCreated, presetCustomerI
                         </div>
                         {enteredAmt > 0 && (
                           <div className="flex justify-between mt-1"
-                            style={{color: isFull ? '#15803D' : '#B45309'}}>
+                            style={{color: isFull ? '#059669' : '#B45309'}}>
                             <span>{isFull ? 'Paid in Full:' : 'Deposit:'}</span>
                             <span>−${Math.min(enteredAmt, totals.total).toFixed(2)}</span>
                           </div>
                         )}
                         <div className="flex justify-between mt-1 pt-1 border-t border-[#E5E5E5] font-bold"
-                          style={{color: balance <= 0.005 ? '#15803D' : '#CF1322'}}>
+                          style={{color: balance <= 0.005 ? '#059669' : '#dc2626'}}>
                           <span>Balance Due:</span>
                           <span>{balance <= 0.005 ? '✓ PAID' : `$${balance.toFixed(2)}`}</span>
                         </div>
@@ -847,12 +847,12 @@ export function ShipToSection({
       <button onClick={() => setShipMode(mode)}
         className="flex-1 rounded-lg px-3 py-2 text-left cursor-pointer active:scale-[0.98]"
         style={active
-          ? { background:'#E6F0FF', border:'1.5px solid #006AFF' }
+          ? { background:'#eef0fc', border:'1.5px solid #5E6AD2' }
           : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
         <div className="flex items-center gap-1.5">
           <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center"
-            style={{ border: `2px solid ${active ? '#006AFF' : '#CCCCCC'}` }}>
-            {active && <div className="w-1.5 h-1.5 rounded-full" style={{background:'#006AFF'}}/>}
+            style={{ border: `2px solid ${active ? '#5E6AD2' : '#CCCCCC'}` }}>
+            {active && <div className="w-1.5 h-1.5 rounded-full" style={{background:'#5E6AD2'}}/>}
           </div>
           <span className="text-[12px] font-bold text-[#1F1F1F]">{label}</span>
         </div>
@@ -880,7 +880,7 @@ export function ShipToSection({
         <div>
           <select value={savedShipId} onChange={e => setSavedShipId(e.target.value)}
             className="w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer mb-2"
-            style={{borderColor: savedShipId ? '#006AFF' : '#E5E5E5'}}>
+            style={{borderColor: savedShipId ? '#5E6AD2' : '#E5E5E5'}}>
             <option value="">— Pick an address —</option>
             {savedAddrs.map(a => {
               const cityLine = [a.city, a.state, a.zip].filter(Boolean).join(', ')

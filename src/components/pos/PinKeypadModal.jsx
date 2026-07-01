@@ -19,7 +19,7 @@ const MODES = {
     title:'🔐 Sign In',
     subtitle:'Enter your PIN to use this terminal',
     submitLabel:'✓ Sign In',
-    color:'#006AFF',
+    color:'#5E6AD2',
     gradient:'linear-gradient(135deg,#1e293b 0%,#0f172a 100%)',
   },
   clockin: {

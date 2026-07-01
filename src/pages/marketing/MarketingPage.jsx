@@ -9,8 +9,8 @@ import PromoProductList from '@/components/promotions/PromoProductList'
 import { loadPromoProducts, setPromoProducts, findConflicts } from '@/lib/promoProducts'
 
 const TYPE_INFO = {
-  sale: { label:'Sale Pricing',       icon:'🏷️', color:'#006AFF', bg:'#E6F0FF', desc:'Date range discount' },
-  bulk: { label:'Bulk Pricing',       icon:'📦', color:'#16a34a', bg:'#dcfce7', desc:'Qty-based discount' },
+  sale: { label:'Sale Pricing',       icon:'🏷️', color:'#5E6AD2', bg:'#eef0fc', desc:'Date range discount' },
+  bulk: { label:'Bulk Pricing',       icon:'📦', color:'#16a34a', bg:'#d1fae5', desc:'Qty-based discount' },
   time: { label:'Time Based Pricing', icon:'⏰', color:'#d97706', bg:'#fef9c3', desc:'Day/hour discount' },
 }
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -96,9 +96,9 @@ export default function MarketingPage() {
     }
     if (end) {
       const days = Math.ceil((end - now) / 86400000)
-      return { label: `Running · ${days}d left`, icon: '✅', color: '#15803d', bg: '#dcfce7' }
+      return { label: `Running · ${days}d left`, icon: '✅', color: '#059669', bg: '#d1fae5' }
     }
-    return { label: 'Running · no end date', icon: '✅', color: '#15803d', bg: '#dcfce7' }
+    return { label: 'Running · no end date', icon: '✅', color: '#059669', bg: '#d1fae5' }
   }
 
   // ── Date range pretty-print ─────────────────────────────────────────
@@ -172,7 +172,7 @@ export default function MarketingPage() {
             <div className="text-[12px] mb-4">Create your first promotion to boost sales</div>
             <button onClick={() => { setEditPromo(null); setShowForm(true) }}
               className="px-4 py-2 rounded-lg text-[12px] font-bold text-white cursor-pointer border-none"
-              style={{background:'#006AFF'}}>
+              style={{background:'#5E6AD2'}}>
               + New Promotion
             </button>
           </div>
@@ -203,12 +203,12 @@ export default function MarketingPage() {
                         className="px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer border transition-all"
                         style={promo.is_active
                           ? {background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626'}
-                          : {background:'#dcfce7', border:'1px solid #86efac', color:'#16a34a'}}>
+                          : {background:'#d1fae5', border:'1px solid #86efac', color:'#16a34a'}}>
                         {promo.is_active ? 'Pause' : 'Activate'}
                       </button>
                       <button onClick={() => { setEditPromo(promo); setShowForm(true) }}
                         className="px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer border"
-                        style={{background:'#E6F0FF', border:'1px solid #80B2FF', color:'#006AFF'}}>
+                        style={{background:'#eef0fc', border:'1px solid #dee2f8', color:'#5E6AD2'}}>
                         Edit
                       </button>
                       <button onClick={() => deletePromo(promo.id)}
@@ -526,7 +526,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
               placeholder="e.g. Summer Sale, Happy Hour, Buy 2 Get Discount"
               className="w-full rounded-xl px-4 py-2.5 text-[14px] outline-none transition-all"
               style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}
-              onFocus={e=>e.target.style.borderColor='#006AFF'}
+              onFocus={e=>e.target.style.borderColor='#5E6AD2'}
               onBlur={e=>e.target.style.borderColor='#e2e8f0'}/>
           </div>
 
@@ -575,7 +575,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                 set('sale_start', new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16))
               }}
                 className="rounded-md px-2 py-1 text-[10px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                 ⚡ Start now
               </button>
             </div>
@@ -595,7 +595,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                 <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
                   <input type="checkbox" checked={form.no_end_date}
                     onChange={e => set('no_end_date', e.target.checked)}
-                    className="w-3.5 h-3.5 accent-[#006AFF]"/>
+                    className="w-3.5 h-3.5 accent-[#5E6AD2]"/>
                   <span className="text-[#666] font-bold">Runs forever (no end date)</span>
                 </label>
               </div>
@@ -615,7 +615,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
 
           {/* ── SALE PRICING (type-specific) ── */}
           {form.type === 'sale' && (
-            <div className="rounded-xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
+            <div className="rounded-xl p-4" style={{background:'#eef0fc', border:'1.5px solid #B3D1FF'}}>
               <div className="text-[12px] font-bold text-indigo-700 mb-3">🏷️ Sale Pricing</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -651,7 +651,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                       : (selectedProduct.price*(1-parseFloat(form.sale_value)/100)).toFixed(2)}
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    style={{background:'#dcfce7', color:'#16a34a'}}>
+                    style={{background:'#d1fae5', color:'#16a34a'}}>
                     Save ${form.sale_type==='fixed'
                       ? (selectedProduct.price-parseFloat(form.sale_value)).toFixed(2)
                       : (selectedProduct.price*parseFloat(form.sale_value)/100).toFixed(2)}
@@ -692,7 +692,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                         </span>
                       )}
                       <button onClick={() => set('bulk_tiers', form.bulk_tiers.filter((_,j)=>j!==i))}
-                        className="ml-auto text-[#CF1322] hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
+                        className="ml-auto text-[#dc2626] hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
                     </div>
                   ))}
                 </div>
@@ -775,7 +775,7 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
                         {r.type==='fixed' ? `$${r.value}` : `${r.value}% off`}
                       </span>
                       <button onClick={() => set('time_rules', form.time_rules.filter((_,j)=>j!==i))}
-                        className="ml-auto text-[#CF1322] hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
+                        className="ml-auto text-[#dc2626] hover:text-red-600 bg-transparent border-none cursor-pointer">✕</button>
                     </div>
                   ))}
                 </div>
@@ -843,16 +843,16 @@ function PromotionForm({ initial, tenantId, onSave, onClose }) {
 
           {/* Enable / pause toggle — separate from schedule */}
           <label className="flex items-center gap-3 cursor-pointer rounded-xl px-4 py-3"
-            style={{background: form.is_active ? '#DCFCE7' : '#FEF3C7',
-                    border: `1.5px solid ${form.is_active ? '#15803D' : '#F59E0B'}`}}>
+            style={{background: form.is_active ? '#d1fae5' : '#FEF3C7',
+                    border: `1.5px solid ${form.is_active ? '#059669' : '#F59E0B'}`}}>
             <input type="checkbox" checked={form.is_active} onChange={e=>set('is_active',e.target.checked)}
-              className="w-4 h-4 accent-[#15803D]"/>
+              className="w-4 h-4 accent-[#059669]"/>
             <div className="flex-1">
               <div className="text-[13px] font-semibold"
-                style={{color: form.is_active ? '#15803D' : '#B45309'}}>
+                style={{color: form.is_active ? '#059669' : '#B45309'}}>
                 {form.is_active ? '✓ Enabled' : '⏸ Paused'}
               </div>
-              <div className="text-[11px]" style={{color: form.is_active ? '#15803D' : '#B45309'}}>
+              <div className="text-[11px]" style={{color: form.is_active ? '#059669' : '#B45309'}}>
                 {form.is_active
                   ? 'Will run during the scheduled window above.'
                   : 'Manually paused — will NOT run even if schedule says it should.'}
@@ -920,11 +920,11 @@ function PromoStatusPreview({ startsAt, endsAt, enabled }) {
     const ago = formatDuration(minutesUntil, true)
     label = `Scheduled — starts in ${ago}`
     icon = '📅'
-    color = '#006AFF'; bg = '#E6F0FF'
+    color = '#5E6AD2'; bg = '#eef0fc'
     hint = `Begins ${start.toLocaleString()}`
   } else if (!end || now <= end) {
     icon = '✅'
-    color = '#15803D'; bg = '#DCFCE7'
+    color = '#059669'; bg = '#d1fae5'
     if (end) {
       const minutesLeft = Math.round((end - now) / 60000)
       label = `Live now — ends in ${formatDuration(minutesLeft, false)}`

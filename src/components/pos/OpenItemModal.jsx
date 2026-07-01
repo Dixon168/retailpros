@@ -79,7 +79,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
               onChange={e => setName(e.target.value)}
               placeholder="Open Item"
               className="w-full rounded-xl px-4 py-3 text-[15px] font-semibold outline-none"
-              style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1F1F1F'}}
+              style={{border:'2px solid #dee2f8', background:'#f8f9ff', color:'#1F1F1F'}}
             />
           </div>
 
@@ -91,13 +91,13 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
             <button onClick={() => setShowNumPad(true)}
               className="w-full rounded-xl px-4 py-3.5 text-left cursor-pointer border-2 transition-all"
               style={{
-                border: price ? '2px solid #80B2FF' : '2px dashed #e2e8f0',
-                background: price ? '#E6F0FF' : '#f8fafc',
+                border: price ? '2px solid #dee2f8' : '2px dashed #e2e8f0',
+                background: price ? '#eef0fc' : '#f8fafc',
               }}>
               {price ? (
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] text-indigo-400 font-semibold">$</span>
-                  <span className="text-[28px] font-bold font-mono" style={{color:'#006AFF'}}>
+                  <span className="text-[28px] font-bold font-mono" style={{color:'#5E6AD2'}}>
                     {parseFloat(price).toFixed(2)}
                   </span>
                 </div>
@@ -138,7 +138,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
                     background: taxRateId===tr.id ? '#eff6ff' : '#f8fafc',
                     borderColor: taxRateId===tr.id ? '#93c5fd' : '#e2e8f0',
                   }}>
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${taxRateId===tr.id ? 'border-blue-500 bg-[#006AFF]' : 'border-slate-300'}`}>
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${taxRateId===tr.id ? 'border-blue-500 bg-[#5E6AD2]' : 'border-slate-300'}`}>
                     {taxRateId===tr.id && <div className="w-2 h-2 rounded-full bg-white"/>}
                   </div>
                   <span className="text-[13px] font-semibold" style={{color: taxRateId===tr.id ? '#2563eb' : '#64748b'}}>
@@ -160,7 +160,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
 
           {/* Summary */}
           {price && (
-            <div className="rounded-xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
+            <div className="rounded-xl p-4" style={{background:'#eef0fc', border:'1.5px solid #B3D1FF'}}>
               <div className="flex justify-between text-[12px] text-slate-500 mb-1">
                 <span>Price</span>
                 <span className="font-mono">${priceNum.toFixed(2)}</span>
@@ -174,7 +174,7 @@ export function OpenItemModal({ tenantId, onAdd, onClose }) {
               <div className="flex justify-between text-[15px] font-bold pt-2"
                 style={{borderTop:'1px solid #B3D1FF', color:'#1F1F1F'}}>
                 <span>Total</span>
-                <span className="font-mono" style={{color:'#006AFF'}}>${totalAmt.toFixed(2)}</span>
+                <span className="font-mono" style={{color:'#5E6AD2'}}>${totalAmt.toFixed(2)}</span>
               </div>
             </div>
           )}

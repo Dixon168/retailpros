@@ -245,14 +245,14 @@ function StoreSection({ store, tenant }) {
           <textarea value={form.receipt_header} onChange={e => u('receipt_header', e.target.value)}
             rows={2} placeholder="Store name, address, phone..."
             className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5
-              text-[12px] outline-none focus:border-[#006AFF] resize-none"/>
+              text-[12px] outline-none focus:border-[#5E6AD2] resize-none"/>
         </div>
         <div>
           <FieldLabel>Footer Text</FieldLabel>
           <textarea value={form.receipt_footer} onChange={e => u('receipt_footer', e.target.value)}
             rows={2}
             className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5
-              text-[12px] outline-none focus:border-[#006AFF] resize-none"/>
+              text-[12px] outline-none focus:border-[#5E6AD2] resize-none"/>
         </div>
       </Card>
 
@@ -268,7 +268,7 @@ function StoreSection({ store, tenant }) {
             <FieldLabel>Symbol</FieldLabel>
             <select value={currency.symbol}
               onChange={e => setCurrency({ ...currency, symbol: e.target.value })}
-              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF]">
+              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#5E6AD2]">
               <option value="$">$ (US Dollar / CAD / etc)</option>
               <option value="¥">¥ (Chinese Yuan / Japanese Yen)</option>
               <option value="€">€ (Euro)</option>
@@ -293,12 +293,12 @@ function StoreSection({ store, tenant }) {
             onChange={v => setCurrency({ ...currency, code: v.toUpperCase() })} mono/>
         </div>
         <div className="mt-3 rounded-lg p-2.5 text-[11px]"
-          style={{background:'#eff6ff', border:'1px solid #80B2FF', color:'#1e3a8a'}}>
+          style={{background:'#eff6ff', border:'1px solid #dee2f8', color:'#1e3a8a'}}>
           Preview: <b className="font-mono">{currency.symbol}1,234.56</b> ({currency.code})
         </div>
         <button onClick={saveCurrency}
           className="mt-3 px-4 py-2.5 rounded-lg text-[13px] font-bold cursor-pointer border-none text-white"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           Save Currency
         </button>
       </Card>
@@ -363,7 +363,7 @@ function TerminalsSection({ tenantId, storeId }) {
       <div className="flex justify-between items-center mb-5">
         <SectionTitle className="mb-0">🖥️ Terminals & PAX Configuration</SectionTitle>
         <button onClick={() => setEditTerm({})}
-          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
+          className="bg-[#5E6AD2] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white">
           + Add Terminal
         </button>
       </div>
@@ -391,7 +391,7 @@ function TerminalsSection({ tenantId, storeId }) {
                       PAX {term.pax_model} · {term.pax_ip}:{term.pax_port}
                     </div>
                     {ts === 'online'  && <span className="text-[9px] text-[#00B23B]">● Online</span>}
-                    {ts === 'offline' && <span className="text-[9px] text-[#CF1322]">● Offline</span>}
+                    {ts === 'offline' && <span className="text-[9px] text-[#dc2626]">● Offline</span>}
                     {ts === 'testing' && <span className="text-[9px] text-[#666666] animate-pulse">Testing...</span>}
                   </div>
                 ) : (
@@ -416,13 +416,13 @@ function TerminalsSection({ tenantId, storeId }) {
                 {term.pax_enabled && (
                   <button onClick={() => testPax(term)}
                     className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
-                      text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all">
+                      text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-[#5E6AD2] transition-all">
                     Test PAX
                   </button>
                 )}
                 <button onClick={() => setEditTerm(term)}
                   className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-1.5
-                    text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all">
+                    text-[10px] text-[#666666] hover:border-blue-500/30 hover:text-[#5E6AD2] transition-all">
                   Edit
                 </button>
               </div>
@@ -534,7 +534,7 @@ function TerminalEditForm({ initial, onSave, onClose }) {
               className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
                 py-2.5 text-[13px] text-[#666666]">Cancel</button>
             <button onClick={() => onSave(form)}
-              className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5
+              className="flex-[2] bg-[#5E6AD2] border-none rounded-[9px] py-2.5
                 text-[13px] font-bold text-white">Save Terminal</button>
           </div>
         </div>
@@ -619,7 +619,7 @@ function TaxSection({ tenantId }) {
         <SectionTitle className="mb-0">🧾 Tax Rates</SectionTitle>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer active:scale-[0.97]">
+            className="bg-[#5E6AD2] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer active:scale-[0.97]">
             + Add Tax Rate
           </button>
         )}
@@ -632,23 +632,23 @@ function TaxSection({ tenantId }) {
         {/* Add-new row */}
         {adding && (
           <div className="flex items-center gap-2 mb-3 p-2 rounded-lg"
-            style={{background:'#E6F0FF', border:'1.5px solid #006AFF'}}>
+            style={{background:'#eef0fc', border:'1.5px solid #5E6AD2'}}>
             <input autoFocus value={newRate.name}
               onChange={e=>setNewRate(p=>({...p, name:e.target.value}))}
               onKeyDown={e=>{ if(e.key==='Enter') addRate(); if(e.key==='Escape'){setAdding(false); setNewRate({name:'',ratePct:''})} }}
               placeholder="Name (e.g. Tax 3, City Tax, ...)"
               className="flex-1 rounded-md px-2.5 py-1.5 text-[12px] outline-none"
-              style={{border:'1px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+              style={{border:'1px solid #dee2f8', background:'#FFFFFF', color:'#1F1F1F'}}/>
             <input value={newRate.ratePct}
               onChange={e=>setNewRate(p=>({...p, ratePct:e.target.value}))}
               onKeyDown={e=>{ if(e.key==='Enter') addRate() }}
               placeholder="0.00" type="number" step="0.01" min="0" max="100"
               className="w-20 rounded-md px-2.5 py-1.5 text-[12px] outline-none font-mono text-right"
-              style={{border:'1px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
-            <span className="text-[12px] font-bold text-[#006AFF]">%</span>
+              style={{border:'1px solid #dee2f8', background:'#FFFFFF', color:'#1F1F1F'}}/>
+            <span className="text-[12px] font-bold text-[#5E6AD2]">%</span>
             <button onClick={addRate}
               className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
-              style={{background:'#15803d', color:'#fff', border:'none'}}>Save</button>
+              style={{background:'#059669', color:'#fff', border:'none'}}>Save</button>
             <button onClick={()=>{setAdding(false); setNewRate({name:'',ratePct:''})}}
               className="rounded-md px-2 py-1.5 text-[11px] font-bold cursor-pointer"
               style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
@@ -670,17 +670,17 @@ function TaxSection({ tenantId }) {
                   onChange={e=>setEditing(p=>({...p, name:e.target.value}))}
                   onKeyDown={e=>{ if(e.key==='Enter') saveEdit(); if(e.key==='Escape') setEditing(null) }}
                   className="flex-1 rounded-md px-2.5 py-1.5 text-[12px] outline-none"
-                  style={{border:'1.5px solid #006AFF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+                  style={{border:'1.5px solid #5E6AD2', background:'#FFFFFF', color:'#1F1F1F'}}/>
                 <input value={editing.ratePct}
                   onChange={e=>setEditing(p=>({...p, ratePct:e.target.value}))}
                   onKeyDown={e=>{ if(e.key==='Enter') saveEdit(); if(e.key==='Escape') setEditing(null) }}
                   type="number" step="0.01" min="0" max="100"
                   className="w-20 rounded-md px-2.5 py-1.5 text-[12px] outline-none font-mono text-right"
-                  style={{border:'1.5px solid #006AFF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+                  style={{border:'1.5px solid #5E6AD2', background:'#FFFFFF', color:'#1F1F1F'}}/>
                 <span className="text-[12px] font-bold text-[#FA8C16]">%</span>
                 <button onClick={saveEdit}
                   className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
-                  style={{background:'#15803d', color:'#fff', border:'none'}}>Save</button>
+                  style={{background:'#059669', color:'#fff', border:'none'}}>Save</button>
                 <button onClick={()=>setEditing(null)}
                   className="rounded-md px-2 py-1.5 text-[11px] font-bold cursor-pointer"
                   style={{background:'#FFFFFF', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
@@ -701,7 +701,7 @@ function TaxSection({ tenantId }) {
                 </button>
                 <button onClick={()=>deleteRate(r)}
                   className="rounded-md px-2 py-1.5 text-[12px] cursor-pointer"
-                  style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FECACA'}}
+                  style={{background:'#FEE2E2', color:'#dc2626', border:'1px solid #FECACA'}}
                   title="Delete this tax rate">✕</button>
               </>
             )}
@@ -830,7 +830,7 @@ function CouponsSection({ tenantId, userId }) {
     if (!c.is_active) return { label: 'Paused', bg:'#fef3c7', color:'#92400e' }
     if (c.expires_at && new Date(c.expires_at) < new Date()) return { label:'Expired', bg:'#f1f5f9', color:'#64748b' }
     if (c.max_uses != null && c.times_used >= c.max_uses) return { label:'Used up', bg:'#f1f5f9', color:'#64748b' }
-    return { label:'Active', bg:'#dcfce7', color:'#15803d' }
+    return { label:'Active', bg:'#d1fae5', color:'#059669' }
   }
 
   const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : null
@@ -841,7 +841,7 @@ function CouponsSection({ tenantId, userId }) {
         <SectionTitle className="mb-0">🎫 Coupons</SectionTitle>
         {!adding && (
           <button onClick={startAdd}
-            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer active:scale-[0.97]">
+            className="bg-[#5E6AD2] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer active:scale-[0.97]">
             + Add Coupon
           </button>
         )}
@@ -852,9 +852,9 @@ function CouponsSection({ tenantId, userId }) {
 
       {/* ── Add / Edit form ── */}
       {adding && (
-        <Card className="mb-4" style={{background:'#E6F0FF', border:'2px solid #006AFF'}}>
+        <Card className="mb-4" style={{background:'#eef0fc', border:'2px solid #5E6AD2'}}>
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[13px] font-bold text-[#006AFF]">
+            <div className="text-[13px] font-bold text-[#5E6AD2]">
               {editing ? '✏️ Edit Coupon' : '➕ New Coupon'}
             </div>
             <button onClick={cancel}
@@ -867,7 +867,7 @@ function CouponsSection({ tenantId, userId }) {
               <input value={form.name} onChange={e=>setF('name', e.target.value)}
                 placeholder="e.g. Summer 2026"
                 className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}/>
+                style={{border:'1.5px solid #dee2f8', background:'#fff', color:'#1F1F1F'}}/>
             </div>
             <div>
               <FLabel>Code *</FLabel>
@@ -875,7 +875,7 @@ function CouponsSection({ tenantId, userId }) {
                 onChange={e=>setF('code', e.target.value.toUpperCase().replace(/\s/g,''))}
                 placeholder="SUMMER10"
                 className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
-                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}/>
+                style={{border:'1.5px solid #dee2f8', background:'#fff', color:'#1F1F1F'}}/>
               <div className="text-[10px] text-[#666] mt-1">Cashiers will type or scan this. Auto-uppercased.</div>
             </div>
           </div>
@@ -884,7 +884,7 @@ function CouponsSection({ tenantId, userId }) {
             <div>
               <FLabel>Discount type *</FLabel>
               <div className="grid grid-cols-2 gap-1.5">
-                {[['pct','% Percent','#16a34a'],['amt','$ Amount','#006AFF']].map(([id,lbl,col])=>(
+                {[['pct','% Percent','#16a34a'],['amt','$ Amount','#5E6AD2']].map(([id,lbl,col])=>(
                   <button key={id} onClick={()=>setF('discount_type', id)}
                     className="rounded-lg py-2 text-[12px] font-bold cursor-pointer border-2"
                     style={form.discount_type===id
@@ -898,7 +898,7 @@ function CouponsSection({ tenantId, userId }) {
             <div>
               <FLabel>Discount value *</FLabel>
               <div className="flex items-center rounded-lg px-3"
-                style={{border:'1.5px solid #80B2FF', background:'#fff'}}>
+                style={{border:'1.5px solid #dee2f8', background:'#fff'}}>
                 {form.discount_type === 'amt' && <span className="text-[14px] text-[#666] mr-1">$</span>}
                 <input value={form.discount_value} onChange={e=>setF('discount_value', e.target.value)}
                   type="number" step="0.01" min="0"
@@ -962,7 +962,7 @@ function CouponsSection({ tenantId, userId }) {
             </button>
             <button onClick={save}
               className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer border-none"
-              style={{background:'#006AFF', color:'#fff'}}>
+              style={{background:'#5E6AD2', color:'#fff'}}>
               {editing ? '✓ Update Coupon' : '+ Create Coupon'}
             </button>
           </div>
@@ -1002,17 +1002,17 @@ function CouponsSection({ tenantId, userId }) {
                 className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer border"
                 style={c.is_active
                   ? {background:'#fef3c7', color:'#92400e', borderColor:'#fde68a'}
-                  : {background:'#dcfce7', color:'#15803d', borderColor:'#86efac'}}>
+                  : {background:'#d1fae5', color:'#059669', borderColor:'#86efac'}}>
                 {c.is_active ? 'Pause' : 'Resume'}
               </button>
               <button onClick={()=>startEdit(c)}
                 className="rounded-md px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
-                style={{background:'#E6F0FF', color:'#006AFF', border:'1px solid #80B2FF'}}>
+                style={{background:'#eef0fc', color:'#5E6AD2', border:'1px solid #dee2f8'}}>
                 Edit
               </button>
               <button onClick={()=>remove(c)}
                 className="rounded-md px-2 py-1.5 text-[12px] cursor-pointer"
-                style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FECACA'}}
+                style={{background:'#FEE2E2', color:'#dc2626', border:'1px solid #FECACA'}}
                 title="Delete coupon">✕</button>
             </div>
           )
@@ -1143,7 +1143,7 @@ function DiscountsSection({ tenantId }) {
                     ) : (
                       <button onClick={() => setEditing(tier)}
                         className="text-[10px] px-2 py-1 bg-[#F5F5F5] border border-[#E5E5E5]
-                          rounded text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF]
+                          rounded text-[#666666] hover:border-blue-500/30 hover:text-[#5E6AD2]
                           transition-all">Edit</button>
                     )}
                   </td>
@@ -1214,7 +1214,7 @@ function UsersSection({ tenantId }) {
     manager: { bg:'rgba(59,130,246,0.1)', color:'#3b82f6' },
     cashier: { bg:'rgba(16,185,129,0.1)', color:'#10b981' },
   }
-  const AVATAR_COLORS = ['#3b82f6','#10b981','#006AFF','#ec4899','#06b6d4']
+  const AVATAR_COLORS = ['#3b82f6','#10b981','#5E6AD2','#ec4899','#06b6d4']
 
   const newEmployee = () => {
     setEditing({
@@ -1240,7 +1240,7 @@ function UsersSection({ tenantId }) {
             if (!q?.allowed) { toast.error(q?.message || 'User limit reached'); return }
             newEmployee()
           }}
-          className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer">
+          className="bg-[#5E6AD2] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer">
           + Add Employee
         </button>
       </div>
@@ -1251,7 +1251,7 @@ function UsersSection({ tenantId }) {
       {quota && (
         <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-[10px] px-4 py-2.5 mb-4 flex items-center gap-3">
           <div className="flex-1 h-1.5 bg-[#F5F5F5] rounded overflow-hidden">
-            <div className="h-full rounded transition-all bg-[#006AFF]"
+            <div className="h-full rounded transition-all bg-[#5E6AD2]"
               style={{ width: `${Math.min(100, quota.current / quota.max * 100)}%` }}/>
           </div>
           <span className="text-[11px] font-mono text-[#666666]">{quota.current} / {quota.max} users</span>
@@ -1287,7 +1287,7 @@ function UsersSection({ tenantId }) {
               </div>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded capitalize" style={{ background: rs.bg, color: rs.color }}>{u.role}</span>
               <button onClick={() => setEditing(u)}
-                className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md px-3 py-1.5 text-[#666666] hover:border-blue-500/30 hover:text-[#006AFF] transition-all cursor-pointer">
+                className="text-[10px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-md px-3 py-1.5 text-[#666666] hover:border-blue-500/30 hover:text-[#5E6AD2] transition-all cursor-pointer">
                 Edit
               </button>
               <button onClick={() => toggleActive(u)}
@@ -1382,9 +1382,9 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
   }
 
   return (
-    <Card className="mb-4" style={{background:'#E6F0FF', border:'2px solid #006AFF'}}>
+    <Card className="mb-4" style={{background:'#eef0fc', border:'2px solid #5E6AD2'}}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[13px] font-bold text-[#006AFF]">
+        <div className="text-[13px] font-bold text-[#5E6AD2]">
           {isNew ? '➕ New Employee' : `✏️ Edit: ${employee.name}`}
         </div>
         <button onClick={onClose} className="text-[14px] cursor-pointer bg-transparent border-none text-[#666]">✕</button>
@@ -1396,14 +1396,14 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
           <input value={form.name} onChange={e=>set('name', e.target.value)}
             placeholder="John Smith"
             className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+            style={{border:'1.5px solid #dee2f8', background:'#fff'}}/>
         </div>
         <div>
           <SLabel>Employee code</SLabel>
           <input value={form.employee_code || ''} onChange={e=>set('employee_code', e.target.value.toUpperCase())}
             placeholder="EMP-001"
             className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
-            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+            style={{border:'1.5px solid #dee2f8', background:'#fff'}}/>
         </div>
       </div>
 
@@ -1413,14 +1413,14 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
           <input value={form.email || ''} onChange={e=>set('email', e.target.value)} type="email"
             placeholder="optional"
             className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+            style={{border:'1.5px solid #dee2f8', background:'#fff'}}/>
         </div>
         <div>
           <SLabel>Phone</SLabel>
           <input value={form.phone || ''} onChange={e=>set('phone', e.target.value)}
             placeholder="(555) 555-5555"
             className="w-full rounded-lg px-3 py-2 text-[13px] outline-none font-mono"
-            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+            style={{border:'1.5px solid #dee2f8', background:'#fff'}}/>
         </div>
       </div>
 
@@ -1435,7 +1435,7 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
                 <button key={r.id} onClick={()=>set('role', key)}
                   className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-2"
                   style={selected
-                    ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                    ? {background:'#5E6AD2', color:'#fff', borderColor:'#5E6AD2'}
                     : {background:'#fff', color:'#64748b', borderColor:'#e2e8f0'}}>
                   {r.name}
                   {!r.is_system && <span className="ml-1 opacity-60">·custom</span>}
@@ -1453,7 +1453,7 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
         <div>
           <SLabel>Hourly rate</SLabel>
           <div className="flex items-center rounded-lg px-3"
-            style={{border:'1.5px solid #80B2FF', background:'#fff'}}>
+            style={{border:'1.5px solid #dee2f8', background:'#fff'}}>
             <span className="text-[14px] text-[#666] mr-1">$</span>
             <input type="number" step="0.25" min="0" value={form.hourly_rate||0}
               onChange={e=>set('hourly_rate', e.target.value)}
@@ -1470,7 +1470,7 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
           placeholder="e.g. 1234"
           inputMode="numeric" maxLength={8}
           className="w-full rounded-lg px-3 py-2 text-[16px] outline-none font-mono font-bold tracking-widest text-center"
-          style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#006AFF'}}/>
+          style={{border:'1.5px solid #dee2f8', background:'#fff', color:'#5E6AD2'}}/>
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer mb-3">
@@ -1484,7 +1484,7 @@ function EmployeeForm({ employee, tenantId, editorId, onClose, onSaved }) {
           style={{background:'#fff', color:'#666', border:'1px solid #E5E5E5'}}>Cancel</button>
         <button onClick={save} disabled={saving}
           className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer border-none disabled:opacity-50"
-          style={{background:'#006AFF', color:'#fff'}}>
+          style={{background:'#5E6AD2', color:'#fff'}}>
           {saving ? 'Saving…' : isNew ? '+ Add Employee' : '✓ Save Changes'}
         </button>
       </div>
@@ -1597,7 +1597,7 @@ function RolesSection({ tenantId, userId }) {
         <SectionTitle className="mb-0">🛡️ Roles & Permissions</SectionTitle>
         {!editing && (
           <button onClick={startNew}
-            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer">
+            className="bg-[#5E6AD2] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer">
             + Add Custom Role
           </button>
         )}
@@ -1625,17 +1625,17 @@ function RolesSection({ tenantId, userId }) {
             })
             return (
               <div key={r.id} className="bg-[#FFFFFF] rounded-xl p-4"
-                style={{border: r.is_system ? '1.5px solid #80B2FF' : '1px solid #E5E5E5'}}>
+                style={{border: r.is_system ? '1.5px solid #dee2f8' : '1px solid #E5E5E5'}}>
                 <div className="flex items-center gap-3">
                   <div className="text-[20px]">🛡️</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <div className="text-[14px] font-bold">{r.name}</div>
                       {r.is_system
-                        ? <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>SYSTEM</span>
+                        ? <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#eef0fc', color:'#5E6AD2'}}>SYSTEM</span>
                         : <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#fef3c7', color:'#92400e'}}>CUSTOM</span>}
                       {inUse > 0 && (
-                        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#dcfce7', color:'#15803d'}}>
+                        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:'#d1fae5', color:'#059669'}}>
                           {inUse} employee{inUse>1?'s':''}
                         </span>
                       )}
@@ -1644,7 +1644,7 @@ function RolesSection({ tenantId, userId }) {
                       {r.description || <span className="opacity-60">No description</span>}
                     </div>
                     <div className="text-[10px] mt-1 font-mono flex gap-2">
-                      <span style={{color:'#15803d'}}>✓ Allow: {cnt.allow}</span>
+                      <span style={{color:'#059669'}}>✓ Allow: {cnt.allow}</span>
                       <span style={{color:'#ca8a04'}}>? Prompt: {cnt.prompt}</span>
                       <span style={{color:'#991b1b'}}>✗ Deny: {cnt.deny}</span>
                       <span className="text-[#999]">· max disc: {r.max_discount_pct}%</span>
@@ -1658,7 +1658,7 @@ function RolesSection({ tenantId, userId }) {
                   {!r.is_system && (
                     <button onClick={() => remove(r)}
                       className="rounded-md px-2 py-1.5 text-[12px] cursor-pointer"
-                      style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FCA5A5'}}>
+                      style={{background:'#FEE2E2', color:'#dc2626', border:'1px solid #FCA5A5'}}>
                       ✕
                     </button>
                   )}
@@ -1700,10 +1700,10 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
   }
 
   return (
-    <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4" style={{border:'2px solid #006AFF'}}>
+    <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4" style={{border:'2px solid #5E6AD2'}}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <div className="text-[15px] font-bold text-[#006AFF]">
+          <div className="text-[15px] font-bold text-[#5E6AD2]">
             {creating ? '➕ New Role' : `✏️ Edit Role: ${role.name}`}
           </div>
           {isOwner && (
@@ -1724,14 +1724,14 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
             disabled={role.is_system}
             placeholder="e.g. Floor Supervisor"
             className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-            style={{border:'1.5px solid #80B2FF', background: role.is_system?'#f1f5f9':'#fff'}}/>
+            style={{border:'1.5px solid #dee2f8', background: role.is_system?'#f1f5f9':'#fff'}}/>
         </div>
         <div className="col-span-2">
           <SLabel>Description</SLabel>
           <input value={role.description||''} onChange={e=>set('description', e.target.value)}
             placeholder="When to assign this role"
             className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-            style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+            style={{border:'1.5px solid #dee2f8', background:'#fff'}}/>
         </div>
       </div>
 
@@ -1745,7 +1745,7 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
               disabled={isOwner}
               className="flex-1 cursor-pointer"/>
             <div className="rounded-md px-3 py-1.5 text-[13px] font-mono font-bold w-[60px] text-center"
-              style={{background:'#E6F0FF', color:'#006AFF'}}>
+              style={{background:'#eef0fc', color:'#5E6AD2'}}>
               {isOwner ? '100' : (role.max_discount_pct||0)}%
             </div>
           </div>
@@ -1777,7 +1777,7 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
                   </div>
                 </div>
                 <div className="text-[10px] font-mono mr-3 flex gap-1.5">
-                  <span style={{color:'#15803d'}}>✓{cnt.allow}</span>
+                  <span style={{color:'#059669'}}>✓{cnt.allow}</span>
                   <span style={{color:'#ca8a04'}}>?{cnt.prompt}</span>
                   <span style={{color:'#991b1b'}}>✗{cnt.deny}</span>
                 </div>
@@ -1785,7 +1785,7 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
                   <div className="flex gap-1">
                     <button onClick={()=>allInGroup(group, 'allow')}
                       className="rounded px-2 py-1 text-[10px] cursor-pointer"
-                      style={{background:'#dcfce7', color:'#15803d', border:'1px solid #86efac'}}>All ✓</button>
+                      style={{background:'#d1fae5', color:'#059669', border:'1px solid #86efac'}}>All ✓</button>
                     <button onClick={()=>allInGroup(group, 'prompt')}
                       className="rounded px-2 py-1 text-[10px] cursor-pointer"
                       style={{background:'#fefce8', color:'#ca8a04', border:'1px solid #fde047'}}>All ?</button>
@@ -1801,7 +1801,7 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
                   const sensitive = opts?.sensitive
                   const val = permVal(key)
                   const STATES = [
-                    { id:'allow',  label:'✓ Allow',   bg:'#dcfce7', fg:'#15803d', border:'#86efac' },
+                    { id:'allow',  label:'✓ Allow',   bg:'#d1fae5', fg:'#059669', border:'#86efac' },
                     { id:'prompt', label:'? Prompt',  bg:'#fefce8', fg:'#ca8a04', border:'#fde047' },
                     { id:'deny',   label:'✗ Deny',    bg:'#fef2f2', fg:'#991b1b', border:'#fecaca' },
                   ]
@@ -1856,7 +1856,7 @@ function RoleEditor({ role, setRole, onSave, onCancel, creating, isProtected }) 
           style={{background:'#fff', color:'#666', border:'1px solid #E5E5E5'}}>Cancel</button>
         <button onClick={onSave}
           className="flex-1 rounded-lg py-2.5 text-[12px] font-bold text-white cursor-pointer border-none"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           {creating ? '+ Create Role' : '✓ Save Changes'}
         </button>
       </div>
@@ -1939,14 +1939,14 @@ function PaymentSection({ tenantId }) {
               <button key={m.id} onClick={() => toggleMethod(m.id)} type="button"
                 className="flex items-start gap-2 p-3 rounded-[10px] cursor-pointer border-2 text-left transition-all"
                 style={on
-                  ? {background:'#EFF6FF', borderColor:'#006AFF'}
+                  ? {background:'#EFF6FF', borderColor:'#5E6AD2'}
                   : {background:'#fff', borderColor:'#e2e8f0'}}>
                 <span className="text-[20px] flex-shrink-0">{m.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-bold" style={{color: on ? '#006AFF' : '#1F1F1F'}}>{m.label}</span>
+                    <span className="text-[13px] font-bold" style={{color: on ? '#5E6AD2' : '#1F1F1F'}}>{m.label}</span>
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                      style={on ? {background:'#006AFF', color:'#fff'} : {background:'#f1f5f9', color:'#94a3b8'}}>
+                      style={on ? {background:'#5E6AD2', color:'#fff'} : {background:'#f1f5f9', color:'#94a3b8'}}>
                       {on ? 'ON' : 'OFF'}
                     </span>
                   </div>
@@ -1961,7 +1961,7 @@ function PaymentSection({ tenantId }) {
         </div>
       </Card>
 
-      <div className="bg-[#006AFF]/8 border border-blue-500/20 rounded-[10px] px-4 py-3 mb-5
+      <div className="bg-[#5E6AD2]/8 border border-blue-500/20 rounded-[10px] px-4 py-3 mb-5
         text-[12px] text-[#666666]">
         💡 CardPointe credentials below are only for merchants using the CardPointe gateway. Most users can ignore this section.
       </div>
@@ -2029,7 +2029,7 @@ function PaymentSection({ tenantId }) {
             <input type="time" value={form.auto_batch_close_time}
               onChange={e => u('auto_batch_close_time', e.target.value)}
               className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2
-                text-[13px] font-mono text-[#1F1F1F] outline-none focus:border-[#006AFF]"/>
+                text-[13px] font-mono text-[#1F1F1F] outline-none focus:border-[#5E6AD2]"/>
           </div>
         )}
       </Card>
@@ -2068,11 +2068,11 @@ function BillingSection({ tenant }) {
               onClick={() => toast.success(`Contact support to upgrade to ${plan.name}`)}
               className={`border rounded-[10px] p-3 cursor-pointer transition-all ${
                 plan.id === (tenant?.plan_id || 'solo')
-                  ? 'border-blue-500/40 bg-[#006AFF]/5'
+                  ? 'border-blue-500/40 bg-[#5E6AD2]/5'
                   : 'border-[#E5E5E5] bg-[#F5F5F5] hover:border-[#E5E5E5]'
               }`}>
               <div className="text-[13px] font-bold mb-1">{plan.name}</div>
-              <div className="text-[15px] font-bold font-mono text-[#006AFF] mb-2">{plan.price}</div>
+              <div className="text-[15px] font-bold font-mono text-[#5E6AD2] mb-2">{plan.price}</div>
               <div className="text-[10px] text-[#999999]">
                 {plan.users} user{plan.users>1?'s':''}<br/>
                 {plan.terminals} terminal{plan.terminals>1?'s':''}
@@ -2100,7 +2100,7 @@ function LanguageSection() {
           <div key={label} className="mb-4 last:mb-0">
             <FieldLabel>{label}</FieldLabel>
             <select className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
-              px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none focus:border-[#006AFF]">
+              px-3 py-2.5 text-[13px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2]">
               {options.map(o => <option key={o}>{o}</option>)}
             </select>
           </div>
@@ -2135,7 +2135,7 @@ function FieldInput({ label, value, onChange, mono, type='text', colSpan, placeh
       <input type={type} value={value||''} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className={`w-full bg-[#FFFFFF] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5
-          text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF] focus:ring-2 focus:ring-[#E6F0FF] transition-all
+          text-[14px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2] focus:ring-2 focus:ring-[#eef0fc] transition-all
           ${mono ? 'font-mono' : ''}`}/>
     </div>
   )
@@ -2149,7 +2149,7 @@ function SaveBtn({ onClick, className='' }) {
     </button>
   )
 }
-function Toggle({ value, onChange, color='#006AFF' }) {
+function Toggle({ value, onChange, color='#5E6AD2' }) {
   return (
     <button onClick={() => onChange(!value)}
       className="w-[42px] h-[24px] rounded-full relative transition-colors flex-shrink-0 border-none cursor-pointer"
@@ -2263,7 +2263,7 @@ function MemberLevelsSection({ tenantId }) {
       {/* Add form */}
       {adding && (
         <div className="rounded-2xl p-4 flex flex-col gap-3"
-          style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
+          style={{background:'#eef0fc', border:'2px solid #dee2f8'}}>
           <div className="text-[12px] font-bold text-indigo-700">New Member Level</div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -2272,17 +2272,17 @@ function MemberLevelsSection({ tenantId }) {
                 placeholder="e.g. Diamond, VIP Gold..."
                 autoFocus
                 className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
-                style={{border:'1.5px solid #80B2FF', background:'#fff'}}
+                style={{border:'1.5px solid #dee2f8', background:'#fff'}}
                 onKeyDown={e => e.key === 'Enter' && addLevel()}/>
             </div>
             <div>
               <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">VIP Discount %</div>
               <div className="flex items-center gap-2 rounded-xl px-3"
-                style={{border:'1.5px solid #80B2FF', background:'#fff', height:'42px'}}>
+                style={{border:'1.5px solid #dee2f8', background:'#fff', height:'42px'}}>
                 <input type="number" min="0" max="100" step="0.5"
                   value={newDisc} onChange={e => setNewDisc(e.target.value)}
                   className="flex-1 border-none outline-none text-[15px] font-bold bg-transparent"
-                  style={{color:'#006AFF'}}/>
+                  style={{color:'#5E6AD2'}}/>
                 <span className="text-[13px] text-slate-400 font-semibold">%</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-1">0% = no discount</div>
@@ -2328,13 +2328,13 @@ function MemberLevelsSection({ tenantId }) {
                     <span className="text-[14px] font-semibold text-slate-800">{level.name}</span>
                     {level.is_default && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{background:'#dcfce7', color:'#16a34a'}}>DEFAULT</span>
+                        style={{background:'#d1fae5', color:'#16a34a'}}>DEFAULT</span>
                     )}
                   </div>
                   <div>
                     {level.discount_pct > 0 ? (
                       <span className="text-[13px] font-bold px-2.5 py-1 rounded-lg"
-                        style={{background:'#eff6ff', color:'#006AFF'}}>
+                        style={{background:'#eff6ff', color:'#5E6AD2'}}>
                         {level.discount_pct}% off
                       </span>
                     ) : (
@@ -2344,7 +2344,7 @@ function MemberLevelsSection({ tenantId }) {
                   <div className="flex gap-1.5">
                     <button onClick={() => startEdit(level)}
                       className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border transition-all"
-                      style={{background:'#E6F0FF', borderColor:'#B3D1FF', color:'#006AFF'}}>
+                      style={{background:'#eef0fc', borderColor:'#B3D1FF', color:'#5E6AD2'}}>
                       ✏️ Edit
                     </button>
                     {!level.is_default && (
@@ -2379,7 +2379,7 @@ function MemberLevelsSection({ tenantId }) {
                           value={editDisc} onChange={e => setEditDisc(e.target.value)}
                           disabled={level.is_default}
                           className="flex-1 border-none outline-none text-[15px] font-bold bg-transparent"
-                          style={{color:'#006AFF'}}/>
+                          style={{color:'#5E6AD2'}}/>
                         <span className="text-[13px] text-slate-400">%</span>
                       </div>
                     </div>
@@ -2392,7 +2392,7 @@ function MemberLevelsSection({ tenantId }) {
                     </button>
                     <button onClick={saveEdit} disabled={saving}
                       className="px-5 py-2 rounded-xl text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                      style={{background:'#006AFF'}}>
+                      style={{background:'#5E6AD2'}}>
                       {saving ? '⏳' : '✓ Save Changes'}
                     </button>
                   </div>
@@ -2494,7 +2494,7 @@ function PrinterSection() {
 
       {/* Station badge */}
       <div className="rounded-lg p-3 mb-4 flex items-center gap-3"
-        style={{background:'#eff6ff', border:'1px solid #80B2FF'}}>
+        style={{background:'#eff6ff', border:'1px solid #dee2f8'}}>
         <span className="text-[20px]">📍</span>
         <div className="flex-1">
           <div className="text-[11px] font-bold uppercase tracking-wider" style={{color:'#1e40af'}}>
@@ -2517,7 +2517,7 @@ function PrinterSection() {
           <div>
             <FieldLabel>Paper Size</FieldLabel>
             <select value={s.paper} onChange={e => setS({ ...s, paper:e.target.value })}
-              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#006AFF]">
+              className="w-full bg-white border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2]">
               <option value="80mm">80mm thermal (standard)</option>
               <option value="58mm">58mm thermal (compact)</option>
               <option value="a4">A4 / Letter (full page)</option>
@@ -2530,7 +2530,7 @@ function PrinterSection() {
           <input type="text" value={s.windows_name}
             onChange={e => setS({ ...s, windows_name:e.target.value })}
             placeholder='e.g. "EPSON TM-T88VI Receipt"'
-            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF] font-mono"/>
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#5E6AD2] font-mono"/>
           <div className="text-[10px] text-slate-400 mt-1">
             Copy the exact name from Windows Settings → Printers & Scanners.
             This is just a label so the cashier knows which printer to pick in the print dialog.
@@ -2542,7 +2542,7 @@ function PrinterSection() {
           <input type="text" value={s.ip}
             onChange={e => setS({ ...s, ip:e.target.value })}
             placeholder="192.168.1.100 or USB001"
-            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#006AFF] font-mono"/>
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[8px] px-3 py-2.5 text-[14px] outline-none focus:border-[#5E6AD2] font-mono"/>
           <div className="text-[10px] text-slate-400 mt-1">
             For your reference / troubleshooting only. Browser always asks Windows
             for the printer list — this field doesn't change print behavior.
@@ -2565,7 +2565,7 @@ function PrinterSection() {
       <div className="flex gap-3 mt-4">
         <button onClick={test}
           className="flex-1 px-4 py-3 rounded-[8px] text-[14px] font-semibold cursor-pointer border-2"
-          style={{background:'#FFFFFF', color:'#006AFF', borderColor:'#006AFF'}}>
+          style={{background:'#FFFFFF', color:'#5E6AD2', borderColor:'#5E6AD2'}}>
           🖨️ Test Print
         </button>
         <SaveBtn onClick={save} className="flex-1"/>
@@ -2574,7 +2574,7 @@ function PrinterSection() {
       {/* Status / saved info */}
       {s.station && (
         <div className="mt-4 rounded-lg p-3 text-[12px]"
-          style={{background:'#dcfce7', border:'1px solid #86efac', color:'#166534'}}>
+          style={{background:'#d1fae5', border:'1px solid #86efac', color:'#166534'}}>
           ✓ <b>Saved for station {s.station}</b>
           {s.windows_name && <> — print dialog should show <span className="font-mono font-bold">"{s.windows_name}"</span> as a choice</>}.
         </div>
@@ -2655,7 +2655,7 @@ function CashDrawerSection() {
                   <button key={val} onClick={() => setS({ ...s, method: val })}
                     className="rounded-lg p-3 text-left cursor-pointer border-2 transition-all"
                     style={s.method === val
-                      ? {background:'#eff6ff', borderColor:'#006AFF'}
+                      ? {background:'#eff6ff', borderColor:'#5E6AD2'}
                       : {background:'#fff', borderColor:'#e5e5e5'}}>
                     <div className="text-[12px] font-bold mb-1"
                       style={{color: s.method === val ? '#1e40af' : '#1F1F1F'}}>{label}</div>
@@ -2781,7 +2781,7 @@ function PrintingSection() {
                 <button key={size} onClick={() => setS({ ...s, fontSize:size })}
                   className="flex-1 px-3 py-2.5 rounded-[8px] text-[13px] font-semibold cursor-pointer transition-all"
                   style={s.fontSize===size
-                    ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                    ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
                     : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                   {size.charAt(0).toUpperCase()+size.slice(1)}
                 </button>
@@ -2796,9 +2796,9 @@ function PrintingSection() {
                 <label key={key}
                   className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-[8px] cursor-pointer transition-all"
                   style={s.show[key]
-                    ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                    ? { background:'#eef0fc', border:'1px solid #5E6AD2' }
                     : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
-                  <span className="text-[13px] font-medium" style={{color: s.show[key] ? '#006AFF' : '#1F1F1F'}}>{label}</span>
+                  <span className="text-[13px] font-medium" style={{color: s.show[key] ? '#5E6AD2' : '#1F1F1F'}}>{label}</span>
                   <Toggle value={s.show[key]} onChange={() => toggleShow(key)}/>
                 </label>
               ))}
@@ -2832,14 +2832,14 @@ function PrintingSection() {
                 <label key={val}
                   className="block p-3 rounded-[8px] cursor-pointer transition-all"
                   style={s.autoMode===val
-                    ? { background:'#E6F0FF', border:'2px solid #006AFF' }
+                    ? { background:'#eef0fc', border:'2px solid #5E6AD2' }
                     : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
                   <div className="flex items-start gap-3">
                     <input type="radio" checked={s.autoMode===val}
                       onChange={() => setS({ ...s, autoMode:val })}
-                      className="mt-1 cursor-pointer accent-[#006AFF]"/>
+                      className="mt-1 cursor-pointer accent-[#5E6AD2]"/>
                     <div>
-                      <div className="text-[14px] font-semibold" style={{color: s.autoMode===val ? '#006AFF' : '#1F1F1F'}}>{label}</div>
+                      <div className="text-[14px] font-semibold" style={{color: s.autoMode===val ? '#5E6AD2' : '#1F1F1F'}}>{label}</div>
                       <div className="text-[12px] mt-0.5" style={{color:'#666666'}}>{desc}</div>
                     </div>
                   </div>
@@ -2855,7 +2855,7 @@ function PrintingSection() {
                 <button key={n} onClick={() => setS({ ...s, copies:n })}
                   className="flex-1 py-3 rounded-[8px] text-[18px] font-semibold cursor-pointer transition-all"
                   style={s.copies===n
-                    ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                    ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
                     : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                   {n}
                 </button>
@@ -2871,12 +2871,12 @@ function PrintingSection() {
 
             <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[8px] cursor-pointer mb-2"
               style={s.enableEmail
-                ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                ? { background:'#eef0fc', border:'1px solid #5E6AD2' }
                 : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-[20px]">📧</span>
                 <div>
-                  <div className="text-[14px] font-semibold" style={{color: s.enableEmail ? '#006AFF' : '#1F1F1F'}}>Email Receipt</div>
+                  <div className="text-[14px] font-semibold" style={{color: s.enableEmail ? '#5E6AD2' : '#1F1F1F'}}>Email Receipt</div>
                   <div className="text-[12px]" style={{color:'#666666'}}>Send HTML receipt to customer's email</div>
                 </div>
               </div>
@@ -2885,12 +2885,12 @@ function PrintingSection() {
 
             <label className="flex items-center justify-between gap-3 px-3 py-3 rounded-[8px] cursor-pointer"
               style={s.enableSms
-                ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                ? { background:'#eef0fc', border:'1px solid #5E6AD2' }
                 : { background:'#FFFFFF', border:'1px solid #E5E5E5' }}>
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-[20px]">💬</span>
                 <div>
-                  <div className="text-[14px] font-semibold" style={{color: s.enableSms ? '#006AFF' : '#1F1F1F'}}>SMS Receipt</div>
+                  <div className="text-[14px] font-semibold" style={{color: s.enableSms ? '#5E6AD2' : '#1F1F1F'}}>SMS Receipt</div>
                   <div className="text-[12px]" style={{color:'#666666'}}>Send a text message with receipt link</div>
                 </div>
               </div>
@@ -3207,7 +3207,7 @@ function NotificationsSection({ tenantId, userId, userName }) {
               <input type="number" min="1" max="30" value={settings.payment_reminder.days_before||3}
                 onChange={e => updateSetting('payment_reminder', { days_before: parseInt(e.target.value)||3 })}
                 className="w-14 rounded px-2 py-1 text-[12px] text-center font-mono"
-                style={{border:'1px solid #80B2FF'}}/>
+                style={{border:'1px solid #dee2f8'}}/>
               <span className="text-[11px] text-[#666]">days before due date</span>
             </div>
           )}
@@ -3223,7 +3223,7 @@ function NotificationsSection({ tenantId, userId, userName }) {
               <input type="number" min="0" max="14" value={settings.birthday_coupon.days_before||5}
                 onChange={e => updateSetting('birthday_coupon', { days_before: parseInt(e.target.value)||0 })}
                 className="w-14 rounded px-2 py-1 text-[12px] text-center font-mono"
-                style={{border:'1px solid #80B2FF'}}/>
+                style={{border:'1px solid #dee2f8'}}/>
               <span className="text-[11px] text-[#666]">days before birthday</span>
             </div>
           )}
@@ -3243,7 +3243,7 @@ function NotificationsSection({ tenantId, userId, userName }) {
                 onChange={e => updateSetting('low_stock_alert', { email_to: e.target.value })}
                 placeholder="Send to: owner@store.com"
                 className="w-full rounded px-2 py-1.5 text-[12px]"
-                style={{border:'1px solid #80B2FF'}}/>
+                style={{border:'1px solid #dee2f8'}}/>
             </div>
           )}
         />
@@ -3257,13 +3257,13 @@ function NotificationsSection({ tenantId, userId, userName }) {
                 onChange={e => updateSetting('daily_summary', { email_to: e.target.value })}
                 placeholder="Send to: owner@store.com"
                 className="rounded px-2 py-1.5 text-[12px]"
-                style={{border:'1px solid #80B2FF'}}/>
+                style={{border:'1px solid #dee2f8'}}/>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-[#666]">at</span>
                 <input type="time" value={`${String(settings.daily_summary.hour||23).padStart(2,'0')}:00`}
                   onChange={e => updateSetting('daily_summary', { hour: parseInt(e.target.value.split(':')[0])||23 })}
                   className="flex-1 rounded px-2 py-1.5 text-[12px]"
-                  style={{border:'1px solid #80B2FF'}}/>
+                  style={{border:'1px solid #dee2f8'}}/>
               </div>
             </div>
           )}
@@ -3283,7 +3283,7 @@ function NotificationsSection({ tenantId, userId, userName }) {
                 onChange={e => updateSetting('cash_variance', { email_to: e.target.value })}
                 placeholder="Send alert to: owner@store.com"
                 className="w-full rounded px-2 py-1.5 text-[12px]"
-                style={{border:'1px solid #80B2FF'}}/>
+                style={{border:'1px solid #dee2f8'}}/>
             </div>
           )}
         />
@@ -3327,8 +3327,8 @@ function NotificationsSection({ tenantId, userId, userName }) {
                     <td className="px-3 py-2">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                         style={{
-                          background: b.status==='paid'?'#dcfce7':b.status==='unpaid'?'#fef3c7':'#f1f5f9',
-                          color: b.status==='paid'?'#15803d':b.status==='unpaid'?'#92400e':'#64748b',
+                          background: b.status==='paid'?'#d1fae5':b.status==='unpaid'?'#fef3c7':'#f1f5f9',
+                          color: b.status==='paid'?'#059669':b.status==='unpaid'?'#92400e':'#64748b',
                         }}>
                         {b.status.toUpperCase()}
                       </span>
@@ -3405,7 +3405,7 @@ function QuotaCard({ icon, name, used, quota, pct, overage, rate, bill, remainin
         <span style={{color:'#999'}}>Hard cap: {cap} overage (${(cap*rate).toFixed(0)}/mo max)</span>
         <button onClick={onEditCap}
           className="bg-transparent border-none cursor-pointer text-[10px] underline"
-          style={{color:'#006AFF'}}>edit</button>
+          style={{color:'#5E6AD2'}}>edit</button>
       </div>
       {overCap && (
         <div className="px-4 py-2 text-[10px]" style={{background:'#fee2e2', color:'#991b1b', borderTop:'1px solid #fca5a5'}}>
@@ -3435,9 +3435,9 @@ function TriggerRow({ icon, title, desc, channels, options, value, onChange, ext
         <select value={value} onChange={e => onChange(e.target.value)}
           className="rounded-lg px-2.5 py-1.5 text-[11px] cursor-pointer outline-none font-semibold"
           style={{
-            border: '1.5px solid ' + (value === 'off' ? '#e5e5e5' : '#80B2FF'),
-            background: value === 'off' ? '#fff' : '#E6F0FF',
-            color: value === 'off' ? '#94a3b8' : '#006AFF',
+            border: '1.5px solid ' + (value === 'off' ? '#e5e5e5' : '#dee2f8'),
+            background: value === 'off' ? '#fff' : '#eef0fc',
+            color: value === 'off' ? '#94a3b8' : '#5E6AD2',
             minWidth:'170px',
           }}>
           {options.map(([v, label]) => (
@@ -3491,7 +3491,7 @@ function CapModal({ channel, tenantId, current, onClose, onSave }) {
           <input type="number" min="0" max="100000" value={cap}
             onChange={e=>setCap(parseInt(e.target.value)||0)}
             className="w-full rounded-xl px-4 py-3 text-[24px] font-bold font-mono text-center"
-            style={{border:'2px solid #80B2FF'}}/>
+            style={{border:'2px solid #dee2f8'}}/>
           <div className="rounded-xl mt-3 px-4 py-3" style={{background:'#fffbeb', border:'1px solid #fde68a'}}>
             <div className="text-[11px] text-[#92400e]">
               <b>Max bill per month:</b> ${maxBill}
@@ -3508,7 +3508,7 @@ function CapModal({ channel, tenantId, current, onClose, onSave }) {
             </button>
             <button onClick={save} disabled={busy}
               className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-              style={{background:'#006AFF'}}>
+              style={{background:'#5E6AD2'}}>
               {busy ? '⏳' : '✓ Save Cap'}
             </button>
           </div>
@@ -3580,7 +3580,7 @@ function TemplateEditor({ row, onSave }) {
   const status = segmentStatus(analysis, 1)
 
   const colors = {
-    safe:  { fg:'#15803d', bg:'#f0fdf4', bar:'#10b981' },
+    safe:  { fg:'#059669', bg:'#f0fdf4', bar:'#10b981' },
     tight: { fg:'#92400e', bg:'#fffbeb', bar:'#f59e0b' },
     over:  { fg:'#991b1b', bg:'#fef2f2', bar:'#dc2626' },
   }[status]
@@ -3630,7 +3630,7 @@ function TemplateEditor({ row, onSave }) {
       <div className="p-3">
         <textarea value={text} onChange={e=>setText(e.target.value)} rows={2}
           className="w-full rounded-lg px-3 py-2 text-[12px] font-mono resize-none"
-          style={{border: '2px solid ' + (analysis.isOverLimit ? '#dc2626' : '#80B2FF')}}/>
+          style={{border: '2px solid ' + (analysis.isOverLimit ? '#dc2626' : '#dee2f8')}}/>
 
         {/* Progress bar */}
         <div className="rounded-full h-1.5 mt-2 overflow-hidden" style={{background:'#e5e5e5'}}>
@@ -3659,7 +3659,7 @@ function TemplateEditor({ row, onSave }) {
           </button>
           <button onClick={save} disabled={busy || analysis.isOverLimit || text === row.template_text}
             className="flex-1 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white disabled:opacity-40"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             {busy ? '⏳' : '✓ Save'}
           </button>
         </div>
@@ -3747,7 +3747,7 @@ function DisplaySection({ tenantId }) {
 
       {/* Preview + how-to */}
       <div className="rounded-2xl p-4 mb-5"
-        style={{background:'linear-gradient(135deg, #006AFF 0%, #003a8c 100%)', color:'#fff'}}>
+        style={{background:'linear-gradient(135deg, #5E6AD2 0%, #003a8c 100%)', color:'#fff'}}>
         <div className="flex items-start gap-3 mb-3">
           <span className="text-[28px]">📺</span>
           <div className="flex-1">
@@ -3762,7 +3762,7 @@ function DisplaySection({ tenantId }) {
         </div>
         <button onClick={previewDisplay}
           className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none bg-white"
-          style={{color:'#006AFF'}}>
+          style={{color:'#5E6AD2'}}>
           👁️ Preview Display in New Window
         </button>
       </div>
@@ -3808,7 +3808,7 @@ function DisplaySection({ tenantId }) {
             <button key={code} onClick={() => update({ display_language: code })}
               className="px-4 py-2 rounded-lg text-[12px] font-bold cursor-pointer border-2 transition-all"
               style={(settings.display_language||'en')===code
-                ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                ? {background:'#5E6AD2', color:'#fff', borderColor:'#5E6AD2'}
                 : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
               {label}
             </button>
@@ -3849,11 +3849,11 @@ function DisplaySection({ tenantId }) {
               </div>
             ))}
             <label className="rounded-xl cursor-pointer flex flex-col items-center justify-center gap-1 transition-all"
-              style={{aspectRatio:'16/9', background:'#f8fafc', border:'2px dashed #80B2FF'}}>
+              style={{aspectRatio:'16/9', background:'#f8fafc', border:'2px dashed #dee2f8'}}>
               <input type="file" accept="image/*" className="hidden"
                 onChange={e => uploadImage(e.target.files?.[0])}/>
               <span className="text-[28px]">📤</span>
-              <span className="text-[11px] font-bold" style={{color:'#006AFF'}}>
+              <span className="text-[11px] font-bold" style={{color:'#5E6AD2'}}>
                 {busy ? 'Uploading...' : 'Add image'}
               </span>
             </label>
@@ -3869,11 +3869,11 @@ function ToggleRow({ icon, title, desc, value, onChange }) {
   return (
     <label className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all"
       style={value
-        ? {background:'#E6F0FF', border:'1px solid #006AFF'}
+        ? {background:'#eef0fc', border:'1px solid #5E6AD2'}
         : {background:'#fff', border:'1px solid #e5e5e5'}}>
       <span className="text-[24px] flex-shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-bold" style={{color: value ? '#006AFF' : '#1F1F1F'}}>{title}</div>
+        <div className="text-[13px] font-bold" style={{color: value ? '#5E6AD2' : '#1F1F1F'}}>{title}</div>
         <div className="text-[11px] text-[#666] mt-0.5">{desc}</div>
       </div>
       <div className="flex-shrink-0 ml-2">
@@ -3881,7 +3881,7 @@ function ToggleRow({ icon, title, desc, value, onChange }) {
           className="relative rounded-full cursor-pointer border-none transition-all"
           style={{
             width:'44px', height:'24px',
-            background: value ? '#006AFF' : '#cbd5e1',
+            background: value ? '#5E6AD2' : '#cbd5e1',
           }}>
           <div className="absolute top-0.5 transition-all rounded-full bg-white"
             style={{ width:'20px', height:'20px', left: value ? '22px' : '2px' }}/>

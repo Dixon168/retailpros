@@ -6,15 +6,15 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 const MENU = [
-  { to:'/orders',        icon:'🔍', label:'Orders',         desc:'View & search orders',         color:'#006AFF' },
+  { to:'/orders',        icon:'🔍', label:'Orders',         desc:'View & search orders',         color:'#5E6AD2' },
   { to:'/products',      icon:'📦', label:'Products',       desc:'Manage inventory & pricing',   color:'#16a34a' },
   { to:'/categories',    icon:'📁', label:'Categories',     desc:'Organize product categories',  color:'#0891b2' },
-  { to:'/customers',     icon:'👥', label:'Customers',      desc:'Member & customer management', color:'#006AFF' },
+  { to:'/customers',     icon:'👥', label:'Customers',      desc:'Member & customer management', color:'#5E6AD2' },
   { to:'/b2b-center',    icon:'💼', label:'B2B Center',     desc:'Estimates, invoices, payments, A/R', color:'#d97706' },
   { to:'/marketing',     icon:'🎯', label:'Promotions',     desc:'Promotions & campaigns',       color:'#ec4899' },
   { to:'/loyalty',       icon:'⭐', label:'Loyalty',        desc:'Points & membership tiers',    color:'#f59e0b' },
   { to:'/cardcenter',    icon:'💳', label:'Card Center',    desc:'Payment & card transactions',  color:'#0284c7' },
-  { to:'/reports',       icon:'📊', label:'Reports',        desc:'Sales & inventory reports',    color:'#006AFF' },
+  { to:'/reports',       icon:'📊', label:'Reports',        desc:'Sales & inventory reports',    color:'#5E6AD2' },
   { to:'/smart-receive', icon:'🤖', label:'Smart Receive',  desc:'AI-powered inventory intake',  color:'#16a34a' },
   { to:'/settings',      icon:'⚙️', label:'Settings',       desc:'Store & system settings',      color:'#666666' },
 ]
@@ -216,7 +216,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 mb-5">
           <button onClick={() => navigate('/pos-dashboard')}
             className="rounded-2xl p-4 cursor-pointer border-2 text-left transition-all hover:shadow-md"
-            style={{background:'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderColor:'#80B2FF'}}>
+            style={{background:'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderColor:'#dee2f8'}}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[11px] uppercase tracking-wider font-bold" style={{color:'#1e40af'}}>Retail POS</div>
@@ -244,7 +244,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-4 gap-4 mb-4">
           {[
             ["Today · All Channels", `$${(stats.totalToday||0).toFixed(2)}`, '#1F1F1F', '🏪', null],
-            ['🛒 Retail Today',      `$${(stats.retailRevenue||0).toFixed(2)}`, '#006AFF', '', revenueChange],
+            ['🛒 Retail Today',      `$${(stats.retailRevenue||0).toFixed(2)}`, '#5E6AD2', '', revenueChange],
             ['💼 B2B Today',         `$${(stats.b2bRevenue||0).toFixed(2)}`, '#d97706', '', null],
             ["Today's Orders",       stats.todayOrders, '#16a34a', '🧾', null],
           ].map(([label, value, color, icon, change]) => (
@@ -301,7 +301,7 @@ export default function DashboardPage() {
                         style={{
                           height:`${Math.max(4,(d.rev/maxRev)*56)}px`,
                           background: i===weekData.length-1
-                            ? '#006aff'
+                            ? '#5E6AD2'
                             : '#93c5fd',
                         }}/>
                       <div className="text-[9px] text-slate-400">
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                 <button key={i} onClick={() => handleAsk(q)}
                   disabled={thinking}
                   className="text-[10px] px-2.5 py-1.5 rounded-lg cursor-pointer border-none transition-all disabled:opacity-40 text-left"
-                  style={{background:'rgba(99,102,241,0.12)', color:'#80B2FF', border:'1px solid rgba(99,102,241,0.2)'}}>
+                  style={{background:'rgba(99,102,241,0.12)', color:'#dee2f8', border:'1px solid rgba(99,102,241,0.2)'}}>
                   {q}
                 </button>
               ))}

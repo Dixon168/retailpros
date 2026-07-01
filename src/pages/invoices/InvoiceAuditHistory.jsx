@@ -17,7 +17,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
 const ACTION_LABEL = {
-  edit:       { icon: '✏️', label: 'Edited',          color: '#006AFF' },
+  edit:       { icon: '✏️', label: 'Edited',          color: '#5E6AD2' },
   close:      { icon: '🔒', label: 'Closed & Locked', color: '#374151' },
   auto_close: { icon: '🔒', label: 'Auto-Closed',     color: '#374151' },
 }

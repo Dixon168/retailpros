@@ -8,11 +8,11 @@ import EstimateDetailModal from './EstimateDetailModal'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666',    label:'Draft' },
-  sent:      { bg:'#E6F0FF', color:'#006AFF', label:'Sent' },
-  accepted:  { bg:'#DCFCE7', color:'#15803D', label:'Accepted' },
-  declined:  { bg:'#FEE2E2', color:'#CF1322', label:'Declined' },
+  sent:      { bg:'#eef0fc', color:'#5E6AD2', label:'Sent' },
+  accepted:  { bg:'#d1fae5', color:'#059669', label:'Accepted' },
+  declined:  { bg:'#FEE2E2', color:'#dc2626', label:'Declined' },
   expired:   { bg:'#FEF3C7', color:'#B45309', label:'Expired' },
-  converted: { bg:'#E6F0FF', color:'#006AFF', label:'→ Invoice' },
+  converted: { bg:'#eef0fc', color:'#5E6AD2', label:'→ Invoice' },
 }
 
 export default function EstimatesPage() {
@@ -75,7 +75,7 @@ export default function EstimatesPage() {
         </div>
         <button onClick={() => setShowCreate(true)}
           className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           + New Estimate
         </button>
       </div>
@@ -84,7 +84,7 @@ export default function EstimatesPage() {
       <div className="mb-4 space-y-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search by estimate number or company name..."
-          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
+          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#5E6AD2]"/>
         <div className="flex gap-2 flex-wrap">
           <FilterTab active={statusFilter==='all'}      onClick={() => setStatusFilter('all')}      count={counts.all}>All</FilterTab>
           <FilterTab active={statusFilter==='open'}     onClick={() => setStatusFilter('open')}     count={counts.open}     highlight>📋 Open</FilterTab>
@@ -107,7 +107,7 @@ export default function EstimatesPage() {
           {estimates.length === 0 && (
             <button onClick={() => setShowCreate(true)}
               className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               Create your first estimate
             </button>
           )}
@@ -127,7 +127,7 @@ export default function EstimatesPage() {
               <div key={est.id} onClick={() => setViewingEst(est)}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] cursor-pointer"
                 style={{gridTemplateColumns:'1.3fr 1.4fr 1fr 1fr 1fr 110px'}}>
-                <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#006AFF]">
+                <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#5E6AD2]">
                   {est.estimate_number}
                 </div>
                 <div className="px-3.5 py-3 text-[13px] text-[#1F1F1F] truncate">
@@ -143,7 +143,7 @@ export default function EstimatesPage() {
                   {est.estimate_date ? new Date(est.estimate_date).toLocaleDateString() : '—'}
                 </div>
                 <div className="px-3.5 py-3 text-[12px]"
-                  style={{ color: expired ? '#CF1322' : '#666' }}>
+                  style={{ color: expired ? '#dc2626' : '#666' }}>
                   {est.valid_until ? new Date(est.valid_until).toLocaleDateString() : '—'}
                   {expired && <span className="ml-1 text-[10px] font-bold">⚠️</span>}
                 </div>
@@ -187,8 +187,8 @@ function FilterTab({ active, onClick, count, highlight, children }) {
     <button onClick={onClick}
       className="px-3 py-2 rounded-lg text-[13px] font-bold cursor-pointer active:scale-[0.96]"
       style={active
-        ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
-        : { background:'#FFFFFF', color: highlight ? '#006AFF' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
+        ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
+        : { background:'#FFFFFF', color: highlight ? '#5E6AD2' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
       {children} <span className="ml-1 opacity-75">({count})</span>
     </button>
   )

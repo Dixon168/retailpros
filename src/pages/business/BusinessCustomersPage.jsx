@@ -96,15 +96,15 @@ export default function BusinessCustomersPage() {
           <div className="text-[22px] font-bold text-[#1F1F1F]">🏢 Companies</div>
           <div className="text-[12px] text-[#666] mt-1">
             {stats.total} active companies ·{' '}
-            <span className="font-bold text-[#CF1322] font-mono">${stats.totalOwed.toFixed(2)}</span>{' '}
+            <span className="font-bold text-[#dc2626] font-mono">${stats.totalOwed.toFixed(2)}</span>{' '}
             total outstanding{stats.overdueCount > 0 && (
-              <> · <span className="font-bold text-[#CF1322]">{stats.overdueCount} overdue</span></>
+              <> · <span className="font-bold text-[#dc2626]">{stats.overdueCount} overdue</span></>
             )}
           </div>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           + New Company
         </button>
       </div>
@@ -113,7 +113,7 @@ export default function BusinessCustomersPage() {
       <div className="mb-4 space-y-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search by company name, contact, or phone..."
-          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
+          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#5E6AD2]"/>
         <div className="flex gap-2 flex-wrap">
           <FilterTab active={filter==='all'}     onClick={() => setFilter('all')}     count={stats.total}>All</FilterTab>
           <FilterTab active={filter==='owes'}    onClick={() => setFilter('owes')}    count={stats.owingCount} highlight>💰 Owes Money</FilterTab>
@@ -135,7 +135,7 @@ export default function BusinessCustomersPage() {
           {customers.length === 0 && (
             <button onClick={() => setShowCreate(true)}
               className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               Add your first company
             </button>
           )}
@@ -160,8 +160,8 @@ export default function BusinessCustomersPage() {
                     <div className="text-[13px] font-bold text-[#1F1F1F] truncate">{c.company_name}</div>
                     {c.tier && c.tier !== 'standard' && (
                       <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0"
-                        style={{background: c.tier === 'vip' ? '#FEF3C7' : '#E6F0FF',
-                                color: c.tier === 'vip' ? '#B45309' : '#006AFF'}}>
+                        style={{background: c.tier === 'vip' ? '#FEF3C7' : '#eef0fc',
+                                color: c.tier === 'vip' ? '#B45309' : '#5E6AD2'}}>
                         {c.tier}
                       </span>
                     )}
@@ -184,7 +184,7 @@ export default function BusinessCustomersPage() {
                     <div>
                       <div className="font-bold text-[#1F1F1F]">{c.open_invoice_count}</div>
                       {overdue && (
-                        <div className="text-[10px] font-bold text-[#CF1322]">
+                        <div className="text-[10px] font-bold text-[#dc2626]">
                           {c.overdue_invoice_count} overdue
                         </div>
                       )}
@@ -192,7 +192,7 @@ export default function BusinessCustomersPage() {
                   )}
                 </div>
                 <div className="px-3.5 py-3 text-right font-mono text-[14px] font-bold"
-                  style={{color: owes ? (overdue ? '#CF1322' : '#1F1F1F') : '#15803D'}}>
+                  style={{color: owes ? (overdue ? '#dc2626' : '#1F1F1F') : '#059669'}}>
                   ${(c.computed_balance || 0).toFixed(0)}
                 </div>
                 <div className="px-3.5 py-3 text-[10px] text-[#666]">
@@ -223,9 +223,9 @@ function FilterTab({ active, onClick, count, highlight, red, children }) {
     <button onClick={onClick}
       className="px-3 py-2 rounded-lg text-[13px] font-bold cursor-pointer active:scale-[0.96]"
       style={active
-        ? { background: red ? '#CF1322' : '#006AFF', color:'#FFFFFF', border:'none' }
+        ? { background: red ? '#dc2626' : '#5E6AD2', color:'#FFFFFF', border:'none' }
         : { background:'#FFFFFF',
-            color: red ? '#CF1322' : highlight ? '#006AFF' : '#1F1F1F',
+            color: red ? '#dc2626' : highlight ? '#5E6AD2' : '#1F1F1F',
             border:'1px solid #E5E5E5' }}>
       {children} <span className="ml-1 opacity-75">({count})</span>
     </button>

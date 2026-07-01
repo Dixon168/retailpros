@@ -58,7 +58,7 @@ export default function WeightPanel() {
               className={`bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-3.5
                 text-[16px] font-semibold font-mono text-center transition-all
                 hover:bg-[#F5F5F5] hover:border-[#E5E5E5] active:scale-95
-                ${k === '⌫' ? 'text-[#CF1322]' : k === '.' ? 'text-cyan-400' : 'text-[#1F1F1F]'}`}>
+                ${k === '⌫' ? 'text-[#dc2626]' : k === '.' ? 'text-cyan-400' : 'text-[#1F1F1F]'}`}>
               {k}
             </button>
           ))}

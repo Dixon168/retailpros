@@ -26,7 +26,7 @@ export function LockBadge({ lockStatus, lockedByName, onForceRelease, compact = 
   // lockStatus === 'others'
   return (
     <span className={`inline-flex items-center gap-1.5 font-mono font-bold rounded
-      bg-red-500/10 border border-red-500/20 text-[#CF1322]
+      bg-red-500/10 border border-red-500/20 text-[#dc2626]
       ${compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1'}`}>
       🔒
       {compact
@@ -51,7 +51,7 @@ export function LockBlocker({ lockStatus, lockedByName, onDismiss }) {
         <div className="text-3xl mb-3">🔒</div>
         <div className="text-[14px] font-bold mb-2">Record Locked</div>
         <div className="text-[12px] text-[#666666] mb-4">
-          <span className="text-[#CF1322] font-semibold">
+          <span className="text-[#dc2626] font-semibold">
             {lockedByName || 'Another terminal'}
           </span>
           {' '}is currently editing this record.

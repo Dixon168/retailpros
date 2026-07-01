@@ -8,10 +8,10 @@ import { useHeldOrdersStore } from '@/stores/heldOrdersStore'
 import toast from 'react-hot-toast'
 
 const STATUS_STYLE = {
-  completed:      { bg:'#dcfce7', color:'#16a34a', label:'Completed' },
+  completed:      { bg:'#d1fae5', color:'#16a34a', label:'Completed' },
   held:           { bg:'#fef9c3', color:'#ca8a04', label:'On Hold' },
   voided:         { bg:'#f1f5f9', color:'#64748b', label:'Voided' },
-  refunded:       { bg:'#fdf4ff', color:'#006AFF', label:'Refunded' },
+  refunded:       { bg:'#fdf4ff', color:'#5E6AD2', label:'Refunded' },
   partial_refund: { bg:'#eff6ff', color:'#2563eb', label:'Part. Refunded' },
 }
 
@@ -112,7 +112,7 @@ export function RecallPanel({ onClose, onRefund, onReprint }) {
 
           {/* Header */}
           <div className="px-4 py-4 flex-shrink-0"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             <div className="flex items-center justify-between mb-3">
               <div className="text-[16px] font-bold text-white">📋 Orders</div>
               <button onClick={onClose}
@@ -215,8 +215,8 @@ export function RecallPanel({ onClose, onRefund, onReprint }) {
                     className="flex items-center gap-3 px-4 py-3.5 cursor-pointer border-b transition-all"
                     style={{
                       borderColor:'#f1f5f9',
-                      background: selected?.id===order.id ? '#E6F0FF' : '#fff',
-                      borderLeft: selected?.id===order.id ? '3px solid #006AFF' : '3px solid transparent',
+                      background: selected?.id===order.id ? '#eef0fc' : '#fff',
+                      borderLeft: selected?.id===order.id ? '3px solid #5E6AD2' : '3px solid transparent',
                     }}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
@@ -307,7 +307,7 @@ export function RecallPanel({ onClose, onRefund, onReprint }) {
               <div className="mt-3 rounded-xl p-4" style={{background:'#fff', border:'1px solid #e2e8f0'}}>
                 <div className="flex justify-between text-[15px] font-bold">
                   <span>Total</span>
-                  <span className="font-mono" style={{color:'#006AFF'}}>
+                  <span className="font-mono" style={{color:'#5E6AD2'}}>
                     ${parseFloat(selected.total || 0).toFixed(2)}
                   </span>
                 </div>
@@ -321,7 +321,7 @@ export function RecallPanel({ onClose, onRefund, onReprint }) {
                 <>
                   <button onClick={() => handleResume(selected)}
                     className="w-full rounded-2xl py-4 text-[14px] font-bold text-white cursor-pointer border-none"
-                    style={{background:'#006AFF'}}>
+                    style={{background:'#5E6AD2'}}>
                     ↩ Resume Order
                   </button>
                   <button onClick={() => handleCancelHeld(selected)}

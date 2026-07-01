@@ -109,16 +109,16 @@ export default function TerminalSetup({ onComplete }) {
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center
                   text-[11px] font-bold transition-all ${
                   step >= n
-                    ? 'bg-[#006AFF] text-white'
+                    ? 'bg-[#5E6AD2] text-white'
                     : 'bg-[#F5F5F5] border border-[#E5E5E5] text-[#999999]'
                 }`}>{n}</div>
                 <div className={`text-[9px] mt-1 font-mono uppercase tracking-wider ${
-                  step >= n ? 'text-[#006AFF]' : 'text-[#999999]'
+                  step >= n ? 'text-[#5E6AD2]' : 'text-[#999999]'
                 }`}>{label}</div>
               </div>
               {i < 2 && (
                 <div className={`h-px flex-1 mb-4 transition-all ${
-                  step > n ? 'bg-[#006AFF]' : 'bg-[#E5E5E5]'
+                  step > n ? 'bg-[#5E6AD2]' : 'bg-[#E5E5E5]'
                 }`}/>
               )}
             </div>
@@ -140,7 +140,7 @@ export default function TerminalSetup({ onComplete }) {
                   onChange={e => update('name', e.target.value)}
                   placeholder="e.g. Front Counter, Terminal 1, Warehouse"
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
-                    px-3.5 py-2.5 text-[13px] outline-none focus:border-[#006AFF]
+                    px-3.5 py-2.5 text-[13px] outline-none focus:border-[#5E6AD2]
                     transition-colors placeholder-[#999999]"
                 />
                 <div className="text-[10px] text-[#999999] mt-1.5">
@@ -154,7 +154,7 @@ export default function TerminalSetup({ onComplete }) {
                   value={form.storeId}
                   onChange={e => update('storeId', e.target.value)}
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
-                    px-3.5 py-2.5 text-[13px] outline-none focus:border-[#006AFF]
+                    px-3.5 py-2.5 text-[13px] outline-none focus:border-[#5E6AD2]
                     text-[#1F1F1F]"
                 >
                   <option value="">Select store...</option>
@@ -167,7 +167,7 @@ export default function TerminalSetup({ onComplete }) {
               <button
                 onClick={() => setStep(2)}
                 disabled={!form.name.trim() || !form.storeId}
-                className="w-full bg-[#006AFF] border-none rounded-[10px] py-3
+                className="w-full bg-[#5E6AD2] border-none rounded-[10px] py-3
                   text-[13px] font-bold text-white disabled:opacity-40
                   disabled:cursor-not-allowed"
               >
@@ -215,7 +215,7 @@ export default function TerminalSetup({ onComplete }) {
                       placeholder="192.168.1.50"
                       className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
                         px-3.5 py-2.5 text-[13px] font-mono outline-none
-                        focus:border-[#006AFF] transition-colors placeholder-[#999999]"
+                        focus:border-[#5E6AD2] transition-colors placeholder-[#999999]"
                     />
                     <div className="text-[10px] text-[#999999] mt-1.5">
                       Find PAX IP: Settings → Network → IP Address on the PAX screen
@@ -229,7 +229,7 @@ export default function TerminalSetup({ onComplete }) {
                         value={form.paxPort}
                         onChange={e => update('paxPort', e.target.value)}
                         className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
-                          px-3.5 py-2.5 text-[13px] font-mono outline-none focus:border-[#006AFF]"
+                          px-3.5 py-2.5 text-[13px] font-mono outline-none focus:border-[#5E6AD2]"
                       />
                     </div>
                     <div>
@@ -253,7 +253,7 @@ export default function TerminalSetup({ onComplete }) {
                     disabled={!form.paxIp || paxTestResult === 'testing'}
                     className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px]
                       py-2.5 text-[12px] text-[#666666] disabled:opacity-40
-                      hover:border-blue-500/30 hover:text-[#006AFF] transition-all mb-2"
+                      hover:border-blue-500/30 hover:text-[#5E6AD2] transition-all mb-2"
                   >
                     {paxTestResult === 'testing' ? '⏳ Testing connection...' : '🔌 Test Connection'}
                   </button>
@@ -266,9 +266,9 @@ export default function TerminalSetup({ onComplete }) {
                   )}
                   {paxTestResult === 'fail' && (
                     <div className="bg-red-500/8 border border-red-500/20 rounded-[8px]
-                      px-3 py-2 text-[11px] text-[#CF1322]">
+                      px-3 py-2 text-[11px] text-[#dc2626]">
                       ✗ Cannot reach PAX at {form.paxIp}:{form.paxPort}
-                      <div className="text-[10px] text-[#CF1322]/60 mt-1">
+                      <div className="text-[10px] text-[#dc2626]/60 mt-1">
                         Check: same WiFi/LAN? PAX powered on? IP correct?
                       </div>
                     </div>
@@ -285,7 +285,7 @@ export default function TerminalSetup({ onComplete }) {
                 <button
                   onClick={() => setStep(3)}
                   disabled={form.paxEnabled && !form.paxIp}
-                  className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5
+                  className="flex-[2] bg-[#5E6AD2] border-none rounded-[9px] py-2.5
                     text-[13px] font-bold text-white disabled:opacity-40"
                 >
                   Next: Confirm →
@@ -316,7 +316,7 @@ export default function TerminalSetup({ onComplete }) {
                 </>}
               </div>
 
-              <div className="bg-[#006AFF]/6 border border-blue-500/15 rounded-[9px]
+              <div className="bg-[#5E6AD2]/6 border border-blue-500/15 rounded-[9px]
                 px-3.5 py-3 text-[11px] text-[#666666] mb-5">
                 💡 This device will be remembered as <strong className="text-white">{form.name}</strong>.
                 You can update PAX settings anytime in Settings → Terminal.
@@ -331,7 +331,7 @@ export default function TerminalSetup({ onComplete }) {
                 <button
                   onClick={handleFinish}
                   disabled={saving}
-                  className="flex-[2] bg-[#006AFF]
+                  className="flex-[2] bg-[#5E6AD2]
                     border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white
                     disabled:opacity-50"
                 >

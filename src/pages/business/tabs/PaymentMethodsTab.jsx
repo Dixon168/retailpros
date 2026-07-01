@@ -50,7 +50,7 @@ export default function PaymentMethodsTab({ customerId, tenantId, onChanged }) {
         </div>
         <button onClick={() => setEditing('new')}
           className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           + Add Payment Method
         </button>
       </div>
@@ -71,12 +71,12 @@ export default function PaymentMethodsTab({ customerId, tenantId, onChanged }) {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded"
                   style={m.method_type === 'check'
-                    ? {background:'#E6F0FF', color:'#006AFF'}
+                    ? {background:'#eef0fc', color:'#5E6AD2'}
                     : {background:'#F3E8FF', color:'#7C3AED'}}>
                   {m.method_type === 'check' ? '🏦 Check' : m.method_type === 'card' ? '💳 Card' : '🔄 ACH'}
                 </span>
                 {m.is_default && (
-                  <span className="text-[9px] font-bold uppercase text-[#15803D]">⭐ Default</span>
+                  <span className="text-[9px] font-bold uppercase text-[#059669]">⭐ Default</span>
                 )}
               </div>
               <div className="text-[13px] font-bold text-[#1F1F1F]">{m.nickname || `${m.method_type.toUpperCase()} on file`}</div>
@@ -99,12 +99,12 @@ export default function PaymentMethodsTab({ customerId, tenantId, onChanged }) {
               <div className="flex gap-1.5 mt-2">
                 <button onClick={() => setEditing(m)}
                   className="flex-1 rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                  style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                  style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                   Edit
                 </button>
                 <button onClick={() => deactivate(m)}
                   className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                  style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                  style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                   Remove
                 </button>
               </div>
@@ -114,7 +114,7 @@ export default function PaymentMethodsTab({ customerId, tenantId, onChanged }) {
       )}
 
       <div className="mt-4 rounded-lg p-2.5 text-[10px] flex items-start gap-2"
-        style={{background:'#E6F0FF', color:'#006AFF', border:'1px solid #B3D1FF'}}>
+        style={{background:'#eef0fc', color:'#5E6AD2', border:'1px solid #B3D1FF'}}>
         <span>🔒</span>
         <span>
           <strong>Security:</strong> Only last 4 digits of routing/account numbers are stored — never full numbers.
@@ -204,7 +204,7 @@ function PaymentMethodFormModal({ initial, customerId, tenantId, onClose, onSave
               <button onClick={() => set('method_type', 'check')}
                 className="rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.97]"
                 style={form.method_type === 'check'
-                  ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                  ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
                   : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                 🏦 Check on file
               </button>
@@ -251,7 +251,7 @@ function PaymentMethodFormModal({ initial, customerId, tenantId, onClose, onSave
           <label className="flex items-center gap-2 text-[12px] cursor-pointer">
             <input type="checkbox" checked={form.is_default}
               onChange={e => set('is_default', e.target.checked)}
-              className="accent-[#006AFF]"/>
+              className="accent-[#5E6AD2]"/>
             <span>⭐ Use as default payment method</span>
           </label>
         </div>
@@ -263,7 +263,7 @@ function PaymentMethodFormModal({ initial, customerId, tenantId, onClose, onSave
           </button>
           <button onClick={save} disabled={saving}
             className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-            style={{background:'#006AFF', border:'none'}}>
+            style={{background:'#5E6AD2', border:'none'}}>
             {saving ? 'Saving...' : initial?.id ? '✓ Save' : '+ Save Method'}
           </button>
         </div>

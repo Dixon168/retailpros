@@ -119,14 +119,14 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
         <div className="text-[13px] text-[#666]">
           {isLoading ? 'Loading...' : (
             <>
-              <span className="font-bold text-[#CF1322]">{lowStock.length}</span> products at or below their low-stock level
-              {selectedCount > 0 && <span className="ml-2 text-[#006AFF] font-bold">· {selectedCount} selected</span>}
+              <span className="font-bold text-[#dc2626]">{lowStock.length}</span> products at or below their low-stock level
+              {selectedCount > 0 && <span className="ml-2 text-[#5E6AD2] font-bold">· {selectedCount} selected</span>}
             </>
           )}
         </div>
         <button onClick={buildPO} disabled={selectedCount === 0}
           className="rounded-lg px-4 py-2 text-[13px] font-bold cursor-pointer active:scale-[0.96] disabled:opacity-40"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           🛒 Build PO from selected ({selectedCount})
         </button>
       </div>
@@ -153,7 +153,7 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
             style={{gridTemplateColumns:'40px 2fr 1.3fr 0.9fr 0.9fr 1.1fr 44px'}}>
             <div className="px-3 py-2.5 flex items-center justify-center">
               <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                className="w-4 h-4 cursor-pointer" style={{accentColor:'#006AFF'}}/>
+                className="w-4 h-4 cursor-pointer" style={{accentColor:'#5E6AD2'}}/>
             </div>
             {['Product', 'UPC', 'Price', 'In Stock', 'Reorder Qty', ''].map((h,i) => (
               <div key={i} className="px-3 py-2.5 text-[10px] text-[#666] font-bold uppercase tracking-wider">{h}</div>
@@ -171,7 +171,7 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
                 <div className="px-3 py-3 flex items-center justify-center cursor-pointer" onClick={() => toggle(p.id)}>
                   <input type="checkbox" checked={checked} onChange={() => toggle(p.id)}
                     onClick={e => e.stopPropagation()}
-                    className="w-4 h-4 cursor-pointer" style={{accentColor:'#006AFF'}}/>
+                    className="w-4 h-4 cursor-pointer" style={{accentColor:'#5E6AD2'}}/>
                 </div>
                 {/* Product name + sku */}
                 <div className="px-3 py-3 cursor-pointer" onClick={() => toggle(p.id)}>
@@ -180,7 +180,7 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
                     {p.sku && <span className="text-[10px] text-[#999] font-mono">SKU {p.sku}</span>}
                     {p.onOrderQty > 0 && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                        style={{background:'#E6F0FF', color:'#006AFF'}}
+                        style={{background:'#eef0fc', color:'#5E6AD2'}}
                         title={`Already on PO: ${p.onOrderPOs.join(', ')}`}>
                         🛒 {p.onOrderQty} on order ({p.onOrderPOs.join(', ')})
                       </span>
@@ -198,7 +198,7 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
                 {/* In Stock */}
                 <div className="px-3 py-3">
                   <span className="font-mono text-[13px] font-bold"
-                    style={{color: isOut ? '#CF1322' : '#B45309'}}>
+                    style={{color: isOut ? '#dc2626' : '#B45309'}}>
                     {p.stock}{isOut && ' ⚠️'}
                   </span>
                 </div>
@@ -209,14 +209,14 @@ export default function LowStockPanel({ onBuildPO, onOpenDetail }) {
                     onChange={e => setQty(p.id, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     inputMode="numeric" placeholder="0"
-                    className="w-16 rounded-lg px-2 py-1.5 text-[13px] font-mono font-bold text-center outline-none focus:border-[#006AFF]"
-                    style={{border:'1.5px solid #E5E5E5', background:'#fff', color:'#15803D'}}/>
+                    className="w-16 rounded-lg px-2 py-1.5 text-[13px] font-mono font-bold text-center outline-none focus:border-[#5E6AD2]"
+                    style={{border:'1.5px solid #E5E5E5', background:'#fff', color:'#059669'}}/>
                 </div>
                 {/* Detail > */}
                 <div className="px-2 py-3 flex items-center justify-center">
                   <button onClick={(e) => { e.stopPropagation(); onOpenDetail?.(p.id) }}
                     title="View details"
-                    className="w-7 h-7 rounded-lg cursor-pointer border flex items-center justify-center text-[14px] text-[#666] hover:bg-[#F0F7FF] hover:text-[#006AFF]"
+                    className="w-7 h-7 rounded-lg cursor-pointer border flex items-center justify-center text-[14px] text-[#666] hover:bg-[#F0F7FF] hover:text-[#5E6AD2]"
                     style={{borderColor:'#E5E5E5', background:'#fff'}}>
                     ›
                   </button>

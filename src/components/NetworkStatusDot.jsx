@@ -34,7 +34,7 @@ export default function NetworkStatusDot() {
         className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer"
         style={{
           background: open ? '#F5F5F5' : 'transparent',
-          color: online ? '#15803D' : '#CF1322',
+          color: online ? '#059669' : '#dc2626',
           border: 'none',
         }}
         title={online ? 'Online' : 'Offline (cached data only)'}>
@@ -52,7 +52,7 @@ export default function NetworkStatusDot() {
           }}>
           <div className="flex items-center gap-2 mb-2">
             <span>{online ? '🟢' : '🔴'}</span>
-            <span className="font-bold" style={{ color: online ? '#15803D' : '#CF1322' }}>
+            <span className="font-bold" style={{ color: online ? '#059669' : '#dc2626' }}>
               {online ? 'Online' : 'Offline'}
             </span>
           </div>
@@ -62,7 +62,7 @@ export default function NetworkStatusDot() {
             <div>Last sync: {fmtAge(stats?.lastInc)}</div>
             {!online && (
               <div className="mt-2 p-2 rounded text-[10px]"
-                style={{ background: '#FEE2E2', color: '#CF1322' }}>
+                style={{ background: '#FEE2E2', color: '#dc2626' }}>
                 Working from cache.<br/>
                 Card payments unavailable until online.
               </div>

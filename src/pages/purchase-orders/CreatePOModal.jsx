@@ -188,14 +188,14 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
                 <FieldLabel>Vendor *</FieldLabel>
                 <select value={vendorId} onChange={e => setVendorId(e.target.value)}
                   className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-[13px] outline-none cursor-pointer"
-                  style={{borderColor: vendorId ? '#006AFF' : '#E5E5E5'}}>
+                  style={{borderColor: vendorId ? '#5E6AD2' : '#E5E5E5'}}>
                   <option value="">— Select vendor —</option>
                   {vendors.map(v => (
                     <option key={v.id} value={v.id}>{v.name}{v.contact_name ? ` · ${v.contact_name}` : ''}</option>
                   ))}
                 </select>
                 {vendors.length === 0 && (
-                  <div className="text-[11px] text-[#CF1322] mt-1">⚠️ No vendors yet. Add one in Vendors page first.</div>
+                  <div className="text-[11px] text-[#dc2626] mt-1">⚠️ No vendors yet. Add one in Vendors page first.</div>
                 )}
               </div>
               <div>
@@ -211,7 +211,7 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
                 <FieldLabel>Items ({items.length})</FieldLabel>
                 <button onClick={() => setShowProductPicker(true)}
                   className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                  style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                  style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                   + Add Product
                 </button>
               </div>
@@ -223,7 +223,7 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
                   <div className="text-[13px] text-[#666] mb-3">No items yet</div>
                   <button onClick={() => setShowProductPicker(true)}
                     className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer"
-                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                    style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                     + Add your first product
                   </button>
                 </div>
@@ -264,7 +264,7 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
                         <div className="px-2 py-2.5">
                           <button onClick={() => removeItem(idx)}
                             className="w-7 h-7 rounded text-[14px] cursor-pointer"
-                            style={{background:'#FEE2E2', color:'#CF1322', border:'none'}}>×</button>
+                            style={{background:'#FEE2E2', color:'#dc2626', border:'none'}}>×</button>
                         </div>
                       </div>
                     )
@@ -300,7 +300,7 @@ export default function CreatePOModal({ initialItems = [], initialVendorId = nul
             </button>
             <button onClick={create} disabled={saving || !vendorId || items.length === 0}
               className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               {saving
                 ? (isEdit ? 'Saving...' : 'Creating...')
                 : `${isEdit ? '💾 Save Changes' : 'Create PO'} · $${totalAmount.toFixed(2)}`}

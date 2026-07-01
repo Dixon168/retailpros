@@ -90,7 +90,7 @@ export default function MemberCardTopup({ onClose }) {
         onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{background:'#006AFF'}}>
+        <div className="px-5 py-4 flex items-center justify-between flex-shrink-0" style={{background:'#5E6AD2'}}>
           <div className="flex items-center gap-2">
             <span className="text-[22px]">👤</span>
             <div>
@@ -112,10 +112,10 @@ export default function MemberCardTopup({ onClose }) {
               onKeyDown={e=>{ if(e.key==='Enter') doSearch() }}
               placeholder="Enter phone number, card number, or name to look up"
               className="flex-1 rounded-lg px-3 py-3 text-[15px] outline-none font-bold"
-              style={{border:'2px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}/>
+              style={{border:'2px solid #dee2f8', background:'#fff', color:'#1F1F1F'}}/>
             <button onClick={doSearch} disabled={loading || !search}
               className="rounded-lg px-5 py-3 text-[13px] font-bold cursor-pointer border-none disabled:opacity-50"
-              style={{background:'#006AFF', color:'#fff'}}>
+              style={{background:'#5E6AD2', color:'#fff'}}>
               {loading ? '...' : '🔍 Search'}
             </button>
           </div>
@@ -137,10 +137,10 @@ export default function MemberCardTopup({ onClose }) {
                       onKeyDown={e=>{ if(e.key==='Enter') doAssignSearch() }}
                       placeholder="Find member by phone or name"
                       className="flex-1 rounded-lg px-3 py-2.5 text-[14px] outline-none"
-                      style={{border:'1.5px solid #80B2FF', background:'#fff'}}/>
+                      style={{border:'1.5px solid #dee2f8', background:'#fff'}}/>
                     <button onClick={doAssignSearch}
                       className="rounded-lg px-4 py-2.5 text-[12px] font-bold cursor-pointer border-none text-white"
-                      style={{background:'#006AFF'}}>🔍</button>
+                      style={{background:'#5E6AD2'}}>🔍</button>
                   </div>
                   {assignResults !== null && (assignResults.length === 0 ? (
                     <div className="text-[12px] text-slate-400 py-3 text-center">No member found — try the other option, create a new member.</div>
@@ -176,12 +176,12 @@ export default function MemberCardTopup({ onClose }) {
                   <div className="flex flex-col gap-2">
                     <button onClick={()=>setAddNew(true)}
                       className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer border-none text-white"
-                      style={{background:'#006AFF'}}>
+                      style={{background:'#5E6AD2'}}>
                       ➕ Create a new member{looksLikeCard ? ` (card #${term})` : ''}
                     </button>
                     <button onClick={()=>{ setAssignMode(true); setAssignSearch(''); setAssignResults(null) }}
                       className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
-                      style={{background:'#fff', color:'#006AFF', border:'1.5px solid #80B2FF'}}>
+                      style={{background:'#fff', color:'#5E6AD2', border:'1.5px solid #dee2f8'}}>
                       👤 Assign this card to an existing member
                     </button>
                   </div>
@@ -197,7 +197,7 @@ export default function MemberCardTopup({ onClose }) {
                     className="w-full flex items-center gap-3 px-4 py-3 border-b border-slate-100 last:border-0 text-left transition-all"
                     style={{background: hasCard ? 'transparent' : '#fffbeb'}}>
                     <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[16px] font-black"
-                      style={{background: hasCard ? '#eff6ff' : '#fef3c7', color: hasCard ? '#006AFF' : '#d97706'}}>
+                      style={{background: hasCard ? '#eff6ff' : '#fef3c7', color: hasCard ? '#5E6AD2' : '#d97706'}}>
                       {(m.name||'?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -215,7 +215,7 @@ export default function MemberCardTopup({ onClose }) {
                     {hasCard ? (
                       <button onClick={()=>setPicked(m)}
                         className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none text-white flex-shrink-0"
-                        style={{background:'#006AFF'}}>
+                        style={{background:'#5E6AD2'}}>
                         Top up · ${(m.card_balance||0).toFixed(2)}
                       </button>
                     ) : assignTo === m.id ? (
@@ -225,7 +225,7 @@ export default function MemberCardTopup({ onClose }) {
                           onKeyDown={e=>{ if(e.key==='Enter') assignCardInline(m) }}
                           placeholder="Card #"
                           className="w-24 rounded-lg px-2 py-2 text-[12px] outline-none font-mono"
-                          style={{border:'1.5px solid #80B2FF'}}/>
+                          style={{border:'1.5px solid #dee2f8'}}/>
                         <button onClick={()=>assignCardInline(m)} disabled={assigning}
                           className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer border-none text-white"
                           style={{background:'#16a34a'}}>✓</button>

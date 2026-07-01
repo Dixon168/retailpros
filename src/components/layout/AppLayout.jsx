@@ -103,7 +103,7 @@ export default function AppLayout() {
             <>
               <div className="text-[15px] font-bold text-white">Retail Pro</div>
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded ml-1 flex-shrink-0"
-                style={{background:'rgba(0,106,255,0.2)', color:'#80B2FF'}}>
+                style={{background:'rgba(0,106,255,0.2)', color:'#dee2f8'}}>
                 BACK OFFICE
               </span>
             </>
@@ -146,7 +146,7 @@ export default function AppLayout() {
                     } ${isActive ? 'text-white' : 'hover:bg-white/8'}`
                   }
                   style={({ isActive }) => isActive
-                    ? {background:'#006AFF'}
+                    ? {background:'#5E6AD2'}
                     : {color:'#999999'}}
                   title={collapsed ? item.label : ''}>
                   <span className="text-[16px] flex-shrink-0">{item.icon}</span>
@@ -169,7 +169,7 @@ export default function AppLayout() {
           {/* Back to POS */}
           <button onClick={() => window.location.href='/pos'}
             className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer border-none mb-1.5 transition-all"
-            style={{background:'rgba(0,106,255,0.15)', color:'#80B2FF'}}
+            style={{background:'rgba(0,106,255,0.15)', color:'#dee2f8'}}
             title={collapsed ? 'POS' : ''}>
             <span className="text-[15px] flex-shrink-0">🖥️</span>
             {!collapsed && <span className="text-[12px] font-semibold">← POS</span>}
@@ -179,7 +179,7 @@ export default function AppLayout() {
           <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${collapsed?'justify-center':''}`}
             style={{background:'rgba(255,255,255,0.06)'}}>
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-              style={{background:'#006AFF'}}>
+              style={{background:'#5E6AD2'}}>
               {user?.name?.charAt(0)||'U'}
             </div>
             {!collapsed && (
@@ -190,7 +190,7 @@ export default function AppLayout() {
             )}
             {!collapsed && (
               <button onClick={() => signOut()}
-                className="bg-transparent border-none cursor-pointer text-[11px] flex-shrink-0 transition-colors hover:text-[#CF1322]"
+                className="bg-transparent border-none cursor-pointer text-[11px] flex-shrink-0 transition-colors hover:text-[#dc2626]"
                 style={{color:'#666666'}}
                 title="Sign out">
                 ⏻
@@ -202,7 +202,7 @@ export default function AppLayout() {
         {/* Software brand + version footer — bottom of sidebar */}
         {!collapsed && (
           <div className="px-3 py-2 text-center" style={{borderTop:'1px solid #2A2A2A', background:'#161616'}}>
-            <div className="text-[10px] font-bold" style={{color:'#80B2FF'}}>Retail Pro</div>
+            <div className="text-[10px] font-bold" style={{color:'#dee2f8'}}>Retail Pro</div>
             <div className="text-[8px] mt-0.5 leading-tight" style={{color:'#cbd5e1'}}>
               powered by All in One Payment Solution
             </div>

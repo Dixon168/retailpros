@@ -74,12 +74,12 @@ function Input({ value, onChange, placeholder, type='text', step, min, autoFocus
       step={step} min={min} autoFocus={autoFocus}
       className={`w-full rounded-xl px-3.5 py-2.5 text-[13px] outline-none transition-all ${mono?'font-mono':''} ${className}`}
       style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}
-      onFocus={e=>{e.target.style.borderColor='#006AFF';e.target.style.background='#fff'}}
+      onFocus={e=>{e.target.style.borderColor='#5E6AD2';e.target.style.background='#fff'}}
       onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}
     />
   )
 }
-function Section({ title, icon, children, color='#006AFF' }) {
+function Section({ title, icon, children, color='#5E6AD2' }) {
   return (
     <div className="rounded-2xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
       <div className="px-4 py-2.5 flex items-center gap-2"
@@ -98,7 +98,7 @@ function Toggle({ checked, onChange, label, desc }) {
     <label className="flex items-center gap-3 cursor-pointer py-1.5">
       <div className="relative flex-shrink-0" onClick={onChange}>
         <div style={{
-          background: checked ? '#006AFF' : '#e2e8f0',
+          background: checked ? '#5E6AD2' : '#e2e8f0',
           width:'40px', height:'22px', position:'relative', cursor:'pointer',
           borderRadius:'11px', transition:'background .2s'
         }}>
@@ -271,7 +271,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
     if (!name) { toast.error('Category name required'); return }
     try {
       const { data, error } = await supabase.from('categories')
-        .insert({ tenant_id: tenantId, name, color: '#006AFF', sort_order: (categories?.length||0) + 1 })
+        .insert({ tenant_id: tenantId, name, color: '#5E6AD2', sort_order: (categories?.length||0) + 1 })
         .select().single()
       if (error) throw error
       if (data) {
@@ -471,11 +471,11 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
         <div className="px-6 py-5 flex flex-col gap-4">
 
           {/* ── UPC LOOKUP - TOP ── */}
-          <div className="rounded-2xl p-4" style={{background:'#e6f0ff', border:'2px solid #80B2FF'}}>
+          <div className="rounded-2xl p-4" style={{background:'#eef0fc', border:'2px solid #dee2f8'}}>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[18px]">🤖</span>
               <div>
-                <div className="text-[14px] font-bold" style={{color:'#006AFF'}}>Auto-Fill from Barcode</div>
+                <div className="text-[14px] font-bold" style={{color:'#5E6AD2'}}>Auto-Fill from Barcode</div>
                 <div className="text-[11px] text-slate-400">Scan UPC → AI fills name, description, photo & price automatically</div>
               </div>
             </div>
@@ -483,7 +483,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
               <input value={form.upc} onChange={e=>set('upc',e.target.value)}
                 placeholder="Scan or enter UPC / barcode..."
                 className="flex-1 rounded-xl px-4 py-3 text-[14px] font-mono outline-none"
-                style={{border:'1.5px solid #80B2FF', background:'#fff', color:'#1F1F1F'}}
+                style={{border:'1.5px solid #dee2f8', background:'#fff', color:'#1F1F1F'}}
                 onKeyDown={e=>{ if(e.key==='Enter' && form.upc?.trim()) document.getElementById('upc-lookup-btn').click() }}
                 autoFocus
               />
@@ -526,14 +526,14 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                 }}
                 disabled={upcLooking || !form.upc?.trim()}
                 className="rounded-xl px-5 text-[13px] font-bold cursor-pointer border-none disabled:opacity-40 flex-shrink-0"
-                style={{background: upcLooking ? '#80B2FF' : '#000000', color:'#fff', minWidth:'100px'}}>
+                style={{background: upcLooking ? '#dee2f8' : '#000000', color:'#fff', minWidth:'100px'}}>
                 {upcLooking ? '⏳ Loading...' : '🔍 Lookup'}
               </button>
             </div>
           </div>
 
           {/* ── BASIC INFO ── */}
-          <Section title="Basic Information" icon="📦" color="#006AFF">
+          <Section title="Basic Information" icon="📦" color="#5E6AD2">
             <div className="flex gap-4">
               {/* Photo */}
               <div className="flex-shrink-0">
@@ -616,7 +616,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                     rows={3} placeholder="Optional — or click 🤖 AI Generate..."
                     className="w-full rounded-xl px-3.5 py-2.5 text-[12px] outline-none resize-none transition-all"
                     style={{border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#1F1F1F'}}
-                    onFocus={e=>{e.target.style.borderColor='#006AFF';e.target.style.background='#fff'}}
+                    onFocus={e=>{e.target.style.borderColor='#5E6AD2';e.target.style.background='#fff'}}
                     onBlur={e=>{e.target.style.borderColor='#e2e8f0';e.target.style.background='#f8fafc'}}/>
                 </div>
               </div>
@@ -659,7 +659,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                     }}
                     disabled={upcLooking || !form.upc?.trim()}
                     className="rounded-xl px-3 text-[11px] font-bold cursor-pointer border-none flex-shrink-0 disabled:opacity-40 whitespace-nowrap"
-                    style={{background: upcLooking ? '#E6F0FF' : '#000000', color:'#fff', height:'40px'}}>
+                    style={{background: upcLooking ? '#eef0fc' : '#000000', color:'#fff', height:'40px'}}>
                     {upcLooking ? '⏳' : '🔍 Lookup'}
                   </button>
                 </div>
@@ -727,7 +727,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                   <div className="flex flex-wrap gap-1 mt-2">
                     {form.tags.map(t=>(
                       <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold"
-                        style={{background:'#006AFF', color:'#FFFFFF'}}>
+                        style={{background:'#5E6AD2', color:'#FFFFFF'}}>
                         ✓ {t}
                         <button onClick={()=>set('tags',form.tags.filter(x=>x!==t))}
                           className="bg-transparent border-none cursor-pointer ml-0.5 text-[10px] text-white opacity-80 hover:opacity-100">✕</button>
@@ -758,7 +758,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                           <button key={t} onClick={()=>{set('tags',[...form.tags, t]); setTagInput('')}}
                             className="px-2 py-0.5 rounded-full text-[11px] font-medium cursor-pointer transition-all"
                             style={{background:'#f1f5f9', color:'#475569', border:'1px solid #e2e8f0'}}
-                            onMouseEnter={e=>{e.target.style.background='#E6F0FF'; e.target.style.color='#006AFF'; e.target.style.borderColor='#80B2FF'}}
+                            onMouseEnter={e=>{e.target.style.background='#eef0fc'; e.target.style.color='#5E6AD2'; e.target.style.borderColor='#dee2f8'}}
                             onMouseLeave={e=>{e.target.style.background='#f1f5f9'; e.target.style.color='#475569'; e.target.style.borderColor='#e2e8f0'}}>
                             + {t}
                           </button>
@@ -791,7 +791,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                 <Label>Catalog Cost</Label>
                 <div className="flex items-center rounded-xl px-3 transition-all"
                   style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}
-                  onFocusCapture={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#fff'}}
+                  onFocusCapture={e=>{e.currentTarget.style.borderColor='#5E6AD2';e.currentTarget.style.background='#fff'}}
                   onBlurCapture={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#f8fafc'}}>
                   <span className="text-slate-400 mr-1">$</span>
                   <input type="number" value={form.cost} onChange={e=>set('cost',e.target.value)}
@@ -814,7 +814,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
                   ['Margin', `${margin}%`, parseFloat(margin)>=30?'#16a34a':parseFloat(margin)>=10?'#d97706':'#dc2626'],
-                  ['Profit/Unit', `$${profit}`, '#006AFF'],
+                  ['Profit/Unit', `$${profit}`, '#5E6AD2'],
                   ['Catalog Cost', `$${parseFloat(form.cost||0).toFixed(2)}`, '#64748b'],
                 ].map(([l,v,c])=>(
                   <div key={l} className="rounded-xl p-2.5 text-center" style={{background:'#f8fafc', border:'1px solid #e2e8f0'}}>
@@ -856,7 +856,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                       <button onClick={()=>set('tax_exempt', false)}
                         className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border transition-all"
                         style={!form.tax_exempt
-                          ? {background:'#15803d', color:'#fff', borderColor:'#15803d'}
+                          ? {background:'#059669', color:'#fff', borderColor:'#059669'}
                           : {background:'#fff', color:'#475569', borderColor:'#e2e8f0'}}>
                         No
                       </button>
@@ -952,7 +952,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
               </div>
             )}
           </Section>
-          <Section title="VIP & Loyalty" icon="⭐" color="#006AFF">
+          <Section title="VIP & Loyalty" icon="⭐" color="#5E6AD2">
             {/* VIP */}
             <div className="mb-4">
               <Toggle checked={form.allow_vip} onChange={()=>set('allow_vip',!form.allow_vip)}
@@ -966,7 +966,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                     <span className="text-slate-400 mr-1">$</span>
                     <input type="number" value={form.vip_price} onChange={e=>set('vip_price',e.target.value)}
                       placeholder="VIP price" step="0.01"
-                      className="flex-1 border-none outline-none py-2.5 text-[13px] font-mono bg-transparent" style={{color:'#006AFF'}}/>
+                      className="flex-1 border-none outline-none py-2.5 text-[13px] font-mono bg-transparent" style={{color:'#5E6AD2'}}/>
                   </div>
                   {form.vip_price && form.price && (
                     <div className="mt-1.5 flex items-center gap-2 text-[12px]">
@@ -1036,7 +1036,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                     style={{border:'1.5px solid #c4b5fd', background:'#faf5ff', maxWidth:'220px'}}>
                     <input type="number" value={form.redeem_points_required || ''} onChange={e=>set('redeem_points_required',e.target.value)}
                       placeholder="e.g. 500" min="1"
-                      className="flex-1 border-none outline-none text-[14px] font-bold font-mono bg-transparent text-center" style={{color:'#006AFF'}}/>
+                      className="flex-1 border-none outline-none text-[14px] font-bold font-mono bg-transparent text-center" style={{color:'#5E6AD2'}}/>
                     <span className="text-[12px] text-purple-500 font-semibold">pts</span>
                   </div>
                   {form.redeem_points_required && form.price && (
@@ -1140,7 +1140,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                   className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
                 <button disabled={!newCatName.trim()} onClick={addCategory}
                   className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                  style={{background:'#006AFF'}}>✓ Add</button>
+                  style={{background:'#5E6AD2'}}>✓ Add</button>
               </div>
             </div>
           </div>
@@ -1172,7 +1172,7 @@ export function ProductForm({ initial={}, tenantId, storeId, onSave, onClose }) 
                   className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
                 <button disabled={!newSubName.trim()||!newSubCatId} onClick={addSubcategory}
                   className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                  style={{background:'#006AFF'}}>✓ Add</button>
+                  style={{background:'#5E6AD2'}}>✓ Add</button>
               </div>
             </div>
           </div>
@@ -1262,7 +1262,7 @@ function ProductPromotions({ productId, productName, productPrice, tenantId }) {
     finally { setSaving(false) }
   }
 
-  const TYPE_COLOR = { sale:'#006AFF', bulk:'#16a34a', time:'#d97706' }
+  const TYPE_COLOR = { sale:'#5E6AD2', bulk:'#16a34a', time:'#d97706' }
   const TYPE_ICON  = { sale:'🏷️', bulk:'📦', time:'⏰' }
   const TYPE_NAME  = { sale:'Sale', bulk:'Bulk', time:'Time' }
 
@@ -1284,7 +1284,7 @@ function ProductPromotions({ productId, productName, productPrice, tenantId }) {
               </span>
               <button onClick={()=>togglePromo(p)}
                 className="text-[10px] px-2.5 py-1 rounded-lg border cursor-pointer transition-all"
-                style={p.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
+                style={p.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#d1fae5',borderColor:'#86efac',color:'#16a34a'}}>
                 {p.is_active?'Pause':'On'}
               </button>
               <button onClick={()=>deletePromo(p.id)}
@@ -1298,11 +1298,11 @@ function ProductPromotions({ productId, productName, productPrice, tenantId }) {
       {!adding ? (
         <button onClick={()=>setAdding(true)}
           className="w-full rounded-xl py-2.5 text-[12px] font-semibold cursor-pointer border-2 border-dashed transition-all"
-          style={{borderColor:'#B3D1FF', color:'#006AFF', background:'#E6F0FF'}}>
+          style={{borderColor:'#B3D1FF', color:'#5E6AD2', background:'#eef0fc'}}>
           + Add Promotion
         </button>
       ) : (
-        <div className="rounded-xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
+        <div className="rounded-xl p-4" style={{background:'#eef0fc', border:'1.5px solid #B3D1FF'}}>
           <div className="flex gap-2 mb-3">
             {[['sale','🏷️ Sale'],['bulk','📦 Bulk'],['time','⏰ Time']].map(([t,l])=>(
               <button key={t} onClick={()=>setType(t)}

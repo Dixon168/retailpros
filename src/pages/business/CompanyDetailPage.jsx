@@ -113,7 +113,7 @@ export default function CompanyDetailPage() {
         <div className="text-[14px] font-bold mb-1">Company not found</div>
         <button onClick={() => navigate('/business')}
           className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           ← Back to Companies
         </button>
       </div>
@@ -137,7 +137,7 @@ export default function CompanyDetailPage() {
       {/* Breadcrumb + Header */}
       <button onClick={() => navigate('/business')}
         className="mb-3 text-[11px] font-bold cursor-pointer"
-        style={{background:'none', border:'none', color:'#006AFF'}}>
+        style={{background:'none', border:'none', color:'#5E6AD2'}}>
         ← All Companies
       </button>
 
@@ -148,8 +148,8 @@ export default function CompanyDetailPage() {
               <div className="text-[22px] font-bold text-[#1F1F1F] truncate">{company.company_name}</div>
               {company.tier && company.tier !== 'standard' && (
                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded flex-shrink-0"
-                  style={{background: company.tier === 'vip' ? '#FEF3C7' : '#E6F0FF',
-                          color: company.tier === 'vip' ? '#B45309' : '#006AFF'}}>
+                  style={{background: company.tier === 'vip' ? '#FEF3C7' : '#eef0fc',
+                          color: company.tier === 'vip' ? '#B45309' : '#5E6AD2'}}>
                   {company.tier}
                 </span>
               )}
@@ -168,18 +168,18 @@ export default function CompanyDetailPage() {
           <div className="flex gap-2 flex-shrink-0">
             <button onClick={() => setShowCreateEst(true)}
               className="rounded-lg px-3 py-2 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-              style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+              style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
               + Estimate
             </button>
             <button onClick={() => setShowCreateInv(true)}
               className="rounded-lg px-3 py-2 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               + Invoice
             </button>
             {balance > 0 && (
               <button onClick={() => setShowReceive(true)}
                 className="rounded-lg px-3 py-2 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+                style={{background:'#059669', color:'#FFFFFF', border:'none'}}>
                 💰 Receive Payment
               </button>
             )}
@@ -189,11 +189,11 @@ export default function CompanyDetailPage() {
         {/* KPI strip */}
         <div className="grid grid-cols-4 gap-3 mt-4">
           <Kpi label="Owed"        value={`$${balance.toFixed(0)}`}
-            color={balance > 0 ? (overdue > 0 ? '#CF1322' : '#1F1F1F') : '#15803D'}/>
+            color={balance > 0 ? (overdue > 0 ? '#dc2626' : '#1F1F1F') : '#059669'}/>
           <Kpi label="Open Invoices"   value={openInvoices}
             color={openInvoices > 0 ? '#1F1F1F' : '#999'}
             note={overdue > 0 ? `${overdue} overdue` : null}
-            noteColor={'#CF1322'}/>
+            noteColor={'#dc2626'}/>
           <Kpi label="Credit Limit"    value={`$${(company.credit_limit || 0).toFixed(0)}`}/>
           <Kpi label="Terms"           value={(company.payment_terms || 'net_30').replace('_', ' ').toUpperCase()}/>
         </div>
@@ -202,10 +202,10 @@ export default function CompanyDetailPage() {
       {/* Alert notes banner */}
       {alertNotes.length > 0 && (
         <div className="rounded-xl p-3 mb-4"
-          style={{background:'#FEE2E2', border:'1px solid #CF1322'}}>
+          style={{background:'#FEE2E2', border:'1px solid #dc2626'}}>
           {alertNotes.map((n, i) => (
             <div key={n.id} className={i > 0 ? 'mt-2 pt-2 border-t border-red-300' : ''}>
-              <div className="text-[11px] font-bold text-[#CF1322] flex items-start gap-1.5">
+              <div className="text-[11px] font-bold text-[#dc2626] flex items-start gap-1.5">
                 <span>⚠️</span>
                 <span className="flex-1 whitespace-pre-wrap">{n.note}</span>
               </div>
@@ -224,7 +224,7 @@ export default function CompanyDetailPage() {
               <button key={t.key} onClick={() => setTab(t.key)}
                 className="rounded-lg px-3 py-2 text-[12px] font-bold cursor-pointer whitespace-nowrap active:scale-[0.96]"
                 style={active
-                  ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                  ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
                   : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }
                 }>
                 {t.icon} {t.label}

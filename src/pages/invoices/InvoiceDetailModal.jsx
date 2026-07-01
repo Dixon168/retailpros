@@ -11,11 +11,11 @@ import { buildInvoiceHtml, buildPackingSlipHtml, openPrintWindow, downloadHtml }
 
 const STATUS_BADGE = {
   draft:    { bg:'#F5F5F5', color:'#666',    label:'Draft' },
-  sent:     { bg:'#E6F0FF', color:'#006AFF', label:'Sent' },
-  viewed:   { bg:'#E6F0FF', color:'#006AFF', label:'Viewed' },
+  sent:     { bg:'#eef0fc', color:'#5E6AD2', label:'Sent' },
+  viewed:   { bg:'#eef0fc', color:'#5E6AD2', label:'Viewed' },
   partial:  { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
-  paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
-  overdue:  { bg:'#FEE2E2', color:'#CF1322', label:'Overdue' },
+  paid:     { bg:'#d1fae5', color:'#059669', label:'Paid' },
+  overdue:  { bg:'#FEE2E2', color:'#dc2626', label:'Overdue' },
   voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
   void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },  // legacy alias
   closed:   { bg:'#E5E7EB', color:'#374151', label:'🔒 Closed' },
@@ -247,7 +247,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                 </div>
                 <button onClick={sendInvoice} disabled={updating}
                   className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96] text-white disabled:opacity-40"
-                  style={{background:'#006AFF', border:'none'}}>
+                  style={{background:'#5E6AD2', border:'none'}}>
                   📤 Send Invoice
                 </button>
               </div>
@@ -257,15 +257,15 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
             {balanceDue > 0 && !isPaidOrVoid && detail.status !== 'draft' && (
               <div className="rounded-lg p-4 flex items-center justify-between"
                 style={isOverdue
-                  ? {background:'#FEE2E2', border:'1px solid #CF1322'}
+                  ? {background:'#FEE2E2', border:'1px solid #dc2626'}
                   : {background:'#FFF7ED', border:'1px solid #F59E0B'}}>
                 <div>
                   <div className="text-[10px] font-bold uppercase mb-0.5"
-                    style={{color: isOverdue ? '#CF1322' : '#B45309'}}>
+                    style={{color: isOverdue ? '#dc2626' : '#B45309'}}>
                     {isOverdue ? '⚠️ Past Due' : 'Balance Due'}
                   </div>
                   <div className="font-mono text-[24px] font-bold"
-                    style={{color: isOverdue ? '#CF1322' : '#1F1F1F'}}>
+                    style={{color: isOverdue ? '#dc2626' : '#1F1F1F'}}>
                     {$}{balanceDue.toFixed(2)}
                   </div>
                   {detail.amount_paid > 0 && (
@@ -276,7 +276,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                 </div>
                 <button onClick={() => setShowReceive(true)}
                   className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-                  style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+                  style={{background:'#059669', color:'#FFFFFF', border:'none'}}>
                   💰 Receive Payment
                 </button>
               </div>
@@ -342,7 +342,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                   {detail.discount_amount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-[#666]">Discount</span>
-                      <span className="font-mono text-[#CF1322]">−{$}{(detail.discount_amount || 0).toFixed(2)}</span>
+                      <span className="font-mono text-[#dc2626]">−{$}{(detail.discount_amount || 0).toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
@@ -351,14 +351,14 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                   </div>
                   {detail.amount_paid > 0 && (
                     <>
-                      <div className="flex justify-between text-[#15803D]">
+                      <div className="flex justify-between text-[#059669]">
                         <span className="font-bold">Paid</span>
                         <span className="font-mono">−{$}{(detail.amount_paid || 0).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
                         <span className="font-bold">Balance</span>
                         <span className="font-mono text-[15px] font-bold"
-                          style={{color: balanceDue > 0 ? '#CF1322' : '#15803D'}}>
+                          style={{color: balanceDue > 0 ? '#dc2626' : '#059669'}}>
                           {$}{balanceDue.toFixed(2)}
                         </span>
                       </div>
@@ -390,7 +390,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                             {p?.payment_number} · {p?.payment_date ? new Date(p.payment_date).toLocaleDateString() : ''}
                           </div>
                         </div>
-                        <div className="font-mono text-[14px] font-bold text-[#15803D]">
+                        <div className="font-mono text-[14px] font-bold text-[#059669]">
                           +{$}{a.amount.toFixed(2)}
                         </div>
                       </div>
@@ -410,15 +410,15 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
 
             {/* INLINE: Void confirm */}
             {showVoidInline && !isPaidOrVoid && (
-              <div className="rounded-lg p-4" style={{background:'#FEE2E2', border:'1px solid #CF1322'}}>
-                <div className="text-[13px] font-bold text-[#CF1322] mb-2">⚠️ Void this invoice?</div>
+              <div className="rounded-lg p-4" style={{background:'#FEE2E2', border:'1px solid #dc2626'}}>
+                <div className="text-[13px] font-bold text-[#dc2626] mb-2">⚠️ Void this invoice?</div>
                 <div className="text-[11px] text-[#1F1F1F] mb-3">
                   This will:
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
                     <li>Mark invoice as <strong>Void</strong> and exclude from totals</li>
                     <li>Customer's outstanding balance goes back down</li>
                     {detail.status !== 'draft' && (
-                      <li className="text-[#15803D]"><strong>✓ Inventory will be automatically restored</strong></li>
+                      <li className="text-[#059669]"><strong>✓ Inventory will be automatically restored</strong></li>
                     )}
                     {detail.status === 'draft' && (
                       <li className="text-[#666]">Inventory wasn't deducted yet (draft) — nothing to restore</li>
@@ -445,7 +445,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onChanged }) {
                   </button>
                   <button onClick={() => { setShowVoidInline(false); voidInvoice() }} disabled={updating}
                     className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-                    style={{background:'#CF1322', border:'none'}}>
+                    style={{background:'#dc2626', border:'none'}}>
                     🗑 Yes, Void Invoice
                   </button>
                 </div>

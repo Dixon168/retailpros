@@ -7,11 +7,11 @@ import ReceivePaymentModal from '@/pages/invoices/ReceivePaymentModal'
 import PaymentDetailModal from './PaymentDetailModal'
 
 const METHOD_BADGE = {
-  cash:          { bg:'#DCFCE7', color:'#15803D', label:'💵 Cash' },
-  check:         { bg:'#E6F0FF', color:'#006AFF', label:'🏦 Check' },
+  cash:          { bg:'#d1fae5', color:'#059669', label:'💵 Cash' },
+  check:         { bg:'#eef0fc', color:'#5E6AD2', label:'🏦 Check' },
   ach:           { bg:'#FEF3C7', color:'#B45309', label:'🔄 ACH' },
   card:          { bg:'#F3E8FF', color:'#7C3AED', label:'💳 Card' },
-  bank_transfer: { bg:'#E6F0FF', color:'#006AFF', label:'🏦 Bank' },
+  bank_transfer: { bg:'#eef0fc', color:'#5E6AD2', label:'🏦 Bank' },
   other:         { bg:'#F5F5F5', color:'#666',    label:'📋 Other' },
 }
 
@@ -67,12 +67,12 @@ export default function PaymentsPage() {
         <div>
           <div className="text-[22px] font-bold text-[#1F1F1F]">💰 Payments Received</div>
           <div className="text-[12px] text-[#666] mt-1">
-            {filtered.length} payment{filtered.length !== 1 ? 's' : ''} · Total: <span className="font-mono font-bold text-[#15803D]">${totalReceived.toFixed(2)}</span>
+            {filtered.length} payment{filtered.length !== 1 ? 's' : ''} · Total: <span className="font-mono font-bold text-[#059669]">${totalReceived.toFixed(2)}</span>
           </div>
         </div>
         <button onClick={() => setShowReceive(true)}
           className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#059669', color:'#FFFFFF', border:'none'}}>
           💰 Receive Payment
         </button>
       </div>
@@ -81,7 +81,7 @@ export default function PaymentsPage() {
       <div className="mb-4 space-y-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search by payment #, company, or reference #..."
-          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
+          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#5E6AD2]"/>
 
         <div className="flex gap-2 flex-wrap items-center">
           <span className="text-[11px] font-bold text-[#666]">Date:</span>
@@ -89,7 +89,7 @@ export default function PaymentsPage() {
             <button key={d} onClick={() => setDateRange(d)}
               className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer active:scale-[0.96]"
               style={dateRange === d
-                ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
                 : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
               {d === 'all' ? 'All' : `Last ${d}d`}
             </button>
@@ -99,7 +99,7 @@ export default function PaymentsPage() {
           <button onClick={() => setMethodFilter('all')}
             className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer"
             style={methodFilter === 'all'
-              ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+              ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
               : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
             All
           </button>
@@ -129,7 +129,7 @@ export default function PaymentsPage() {
           {payments.length === 0 && (
             <button onClick={() => setShowReceive(true)}
               className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
-              style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#059669', color:'#FFFFFF', border:'none'}}>
               Record your first payment
             </button>
           )}
@@ -149,7 +149,7 @@ export default function PaymentsPage() {
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] cursor-pointer"
                 style={{gridTemplateColumns:'1.2fr 1.5fr 110px 1fr 90px 110px'}}>
                 <div className="px-3.5 py-3">
-                  <div className="font-mono text-[13px] font-bold text-[#15803D]">{p.payment_number}</div>
+                  <div className="font-mono text-[13px] font-bold text-[#059669]">{p.payment_number}</div>
                   <div className="text-[10px] text-[#999]">
                     {p.payment_date ? new Date(p.payment_date).toLocaleDateString() : '—'}
                   </div>
@@ -169,7 +169,7 @@ export default function PaymentsPage() {
                 <div className="px-3.5 py-3 text-[12px] text-[#666]">
                   {p.allocation_count || 0} invoice{p.allocation_count === 1 ? '' : 's'}
                 </div>
-                <div className="px-3.5 py-3 text-right font-mono text-[14px] font-bold text-[#15803D]">
+                <div className="px-3.5 py-3 text-right font-mono text-[14px] font-bold text-[#059669]">
                   ${(p.amount || 0).toFixed(2)}
                 </div>
               </div>

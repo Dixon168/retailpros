@@ -155,9 +155,9 @@ export default function CustomerPanel() {
             <button key={m} onClick={()=>setMode(m)}
               className="flex-1 py-2.5 text-[12px] font-semibold cursor-pointer border-none border-b-2 transition-all"
               style={{
-                background: mode===m ? '#E6F0FF' : '#fff',
-                borderBottomColor: mode===m ? '#006AFF' : 'transparent',
-                color: mode===m ? '#006AFF' : '#64748b',
+                background: mode===m ? '#eef0fc' : '#fff',
+                borderBottomColor: mode===m ? '#5E6AD2' : 'transparent',
+                color: mode===m ? '#5E6AD2' : '#64748b',
               }}>
               {l}
             </button>
@@ -206,7 +206,7 @@ export default function CustomerPanel() {
                   </div>
                   <button onClick={()=>setMode('add')}
                     className="mt-3 px-4 py-2 rounded-xl text-[12px] font-bold cursor-pointer border-none"
-                    style={{background:'#E6F0FF', color:'#006AFF'}}>
+                    style={{background:'#eef0fc', color:'#5E6AD2'}}>
                     + Add "{search}" as new member
                   </button>
                 </div>
@@ -225,9 +225,9 @@ export default function CustomerPanel() {
                   vip:       {bg:'#fef9c3', color:'#ca8a04'},
                   silver:    {bg:'#f1f5f9', color:'#64748b'},
                   gold:      {bg:'#fffbeb', color:'#d97706'},
-                  platinum:  {bg:'#E6F0FF', color:'#006AFF'},
+                  platinum:  {bg:'#eef0fc', color:'#5E6AD2'},
                 }
-                const ts = TIER_STYLE[c.tier] || TIER_STYLE[c.type] || {bg:'#E6F0FF',color:'#006AFF'}
+                const ts = TIER_STYLE[c.tier] || TIER_STYLE[c.type] || {bg:'#eef0fc',color:'#5E6AD2'}
                 return (
                   <div key={c.id}
                     className="w-full flex items-center gap-2 px-4 py-3 border-none text-left transition-all hover:bg-blue-50"
@@ -256,7 +256,7 @@ export default function CustomerPanel() {
                         <div className="flex gap-2 mt-1 flex-wrap">
                           {c.loyalty_points > 0 && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                              style={{background:'#fdf4ff', color:'#006AFF'}}>
+                              style={{background:'#fdf4ff', color:'#5E6AD2'}}>
                               💎 {c.loyalty_points} pts
                             </span>
                           )}

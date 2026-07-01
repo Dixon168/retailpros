@@ -141,7 +141,7 @@ export default function DiscountPanel() {
           </div>
           <div className="text-center">
             <div className="text-[10px] text-[#999999]">Discount</div>
-            <div className="text-[13px] font-bold text-[#CF1322] font-mono">
+            <div className="text-[13px] font-bold text-[#dc2626] font-mono">
               -${discAmt.toFixed(2)}
             </div>
           </div>

@@ -4,9 +4,9 @@ import { useCartStore } from '@/stores/cartStore'
 import { PhotoViewer } from '@/components/ui/ProductPhoto'
 
 const TYPE_BADGE = {
-  weight:     { bg: '#dcfce7', color: '#16a34a', label: 'LB' },
+  weight:     { bg: '#d1fae5', color: '#16a34a', label: 'LB' },
   serialized: { bg: '#fef9c3', color: '#ca8a04', label: 'SN' },
-  service:    { bg: '#ede9fe', color: '#006AFF', label: 'SVC' },
+  service:    { bg: '#ede9fe', color: '#5E6AD2', label: 'SVC' },
 }
 
 export default function ProductGrid({ products, highlightId, onPhotoClick }) {
@@ -89,9 +89,9 @@ function ProductCard({ product, onAdd, onPhotoClick, highlighted, cardRef }) {
                    : 'ok'
 
   const stockBadge = {
-    out:  { bg:'#FEE2E2', color:'#CF1322', label: qty < 0 ? `${qty}` : 'OUT', dot:'#CF1322' },
+    out:  { bg:'#FEE2E2', color:'#dc2626', label: qty < 0 ? `${qty}` : 'OUT', dot:'#dc2626' },
     low:  { bg:'#FEF3C7', color:'#B45309', label:`Only ${qty}`, dot:'#F59E0B' },
-    ok:   { bg:'#DCFCE7', color:'#15803D', label:String(qty), dot:'#15803D' },
+    ok:   { bg:'#d1fae5', color:'#059669', label:String(qty), dot:'#059669' },
     untracked: null,
   }[stockState]
 
@@ -142,14 +142,14 @@ function ProductCard({ product, onAdd, onPhotoClick, highlighted, cardRef }) {
       className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer group relative"
       style={{
         background:'#fff',
-        border: highlighted ? '3px solid #006AFF' : '1.5px solid #e2e8f0',
+        border: highlighted ? '3px solid #5E6AD2' : '1.5px solid #e2e8f0',
         boxShadow: highlighted
           ? '0 0 0 4px rgba(0,106,255,0.18), 0 4px 12px rgba(0,106,255,0.3)'
           : '0 1px 3px rgba(0,0,0,0.06)',
         transform: highlighted ? 'scale(1.04)' : 'scale(1)',
         zIndex: highlighted ? 5 : 1,
       }}
-      onMouseEnter={e => !highlighted && (e.currentTarget.style.borderColor='#006AFF')}
+      onMouseEnter={e => !highlighted && (e.currentTarget.style.borderColor='#5E6AD2')}
       onMouseLeave={e => !highlighted && (e.currentTarget.style.borderColor='#e2e8f0')}>
 
       {/* Scan flash overlay — fades out */}
@@ -162,7 +162,7 @@ function ProductCard({ product, onAdd, onPhotoClick, highlighted, cardRef }) {
       )}
       {highlighted && (
         <div className="absolute -top-1 -right-1 z-30 px-2 py-0.5 rounded-full text-[9px] font-bold text-white"
-          style={{background:'#006AFF', boxShadow:'0 2px 6px rgba(0,106,255,0.5)'}}>
+          style={{background:'#5E6AD2', boxShadow:'0 2px 6px rgba(0,106,255,0.5)'}}>
           📷 Scanned
         </div>
       )}

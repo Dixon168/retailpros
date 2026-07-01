@@ -82,7 +82,7 @@ export default function OverviewTab({ customer }) {
                     <span className="text-[15px]">💰</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] text-[#1F1F1F]">
-                        <span className="font-bold text-[#15803D]">Paid ${(p.amount || 0).toFixed(2)}</span>
+                        <span className="font-bold text-[#059669]">Paid ${(p.amount || 0).toFixed(2)}</span>
                         <span className="text-[#999]"> · {PAYMENT_METHOD_LABELS[p.payment_method] || p.payment_method}</span>
                         {p.reference_number && <span className="text-[#999]"> · Ref: {p.reference_number}</span>}
                       </div>
@@ -101,11 +101,11 @@ export default function OverviewTab({ customer }) {
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] text-[#1F1F1F]">
                       <span className="font-bold">Invoiced ${(inv.total || 0).toFixed(2)}</span>
-                      {inv.status === 'paid' && <span className="ml-1.5 text-[10px] font-bold text-[#15803D]">PAID</span>}
+                      {inv.status === 'paid' && <span className="ml-1.5 text-[10px] font-bold text-[#059669]">PAID</span>}
                       {inv.status === 'partial' && <span className="ml-1.5 text-[10px] font-bold text-[#B45309]">PARTIAL</span>}
                       {inv.status === 'void' && <span className="ml-1.5 text-[10px] font-bold text-[#999]">VOID</span>}
                       {(inv.balance_due || 0) > 0 && inv.status !== 'paid' && (
-                        <span className="ml-1.5 text-[10px] text-[#CF1322]">Balance ${inv.balance_due.toFixed(2)}</span>
+                        <span className="ml-1.5 text-[10px] text-[#dc2626]">Balance ${inv.balance_due.toFixed(2)}</span>
                       )}
                     </div>
                     <div className="text-[10px] text-[#999] font-mono">{inv.invoice_number}</div>

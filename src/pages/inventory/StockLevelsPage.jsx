@@ -216,12 +216,12 @@ export default function StockLevelsPage() {
         <div>
           <div className="text-[22px] font-bold text-[#1F1F1F]">📦 Stock Center</div>
           <div className="text-[12px] text-[#666] mt-1">
-            Total {summary.total} · Need attention <span className="text-[#CF1322] font-bold">{summary.attention}</span> · Normal <span className="text-[#15803D] font-bold">{summary.normal}</span>
+            Total {summary.total} · Need attention <span className="text-[#dc2626] font-bold">{summary.attention}</span> · Normal <span className="text-[#059669] font-bold">{summary.normal}</span>
           </div>
         </div>
         <button onClick={() => window.location.href = '/smart-receive'}
           className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           🤖 Smart Receive
         </button>
       </div>
@@ -230,7 +230,7 @@ export default function StockLevelsPage() {
       <div className="relative mb-3">
         <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
           placeholder="🔍 Search by name or SKU (type 2+ characters)..."
-          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
+          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#5E6AD2]"/>
         {searchInput && (
           <button onClick={() => { setSearchInput(''); setSearch('') }}
             className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-[12px] cursor-pointer"
@@ -255,8 +255,8 @@ export default function StockLevelsPage() {
           className="border rounded-lg px-3 py-2 text-[12px] font-bold outline-none cursor-pointer"
           style={{
             background:'#FFFFFF',
-            color: categoryId ? '#006AFF' : '#1F1F1F',
-            borderColor: categoryId ? '#006AFF' : '#E5E5E5'
+            color: categoryId ? '#5E6AD2' : '#1F1F1F',
+            borderColor: categoryId ? '#5E6AD2' : '#E5E5E5'
           }}>
           <option value="">📁 All categories</option>
           {categories.map(c => <option key={c.id} value={c.id}>📁 {c.name}</option>)}
@@ -277,17 +277,17 @@ export default function StockLevelsPage() {
         <div className="mb-3 text-[12px] text-[#666] flex items-center gap-2 flex-wrap">
           <span className="font-bold">Showing:</span>
           {search && (
-            <span className="px-2 py-1 rounded font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>
+            <span className="px-2 py-1 rounded font-bold" style={{background:'#eef0fc', color:'#5E6AD2'}}>
               🔍 "{search}"
             </span>
           )}
           {categoryId && (
-            <span className="px-2 py-1 rounded font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>
+            <span className="px-2 py-1 rounded font-bold" style={{background:'#eef0fc', color:'#5E6AD2'}}>
               📁 {categories.find(c => c.id === categoryId)?.name}
             </span>
           )}
           <button onClick={() => { setSearchInput(''); setSearch(''); setCategoryId(''); setTab('attention') }}
-            className="text-[#CF1322] font-bold cursor-pointer hover:underline"
+            className="text-[#dc2626] font-bold cursor-pointer hover:underline"
             style={{background:'none', border:'none', padding:0}}>
             Clear
           </button>
@@ -297,9 +297,9 @@ export default function StockLevelsPage() {
       {/* Selection action bar (shows when items selected) */}
       {selectedIds.size > 0 && (
         <div className="mb-3 rounded-xl px-4 py-3 flex items-center gap-3"
-          style={{background:'#E6F0FF', border:'1px solid #006AFF'}}>
+          style={{background:'#eef0fc', border:'1px solid #5E6AD2'}}>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-[#006AFF]">
+            <div className="text-[13px] font-bold text-[#5E6AD2]">
               {selectedIds.size} item{selectedIds.size === 1 ? '' : 's'} selected
             </div>
             <div className="text-[11px] text-[#666]">
@@ -313,7 +313,7 @@ export default function StockLevelsPage() {
           </button>
           <button onClick={() => setShowCreatePO(true)}
             className="rounded-lg px-4 py-2 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
             📋 Create Purchase Order →
           </button>
         </div>
@@ -441,8 +441,8 @@ function TabBtn({ active, onClick, count, alert, children }) {
     <button onClick={onClick}
       className="px-3 py-2 rounded-lg text-[13px] font-bold cursor-pointer active:scale-[0.96] transition-all"
       style={active
-        ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
-        : { background:'#FFFFFF', color: alert ? '#CF1322' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
+        ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
+        : { background:'#FFFFFF', color: alert ? '#dc2626' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
       {children} <span className="ml-1 opacity-75">({count})</span>
     </button>
   )
@@ -479,7 +479,7 @@ function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen, 
       {hasMore && (
         <button onClick={() => setVisibleCount(c => c + 100)}
           className="w-full px-4 py-3 text-[13px] font-bold cursor-pointer active:scale-[0.99]"
-          style={{background:'#F5F5F5', color:'#006AFF', border:'none', borderTop:'1px solid #E5E5E5'}}>
+          style={{background:'#F5F5F5', color:'#5E6AD2', border:'none', borderTop:'1px solid #E5E5E5'}}>
           Show 100 more · {rows.length - visibleCount} remaining
         </button>
       )}
@@ -490,21 +490,21 @@ function VirtualList({ rows, classify, onQuickAdjust, onSet, onHistory, onOpen, 
 // ────────────────────────────────────────────────
 function StockRow({ product, cls, onQuickAdjust, onSet, onHistory, onOpen, isLast, isSelected, onToggleSelect }) {
   const badge = {
-    negative: { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: `${product.qty}` },
-    oos:      { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: 'Out' },
+    negative: { bg:'#FEE2E2', color:'#dc2626', dot:'#dc2626', label: `${product.qty}` },
+    oos:      { bg:'#FEE2E2', color:'#dc2626', dot:'#dc2626', label: 'Out' },
     low:      { bg:'#FEF3C7', color:'#B45309', dot:'#F59E0B', label: `${product.qty}` },
-    normal:   { bg:'#DCFCE7', color:'#15803D', dot:'#15803D', label: `${product.qty}` },
+    normal:   { bg:'#d1fae5', color:'#059669', dot:'#059669', label: `${product.qty}` },
   }[cls]
 
   return (
     <div className={`flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors ${!isLast ? 'border-b border-[#E5E5E5]' : ''}`}
-      style={isSelected ? { background:'#E6F0FF' } : {}}>
+      style={isSelected ? { background:'#eef0fc' } : {}}>
       {/* Checkbox for batch PO selection */}
       {onToggleSelect && (
         <button onClick={(e) => { e.stopPropagation(); onToggleSelect() }}
           className="w-5 h-5 rounded flex items-center justify-center cursor-pointer flex-shrink-0 transition-all"
           style={isSelected
-            ? { background:'#006AFF', border:'2px solid #006AFF', color:'#FFFFFF' }
+            ? { background:'#5E6AD2', border:'2px solid #5E6AD2', color:'#FFFFFF' }
             : { background:'#FFFFFF', border:'2px solid #E5E5E5', color:'transparent' }}>
           <span className="text-[11px] font-bold leading-none">✓</span>
         </button>
@@ -602,7 +602,7 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
                 kbTitle="New Stock Quantity" placeholder="0"/>
               {change !== 0 && (
                 <div className="mt-1.5 text-[12px] font-bold font-mono"
-                  style={{color: change > 0 ? '#15803D' : '#CF1322'}}>
+                  style={{color: change > 0 ? '#059669' : '#dc2626'}}>
                   Difference: {change > 0 ? '+' : ''}{change}
                 </div>
               )}
@@ -616,7 +616,7 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
                   <button key={r} type="button" onClick={() => setReason(reason === r ? '' : r)}
                     className="px-2 py-2 rounded-lg text-[11px] font-semibold cursor-pointer active:scale-[0.96]"
                     style={reason === r
-                      ? {background:'#E6F0FF', border:'1px solid #006AFF', color:'#006AFF'}
+                      ? {background:'#eef0fc', border:'1px solid #5E6AD2', color:'#5E6AD2'}
                       : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
                     {r}
                   </button>
@@ -640,7 +640,7 @@ function AdjustModal({ product, currentQty, tenantId, storeId, userId, onClose, 
             </button>
             <button onClick={save} disabled={saving || newQty === String(currentQty)}
               className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40 active:scale-[0.98]"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               {saving ? 'Saving...' : 'Save Adjustment'}
             </button>
           </div>
@@ -703,7 +703,7 @@ function HistoryModal({ product, tenantId, onClose }) {
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] font-bold font-mono"
-                          style={{color: isPositive ? '#15803D' : '#CF1322'}}>
+                          style={{color: isPositive ? '#059669' : '#dc2626'}}>
                           {isPositive ? '+' : ''}{h.qty_change}
                         </span>
                         <span className="text-[11px] text-[#666] font-mono">
@@ -717,7 +717,7 @@ function HistoryModal({ product, tenantId, onClose }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       {h.reason && (
                         <span className="text-[10px] px-2 py-0.5 rounded font-semibold"
-                          style={{background:'#E6F0FF', color:'#006AFF'}}>
+                          style={{background:'#eef0fc', color:'#5E6AD2'}}>
                           {h.reason}
                         </span>
                       )}

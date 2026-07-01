@@ -97,17 +97,17 @@ export default function ARAgingPage() {
 
       {/* Summary buckets */}
       <div className="grid grid-cols-5 gap-3 mb-4">
-        <BucketCard label="Current" amount={totals.current} note="Not yet due" color="#15803D"/>
+        <BucketCard label="Current" amount={totals.current} note="Not yet due" color="#059669"/>
         <BucketCard label="1–30 days" amount={totals.b1_30} note="Past due" color="#F59E0B"/>
         <BucketCard label="31–60 days" amount={totals.b31_60} note="Late" color="#F59E0B"/>
-        <BucketCard label="61–90 days" amount={totals.b61_90} note="Very late" color="#CF1322"/>
-        <BucketCard label="90+ days" amount={totals.b90_plus} note="Critical" color="#CF1322"/>
+        <BucketCard label="61–90 days" amount={totals.b61_90} note="Very late" color="#dc2626"/>
+        <BucketCard label="90+ days" amount={totals.b90_plus} note="Critical" color="#dc2626"/>
       </div>
       <div className="rounded-xl p-4 mb-4 flex items-center justify-between"
         style={{background:'#FAFAFA', border:'1px solid #E5E5E5'}}>
         <span className="text-[13px] font-bold text-[#1F1F1F]">Total outstanding</span>
         <span className="font-mono text-[24px] font-bold"
-          style={{color: totals.total > 0 ? '#CF1322' : '#15803D'}}>
+          style={{color: totals.total > 0 ? '#dc2626' : '#059669'}}>
           ${totals.total.toFixed(2)}
         </span>
       </div>
@@ -116,7 +116,7 @@ export default function ARAgingPage() {
       <div className="mb-3 flex gap-2 items-center flex-wrap">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search company..."
-          className="flex-1 min-w-[200px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#006AFF]"/>
+          className="flex-1 min-w-[200px] bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#5E6AD2]"/>
         <label className="flex items-center gap-2 text-[12px] cursor-pointer text-[#1F1F1F]">
           <input type="checkbox" checked={showOnlyOwing} onChange={e => setShowOnlyOwing(e.target.checked)}
             className="cursor-pointer accent-blue-500"/>
@@ -136,7 +136,7 @@ export default function ARAgingPage() {
             {rows.length === 0 ? 'No customer data' : showOnlyOwing ? '✅ No outstanding balances!' : 'No customers match search'}
           </div>
           {rows.length > 0 && showOnlyOwing && totals.total === 0 && (
-            <div className="text-[12px] text-[#15803D] mt-1">All your invoices are paid 🎉</div>
+            <div className="text-[12px] text-[#059669] mt-1">All your invoices are paid 🎉</div>
           )}
         </div>
       ) : (
@@ -164,7 +164,7 @@ export default function ARAgingPage() {
                   )}
                   {oldest > 0 && (
                     <div className="text-[9px] font-bold mt-0.5"
-                      style={{color: oldest > 60 ? '#CF1322' : '#B45309'}}>
+                      style={{color: oldest > 60 ? '#dc2626' : '#B45309'}}>
                       ⚠️ Oldest {oldest}d overdue
                     </div>
                   )}
@@ -173,19 +173,19 @@ export default function ARAgingPage() {
                 <Cell>{(r.bucket_current  || 0) > 0 ? `$${(r.bucket_current  || 0).toFixed(0)}` : '—'}</Cell>
                 <Cell color={(r.bucket_1_30    || 0) > 0 ? '#B45309' : '#999'}>{(r.bucket_1_30    || 0) > 0 ? `$${(r.bucket_1_30    || 0).toFixed(0)}` : '—'}</Cell>
                 <Cell color={(r.bucket_31_60   || 0) > 0 ? '#B45309' : '#999'}>{(r.bucket_31_60   || 0) > 0 ? `$${(r.bucket_31_60   || 0).toFixed(0)}` : '—'}</Cell>
-                <Cell color={(r.bucket_61_90   || 0) > 0 ? '#CF1322' : '#999'}>{(r.bucket_61_90   || 0) > 0 ? `$${(r.bucket_61_90   || 0).toFixed(0)}` : '—'}</Cell>
-                <Cell color={(r.bucket_90_plus || 0) > 0 ? '#CF1322' : '#999'} bold={isCritical}>
+                <Cell color={(r.bucket_61_90   || 0) > 0 ? '#dc2626' : '#999'}>{(r.bucket_61_90   || 0) > 0 ? `$${(r.bucket_61_90   || 0).toFixed(0)}` : '—'}</Cell>
+                <Cell color={(r.bucket_90_plus || 0) > 0 ? '#dc2626' : '#999'} bold={isCritical}>
                   {(r.bucket_90_plus || 0) > 0 ? `$${(r.bucket_90_plus || 0).toFixed(0)}` : '—'}
                 </Cell>
                 <div className="px-2.5 py-3 text-right font-mono text-[14px] font-bold"
-                  style={{color: owesMoney ? (isCritical ? '#CF1322' : '#1F1F1F') : '#15803D'}}>
+                  style={{color: owesMoney ? (isCritical ? '#dc2626' : '#1F1F1F') : '#059669'}}>
                   ${(r.total_owed || 0).toFixed(2)}
                 </div>
                 <div className="px-2 py-3">
                   {owesMoney && (
                     <button onClick={() => setReceiveFor(r)}
                       className="w-full rounded px-2 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                      style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+                      style={{background:'#059669', color:'#FFFFFF', border:'none'}}>
                       💰 Pay
                     </button>
                   )}

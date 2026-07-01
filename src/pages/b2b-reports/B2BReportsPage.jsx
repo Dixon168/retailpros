@@ -179,7 +179,7 @@ function Revenue({ invoices, exportCSV }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <Stat label="Invoiced"    value={`$${totalInvoiced.toFixed(2)}`} sub={`${sent.length} invoices`} color="#006AFF"/>
+        <Stat label="Invoiced"    value={`$${totalInvoiced.toFixed(2)}`} sub={`${sent.length} invoices`} color="#5E6AD2"/>
         <Stat label="Collected"   value={`$${totalPaid.toFixed(2)}`}     sub={`${paidPct.toFixed(0)}% of invoiced`}    color="#16a34a"/>
         <Stat label="Outstanding" value={`$${outstanding.toFixed(2)}`}   sub={sent.filter(i=>i.balance_due>0).length + ' unpaid'} color="#dc2626"/>
       </div>
@@ -189,7 +189,7 @@ function Revenue({ invoices, exportCSV }) {
           <div className="text-[13px] font-bold">Daily Revenue</div>
           <button onClick={() => exportCSV(rows, `b2b-revenue-${format(new Date(),'yyyyMMdd')}.csv`)}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             📥 Export CSV
           </button>
         </div>
@@ -243,7 +243,7 @@ function Customers({ invoices, exportCSV }) {
         <div className="text-[13px] font-bold">Top Customers — {rows.length} companies</div>
         <button onClick={() => exportCSV(rows.map(({id,...r})=>r), `b2b-customers-${format(new Date(),'yyyyMMdd')}.csv`)}
           className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           📥 Export CSV
         </button>
       </div>
@@ -326,7 +326,7 @@ function Aging({ invoices, exportCSV }) {
           <div className="text-[13px] font-bold">{rows.length} Unpaid Invoices</div>
           <button onClick={() => exportCSV(rows, `b2b-aging-${format(new Date(),'yyyyMMdd')}.csv`)}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             📥 Export CSV
           </button>
         </div>
@@ -376,7 +376,7 @@ function Estimates({ estimates, exportCSV }) {
       <div className="grid grid-cols-4 gap-3">
         {['draft', 'sent', 'accepted', 'converted'].map(status => {
           const s = byStatus[status] || { count: 0, total: 0 }
-          const color = status==='converted'?'#16a34a' : status==='accepted'?'#006AFF' : status==='sent'?'#f59e0b' : '#94a3b8'
+          const color = status==='converted'?'#16a34a' : status==='accepted'?'#5E6AD2' : status==='sent'?'#f59e0b' : '#94a3b8'
           return (
             <div key={status} className="rounded-2xl p-3" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
               <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{status}</div>
@@ -395,7 +395,7 @@ function Estimates({ estimates, exportCSV }) {
               total: e.total, date: e.created_at,
             })), `b2b-estimates-${format(new Date(),'yyyyMMdd')}.csv`)}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             📥 Export CSV
           </button>
         </div>
@@ -419,7 +419,7 @@ function Estimates({ estimates, exportCSV }) {
                 <td className="px-4 py-2">
                   <span className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase"
                     style={{
-                      background: e.status==='converted'?'#dcfce7' : e.status==='accepted'?'#dbeafe' : e.status==='sent'?'#fef3c7' : '#f1f5f9',
+                      background: e.status==='converted'?'#d1fae5' : e.status==='accepted'?'#dbeafe' : e.status==='sent'?'#fef3c7' : '#f1f5f9',
                       color:      e.status==='converted'?'#166534' : e.status==='accepted'?'#1e40af' : e.status==='sent'?'#854d0e' : '#475569',
                     }}>
                     {e.status}
@@ -450,7 +450,7 @@ function Payments({ payments, exportCSV }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Total Received" value={`$${totalReceived.toFixed(2)}`} sub={`${payments.length} payments`} color="#16a34a"/>
-        <Stat label="Avg Payment" value={`$${payments.length > 0 ? (totalReceived/payments.length).toFixed(2) : '0.00'}`} sub="—" color="#006AFF"/>
+        <Stat label="Avg Payment" value={`$${payments.length > 0 ? (totalReceived/payments.length).toFixed(2) : '0.00'}`} sub="—" color="#5E6AD2"/>
       </div>
 
       <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
@@ -465,7 +465,7 @@ function Payments({ payments, exportCSV }) {
                   <span className="font-mono font-bold">${amt.toFixed(2)} ({pct.toFixed(0)}%)</span>
                 </div>
                 <div className="h-1.5 rounded-full" style={{background:'#f1f5f9'}}>
-                  <div className="h-full rounded-full" style={{width:`${pct}%`, background:'#006AFF'}}/>
+                  <div className="h-full rounded-full" style={{width:`${pct}%`, background:'#5E6AD2'}}/>
                 </div>
               </div>
             )
@@ -481,7 +481,7 @@ function Payments({ payments, exportCSV }) {
               amount: p.amount, method: p.method, date: p.payment_date,
             })), `b2b-payments-${format(new Date(),'yyyyMMdd')}.csv`)}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             📥 Export CSV
           </button>
         </div>
@@ -514,7 +514,7 @@ function Payments({ payments, exportCSV }) {
   )
 }
 
-function Stat({ label, value, sub, color = '#006AFF', small = false }) {
+function Stat({ label, value, sub, color = '#5E6AD2', small = false }) {
   return (
     <div className="rounded-2xl p-3.5" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
       <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{label}</div>

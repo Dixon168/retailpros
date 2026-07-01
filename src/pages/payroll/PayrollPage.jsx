@@ -194,12 +194,12 @@ export default function PayrollPage() {
           <div key={emp.id} className="bg-[#FFFFFF] rounded-2xl mb-3" style={{border:'1px solid #E5E5E5'}}>
             <div className="flex items-center gap-3 px-4 py-3" style={{borderBottom:'1px solid #F1F5F9'}}>
               <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[14px] font-bold text-white"
-                style={{background:'#006AFF'}}>{emp.name.charAt(0)}</div>
+                style={{background:'#5E6AD2'}}>{emp.name.charAt(0)}</div>
               <div className="flex-1">
                 <div className="text-[14px] font-bold flex items-center gap-2">
                   {emp.name}
                   {emp.openEntries > 0 && (
-                    <span className="rounded-full px-2 py-0.5 text-[9px] font-bold animate-pulse" style={{background:'#dcfce7', color:'#15803d'}}>
+                    <span className="rounded-full px-2 py-0.5 text-[9px] font-bold animate-pulse" style={{background:'#d1fae5', color:'#059669'}}>
                       ⏰ Clocked in
                     </span>
                   )}
@@ -307,7 +307,7 @@ function EntryRow({ e, editorId, onEditTimes, onSaved }) {
           <input value={noteText} onChange={ev=>setNoteText(ev.target.value)}
             autoFocus placeholder="Reason / note for this entry…"
             onKeyDown={ev=>{ if(ev.key==='Enter') saveNote() }}
-            className="flex-1 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-[#006AFF]"
+            className="flex-1 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-[#5E6AD2]"
             style={{border:'1.5px solid #E5E5E5'}}/>
           <button onClick={saveNote} disabled={saving}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white cursor-pointer border-none disabled:opacity-50"

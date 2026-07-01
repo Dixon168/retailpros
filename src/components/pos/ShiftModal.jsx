@@ -158,7 +158,7 @@ export function CloseShiftModal({ onClose }) {
               Cancel
             </button>
             <button onClick={handleClose} disabled={loading || !amount}
-              className="flex-[2] bg-[#006AFF]
+              className="flex-[2] bg-[#5E6AD2]
                 border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white
                 disabled:opacity-40">
               {loading ? '⏳ Closing...' : '✓ Close Shift & Print Report'}

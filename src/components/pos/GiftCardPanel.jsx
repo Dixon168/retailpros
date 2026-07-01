@@ -43,7 +43,7 @@ export default function GiftCardPanel({ onClose }) {
             <button key={t.id} onClick={()=>setTab(t.id)}
               className="flex-1 px-3 py-3 text-[12px] font-bold cursor-pointer border-none transition-all"
               style={tab===t.id
-                ? { background:'#FFFFFF', color:'#006AFF', borderBottom:'3px solid #006AFF', marginBottom:'-1px' }
+                ? { background:'#FFFFFF', color:'#5E6AD2', borderBottom:'3px solid #5E6AD2', marginBottom:'-1px' }
                 : { background:'transparent', color:'#666' }}>
               <span className="mr-1">{t.icon}</span>{t.label}
             </button>
@@ -184,7 +184,7 @@ function LoadTab({ tenant, user, onDone }) {
         <div className="mt-5 flex gap-2 justify-center">
           <button onClick={reset}
             className="rounded-lg px-4 py-2.5 text-[12px] font-bold cursor-pointer border-none"
-            style={{background:'#006AFF', color:'#FFFFFF'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF'}}>
             + Another Card
           </button>
           <button onClick={onDone}
@@ -211,10 +211,10 @@ function LoadTab({ tenant, user, onDone }) {
             onKeyDown={e=>{ if(e.key==='Enter') doFind() }}
             placeholder="GC-12345678 or scan"
             className="flex-1 rounded-lg px-3 py-3 text-[16px] outline-none font-mono font-bold tracking-wider"
-            style={{border:'2px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+            style={{border:'2px solid #dee2f8', background:'#FFFFFF', color:'#1F1F1F'}}/>
           <button onClick={doFind} disabled={finding || !card}
             className="rounded-lg px-5 py-3 text-[13px] font-bold cursor-pointer border-none disabled:opacity-50"
-            style={{background:'#006AFF', color:'#FFFFFF'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF'}}>
             {finding ? '...' : 'Continue →'}
           </button>
         </div>
@@ -248,14 +248,14 @@ function LoadTab({ tenant, user, onDone }) {
             <button onClick={()=>setCardType('gift')}
               className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer border-2 transition-all"
               style={cardType==='gift'
-                ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                ? {background:'#5E6AD2', color:'#fff', borderColor:'#5E6AD2'}
                 : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
               🎁 Gift Card
             </button>
             <button onClick={()=>setCardType('member')}
               className="flex-1 rounded-lg py-2.5 text-[13px] font-bold cursor-pointer border-2 transition-all"
               style={cardType==='member'
-                ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                ? {background:'#5E6AD2', color:'#fff', borderColor:'#5E6AD2'}
                 : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
               👤 Member Card
             </button>
@@ -277,7 +277,7 @@ function LoadTab({ tenant, user, onDone }) {
           {[10,25,50,100,200].map(v=>(
             <button key={v} onClick={()=>setTopup(String(v))}
               className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer"
-              style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #80B2FF'}}>
+              style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #dee2f8'}}>
               ${v}
             </button>
           ))}
@@ -301,7 +301,7 @@ function LoadTab({ tenant, user, onDone }) {
       {/* Bonus indicator */}
       {bonus > 0 && (
         <div className="rounded-lg px-3 py-2 text-[12px] text-center font-bold"
-          style={{background:'#dcfce7', color:'#166534', border:'1px solid #86efac'}}>
+          style={{background:'#d1fae5', color:'#166534', border:'1px solid #86efac'}}>
           🎁 Promo bonus: customer gets ${bonus.toFixed(2)} free
         </div>
       )}
@@ -370,7 +370,7 @@ function LoadTab({ tenant, user, onDone }) {
         </button>
         <button onClick={submit} disabled={saving || !topupAmt}
           className="flex-[2] rounded-lg py-3 text-[14px] font-bold cursor-pointer border-none disabled:opacity-50"
-          style={{background:'#006AFF', color:'#FFFFFF'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF'}}>
           {saving ? 'Saving...'
             : `🛒 Add to Order $${parseFloat(payAmt || topupAmt || 0).toFixed(2)}`}
         </button>
@@ -417,17 +417,17 @@ function LookupTab({ tenant }) {
           onKeyDown={e=>{ if(e.key==='Enter') submit() }}
           placeholder="GC-12345678 or scan"
           className="flex-1 rounded-lg px-3 py-3 text-[15px] outline-none font-mono font-bold tracking-wider"
-          style={{border:'2px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+          style={{border:'2px solid #dee2f8', background:'#FFFFFF', color:'#1F1F1F'}}/>
         <button onClick={submit} disabled={lookingUp || !card}
           className="rounded-lg px-5 py-3 text-[13px] font-bold cursor-pointer border-none disabled:opacity-50"
-          style={{background:'#006AFF', color:'#FFFFFF'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF'}}>
           {lookingUp ? '...' : '🔍 Look up'}
         </button>
       </div>
 
       {error && (
         <div className="rounded-lg px-3 py-3 text-[13px] flex items-center gap-2"
-          style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FCA5A5'}}>
+          style={{background:'#FEE2E2', color:'#dc2626', border:'1px solid #FCA5A5'}}>
           <span>⚠️</span><span><b>Not found</b> — {error}</span>
         </div>
       )}
@@ -471,9 +471,9 @@ function HistoryTab({ tenant }) {
   })
 
   const TYPE = {
-    issue:  { icon:'🎁', label:'Issued',   color:'#006AFF' },
+    issue:  { icon:'🎁', label:'Issued',   color:'#5E6AD2' },
     redeem: { icon:'💳', label:'Redeemed', color:'#dc2626' },
-    topup:  { icon:'⬆️', label:'Top-up',   color:'#15803d' },
+    topup:  { icon:'⬆️', label:'Top-up',   color:'#059669' },
     refund: { icon:'↩️', label:'Refund',   color:'#7c3aed' },
     void:   { icon:'🚫', label:'Voided',   color:'#64748b' },
     adjust: { icon:'⚖️', label:'Adjust',   color:'#ca8a04' },
@@ -490,10 +490,10 @@ function HistoryTab({ tenant }) {
               onKeyDown={e=>{ if(e.key==='Enter') doLookup() }}
               placeholder="GC-12345678 or scan"
               className="flex-1 rounded-lg px-3 py-3 text-[15px] outline-none font-mono font-bold tracking-wider"
-              style={{border:'2px solid #80B2FF', background:'#FFFFFF', color:'#1F1F1F'}}/>
+              style={{border:'2px solid #dee2f8', background:'#FFFFFF', color:'#1F1F1F'}}/>
             <button onClick={doLookup} disabled={!card}
               className="rounded-lg px-5 py-3 text-[13px] font-bold cursor-pointer border-none disabled:opacity-50"
-              style={{background:'#006AFF', color:'#FFFFFF'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF'}}>
               View History
             </button>
           </div>
@@ -546,7 +546,7 @@ function HistoryTab({ tenant }) {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="text-[13px] font-bold font-mono"
-                      style={{color: positive ? '#15803d' : '#dc2626'}}>
+                      style={{color: positive ? '#059669' : '#dc2626'}}>
                       {positive ? '+' : ''}{Number(t.amount).toFixed(2)}
                     </div>
                     <div className="text-[9px] text-[#999] font-mono">bal: ${Number(t.balance_after).toFixed(2)}</div>
@@ -567,7 +567,7 @@ function HistoryTab({ tenant }) {
 // ──────────────────────────────────────────────────────────────
 function CardDetail({ card }) {
   const STATUS = {
-    active:   { label:'Active',   bg:'#dcfce7', color:'#15803d' },
+    active:   { label:'Active',   bg:'#d1fae5', color:'#059669' },
     depleted: { label:'Depleted', bg:'#f1f5f9', color:'#64748b' },
     expired:  { label:'Expired',  bg:'#f1f5f9', color:'#64748b' },
     voided:   { label:'Voided',   bg:'#fee2e2', color:'#dc2626' },

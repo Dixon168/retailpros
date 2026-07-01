@@ -32,7 +32,7 @@ const METHODS = [
   { id:'cash',          icon:'💵', label:'Cash',          color:'#16a34a', bg:'#f0fdf4', border:'#86efac' },
   { id:'credit_card',   icon:'💳', label:'Credit Card',   color:'#0f766e', bg:'#f0fdfa', border:'#5eead4' },
   { id:'card',          icon:'📱', label:'Card (PAX)',    color:'#2563eb', bg:'#eff6ff', border:'#93c5fd' },
-  { id:'member_card',   icon:'🏷️', label:'VIP',          color:'#006AFF', bg:'#fdf4ff', border:'#d8b4fe' },
+  { id:'member_card',   icon:'🏷️', label:'VIP',          color:'#5E6AD2', bg:'#fdf4ff', border:'#d8b4fe' },
   { id:'gift_card',     icon:'🎁', label:'Gift',          color:'#ea580c', bg:'#fff7ed', border:'#fed7aa' },
   { id:'bank_transfer', icon:'🏦', label:'Transfer',      color:'#0891b2', bg:'#f0f9ff', border:'#7dd3fc' },
   { id:'check',         icon:'📝', label:'Check',         color:'#ca8a04', bg:'#fffbeb', border:'#fde047' },
@@ -60,7 +60,7 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
         </div>
         {isDisc && (
           <div className="flex gap-2 px-5 pt-4">
-            {[['pct','% Percent','#006AFF','#E6F0FF'],['amt','$ Amount','#16a34a','#dcfce7']].map(([m,l,c,b])=>(
+            {[['pct','% Percent','#5E6AD2','#eef0fc'],['amt','$ Amount','#16a34a','#d1fae5']].map(([m,l,c,b])=>(
               <button key={m} onClick={()=>setDiscMode(m)}
                 className="flex-1 py-3 rounded-lg text-[14px] font-bold cursor-pointer border-2 transition-all"
                 style={discMode===m?{background:b,borderColor:c,color:c}:{background:'#f8fafc',borderColor:'#e2e8f0',color:'#94a3b8'}}>
@@ -71,9 +71,9 @@ function DiscountNumPad({ adjTab, discMode, setDiscMode, onConfirm, onClose }) {
         )}
         <div className="px-5 py-3">
           <div className="rounded-lg py-4 flex items-center justify-center gap-2"
-            style={{background:'#E6F0FF', border:'2px solid #80B2FF'}}>
+            style={{background:'#eef0fc', border:'2px solid #dee2f8'}}>
             {(!isDisc||discMode==='amt') && <span className="text-[26px] font-bold text-indigo-400">$</span>}
-            <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>{input||'0'}</span>
+            <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#5E6AD2'}}>{input||'0'}</span>
             {isDisc&&discMode==='pct' && <span className="text-[26px] font-bold text-indigo-400">%</span>}
           </div>
         </div>
@@ -129,9 +129,9 @@ function PointsRedeemNumPad({ customerPts, maxRedeemable, redeemRate, currentPoi
             <div className="text-[10px] font-bold text-[#92400e] uppercase tracking-wider">Available</div>
             <div className="text-[18px] font-bold text-[#B45309] font-mono">{customerPts.toLocaleString()}<span className="text-[11px] ml-1 font-normal">pts</span></div>
           </div>
-          <div className="rounded-lg px-3 py-2.5" style={{background:'#DCFCE7', border:'1px solid #86efac'}}>
+          <div className="rounded-lg px-3 py-2.5" style={{background:'#d1fae5', border:'1px solid #86efac'}}>
             <div className="text-[10px] font-bold text-[#166534] uppercase tracking-wider">Max usable now</div>
-            <div className="text-[18px] font-bold text-[#15803D] font-mono">{maxRedeemable.toLocaleString()}<span className="text-[11px] ml-1 font-normal">pts</span></div>
+            <div className="text-[18px] font-bold text-[#059669] font-mono">{maxRedeemable.toLocaleString()}<span className="text-[11px] ml-1 font-normal">pts</span></div>
           </div>
         </div>
         <div className="px-5 pb-1 text-[10px] text-slate-500">
@@ -149,7 +149,7 @@ function PointsRedeemNumPad({ customerPts, maxRedeemable, redeemRate, currentPoi
           <div className="text-center mt-2 text-[12px]">
             {ptsNum > 0 && !exceeds && (
               <span className="text-slate-600">
-                = <b className="text-[#15803D]">−${cashValue.toFixed(2)}</b> off
+                = <b className="text-[#059669]">−${cashValue.toFixed(2)}</b> off
                 <span className="text-slate-400 mx-1">·</span>
                 {remaining.toLocaleString()} pts left after
               </span>
@@ -173,7 +173,7 @@ function PointsRedeemNumPad({ customerPts, maxRedeemable, redeemRate, currentPoi
           ))}
           <button onClick={()=>setInput(String(maxRedeemable))}
             className="rounded-xl py-2.5 text-[12px] font-bold cursor-pointer border-2"
-            style={{background:'#DCFCE7', borderColor:'#86efac', color:'#15803D'}}>
+            style={{background:'#d1fae5', borderColor:'#86efac', color:'#059669'}}>
             Use Max
           </button>
           <button onClick={()=>setInput('')}
@@ -229,7 +229,7 @@ function CouponInputModal({ onConfirm, onClose }) {
             onKeyDown={e=>{ if(e.key==='Enter') submit() }}
             placeholder="SUMMER10"
             className="w-full rounded-lg px-4 py-3 text-[18px] outline-none font-mono font-bold tracking-wider text-center"
-            style={{border:'2px solid #80B2FF', background:'#E6F0FF', color:'#006AFF'}}/>
+            style={{border:'2px solid #dee2f8', background:'#eef0fc', color:'#5E6AD2'}}/>
           <div className="text-[10px] text-slate-400 mt-2 text-center">
             Codes are case-insensitive. Press Enter to apply.
           </div>
@@ -679,7 +679,7 @@ export default function PaymentPanel() {
                 ...(appliedCoupon ? [[`🎫 ${appliedCoupon.code}`, -couponDiscountAmt, '#c026d3', '#fdf4ff', true]] : []),
                 [taxExempt?'🏛️ Tax':'Tax', taxExempt?0:taxAmount, taxExempt?'#2563eb':'#64748b', taxExempt?'#eff6ff':'#fff', true],
                 ['🙏 Tip',     tip,               '#ca8a04', tip>0?'#fffbeb':'#fff', true],
-                [`💼 Fee`,     feeAmt,            '#006AFF', feeAmt>0?'#fdf4ff':'#fff', true],
+                [`💼 Fee`,     feeAmt,            '#5E6AD2', feeAmt>0?'#fdf4ff':'#fff', true],
               ].map(([label,val,color,bg])=>(
                 <div key={label} className="flex justify-between px-3 py-1.5 text-[11px]"
                   style={{borderBottom:'1px solid #f1f5f9', background:bg}}>
@@ -713,7 +713,7 @@ export default function PaymentPanel() {
               {[
                 ['disc','✂️','Discount','#16a34a','#f0fdf4', orderDiscount && orderDiscount.type !== 'points_cash' ?(orderDiscount.type==='pct'?`${orderDiscount.value}%`:`$${orderDiscount.value}`):null],
                 ['tip', '🙏','Tip',     '#ca8a04','#fffbeb', tip>0?`$${tip.toFixed(2)}`:null],
-                ['fee', '💼','Surcharge','#006AFF','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
+                ['fee', '💼','Surcharge','#5E6AD2','#fdf4ff', feeAmt>0?`$${feeAmt.toFixed(2)}`:null],
               ].map(([id,icon,label,col,bg,applied])=>(
                 <button key={id}
                   onClick={()=>{
@@ -776,7 +776,7 @@ export default function PaymentPanel() {
                     ? <span className="text-[9px] text-slate-400">no customer</span>
                     : customerPts < MIN_PTS
                       ? <span className="text-[9px] text-slate-400">{customerPts} pts</span>
-                      : <span className="text-[9px] text-[#15803D] font-bold">{customerPts} avail</span>
+                      : <span className="text-[9px] text-[#059669] font-bold">{customerPts} avail</span>
                 }
               </button>
               <button onClick={()=>setTaxExempt(!taxExempt)}
@@ -801,7 +801,7 @@ export default function PaymentPanel() {
 
               {/* ── ROW 1: PAX overlay (replaces amount area while running) ── */}
               {paxState!=='idle' && (
-                <div className="rounded-xl p-5 text-center" style={{background:'#E6F0FF', border:'2px solid #80B2FF', gridRow:'1 / span 4'}}>
+                <div className="rounded-xl p-5 text-center" style={{background:'#eef0fc', border:'2px solid #dee2f8', gridRow:'1 / span 4'}}>
                   <div className="text-[40px]">{PAX_STATE[paxState]?.icon}</div>
                   <div className="text-[15px] font-bold text-slate-800 mt-1">{PAX_STATE[paxState]?.label}</div>
                   <div className="text-[11px] text-slate-500 mt-0.5">via PAX terminal</div>
@@ -821,9 +821,9 @@ export default function PaymentPanel() {
                   <div className={`flex-shrink-0 grid gap-3 ${liveChange>0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     <button onClick={()=>setShowPayPad(true)}
                       className="rounded-xl px-4 py-3 text-left cursor-pointer border-2 transition-all"
-                      style={{borderColor:'#006AFF', background:'#EFF6FF'}}>
+                      style={{borderColor:'#5E6AD2', background:'#EFF6FF'}}>
                       <div className="text-[10px] font-bold text-slate-500">Payment #{payments.length+1} amount</div>
-                      <div className="text-[36px] font-bold font-mono leading-none mt-1" style={{color:'#006AFF'}}>
+                      <div className="text-[36px] font-bold font-mono leading-none mt-1" style={{color:'#5E6AD2'}}>
                         ${payInput||remaining.toFixed(2)}
                       </div>
                     </button>
@@ -848,7 +848,7 @@ export default function PaymentPanel() {
                       <button key={q} onClick={()=>setPayInput(q.toFixed(2))}
                         className="rounded-xl py-3 text-[16px] font-bold cursor-pointer border-2 transition-all"
                         style={isSel
-                          ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
+                          ? {background:'#5E6AD2', borderColor:'#5E6AD2', color:'#fff'}
                           : {background:'#fff', borderColor:'#cbd5e1', color:'#0f172a'}}>
                         ${q}
                       </button>
@@ -857,7 +857,7 @@ export default function PaymentPanel() {
                   <button onClick={()=>setPayInput(remaining.toFixed(2))}
                     className="rounded-xl py-2 text-[11px] font-bold cursor-pointer border-2 transition-all leading-tight"
                     style={parseFloat(payInput)===Number(remaining.toFixed(2))
-                      ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
+                      ? {background:'#5E6AD2', borderColor:'#5E6AD2', color:'#fff'}
                       : {background:'#FEF3C7', borderColor:'#FCD34D', color:'#92400E'}}>
                     Exact<br/>${remaining.toFixed(2)}
                   </button>
@@ -916,7 +916,7 @@ export default function PaymentPanel() {
               {paxState==='idle' && remaining>0 && (
                 <button onClick={handleAddPayment} disabled={processing}
                   className="w-full rounded-xl py-4 text-[17px] font-bold text-white cursor-pointer border-none disabled:opacity-50 transition-all flex-shrink-0"
-                  style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF', boxShadow:'0 6px 20px rgba(0,0,0,0.18)', gridRow:'5'}}>
+                  style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#5E6AD2', boxShadow:'0 6px 20px rgba(0,0,0,0.18)', gridRow:'5'}}>
                   {processing
                     ? '⏳ Processing...'
                     : `${METHODS.find(m=>m.id===selMethod)?.icon}  Add ${METHODS.find(m=>m.id===selMethod)?.label}  —  $${payInput||remaining.toFixed(2)}`}
@@ -933,7 +933,7 @@ export default function PaymentPanel() {
           <div className="px-3 py-2.5 flex-shrink-0"
             style={{background:'#f8fafc', borderBottom:'1px solid #f1f5f9'}}>
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Payments</div>
-            <div className="text-[12px] font-bold mt-0.5" style={{color:paid>=liveTotal?'#16a34a':'#006AFF'}}>
+            <div className="text-[12px] font-bold mt-0.5" style={{color:paid>=liveTotal?'#16a34a':'#5E6AD2'}}>
               {paid>=liveTotal?'✓ Paid':payments.length===0?'None yet':`$${paid.toFixed(2)} paid`}
             </div>
           </div>
@@ -1043,7 +1043,7 @@ export default function PaymentPanel() {
           style={{background:'rgba(0,0,0,0.4)', backdropFilter:'blur(2px)'}}>
           <div className="rounded-lg overflow-hidden shadow-xl" style={{width:'360px',background:'#fff'}}>
             <div className="px-5 py-4 flex items-center justify-between"
-              style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#006AFF'}}>
+              style={{background:METHODS.find(m=>m.id===selMethod)?.color||'#5E6AD2'}}>
               <div>
                 <div className="text-[12px] text-white/70">Payment {payments.length+1}</div>
                 <div className="text-[18px] font-bold text-white">{METHODS.find(m=>m.id===selMethod)?.icon} {METHODS.find(m=>m.id===selMethod)?.label}</div>
@@ -1053,9 +1053,9 @@ export default function PaymentPanel() {
             <div className="px-5 py-3">
               <div className="text-[11px] text-slate-400 mb-1">Remaining: ${remaining.toFixed(2)}</div>
               <div className="rounded-lg py-4 flex items-center justify-center gap-1"
-                style={{background:'#E6F0FF',border:'2px solid #80B2FF'}}>
+                style={{background:'#eef0fc',border:'2px solid #dee2f8'}}>
                 <span className="text-[26px] font-bold text-indigo-400">$</span>
-                <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#006AFF'}}>{payInput||'0'}</span>
+                <span className="text-[44px] font-bold font-mono leading-none" style={{color:'#5E6AD2'}}>{payInput||'0'}</span>
               </div>
             </div>
             <div className="px-4 pb-4 grid grid-cols-3 gap-2">
@@ -1278,7 +1278,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
                           ⚠️ +${quota.e_rate.toFixed(2)} overage
                         </div>
                       : <div className="text-[10px] px-2 py-0.5 rounded-full"
-                          style={{background:'#f0fdf4', color:'#15803d'}}>
+                          style={{background:'#f0fdf4', color:'#059669'}}>
                           ✓ Free ({quota.email_quota - quota.email_used} left)
                         </div>
                   )}
@@ -1296,7 +1296,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
                     className="rounded-lg px-5 text-[14px] font-semibold cursor-pointer disabled:opacity-40 active:scale-[0.98]"
                     style={done.emailed
                       ? { background:'#00B23B', color:'#FFFFFF', border:'none', minWidth:'90px' }
-                      : { background:'#006AFF', color:'#FFFFFF', border:'none', minWidth:'90px' }}>
+                      : { background:'#5E6AD2', color:'#FFFFFF', border:'none', minWidth:'90px' }}>
                     {done.emailed ? 'Sent ✓' : 'Send'}
                   </button>
                 </div>
@@ -1314,7 +1314,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
                           ⚠️ +${quota.s_rate.toFixed(2)} overage
                         </div>
                       : <div className="text-[10px] px-2 py-0.5 rounded-full"
-                          style={{background:'#f0fdf4', color:'#15803d'}}>
+                          style={{background:'#f0fdf4', color:'#059669'}}>
                           ✓ Free ({quota.sms_quota - quota.sms_used} left)
                         </div>
                   )}
@@ -1332,7 +1332,7 @@ function ReceiptPromptModal({ html, orderNumber, settings, tenantId, customerId,
                     className="rounded-lg px-5 text-[14px] font-semibold cursor-pointer disabled:opacity-40 active:scale-[0.98]"
                     style={done.smsed
                       ? { background:'#00B23B', color:'#FFFFFF', border:'none', minWidth:'90px' }
-                      : { background:'#006AFF', color:'#FFFFFF', border:'none', minWidth:'90px' }}>
+                      : { background:'#5E6AD2', color:'#FFFFFF', border:'none', minWidth:'90px' }}>
                     {done.smsed ? 'Sent ✓' : 'Send'}
                   </button>
                 </div>

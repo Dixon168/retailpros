@@ -279,8 +279,8 @@ export default function B2BCenterPage() {
 
       {/* Period metrics: invoiced + collected with trend */}
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <PeriodCard label={t('invoicedPeriod')} value={money(periodMetrics.invoiced)} trend={periodMetrics.invoicedTrend} accent="#006AFF"/>
-        <PeriodCard label={t('collected')} value={money(periodMetrics.collected)} trend={periodMetrics.collectedTrend} accent="#15803D"/>
+        <PeriodCard label={t('invoicedPeriod')} value={money(periodMetrics.invoiced)} trend={periodMetrics.invoicedTrend} accent="#5E6AD2"/>
+        <PeriodCard label={t('collected')} value={money(periodMetrics.collected)} trend={periodMetrics.collectedTrend} accent="#059669"/>
       </div>
 
       {/* KPI cards — A/R focus */}
@@ -296,7 +296,7 @@ export default function B2BCenterPage() {
           icon="⚠️" label={t('overdue')}
           value={`$${kpis.overdue.toFixed(0)}`}
           note={`${kpis.overdueCount} ${t('overdue').toLowerCase()}`}
-          color={kpis.overdueCount > 0 ? '#CF1322' : '#15803D'}
+          color={kpis.overdueCount > 0 ? '#dc2626' : '#059669'}
           onClick={() => navigate('/invoices?filter=overdue')}
           highlight={kpis.overdueCount > 0}
         />
@@ -311,7 +311,7 @@ export default function B2BCenterPage() {
           icon="✅" label={t('paidThisMonth')}
           value={`$${kpis.paidThisMonth.toFixed(0)}`}
           note={`${kpis.paidThisMonthCount}`}
-          color="#15803D"
+          color="#059669"
           onClick={() => navigate('/payments')}
         />
       </div>
@@ -321,10 +321,10 @@ export default function B2BCenterPage() {
         <div className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-2.5">📊 {t('arAging')}</div>
         <div className="grid grid-cols-4 gap-3">
           {[
-            [t('current'), agingBuckets.current, '#15803D'],
+            [t('current'), agingBuckets.current, '#059669'],
             [t('days30'),  agingBuckets.d30,     '#B45309'],
             [t('days60'),  agingBuckets.d60,     '#EA580C'],
-            [t('days90'),  agingBuckets.d90,     '#CF1322'],
+            [t('days90'),  agingBuckets.d90,     '#dc2626'],
           ].map(([label, val, color]) => (
             <div key={label} className="text-center">
               <div className="text-[10px] text-[#999] font-bold uppercase mb-1">{label}</div>
@@ -338,9 +338,9 @@ export default function B2BCenterPage() {
       <div className="bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl p-4 mb-5">
         <div className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-2.5">🚀 {t('quickActions')}</div>
         <div className="flex gap-2 flex-wrap">
-          <ActionButton onClick={() => setShowCreateEst(true)} icon="📝" color="#006AFF" label={t('newEstimate')}/>
-          <ActionButton onClick={() => setShowCreateInv(true)} icon="📄" color="#006AFF" label={t('newInvoice')}/>
-          <ActionButton onClick={() => setShowReceive(true)}   icon="💰" color="#15803D" label={t('receivePayment')}/>
+          <ActionButton onClick={() => setShowCreateEst(true)} icon="📝" color="#5E6AD2" label={t('newEstimate')}/>
+          <ActionButton onClick={() => setShowCreateInv(true)} icon="📄" color="#5E6AD2" label={t('newInvoice')}/>
+          <ActionButton onClick={() => setShowReceive(true)}   icon="💰" color="#059669" label={t('receivePayment')}/>
           <div className="ml-auto flex gap-2">
             <NavButton onClick={() => navigate('/estimates')} label={`📝 ${t('viewDetail')}`}/>
             <NavButton onClick={() => navigate('/invoices')}  label={`📄 ${t('invoices')}`}/>
@@ -365,7 +365,7 @@ export default function B2BCenterPage() {
             </div>
             <div className="text-right">
               <div className="text-[13px] font-mono font-bold text-[#1F1F1F]">{money(c.total)}</div>
-              {c.balance > 0 && <div className="text-[10px] font-mono text-[#CF1322]">{money(c.balance)} {t('outstanding').toLowerCase()}</div>}
+              {c.balance > 0 && <div className="text-[10px] font-mono text-[#dc2626]">{money(c.balance)} {t('outstanding').toLowerCase()}</div>}
             </div>
           </div>
         ))}
@@ -399,7 +399,7 @@ export default function B2BCenterPage() {
           <div className="px-4 py-3 flex items-center justify-between border-b border-[#E5E5E5]">
             <div className="text-[13px] font-bold text-[#1F1F1F]">⚠️ Most overdue customers</div>
             <button onClick={() => navigate('/reports/ar-aging')}
-              className="text-[11px] font-bold text-[#006AFF] cursor-pointer"
+              className="text-[11px] font-bold text-[#5E6AD2] cursor-pointer"
               style={{background:'none', border:'none'}}>
               See all →
             </button>
@@ -407,7 +407,7 @@ export default function B2BCenterPage() {
           {topOverdue.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-[36px] mb-2">🎉</div>
-              <div className="text-[13px] font-bold text-[#15803D]">No overdue customers!</div>
+              <div className="text-[13px] font-bold text-[#059669]">No overdue customers!</div>
               <div className="text-[11px] text-[#666] mt-1">Everyone is paying on time</div>
             </div>
           ) : (
@@ -415,8 +415,8 @@ export default function B2BCenterPage() {
               {topOverdue.map(c => {
                 const days = c.oldest_overdue_days || 0
                 const severity = days > 90 ? 'critical' : days > 60 ? 'high' : days > 30 ? 'medium' : 'low'
-                const color = severity === 'critical' ? '#CF1322'
-                            : severity === 'high'     ? '#CF1322'
+                const color = severity === 'critical' ? '#dc2626'
+                            : severity === 'high'     ? '#dc2626'
                             : severity === 'medium'   ? '#B45309'
                             : '#666'
                 const dot = severity === 'critical' ? '🔴'
@@ -521,7 +521,7 @@ function PeriodCard({ label, value, trend, accent }) {
     <div className="bg-white border border-[#E5E5E5] rounded-xl p-4">
       <div className="text-[11px] text-[#888] font-bold uppercase tracking-wider mb-1">{label}</div>
       <div className="text-[24px] font-bold font-mono" style={{color:accent}}>{value}</div>
-      {trendStr && <div className="text-[11px] font-bold mt-0.5" style={{color: trend>=0?'#15803D':'#CF1322'}}>{trendStr}</div>}
+      {trendStr && <div className="text-[11px] font-bold mt-0.5" style={{color: trend>=0?'#059669':'#dc2626'}}>{trendStr}</div>}
     </div>
   )
 }
@@ -532,12 +532,12 @@ function KpiCard({ icon, label, value, note, color, onClick, highlight }) {
       className="text-left rounded-xl p-3 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
       style={{
         background: highlight ? '#FEE2E2' : '#FFFFFF',
-        border: `1px solid ${highlight ? '#CF1322' : '#E5E5E5'}`,
+        border: `1px solid ${highlight ? '#dc2626' : '#E5E5E5'}`,
       }}>
       <div className="flex items-center gap-2 mb-1">
         <span className="text-[14px]">{icon}</span>
         <span className="text-[10px] font-bold uppercase tracking-wider"
-          style={{color: highlight ? '#CF1322' : '#666'}}>{label}</span>
+          style={{color: highlight ? '#dc2626' : '#666'}}>{label}</span>
       </div>
       <div className="font-mono text-[22px] font-bold mt-0.5" style={{color}}>{value}</div>
       <div className="text-[10px] text-[#666] mt-0.5">{note}</div>
@@ -575,7 +575,7 @@ function ActivityRow({ item, onOpen }) {
         <span className="text-[14px]">💰</span>
         <div className="flex-1 min-w-0">
           <div className="text-[12px] text-[#1F1F1F]">
-            <span className="font-bold text-[#15803D]">{p.company_name || 'Unknown'}</span> paid{' '}
+            <span className="font-bold text-[#059669]">{p.company_name || 'Unknown'}</span> paid{' '}
             <span className="font-mono font-bold">${(p.amount || 0).toFixed(0)}</span>
             <span className="text-[#999]"> · {PAYMENT_METHOD_LABELS[p.payment_method] || p.payment_method}</span>
           </div>
@@ -596,7 +596,7 @@ function ActivityRow({ item, onOpen }) {
             <span className="font-bold">Invoiced</span>{' '}
             <span className="font-bold text-[#1F1F1F]">{i.company_name || 'Unknown'}</span>{' '}
             <span className="font-mono font-bold">${(i.total || 0).toFixed(0)}</span>
-            {i.status === 'paid' && <span className="ml-1 text-[10px] font-bold text-[#15803D]">PAID</span>}
+            {i.status === 'paid' && <span className="ml-1 text-[10px] font-bold text-[#059669]">PAID</span>}
             {i.status === 'partial' && <span className="ml-1 text-[10px] font-bold text-[#B45309]">PARTIAL</span>}
           </div>
           <div className="text-[10px] text-[#999] font-mono">{i.invoice_number}</div>
@@ -616,8 +616,8 @@ function ActivityRow({ item, onOpen }) {
           <span className="font-bold">Quoted</span>{' '}
           <span className="font-bold text-[#1F1F1F]">{e.company_name || 'Unknown'}</span>{' '}
           <span className="font-mono font-bold">${(e.total || 0).toFixed(0)}</span>
-          {e.status === 'converted' && <span className="ml-1 text-[10px] font-bold text-[#006AFF]">→ INVOICE</span>}
-          {e.status === 'declined'  && <span className="ml-1 text-[10px] font-bold text-[#CF1322]">DECLINED</span>}
+          {e.status === 'converted' && <span className="ml-1 text-[10px] font-bold text-[#5E6AD2]">→ INVOICE</span>}
+          {e.status === 'declined'  && <span className="ml-1 text-[10px] font-bold text-[#dc2626]">DECLINED</span>}
         </div>
         <div className="text-[10px] text-[#999] font-mono">{e.estimate_number}</div>
       </div>

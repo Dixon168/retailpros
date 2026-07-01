@@ -61,7 +61,7 @@ export function TouchKeyboard({ value, onChange, onDone, onClose, title, placeho
                 : '#fff',
       color:      isAction  ? '#fff'
                 : isDelete  ? '#ef4444'
-                : isShift && layout === 'upper' ? '#006AFF'
+                : isShift && layout === 'upper' ? '#5E6AD2'
                 : '#1F1F1F',
       fontWeight: isSpecial ? 600 : 500,
       fontSize:   key === 'space' ? '11px'

@@ -109,21 +109,21 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
                 onPick(results[0])
               }
             }}
-            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"/>
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5E6AD2]"/>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-[#666] font-bold">Or pick a category:</span>
             <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
               className="flex-1 bg-[#FFFFFF] border rounded-lg px-3 py-2 text-[12px] font-bold outline-none cursor-pointer"
               style={{
-                color: categoryId ? '#006AFF' : '#1F1F1F',
-                borderColor: categoryId ? '#006AFF' : '#E5E5E5',
+                color: categoryId ? '#5E6AD2' : '#1F1F1F',
+                borderColor: categoryId ? '#5E6AD2' : '#E5E5E5',
               }}>
               <option value="">📁 All categories</option>
               {categories.map(c => <option key={c.id} value={c.id}>📁 {c.name}</option>)}
             </select>
             {(search || categoryId) && (
               <button onClick={() => { setSearch(''); setCategoryId('') }}
-                className="text-[11px] text-[#CF1322] font-bold cursor-pointer"
+                className="text-[11px] text-[#dc2626] font-bold cursor-pointer"
                 style={{background:'none', border:'none'}}>
                 Clear
               </button>
@@ -164,7 +164,7 @@ export default function EstimateProductPicker({ onPick, onClose, excludeIds = []
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-[10px] font-bold uppercase"
-                        style={{ color: stock > 5 ? '#15803D' : stock > 0 ? '#B45309' : '#CF1322' }}>
+                        style={{ color: stock > 5 ? '#059669' : stock > 0 ? '#B45309' : '#dc2626' }}>
                         Stock: {stock}
                       </div>
                       <div className="text-[13px] font-bold font-mono text-[#1F1F1F]">${(p.price || 0).toFixed(2)}</div>

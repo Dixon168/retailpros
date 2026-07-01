@@ -5,11 +5,11 @@ import { supabase } from '@/lib/supabase'
 import PaymentDetailModal from '@/pages/payments/PaymentDetailModal'
 
 const METHOD_BADGE = {
-  cash:          { bg:'#DCFCE7', color:'#15803D', label:'💵 Cash' },
-  check:         { bg:'#E6F0FF', color:'#006AFF', label:'🏦 Check' },
+  cash:          { bg:'#d1fae5', color:'#059669', label:'💵 Cash' },
+  check:         { bg:'#eef0fc', color:'#5E6AD2', label:'🏦 Check' },
   ach:           { bg:'#FEF3C7', color:'#B45309', label:'🔄 ACH' },
   card:          { bg:'#F3E8FF', color:'#7C3AED', label:'💳 Card' },
-  bank_transfer: { bg:'#E6F0FF', color:'#006AFF', label:'🏦 Bank' },
+  bank_transfer: { bg:'#eef0fc', color:'#5E6AD2', label:'🏦 Bank' },
   other:         { bg:'#F5F5F5', color:'#666',    label:'📋 Other' },
 }
 
@@ -33,7 +33,7 @@ export default function PaymentsTab({ customerId, onChanged }) {
     <div>
       <div className="mb-3 text-[11px] text-[#666]">
         {payments.length} payment{payments.length !== 1 ? 's' : ''} ·
-        Total received: <span className="font-bold font-mono text-[#15803D]">${totalReceived.toFixed(2)}</span>
+        Total received: <span className="font-bold font-mono text-[#059669]">${totalReceived.toFixed(2)}</span>
       </div>
 
       {isLoading ? (
@@ -57,7 +57,7 @@ export default function PaymentsTab({ customerId, onChanged }) {
               <div key={p.id} onClick={() => setViewing(p)}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA] cursor-pointer items-center"
                 style={{gridTemplateColumns:'1.2fr 100px 100px 1fr 100px'}}>
-                <div className="px-3 py-2.5 font-mono text-[12px] font-bold text-[#15803D]">
+                <div className="px-3 py-2.5 font-mono text-[12px] font-bold text-[#059669]">
                   {p.payment_number}
                 </div>
                 <div className="px-3 py-2.5 text-[11px] text-[#666]">
@@ -72,7 +72,7 @@ export default function PaymentsTab({ customerId, onChanged }) {
                 <div className="px-3 py-2.5 text-[11px] text-[#666] font-mono truncate">
                   {p.reference_number || '—'}
                 </div>
-                <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#15803D]">
+                <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#059669]">
                   ${(p.amount || 0).toFixed(2)}
                 </div>
               </div>

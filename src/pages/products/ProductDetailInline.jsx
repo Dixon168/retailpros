@@ -9,11 +9,11 @@ import toast from 'react-hot-toast'
 
 const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const UNITS = ['ea','lb','kg','oz','g','l','ml','ft','m','hr','pair','box','case','pack','roll','bag','bottle','can']
-const TYPE_COLOR = { sale:'#006AFF', bulk:'#16a34a', time:'#d97706' }
+const TYPE_COLOR = { sale:'#5E6AD2', bulk:'#16a34a', time:'#d97706' }
 const TYPE_ICON  = { sale:'🏷️', bulk:'📦', time:'⏰' }
 const TYPE_NAME  = { sale:'Sale Pricing', bulk:'Bulk Pricing', time:'Time Based' }
-const TAB_COLOR  = { info:'#006AFF', receiving:'#16a34a', adjustments:'#ca8a04', sales:'#2563eb', promotions:'#006AFF' }
-const TAB_BG     = { info:'#E6F0FF', receiving:'#dcfce7', adjustments:'#fef9c3', sales:'#dbeafe', promotions:'#fdf4ff' }
+const TAB_COLOR  = { info:'#5E6AD2', receiving:'#16a34a', adjustments:'#ca8a04', sales:'#2563eb', promotions:'#5E6AD2' }
+const TAB_BG     = { info:'#eef0fc', receiving:'#d1fae5', adjustments:'#fef9c3', sales:'#dbeafe', promotions:'#fdf4ff' }
 
 // ── Shared UI helpers ──
 function Th({ children }) {
@@ -32,7 +32,7 @@ function Empty({ msg }) {
     </div>
   )
 }
-function SectionBox({ title, icon, color='#006AFF', children }) {
+function SectionBox({ title, icon, color='#5E6AD2', children }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{border:'1.5px solid #e2e8f0'}}>
       <div className="px-4 py-2 flex items-center gap-2"
@@ -53,14 +53,14 @@ function FieldInput({ value, onChange, placeholder, type='text', mono, disabled 
   return <input type={type} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
     className={`w-full rounded-xl px-3 py-2 text-[13px] outline-none transition-all ${mono?'font-mono':''} disabled:opacity-50`}
     style={{border:'1.5px solid #e2e8f0', background: disabled?'#f8fafc':'#fff', color:'#1F1F1F'}}
-    onFocus={e=>{if(!disabled){e.target.style.borderColor='#006AFF'}}}
+    onFocus={e=>{if(!disabled){e.target.style.borderColor='#5E6AD2'}}}
     onBlur={e=>{e.target.style.borderColor='#e2e8f0'}}/>
 }
 function Toggle({ checked, onChange, label, desc }) {
   return (
     <label className="flex items-center gap-3 cursor-pointer py-1.5" onClick={onChange}>
       <div style={{width:'38px',height:'21px',position:'relative',cursor:'pointer',
-        background:checked?'#006AFF':'#e2e8f0', borderRadius:'11px', transition:'background .2s', flexShrink:0}}>
+        background:checked?'#5E6AD2':'#e2e8f0', borderRadius:'11px', transition:'background .2s', flexShrink:0}}>
         <div style={{position:'absolute',top:'2px',left:checked?'19px':'2px',
           width:'17px',height:'17px',background:'#fff',borderRadius:'50%',
           transition:'left .2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
@@ -151,7 +151,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
     if (!name) { toast.error('Category name required'); return }
     try {
       const { data, error } = await supabase.from('categories')
-        .insert({ tenant_id: tenantId, name, color: '#006AFF', sort_order: (categories?.length||0) + 1 })
+        .insert({ tenant_id: tenantId, name, color: '#5E6AD2', sort_order: (categories?.length||0) + 1 })
         .select().single()
       if (error) throw error
       if (data) {
@@ -498,7 +498,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
         {tab==='info' && !editing && (
           <button onClick={startEdit}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border mr-2"
-            style={{background:'#E6F0FF', borderColor:'#80B2FF', color:'#006AFF'}}>
+            style={{background:'#eef0fc', borderColor:'#dee2f8', color:'#5E6AD2'}}>
             ✏️ Edit
           </button>
         )}
@@ -519,7 +519,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
         {tab==='receiving' && (
           <button onClick={() => setShowReceive(true)}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border mr-2"
-            style={{background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}}>
+            style={{background:'#d1fae5', borderColor:'#86efac', color:'#16a34a'}}>
             + Receive
           </button>
         )}
@@ -539,7 +539,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
         {/* ══ INFO — View Mode ══ */}
         {tab==='info' && !editing && (
           <div className="grid gap-3" style={{gridTemplateColumns:'repeat(4,1fr)'}}>
-            <SectionBox title="Product Info" icon="📦" color="#006AFF">
+            <SectionBox title="Product Info" icon="📦" color="#5E6AD2">
               {[['Name',d.name],['Type',d.type?.toUpperCase()],['Unit',d.unit||'ea'],['SKU',d.sku||'—'],['UPC',d.upc||'—'],['Category',d.subcategories?.categories?.name||'—'],['Subcategory',d.subcategories?.name||'—'],['Tags',d.tags?.join(', ')||'—'],['Description',d.description||'—']].map(([l,v])=>(
                 <div key={l} className="flex justify-between py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
@@ -570,7 +570,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                 </div>
               ))}
             </SectionBox>
-            <SectionBox title="Points & Commission" icon="⭐" color="#006AFF">
+            <SectionBox title="Points & Commission" icon="⭐" color="#5E6AD2">
               {[['Points Mode',d.points_mode==='fixed'?'Fixed':'$ → Points'],['Points Value',d.points_mode==='fixed'?`${d.points_fixed||0} pts`:`$1=${d.points_rate||1} pts`],['Redeemable',d.points_redeemable?'Yes':'No'],['Commission',d.commission_type==='none'?'None':d.commission_type],['Comm. Value',d.commission_type!=='none'?`${d.commission_type==='fixed'?'$':''}${d.commission_value||0}${d.commission_type!=='fixed'?'%':''}`:'—']].map(([l,v])=>(
                 <div key={l} className="flex justify-between py-1" style={{borderBottom:'1px solid #f8fafc'}}>
                   <span className="text-[11px] text-slate-400">{l}</span>
@@ -594,7 +594,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
           <div className="flex flex-col gap-4">
 
             {/* Basic Info */}
-            <SectionBox title="Basic Information" icon="📦" color="#006AFF">
+            <SectionBox title="Basic Information" icon="📦" color="#5E6AD2">
               <div className="grid gap-3" style={{gridTemplateColumns:'1fr 1fr'}}>
                 <div className="col-span-2">
                   <FieldLabel required>Product Name</FieldLabel>
@@ -656,7 +656,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {form.tags.map(t=>(
                         <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]"
-                          style={{background:'#E6F0FF', color:'#006AFF'}}>
+                          style={{background:'#eef0fc', color:'#5E6AD2'}}>
                           {t}
                           <button onClick={()=>setF('tags',form.tags.filter(x=>x!==t))}
                             className="bg-transparent border-none cursor-pointer text-[10px] text-indigo-400 hover:text-red-500">✕</button>
@@ -675,7 +675,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                   <FieldLabel required>Selling Price</FieldLabel>
                   <button onClick={()=>setNumpadField('price')}
                     className="w-full rounded-xl px-3 py-2.5 text-left text-[16px] font-bold font-mono cursor-pointer"
-                    style={{border:'1.5px solid #80B2FF', background:'#E6F0FF', color:'#006AFF'}}>
+                    style={{border:'1.5px solid #dee2f8', background:'#eef0fc', color:'#5E6AD2'}}>
                     ${parseFloat(form.price||0).toFixed(2)}
                   </button>
                 </div>
@@ -699,7 +699,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
               {form.price && form.cost && (
                 <div className="grid grid-cols-3 gap-2 mt-3">
                   {[['Margin',`${((parseFloat(form.price)-parseFloat(form.cost||0))/parseFloat(form.price)*100).toFixed(1)}%`,'#16a34a'],
-                    ['Profit/ea',`$${(parseFloat(form.price)-parseFloat(form.cost||0)).toFixed(2)}`,'#006AFF'],
+                    ['Profit/ea',`$${(parseFloat(form.price)-parseFloat(form.cost||0)).toFixed(2)}`,'#5E6AD2'],
                     ['Catalog Cost',`$${parseFloat(form.cost||0).toFixed(2)}`,'#64748b']
                   ].map(([l,v,c])=>(
                     <div key={l} className="rounded-xl p-2 text-center" style={{background:'#f0fdf4',border:'1px solid #86efac'}}>
@@ -731,7 +731,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
             </SectionBox>
 
             {/* VIP & Loyalty */}
-            <SectionBox title="VIP & Loyalty" icon="⭐" color="#006AFF">
+            <SectionBox title="VIP & Loyalty" icon="⭐" color="#5E6AD2">
               <div className="grid gap-3" style={{gridTemplateColumns:'1fr 1fr'}}>
                 <div>
                   <Toggle checked={form.allow_vip} onChange={()=>setF('allow_vip',!form.allow_vip)}
@@ -741,7 +741,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                       <FieldLabel>VIP Override Price (optional)</FieldLabel>
                       <button onClick={()=>setNumpadField('vip_price')}
                         className="w-full rounded-xl px-3 py-2 text-left text-[13px] font-mono cursor-pointer"
-                        style={{border:'1.5px solid #e9d5ff', background:'#faf5ff', color: form.vip_price?'#006AFF':'#94a3b8'}}>
+                        style={{border:'1.5px solid #e9d5ff', background:'#faf5ff', color: form.vip_price?'#5E6AD2':'#94a3b8'}}>
                         {form.vip_price ? `$${parseFloat(form.vip_price).toFixed(2)}` : 'Tap to set VIP price'}
                       </button>
                     </div>
@@ -840,7 +840,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
             <div className="grid grid-cols-3 gap-3 mb-3">
               {[['Total Received',`${receives.reduce((s,r)=>s+(r.qty||0),0)} ${p.unit}`,'#16a34a'],
                 ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1F1F1F'],
-                ['Avg Cost',`$${parseFloat(avgCost).toFixed(2)}`,'#006AFF']
+                ['Avg Cost',`$${parseFloat(avgCost).toFixed(2)}`,'#5E6AD2']
               ].map(([l,v,c])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#fff',border:'1px solid #e2e8f0'}}>
                   <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{l}</div>
@@ -858,7 +858,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                     <Td>{r.suppliers?.name||'—'}</Td>
                     <Td mono bold color="#16a34a">+{r.qty} {p.unit}</Td>
                     <Td mono>${parseFloat(r.cost||0).toFixed(2)}</Td>
-                    <Td mono bold color="#006AFF">${(r.qty*(r.cost||0)).toFixed(2)}</Td>
+                    <Td mono bold color="#5E6AD2">${(r.qty*(r.cost||0)).toFixed(2)}</Td>
                     <Td color="#94a3b8">{r.notes||'—'}</Td>
                   </tr>
                 ))}</tbody>
@@ -872,7 +872,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
             <div className="grid grid-cols-3 gap-3 mb-3">
               {[['Net Change',`${adjustments.reduce((s,r)=>s+(r.qty_change||0),0)>=0?'+':''}${adjustments.reduce((s,r)=>s+(r.qty_change||0),0)}`,adjustments.reduce((s,r)=>s+(r.qty_change||0),0)>=0?'#16a34a':'#dc2626'],
                 ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1F1F1F'],
-                ['Count',adjustments.length,'#006AFF']
+                ['Count',adjustments.length,'#5E6AD2']
               ].map(([l,v,c])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#fff',border:'1px solid #e2e8f0'}}>
                   <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{l}</div>
@@ -894,7 +894,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                     <Td mono color="#94a3b8">{r.qty_before}</Td>
                     <Td mono bold>{r.qty_after}</Td>
                     <Td>{r.reason}</Td>
-                    <Td color="#006AFF">{r.users?.name||r.user_name||'—'}</Td>
+                    <Td color="#5E6AD2">{r.users?.name||r.user_name||'—'}</Td>
                   </tr>
                 ))}</tbody>
               </table>}
@@ -905,7 +905,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
         {tab==='sales' && (
           <>
             <div className="grid grid-cols-4 gap-3 mb-3">
-              {[['Units Sold',`${sales.reduce((s,r)=>s+(r.quantity||0),0)} ${p.unit}`,'#006AFF'],
+              {[['Units Sold',`${sales.reduce((s,r)=>s+(r.quantity||0),0)} ${p.unit}`,'#5E6AD2'],
                 ['Revenue',`$${sales.reduce((s,r)=>s+(r.line_total||0),0).toFixed(2)}`,'#16a34a'],
                 ['Transactions',sales.length,'#1F1F1F'],
                 ['In Stock',`${qty} ${p.unit}`,qty<=5?'#dc2626':'#1F1F1F']
@@ -938,7 +938,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                       <div>{new Date(r.orders?.created_at).toLocaleDateString()}</div>
                       <div className="text-[10px] text-slate-400">{new Date(r.orders?.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
                     </Td>
-                    <Td mono color="#006AFF">{r.orders?.order_number||'—'}</Td>
+                    <Td mono color="#5E6AD2">{r.orders?.order_number||'—'}</Td>
                     <Td>{r.orders?.customers?.name||'Walk-in'}</Td>
                     <Td mono bold>{r.quantity} {p.unit}</Td>
                     <Td mono>${parseFloat(r.unit_price||0).toFixed(2)}</Td>
@@ -963,8 +963,8 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Add Promotion</div>
               <div className="flex gap-3" style={{maxWidth:"480px"}}>
                 {[
-                  ['sale','🏷️','Sale Pricing','Date range discount','#006AFF','#E6F0FF'],
-                  ['bulk','📦','Bulk Pricing','Qty-based discount','#16a34a','#dcfce7'],
+                  ['sale','🏷️','Sale Pricing','Date range discount','#5E6AD2','#eef0fc'],
+                  ['bulk','📦','Bulk Pricing','Qty-based discount','#16a34a','#d1fae5'],
                   ['time','⏰','Time Based','Day/hour discount','#d97706','#fef9c3'],
                 ].map(([t,icon,title,desc,color,bg])=>(
                   <button key={t} onClick={()=>{setPromoType(t);setPromoAdding(promoAdding&&promoType===t?false:true)}}
@@ -1020,7 +1020,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                         {saleVal && (
                           <div className="flex flex-col items-center pb-1">
                             <span className="text-[10px] line-through text-slate-400">${parseFloat(p.price||0).toFixed(2)}</span>
-                            <span className="text-[14px] font-bold" style={{color:'#006AFF'}}>
+                            <span className="text-[14px] font-bold" style={{color:'#5E6AD2'}}>
                               ${saleType==='fixed'?parseFloat(saleVal).toFixed(2):(parseFloat(p.price||0)*(1-parseFloat(saleVal)/100)).toFixed(2)}
                             </span>
                             <span className="text-[9px] text-green-600">
@@ -1138,7 +1138,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                     const now = new Date()
                     const isExpired = promo.type==='sale' && promo.sale_end && new Date(promo.sale_end) < now
                     const isUpcoming = promo.type==='sale' && promo.sale_start && new Date(promo.sale_start) > now
-                    const tc = TYPE_COLOR[promo.type] || '#006AFF'
+                    const tc = TYPE_COLOR[promo.type] || '#5E6AD2'
 
                     return (
                       <div key={promo.id} className="rounded-xl overflow-hidden"
@@ -1168,7 +1168,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                           {!isExpired && (
                             <button onClick={()=>togglePromo(promo)}
                               className="text-[10px] px-2.5 py-1 rounded-lg border cursor-pointer"
-                              style={promo.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
+                              style={promo.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#d1fae5',borderColor:'#86efac',color:'#16a34a'}}>
                               {promo.is_active?'Pause':'Activate'}
                             </button>
                           )}
@@ -1193,7 +1193,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
                                   <span className="text-[20px] font-bold font-mono" style={{color:'#16a34a'}}>
                                     ${promo.sale_type==='pct'?(parseFloat(p.price||0)*(1-promo.sale_value/100)).toFixed(2):parseFloat(promo.sale_value).toFixed(2)}
                                   </span>
-                                  <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{background:'#dcfce7', color:'#16a34a'}}>
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{background:'#d1fae5', color:'#16a34a'}}>
                                     Save ${promo.sale_type==='pct'?(parseFloat(p.price||0)*promo.sale_value/100).toFixed(2):(parseFloat(p.price||0)-promo.sale_value).toFixed(2)}
                                   </span>
                                 </div>
@@ -1307,7 +1307,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
               <button onClick={()=>{setShowAddCat(false);setNewCatName('')}}
                 className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
               <button disabled={!newCatName.trim()} onClick={addCategory}
-                className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40" style={{background:'#006AFF'}}>✓ Add</button>
+                className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40" style={{background:'#5E6AD2'}}>✓ Add</button>
             </div>
           </div>
         </div>
@@ -1335,7 +1335,7 @@ export function ProductDetailInline({ product: p, tenantId, storeId, onRefresh }
               <button onClick={()=>{setShowAddSub(false);setNewSubName('');setNewSubCatId('')}}
                 className="flex-1 rounded-xl py-2 text-[12px] text-slate-500 cursor-pointer border border-slate-200 bg-slate-50">Cancel</button>
               <button disabled={!newSubName.trim()||!newSubCatId} onClick={addSubcategory}
-                className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40" style={{background:'#006AFF'}}>✓ Add</button>
+                className="flex-[2] rounded-xl py-2 text-[12px] font-bold text-white cursor-pointer border-none disabled:opacity-40" style={{background:'#5E6AD2'}}>✓ Add</button>
             </div>
           </div>
         </div>

@@ -189,14 +189,14 @@ export default function POSDashboardPage() {
           {/* Terminal filter */}
           <select value={terminalId} onChange={e => setTerminalId(e.target.value)}
             className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer outline-none"
-            style={{border:'1.5px solid #e5e5e5', background: terminalId!=='all'?'#E6F0FF':'#fff', color: terminalId!=='all'?'#006AFF':'#666'}}>
+            style={{border:'1.5px solid #e5e5e5', background: terminalId!=='all'?'#eef0fc':'#fff', color: terminalId!=='all'?'#5E6AD2':'#666'}}>
             <option value="all">🖥️ {t('allTerminals')}</option>
             {terminals.map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
           </select>
           {/* Employee filter */}
           <select value={employeeId} onChange={e => setEmployeeId(e.target.value)}
             className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer outline-none"
-            style={{border:'1.5px solid #e5e5e5', background: employeeId!=='all'?'#E6F0FF':'#fff', color: employeeId!=='all'?'#006AFF':'#666'}}>
+            style={{border:'1.5px solid #e5e5e5', background: employeeId!=='all'?'#eef0fc':'#fff', color: employeeId!=='all'?'#5E6AD2':'#666'}}>
             <option value="all">👥 {t('allEmployees')}</option>
             {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
@@ -205,7 +205,7 @@ export default function POSDashboardPage() {
             {[['today',t('today')],['week',t('thisWeek')],['month',t('thisMonth')],['custom',t('customRange')]].map(([k,label]) => (
               <button key={k} onClick={() => setRange(k)}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2"
-                style={range===k ? {background:'#006AFF',color:'#fff',borderColor:'#006AFF'} : {background:'#fff',color:'#666',borderColor:'#e5e5e5'}}>
+                style={range===k ? {background:'#5E6AD2',color:'#fff',borderColor:'#5E6AD2'} : {background:'#fff',color:'#666',borderColor:'#e5e5e5'}}>
                 {label}
               </button>
             ))}
@@ -227,7 +227,7 @@ export default function POSDashboardPage() {
         {[['summary',`📈 ${t('dashSummary')}`],['employee',`👥 ${t('dashEmployee')}`],['sales',`🛍️ ${t('dashSales')}`]].map(([k,label]) => (
           <button key={k} onClick={() => setTab(k)}
             className="px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none bg-transparent"
-            style={{color: tab===k?'#006AFF':'#888', borderBottom: tab===k?'2px solid #006AFF':'2px solid transparent', marginBottom:'-1px'}}>
+            style={{color: tab===k?'#5E6AD2':'#888', borderBottom: tab===k?'2px solid #5E6AD2':'2px solid transparent', marginBottom:'-1px'}}>
             {label}
           </button>
         ))}
@@ -332,7 +332,7 @@ function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenu
     <div>
       {/* Top KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <Kpi label={t('totalCollected')} value={money(m.collected)} accent="#006AFF" sub={trendStr} subColor={m.trend>=0?'#16a34a':'#dc2626'}/>
+        <Kpi label={t('totalCollected')} value={money(m.collected)} accent="#5E6AD2" sub={trendStr} subColor={m.trend>=0?'#16a34a':'#dc2626'}/>
         <Kpi label={t('totalSales')} value={money(m.totalSales)} accent="#16a34a"/>
         <Kpi label={t('profit')} value={money(m.grossProfit)} accent="#a855f7" sub={`${m.margin.toFixed(1)}% ${t('profit').toLowerCase()}`}/>
         <Kpi label={t('refunds')} value={money(m.refunds)} accent="#dc2626"/>
@@ -358,7 +358,7 @@ function SummaryTab({ completed, filtered, cardSummary, productMeta, priorRevenu
                 <div className="w-full rounded-t transition-all"
                   style={{
                     height: `${Math.max(2, (val / trendBuckets.max) * 100)}%`,
-                    background: val > 0 ? '#006AFF' : '#e5e5e5',
+                    background: val > 0 ? '#5E6AD2' : '#e5e5e5',
                     opacity: val > 0 ? (0.55 + 0.45 * (val / trendBuckets.max)) : 0.3,
                   }}/>
                 <div className="text-[8px] text-[#999] mt-1 whitespace-nowrap" style={{transform: trendBuckets.entries.length > 14 ? 'rotate(-45deg)' : 'none'}}>
@@ -542,7 +542,7 @@ function SalesTab({ completed, productCosts, t }) {
   )
 }
 
-function Kpi({ label, value, accent='#006AFF', small=false, sub=null, subColor='#888' }) {
+function Kpi({ label, value, accent='#5E6AD2', small=false, sub=null, subColor='#888' }) {
   return (
     <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
       <div className="text-[11px] text-[#888] font-bold uppercase tracking-wider mb-1">{label}</div>

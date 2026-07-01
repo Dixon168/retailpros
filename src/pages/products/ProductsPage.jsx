@@ -14,7 +14,7 @@ import { printLabels } from '@/components/barcode/LabelPreview'
 import toast from 'react-hot-toast'
 
 const TYPE_COLOR = {
-  unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#006AFF'
+  unit:'#3b82f6', weight:'#10b981', serialized:'#f59e0b', service:'#5E6AD2'
 }
 
 export default function ProductsPage() {
@@ -134,7 +134,7 @@ export default function ProductsPage() {
           ['unit','Unit','#3b82f6'],
           ['weight','Weight','#10b981'],
           ['serialized','Serialized','#f59e0b'],
-          ['service','Service','#006AFF'],
+          ['service','Service','#5E6AD2'],
         ].map(([id,label,color]) => (
           <div key={id} onClick={() => setFilterType(id)}
             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] mb-0.5 transition-all ${
@@ -148,11 +148,11 @@ export default function ProductsPage() {
         <div onClick={() => setFilterType('low')}
           title="Products where current stock is at or below their low-stock threshold (set per product in Edit → Inventory)"
           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[12px] transition-all ${
-            filterType==='low' ? 'bg-red-500/10 text-[#CF1322]' : 'text-[#666666] hover:bg-[#F5F5F5]'
+            filterType==='low' ? 'bg-red-500/10 text-[#dc2626]' : 'text-[#666666] hover:bg-[#F5F5F5]'
           }`}>
           <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"/>
           ⚠️ Low Stock
-          {lowStock > 0 && <span className="ml-auto text-[10px] font-mono bg-red-500/10 text-[#CF1322] px-1.5 py-0.5 rounded">{lowStock}</span>}
+          {lowStock > 0 && <span className="ml-auto text-[10px] font-mono bg-red-500/10 text-[#dc2626] px-1.5 py-0.5 rounded">{lowStock}</span>}
         </div>
       </div>
 
@@ -163,7 +163,7 @@ export default function ProductsPage() {
           <div className="flex gap-4 mr-2">
             {[
               ['Products', products.length, ''],
-              ['Low Stock', lowStock, 'text-[#CF1322]'],
+              ['Low Stock', lowStock, 'text-[#dc2626]'],
               ['Value', '$'+products.reduce((s,p)=>{const q=getQty(p);return s+q*getAvgCost(p)},0).toFixed(0), 'text-[#00B23B]'],
             ].map(([l,v,c]) => (
               <div key={l}>
@@ -180,14 +180,14 @@ export default function ProductsPage() {
           </div>
           {/* Category filter */}
           <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
-            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2 text-[12px] text-[#1F1F1F] outline-none focus:border-[#006AFF] flex-shrink-0">
+            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2 text-[12px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2] flex-shrink-0">
             <option value="">All Categories</option>
             {allCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
           {/* Tag filter */}
           <select value={filterTag} onChange={e=>setFilterTag(e.target.value)}
-            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2 text-[12px] text-[#1F1F1F] outline-none focus:border-[#006AFF] flex-shrink-0">
+            className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2 text-[12px] text-[#1F1F1F] outline-none focus:border-[#5E6AD2] flex-shrink-0">
             <option value="">All Tags</option>
             {allTags.map(t => <option key={t} value={t}>🏷️ {t}</option>)}
           </select>
@@ -195,13 +195,13 @@ export default function ProductsPage() {
           {/* Clear filters */}
           {(filterCat || filterTag || search) && (
             <button onClick={()=>{setFilterCat('');setFilterTag('');setSearch('')}}
-              className="bg-[#F5F5F5] border border-red-500/20 rounded-[9px] px-2.5 py-2 text-[10px] text-[#CF1322] cursor-pointer hover:border-red-500/40 flex-shrink-0 whitespace-nowrap">
+              className="bg-[#F5F5F5] border border-red-500/20 rounded-[9px] px-2.5 py-2 text-[10px] text-[#dc2626] cursor-pointer hover:border-red-500/40 flex-shrink-0 whitespace-nowrap">
               ✕ Clear
             </button>
           )}
 
           <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-            className="bg-[#006AFF] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-[#0055CC] transition-colors flex-shrink-0">
+            className="bg-[#5E6AD2] border-none rounded-lg px-4 py-2 text-[11px] font-bold text-white cursor-pointer hover:bg-[#4854c4] transition-colors flex-shrink-0">
             + Add Product
           </button>
         </div>
@@ -239,7 +239,7 @@ export default function ProductsPage() {
                 <>
                   <div className="text-[14px] font-semibold mb-2">No products yet</div>
                   <button onClick={()=>{setEditProduct(null);setShowForm(true)}}
-                    className="bg-[#006AFF] border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
+                    className="bg-[#5E6AD2] border-none rounded-lg px-5 py-2.5 text-[12px] font-bold text-white cursor-pointer mt-1">
                     + Add your first product
                   </button>
                 </>
@@ -287,7 +287,7 @@ export default function ProductsPage() {
                         {cat && <div className="text-[9px] text-slate-400 mt-0.5">{cat}{sub ? ' › '+sub : ''}</div>}
                         {p.tags?.length > 0 && (
                           <div className="flex gap-1 mt-0.5 flex-wrap">
-                            {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:'#E6F0FF',color:'#006AFF'}}>{t}</span>)}
+                            {p.tags.map(t=><span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:'#eef0fc',color:'#5E6AD2'}}>{t}</span>)}
                           </div>
                         )}
                       </td>
@@ -357,14 +357,14 @@ export default function ProductsPage() {
                           <button onClick={() => { setExpandedId(expandedId===p.id?null:p.id); setHistoryId(null); setAiId(null) }}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={expandedId===p.id
-                              ? {background:'#E6F0FF', borderColor:'#80B2FF', color:'#006AFF'}
+                              ? {background:'#eef0fc', borderColor:'#dee2f8', color:'#5E6AD2'}
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📋 {expandedId===p.id ? 'Close' : 'Detail'}
                           </button>
                           <button onClick={() => setShowStock(showStock?.id===p.id ? null : p)}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border transition-all"
                             style={showStock?.id===p.id
-                              ? {background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}
+                              ? {background:'#d1fae5', borderColor:'#86efac', color:'#16a34a'}
                               : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                             📦 Stock
                           </button>
@@ -383,7 +383,7 @@ export default function ProductsPage() {
                           <button onClick={() => handleDisable(p)}
                             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold cursor-pointer border"
                             style={disabled
-                              ? {background:'#dcfce7', borderColor:'#86efac', color:'#16a34a'}
+                              ? {background:'#d1fae5', borderColor:'#86efac', color:'#16a34a'}
                               : {background:'#fff7ed', borderColor:'#fed7aa', color:'#ea580c'}}>
                             {disabled ? '▶ Enable' : '⏸ Disable'}
                           </button>
@@ -493,7 +493,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
   const [timeType,  setTimeType]  = useState('fixed')
   const [timeVal,   setTimeVal]   = useState('')
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-  const TYPE_COLOR = { sale:'#006AFF', bulk:'#16a34a', time:'#d97706' }
+  const TYPE_COLOR = { sale:'#5E6AD2', bulk:'#16a34a', time:'#d97706' }
 
   const { data: promos=[] } = useQuery({
     queryKey: ['product-promos', product.id],
@@ -576,7 +576,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
               <div className="flex flex-col gap-2">
                 {promos.map(p => (
                   <div key={p.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{background:'#f8fafc', border:`1.5px solid ${p.is_active ? (TYPE_COLOR[p.type]||'#006AFF')+'40' : '#e2e8f0'}`}}>
+                    style={{background:'#f8fafc', border:`1.5px solid ${p.is_active ? (TYPE_COLOR[p.type]||'#5E6AD2')+'40' : '#e2e8f0'}`}}>
                     <span className="text-[16px]">{{sale:'🏷️',bulk:'📦',time:'⏰'}[p.type]||'🏷️'}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] font-semibold text-slate-700">{p.name}</div>
@@ -587,7 +587,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
                     </span>
                     <button onClick={()=>togglePromo(p)}
                       className="text-[10px] px-2.5 py-1 rounded-lg border cursor-pointer"
-                      style={p.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#dcfce7',borderColor:'#86efac',color:'#16a34a'}}>
+                      style={p.is_active?{background:'#fff1f2',borderColor:'#fecdd3',color:'#e11d48'}:{background:'#d1fae5',borderColor:'#86efac',color:'#16a34a'}}>
                       {p.is_active?'Pause':'On'}
                     </button>
                     <button onClick={()=>deletePromo(p.id)}
@@ -616,7 +616,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 
           {/* Sale fields */}
           {type==='sale' && (
-            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
+            <div className="flex flex-col gap-3 p-4 rounded-xl" style={{background:'#eef0fc', border:'1.5px solid #B3D1FF'}}>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-[10px] font-semibold text-slate-500 mb-1">Start Date & Time</div>
@@ -750,7 +750,7 @@ function PromoQuickPanel({ product, tenantId, onClose }) {
 
           <button onClick={savePromo} disabled={saving}
             className="w-full mt-4 rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-50"
-            style={{background:'#006aff'}}>
+            style={{background:'#5E6AD2'}}>
             {saving ? '⏳ Saving...' : '✓ Add Promotion'}
           </button>
         </div>
@@ -793,7 +793,7 @@ function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[
               ['In Stock', p.type==='service'?'—':`${qty} ${p.unit||'ea'}`, isLow?'#dc2626':'#16a34a'],
-              ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`, '#006AFF'],
+              ['Avg Cost', `$${parseFloat(avgCost).toFixed(2)}`, '#5E6AD2'],
               ['Stock Value', p.type==='service'?'—':`$${stockVal.toFixed(2)}`, '#1F1F1F'],
             ].map(([l,v,c]) => (
               <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc', border:'1.5px solid #e2e8f0'}}>
@@ -814,7 +814,7 @@ function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setShowReceive(true)}
               className="rounded-lg py-2.5 px-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               📥 Receive
             </button>
             <button onClick={() => setShowCount(true)}
@@ -824,7 +824,7 @@ function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
             </button>
             <button onClick={() => setShowWriteOff(true)}
               className="rounded-lg py-2.5 px-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
-              style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+              style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
               💔 Write off
             </button>
             <button onClick={() => setShowHistory(true)}
@@ -836,7 +836,7 @@ function StockPanel({ product: p, tenantId, storeId, onClose, onRefresh }) {
 
           <button onClick={() => { window.location.href = `/stock-levels?focus=${p.id}` }}
             className="mt-3 w-full rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-2"
-            style={{background:'#F5F5F5', color:'#006AFF', border:'1px solid #E5E5E5'}}>
+            style={{background:'#F5F5F5', color:'#5E6AD2', border:'1px solid #E5E5E5'}}>
             📊 Open in Stock Center →
           </button>
         </div>
@@ -1040,7 +1040,7 @@ function SalesHistoryInline({ product: p }) {
                     {/* Invoice */}
                     <td className="px-3 py-2.5">
                       {r.invoice
-                        ? <span className="text-[11px] font-mono font-bold" style={{color:'#006AFF'}}>{r.invoice}</span>
+                        ? <span className="text-[11px] font-mono font-bold" style={{color:'#5E6AD2'}}>{r.invoice}</span>
                         : <span className="text-[11px] text-slate-300">—</span>}
                     </td>
                     {/* Party */}
@@ -1061,7 +1061,7 @@ function SalesHistoryInline({ product: p }) {
                     {/* Total */}
                     <td className="px-3 py-2.5">
                       {r.total!=null
-                        ? <span className="text-[12px] font-bold font-mono" style={{color:r._type==='sale'?'#16a34a':'#006AFF'}}>${parseFloat(r.total).toFixed(2)}</span>
+                        ? <span className="text-[12px] font-bold font-mono" style={{color:r._type==='sale'?'#16a34a':'#5E6AD2'}}>${parseFloat(r.total).toFixed(2)}</span>
                         : <span className="text-[11px] text-slate-300">—</span>}
                     </td>
                     {/* Serial */}
@@ -1131,7 +1131,7 @@ function PrintLabelModal({ product, templates, storeName, onClose }) {
               <div className="text-[40px] mb-2 opacity-30">📐</div>
               <div className="text-[13px] mb-3">No templates yet.</div>
               <a href="/barcode" className="inline-block rounded-lg px-4 py-2 text-[12px] font-bold no-underline"
-                style={{background:'#006AFF', color:'#fff'}}>
+                style={{background:'#5E6AD2', color:'#fff'}}>
                 Open Barcode Print page →
               </a>
             </div>
@@ -1143,7 +1143,7 @@ function PrintLabelModal({ product, templates, storeName, onClose }) {
                   <button key={t.id} onClick={()=>setPicked(t)}
                     className="rounded-lg px-3 py-2 text-left cursor-pointer border-2"
                     style={picked?.id===t.id
-                      ? {background:'#E6F0FF', borderColor:'#006AFF'}
+                      ? {background:'#eef0fc', borderColor:'#5E6AD2'}
                       : {background:'#fff', borderColor:'#E5E5E5'}}>
                     <div className="text-[12px] font-bold">{t.name}</div>
                     <div className="text-[10px] text-[#666] font-mono">{t.width_mm}×{t.height_mm}mm</div>

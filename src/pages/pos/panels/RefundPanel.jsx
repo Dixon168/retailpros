@@ -15,10 +15,10 @@ export function OrderStatusBadge({ order }) {
   const isVoided  = order.status === 'voided'
 
   const STATUS = {
-    completed: { bg:'#dcfce7', color:'#16a34a', label:'Completed' },
+    completed: { bg:'#d1fae5', color:'#16a34a', label:'Completed' },
     voided:    { bg:'#fee2e2', color:'#dc2626', label:'Voided' },
     held:      { bg:'#fef9c3', color:'#ca8a04', label:'On Hold' },
-    refunded:  { bg:'#fdf4ff', color:'#006AFF', label:'Refunded' },
+    refunded:  { bg:'#fdf4ff', color:'#5E6AD2', label:'Refunded' },
     partial_refund: { bg:'#eff6ff', color:'#2563eb', label:'Part. Refunded' },
   }
 
@@ -374,10 +374,10 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                 <button onClick={() => setMode('by_item')}
                   className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
                   style={{border:'2px solid #e2e8f0', background:'#fff'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#E6F0FF'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#5E6AD2';e.currentTarget.style.background='#eef0fc'}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
-                    style={{background:'#E6F0FF'}}>
+                    style={{background:'#eef0fc'}}>
                     📦
                   </div>
                   <div>
@@ -393,7 +393,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                 <button onClick={() => setMode('by_invoice')}
                   className="flex items-center gap-4 p-5 rounded-2xl text-left cursor-pointer border-2 transition-all"
                   style={{border:'2px solid #e2e8f0', background:'#fff'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#faf5ff'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#5E6AD2';e.currentTarget.style.background='#faf5ff'}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
                     style={{background:'#ede9fe'}}>
@@ -637,7 +637,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
               {selectedOrder && (
                 <>
                   {/* Order header */}
-                  <div className="rounded-2xl p-4" style={{background:'#E6F0FF', border:'1.5px solid #B3D1FF'}}>
+                  <div className="rounded-2xl p-4" style={{background:'#eef0fc', border:'1.5px solid #B3D1FF'}}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[14px] font-bold text-indigo-700">{selectedOrder.order_number}</span>
@@ -728,7 +728,7 @@ export default function RefundPanel({ onClose, preloadOrder = null }) {
                                   {' '}
                                   <span className="font-mono font-bold text-green-700">${Number(item.paid_unit_price).toFixed(2)}/ea</span>
                                   <span className="ml-1 px-1 rounded text-[9px] font-bold"
-                                    style={{background:'#dcfce7', color:'#166534'}}>BULK</span>
+                                    style={{background:'#d1fae5', color:'#166534'}}>BULK</span>
                                 </>
                               ) : (
                                 <span className="font-mono">${item.unit_price?.toFixed(2)}/ea</span>

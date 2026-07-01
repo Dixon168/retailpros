@@ -292,7 +292,7 @@ export default function SmartReceivePage() {
 
             <div className="flex gap-3">
               <div className="flex-1 flex items-center rounded-xl px-4 gap-2"
-                style={{border:'2px solid #006AFF', background:'#f8fafc'}}>
+                style={{border:'2px solid #5E6AD2', background:'#f8fafc'}}>
                 <span className="text-[20px]">🔍</span>
                 <input
                   ref={barcodeRef}
@@ -317,7 +317,7 @@ export default function SmartReceivePage() {
             </div>
 
             {looking && (
-              <div className="mt-4 p-4 rounded-xl text-center" style={{background:'#E6F0FF', border:'1px solid #B3D1FF'}}>
+              <div className="mt-4 p-4 rounded-xl text-center" style={{background:'#eef0fc', border:'1px solid #B3D1FF'}}>
                 <div className="text-[13px] text-indigo-700 font-semibold animate-pulse">
                   🔍 Searching database... 🤖 AI analyzing...
                 </div>
@@ -341,7 +341,7 @@ export default function SmartReceivePage() {
             {/* Product card */}
             <div className="rounded-2xl overflow-hidden shadow-sm" style={{border:'1.5px solid #86efac'}}>
               <div className="px-5 py-3 flex items-center gap-2"
-                style={{background:'#f0fdf4', borderBottom:'1px solid #dcfce7'}}>
+                style={{background:'#f0fdf4', borderBottom:'1px solid #d1fae5'}}>
                 <span className="text-[18px]">✅</span>
                 <span className="text-[13px] font-bold text-green-700">Product found in your inventory</span>
                 <button onClick={reset} className="ml-auto text-[11px] text-slate-400 bg-transparent border-none cursor-pointer hover:text-slate-600">
@@ -399,12 +399,12 @@ export default function SmartReceivePage() {
           <div className="flex flex-col gap-4">
             {/* Status bar */}
             <div className="rounded-2xl overflow-hidden shadow-sm"
-              style={{border:`1.5px solid ${offData?.found?'#80B2FF':'#e2e8f0'}`}}>
+              style={{border:`1.5px solid ${offData?.found?'#dee2f8':'#e2e8f0'}`}}>
               <div className="px-5 py-3 flex items-center gap-2"
-                style={{background: offData?.found?'#E6F0FF':'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
+                style={{background: offData?.found?'#eef0fc':'#f8fafc', borderBottom:'1px solid #e2e8f0'}}>
                 <span className="text-[18px]">{offData?.found?'🤖':'📝'}</span>
                 <div>
-                  <div className="text-[13px] font-bold" style={{color: offData?.found?'#006AFF':'#64748b'}}>
+                  <div className="text-[13px] font-bold" style={{color: offData?.found?'#5E6AD2':'#64748b'}}>
                     {offData?.found ? 'AI found product info — please verify' : 'New product — fill in manually'}
                   </div>
                   <div className="text-[10px] text-slate-400">UPC: {barcode}</div>
@@ -424,7 +424,7 @@ export default function SmartReceivePage() {
                   <div>
                     {aiData?.category_suggestion && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 inline-block"
-                        style={{background:'#E6F0FF', color:'#006AFF'}}>
+                        style={{background:'#eef0fc', color:'#5E6AD2'}}>
                         {aiData.category_suggestion}
                       </span>
                     )}
@@ -472,7 +472,7 @@ export default function SmartReceivePage() {
                     <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Retail Price</div>
                     <button onClick={()=>setShowPricePad(true)}
                       className="w-full rounded-xl px-3 py-2.5 text-left text-[14px] font-bold font-mono cursor-pointer"
-                      style={{border:'1.5px solid #80B2FF', background:'#E6F0FF', color:'#006AFF'}}>
+                      style={{border:'1.5px solid #dee2f8', background:'#eef0fc', color:'#5E6AD2'}}>
                       ${parseFloat(form.price||0).toFixed(2)}
                     </button>
                   </div>

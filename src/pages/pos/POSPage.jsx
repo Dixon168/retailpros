@@ -350,7 +350,7 @@ export default function POSPage() {
               <div className="text-[15px] font-bold tracking-tight text-white">Retail Pro</div>
               <div className="text-[7px] tracking-tight" style={{color:'#cbd5e1'}}>powered by All in One Payment Solution</div>
             </div>
-            <span className="text-[8px] font-mono px-1 py-0.5 rounded self-start" style={{background:'rgba(0,106,255,0.25)', color:'#80B2FF'}}>
+            <span className="text-[8px] font-mono px-1 py-0.5 rounded self-start" style={{background:'rgba(0,106,255,0.25)', color:'#dee2f8'}}>
               v{APP_VERSION}
             </span>
           </div>
@@ -511,7 +511,7 @@ export default function POSPage() {
                     onClick={() => setSelectedTag(selectedTag === t ? '' : t)}
                     className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all cursor-pointer whitespace-nowrap flex-shrink-0"
                     style={selectedTag === t
-                      ? {background:'#006AFF', color:'#fff', border:'1.5px solid #006AFF'}
+                      ? {background:'#5E6AD2', color:'#fff', border:'1.5px solid #5E6AD2'}
                       : {background:'#fff', color:'#64748b', border:'1.5px solid #e2e8f0'}}>
                     {t}
                   </button>

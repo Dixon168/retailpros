@@ -100,7 +100,7 @@ export default function PromoProductList({ tenantId, promotionId, products, onCh
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-bold text-[#1F1F1F]">Products in this promotion</span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{background:'#E6F0FF', color:'#006AFF'}}>{products.length} selected</span>
+            style={{background:'#eef0fc', color:'#5E6AD2'}}>{products.length} selected</span>
         </div>
         <div className="flex gap-2">
           <button onClick={()=>{ setShowAdd(true); setShowCat(false) }} type="button"
@@ -146,7 +146,7 @@ export default function PromoProductList({ tenantId, promotionId, products, onCh
                       </div>
                     </div>
                     <div className="text-[12px] font-bold font-mono text-slate-600">${Number(p.price||0).toFixed(2)}</div>
-                    <div className="text-[10px] font-bold flex-shrink-0" style={{color: already ? '#94a3b8' : '#006AFF'}}>
+                    <div className="text-[10px] font-bold flex-shrink-0" style={{color: already ? '#94a3b8' : '#5E6AD2'}}>
                       {already ? '✓ Added' : '+ Add'}
                     </div>
                   </button>

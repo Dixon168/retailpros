@@ -210,7 +210,7 @@ export default function CardCenterPage() {
                 <button key={id} onClick={() => setDatePreset(id)}
                   className={`px-2.5 py-1.5 rounded-lg text-[10px] border transition-all ${
                     datePreset === id
-                      ? 'border-blue-500/40 bg-[#006AFF]/8 text-[#006AFF]'
+                      ? 'border-blue-500/40 bg-[#5E6AD2]/8 text-[#5E6AD2]'
                       : 'border-[#E5E5E5] bg-[#F5F5F5] text-[#666666]'
                   }`}>{label}
                 </button>
@@ -245,7 +245,7 @@ export default function CardCenterPage() {
         {tab === 'transactions' && (
           <button
             onClick={() => { setBatchConfirm(true); if (needsBatchAuth) setPinFor('batch') }}
-            className="bg-[#006AFF] border-none
+            className="bg-[#5E6AD2] border-none
               rounded-lg px-4 py-2 text-[12px] font-bold text-white">
             🔒 Batch Close
           </button>
@@ -309,7 +309,7 @@ export default function CardCenterPage() {
                         <td className="px-4 py-3 text-[11px] text-[#666666]">
                           {tx.terminals?.name || tx.terminal_name || '—'}
                         </td>
-                        <td className="px-4 py-3 font-mono text-[11px] text-[#006AFF]">
+                        <td className="px-4 py-3 font-mono text-[11px] text-[#5E6AD2]">
                           {tx.orders?.order_number || tx.order_number || '—'}
                         </td>
                         <td className="px-4 py-3">
@@ -341,7 +341,7 @@ export default function CardCenterPage() {
                                   if (needsVoidAuth) setPinFor('void')
                                 }}
                                 className="bg-red-500/10 border border-red-500/20 rounded px-2 py-1
-                                  text-[10px] text-[#CF1322] hover:bg-red-500/15 transition-colors">
+                                  text-[10px] text-[#dc2626] hover:bg-red-500/15 transition-colors">
                                 Void
                               </button>
                             )}
@@ -393,13 +393,13 @@ export default function CardCenterPage() {
                     {batch.triggered_by_name || '—'}
                   </td>
                   <td className="px-4 py-3 font-mono text-[12px] text-[#00B23B]">${batch.total_sales?.toFixed(2)}</td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-[#CF1322]">-${batch.total_refunds?.toFixed(2)}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-[#dc2626]">-${batch.total_refunds?.toFixed(2)}</td>
                   <td className="px-4 py-3 font-mono text-[12px] text-[#666666]">-${batch.total_voids?.toFixed(2)}</td>
                   <td className="px-4 py-3 font-mono text-[13px] font-bold">${batch.net_amount?.toFixed(2)}</td>
                   <td className="px-4 py-3 font-mono text-[11px]">{batch.transaction_count}</td>
                   <td className="px-4 py-3">
                     <span className={`text-[9px] font-mono px-2 py-0.5 rounded ${
-                      batch.status === 'success' ? 'bg-green-500/10 text-[#00B23B]' : 'bg-red-500/10 text-[#CF1322]'
+                      batch.status === 'success' ? 'bg-green-500/10 text-[#00B23B]' : 'bg-red-500/10 text-[#dc2626]'
                     }`}>
                       {batch.status?.toUpperCase()}
                     </span>
@@ -482,7 +482,7 @@ export default function CardCenterPage() {
                     Cancel
                   </button>
                   <button onClick={() => handleBatchClose()}
-                    className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white">
+                    className="flex-[2] bg-[#5E6AD2] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white">
                     ✓ Close Batch
                   </button>
                 </div>
@@ -532,7 +532,7 @@ function PinInput({ title, subtitle, value, onChange, onConfirm, onCancel }) {
           Cancel
         </button>
         <button onClick={onConfirm} disabled={value.length < 4}
-          className="flex-[2] bg-[#006AFF] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white disabled:opacity-40">
+          className="flex-[2] bg-[#5E6AD2] border-none rounded-[9px] py-2.5 text-[13px] font-bold text-white disabled:opacity-40">
           Authorize
         </button>
       </div>

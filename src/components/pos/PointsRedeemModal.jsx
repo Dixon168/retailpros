@@ -134,7 +134,7 @@ export function PointsRedeemModal({ onClose }) {
               <button onClick={() => setMode('cash')}
                 className="flex items-center gap-4 p-4 rounded-2xl text-left cursor-pointer border-2 transition-all"
                 style={{border:'2px solid #e2e8f0'}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor='#006AFF';e.currentTarget.style.background='#faf5ff'}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor='#5E6AD2';e.currentTarget.style.background='#faf5ff'}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor='#e2e8f0';e.currentTarget.style.background='#fff'}}>
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[24px] flex-shrink-0"
                   style={{background:'#f0fdf4'}}>💵</div>
@@ -190,10 +190,10 @@ export function PointsRedeemModal({ onClose }) {
               <button onClick={() => setShowPad(true)}
                 className="w-full rounded-2xl py-4 text-center cursor-pointer border-2 mb-3 transition-all"
                 style={{
-                  border: ptsNum > 0 ? '2px solid #006AFF' : '2px dashed #e2e8f0',
+                  border: ptsNum > 0 ? '2px solid #5E6AD2' : '2px dashed #e2e8f0',
                   background: ptsNum > 0 ? '#faf5ff' : '#f8fafc',
                 }}>
-                <div className="text-[32px] font-bold font-mono" style={{color: ptsNum > 0 ? '#006AFF' : '#94a3b8'}}>
+                <div className="text-[32px] font-bold font-mono" style={{color: ptsNum > 0 ? '#5E6AD2' : '#94a3b8'}}>
                   {ptsNum > 0 ? ptsNum.toLocaleString() : '0'}
                 </div>
                 <div className="text-[11px] text-slate-400">points</div>
@@ -205,8 +205,8 @@ export function PointsRedeemModal({ onClose }) {
                   <button key={q} onClick={() => setPtsInput(String(Math.min(q, effectiveMax)))}
                     className="flex-1 rounded-xl py-2 text-[11px] font-semibold cursor-pointer border transition-all"
                     style={{
-                      background: ptsNum===Math.min(q,Math.floor(grandTotal*REDEEM_RATE)) ? '#006AFF' : '#f8fafc',
-                      borderColor: ptsNum===Math.min(q,Math.floor(grandTotal*REDEEM_RATE)) ? '#006AFF' : '#e2e8f0',
+                      background: ptsNum===Math.min(q,Math.floor(grandTotal*REDEEM_RATE)) ? '#5E6AD2' : '#f8fafc',
+                      borderColor: ptsNum===Math.min(q,Math.floor(grandTotal*REDEEM_RATE)) ? '#5E6AD2' : '#e2e8f0',
                       color: ptsNum===Math.min(q,Math.floor(grandTotal*REDEEM_RATE)) ? '#fff' : '#64748b',
                     }}>
                     {q===customerPts ? 'MAX' : q.toLocaleString()}
@@ -232,7 +232,7 @@ export function PointsRedeemModal({ onClose }) {
                   <div className="flex justify-between text-[13px] font-bold pt-2"
                     style={{borderTop:'1px solid #86efac'}}>
                     <span className="text-slate-700">Pay after deduct</span>
-                    <span className="font-mono" style={{color:'#006AFF'}}>${Math.max(0, grandTotal-cashDeduct).toFixed(2)}</span>
+                    <span className="font-mono" style={{color:'#5E6AD2'}}>${Math.max(0, grandTotal-cashDeduct).toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -307,7 +307,7 @@ export function PointsRedeemModal({ onClose }) {
               <button onClick={applyPtsProduct}
                 disabled={totalPtsForProducts===0 || totalPtsForProducts>customerPts}
                 className="w-full rounded-2xl py-4 text-[14px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
-                style={{background:'#006AFF'}}>
+                style={{background:'#5E6AD2'}}>
                 🎁 Redeem {totalPtsForProducts>0 ? `${totalPtsForProducts.toLocaleString()} pts` : 'Points'}
               </button>
             </div>

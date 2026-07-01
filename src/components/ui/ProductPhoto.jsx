@@ -92,10 +92,10 @@ export function PhotoViewer({ product, onClose }) {
           )}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
-              ['Price',    `$${parseFloat(product.price||0).toFixed(2)}`, 'text-[#006AFF]'],
+              ['Price',    `$${parseFloat(product.price||0).toFixed(2)}`, 'text-[#5E6AD2]'],
               ['Cost',     `$${parseFloat(avgCost).toFixed(2)}`,          'text-[#666666]'],
-              ['Margin',   `${margin}%`,                                   parseFloat(margin)>=30?'text-[#00B23B]':parseFloat(margin)>=10?'text-[#FA8C16]':'text-[#CF1322]'],
-              ['On Hand',  isService ? '—' : `${totalStock} ${product.unit||'ea'}`, totalStock<=5&&!isService?'text-[#CF1322]':'text-[#1F1F1F]'],
+              ['Margin',   `${margin}%`,                                   parseFloat(margin)>=30?'text-[#00B23B]':parseFloat(margin)>=10?'text-[#FA8C16]':'text-[#dc2626]'],
+              ['On Hand',  isService ? '—' : `${totalStock} ${product.unit||'ea'}`, totalStock<=5&&!isService?'text-[#dc2626]':'text-[#1F1F1F]'],
               ['SKU',      product.sku||'—',                               'text-[#666666]'],
               ['Type',     product.type?.toUpperCase() || 'STD',          'text-[#666666]'],
             ].map(([l,v,c]) => (
@@ -144,7 +144,7 @@ export function PhotoViewer({ product, onClose }) {
           )}
           <button onClick={handleAdd}
             className="flex-1 rounded-lg py-3.5 text-[14px] font-bold cursor-pointer border-none active:scale-[0.97] transition-transform"
-            style={{background:'#006AFF', color:'#FFFFFF', minHeight:'48px'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF', minHeight:'48px'}}>
             {isWeight ? '⚖️ Add (enter weight)' :
              product.type === 'serialized' ? '🔢 Add (enter serial)' :
              product.prompt_price ? '💲 Add (enter price)' :
@@ -185,7 +185,7 @@ function QtyNumPad({ initial, onConfirm, onClose }) {
         </div>
         <div className="px-5 py-4">
           <div className="rounded-lg py-4 text-center font-mono font-bold text-[36px]"
-            style={{background:'#E6F0FF', border:'2px solid #80B2FF', color:'#006AFF'}}>
+            style={{background:'#eef0fc', border:'2px solid #dee2f8', color:'#5E6AD2'}}>
             {input || '0'}
           </div>
         </div>

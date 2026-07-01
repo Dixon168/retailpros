@@ -164,7 +164,7 @@ export function ReceiveModal({ product: p, tenantId, storeId, onSave, onClose })
                   style={{border:'1.5px solid #e2e8f0', background:'#f8fafc'}}/>
                 <button onClick={addSerial}
                   className="rounded-xl px-3 py-2 text-[11px] font-bold text-white cursor-pointer border-none"
-                  style={{background:'#006AFF'}}>Add</button>
+                  style={{background:'#5E6AD2'}}>Add</button>
               </div>
               <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1">
                 {serials.map((s,i) => (

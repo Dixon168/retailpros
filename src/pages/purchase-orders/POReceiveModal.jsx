@@ -12,10 +12,10 @@ import ProductPicker from '@/components/inventory/ProductPicker'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666', label:'Draft' },
-  ordered:   { bg:'#E6F0FF', color:'#006AFF', label:'Ordered' },
+  ordered:   { bg:'#eef0fc', color:'#5E6AD2', label:'Ordered' },
   partial:   { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
-  received:  { bg:'#DCFCE7', color:'#15803D', label:'Received' },
-  cancelled: { bg:'#FEE2E2', color:'#CF1322', label:'Cancelled' },
+  received:  { bg:'#d1fae5', color:'#059669', label:'Received' },
+  cancelled: { bg:'#FEE2E2', color:'#dc2626', label:'Cancelled' },
 }
 
 export default function POReceiveModal({ po, onClose, onChanged }) {
@@ -177,7 +177,7 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
           <div className="px-5 py-4 flex items-start justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[15px] font-bold text-[#006AFF]">{poDetail.po_number}</span>
+                <span className="font-mono text-[15px] font-bold text-[#5E6AD2]">{poDetail.po_number}</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded"
                   style={{background:status.bg, color:status.color}}>
                   {status.label}
@@ -214,7 +214,7 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                 {!isReadOnly && (
                   <button onClick={() => setShowProductPicker(true)}
                     className="rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                    style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                     + Add Extra Item
                   </button>
                 )}
@@ -274,7 +274,7 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                       style={{gridTemplateColumns:'1fr 100px 110px 110px 44px', background:'#F5F8FF'}}>
                       <div className="px-2.5 py-2.5">
                         <span className="text-[8px] font-bold px-1.5 py-0.5 rounded mr-1"
-                          style={{background:'#006AFF', color:'#FFFFFF'}}>NEW</span>
+                          style={{background:'#5E6AD2', color:'#FFFFFF'}}>NEW</span>
                         <span className="text-[12px] font-bold text-[#1F1F1F]">{item.product_name}</span>
                       </div>
                       <div className="px-2 py-2.5">
@@ -289,13 +289,13 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
                           onChange={(v) => updateExtra(idx, 'unit_cost', v)}
                           kbTitle={`Price: ${item.product_name}`}/>
                       </div>
-                      <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#006AFF]">
+                      <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#5E6AD2]">
                         ${sub.toFixed(2)}
                       </div>
                       <div className="px-2 py-2.5 flex items-center justify-center">
                         <button onClick={() => removeExtra(idx)}
                           className="w-7 h-7 rounded text-[14px] cursor-pointer"
-                          style={{background:'#FEE2E2', color:'#CF1322', border:'none'}}>×</button>
+                          style={{background:'#FEE2E2', color:'#dc2626', border:'none'}}>×</button>
                       </div>
                     </div>
                   )
@@ -325,7 +325,7 @@ export default function POReceiveModal({ po, onClose, onChanged }) {
             {!isReadOnly && (
               <button onClick={receiveAll} disabled={saving || totalToReceive === 0}
                 className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#15803D', color:'#FFFFFF', border:'none'}}>
+                style={{background:'#059669', color:'#FFFFFF', border:'none'}}>
                 {saving ? 'Saving...' : `✓ Save · Add to Inventory — $${totalToReceive.toFixed(2)}`}
               </button>
             )}

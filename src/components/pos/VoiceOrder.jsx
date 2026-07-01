@@ -229,7 +229,7 @@ export function VoiceOrderButton({ products }) {
                   {matches.length === 0 ? (
                     <div className="rounded-xl p-4 text-center"
                       style={{background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)'}}>
-                      <div className="text-[13px] text-[#CF1322]">No matching products found</div>
+                      <div className="text-[13px] text-[#dc2626]">No matching products found</div>
                       <div className="text-[11px] text-slate-400 mt-1">Try again or search manually</div>
                     </div>
                   ) : matches.map((item, i) => {
@@ -269,7 +269,7 @@ export function VoiceOrderButton({ products }) {
                   )}
                   <button onClick={() => { setState('idle'); setTranscript(''); setMatches([]); startListening() }}
                     className="flex-1 rounded-xl py-3 text-[13px] font-semibold cursor-pointer border-none"
-                    style={{background:'rgba(99,102,241,0.2)', color:'#80B2FF'}}>
+                    style={{background:'rgba(99,102,241,0.2)', color:'#dee2f8'}}>
                     🎤 Retry
                   </button>
                 </div>

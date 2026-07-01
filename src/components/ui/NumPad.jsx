@@ -85,8 +85,8 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
               <button key={`${ri}-${ci}`} onClick={() => handleKey(key)}
                 className="rounded-2xl py-4 text-[22px] font-bold cursor-pointer border-none transition-all active:scale-95"
                 style={{
-                  background: key === '-' ? '#fef2f2' : key === '.' ? '#E6F0FF' : '#f8fafc',
-                  color: key === '-' ? '#ef4444' : key === '.' ? '#006AFF' : '#1F1F1F',
+                  background: key === '-' ? '#fef2f2' : key === '.' ? '#eef0fc' : '#f8fafc',
+                  color: key === '-' ? '#ef4444' : key === '.' ? '#5E6AD2' : '#1F1F1F',
                   boxShadow: key === '-' ? '0 2px 0 #fecdd3' : key === '.' ? '0 2px 0 #B3D1FF' : '0 2px 0 #e2e8f0',
                   fontSize: '18px',
                 }}>
@@ -109,7 +109,7 @@ export default function NumPad({ title, subtitle, value, onChange, onConfirm, on
           <button onClick={() => isValid && onConfirm(numVal)}
             disabled={!isValid || value === '-'}
             className="rounded-2xl py-4 text-[22px] cursor-pointer border-none transition-all active:scale-95 disabled:opacity-30"
-            style={{background:'#000000', color:'#fff', boxShadow:'0 2px 0 #80B2FF'}}>
+            style={{background:'#000000', color:'#fff', boxShadow:'0 2px 0 #dee2f8'}}>
             ✓
           </button>
         </div>

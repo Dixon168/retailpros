@@ -154,7 +154,7 @@ export default function ItemPanel({ item, onClose }) {
           onClick={() => setPhotoViewer(true)}/>
         <div className="flex-1 min-w-0">
           <div className="text-[11px] font-bold truncate">{item.name}</div>
-          <div className="text-[10px] font-mono text-[#006AFF]">${lineTotal().toFixed(2)}</div>
+          <div className="text-[10px] font-mono text-[#5E6AD2]">${lineTotal().toFixed(2)}</div>
         </div>
         <button onClick={onClose}
           className="text-[#999999] hover:text-[#1F1F1F] bg-transparent border-none cursor-pointer text-[14px]">✕</button>
@@ -165,7 +165,7 @@ export default function ItemPanel({ item, onClose }) {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-2.5 py-1.5 text-[10px] whitespace-nowrap border-b-2 cursor-pointer bg-transparent transition-all ${
-              tab===t.id ? 'text-[#006AFF] border-blue-500' : 'text-[#999999] border-transparent'
+              tab===t.id ? 'text-[#5E6AD2] border-blue-500' : 'text-[#999999] border-transparent'
             }`}>{t.label}
           </button>
         ))}
@@ -182,7 +182,7 @@ export default function ItemPanel({ item, onClose }) {
               <div className="text-[9px] font-mono text-[#999999] uppercase mb-1.5">Quantity</div>
               <div className="flex items-center gap-2 mb-2">
                 <button onClick={() => { const n=item.qty-1; setCustomQty(String(Math.max(0,n))); setItemQty(item.id, Math.max(0,n)) }}
-                  className="w-11 h-11 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[20px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#006AFF] transition-all flex items-center justify-center active:scale-90">−</button>
+                  className="w-11 h-11 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[20px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#5E6AD2] transition-all flex items-center justify-center active:scale-90">−</button>
                 <div
                   onClick={()=>setShowQtyKb(true)}
                   className="flex-1 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-2 py-2.5 text-[16px] font-mono font-bold text-center cursor-pointer select-none"
@@ -190,7 +190,7 @@ export default function ItemPanel({ item, onClose }) {
                   {item.qty}
                 </div>
                 <button onClick={() => { const n=item.qty+1; setCustomQty(String(n)); setItemQty(item.id, n) }}
-                  className="w-11 h-11 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[20px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#006AFF] transition-all flex items-center justify-center active:scale-90">+</button>
+                  className="w-11 h-11 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[20px] font-bold cursor-pointer hover:border-blue-500/40 hover:text-[#5E6AD2] transition-all flex items-center justify-center active:scale-90">+</button>
               </div>
               <div className="text-[10px] text-[#999999] text-center">{item.unit || 'ea'} × ${item.unitPrice.toFixed(2)}</div>
             </div>
@@ -204,7 +204,7 @@ export default function ItemPanel({ item, onClose }) {
                     {item.itemDiscount.type==='pct' ? `-${item.itemDiscount.value}%` : `-$${item.itemDiscount.value}`}
                   </div>
                 </div>
-                <button onClick={removeDiscount} className="text-[#999999] hover:text-[#CF1322] bg-transparent border-none cursor-pointer text-[12px]">✕</button>
+                <button onClick={removeDiscount} className="text-[#999999] hover:text-[#dc2626] bg-transparent border-none cursor-pointer text-[12px]">✕</button>
               </div>
             )}
 
@@ -215,7 +215,7 @@ export default function ItemPanel({ item, onClose }) {
                   <div className="text-[9px] text-[#999999]">Staff</div>
                   <div className="text-[11px] font-bold">{item.employee.name}</div>
                 </div>
-                <button onClick={() => setItemEmployee(item.id, null)} className="text-[#999999] hover:text-[#CF1322] bg-transparent border-none cursor-pointer text-[12px]">✕</button>
+                <button onClick={() => setItemEmployee(item.id, null)} className="text-[#999999] hover:text-[#dc2626] bg-transparent border-none cursor-pointer text-[12px]">✕</button>
               </div>
             )}
 
@@ -238,7 +238,7 @@ export default function ItemPanel({ item, onClose }) {
             {/* Delete */}
             <button onClick={() => { removeItem(item.id); onClose() }}
               className="w-full bg-red-500/10 border border-red-500/20 rounded-[9px] py-2
-                text-[11px] font-bold text-[#CF1322] cursor-pointer hover:bg-red-500/15 transition-colors mt-1">
+                text-[11px] font-bold text-[#dc2626] cursor-pointer hover:bg-red-500/15 transition-colors mt-1">
               🗑 Remove Item
             </button>
           </div>
@@ -278,7 +278,7 @@ export default function ItemPanel({ item, onClose }) {
             </button>
             {item.itemDiscount && (
               <button onClick={removeDiscount}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-2 text-[11px] text-[#CF1322] cursor-pointer">
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-2 text-[11px] text-[#dc2626] cursor-pointer">
                 Remove Discount
               </button>
             )}
@@ -318,7 +318,7 @@ export default function ItemPanel({ item, onClose }) {
               <button key={s.id} onClick={() => { setItemEmployee(item.id, { id: s.id, name: s.name }); setTab('main') }}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-[9px] border cursor-pointer transition-all text-left ${
                   item.employee?.id===s.id
-                    ? 'bg-[#006AFF]/10 border-blue-500/30 text-[#006AFF]'
+                    ? 'bg-[#5E6AD2]/10 border-blue-500/30 text-[#5E6AD2]'
                     : 'bg-[#F5F5F5] border-[#E5E5E5] text-[#1F1F1F] hover:border-[#E5E5E5]'
                 }`}>
                 <div className="w-6 h-6 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[10px] font-bold flex-shrink-0">
@@ -328,12 +328,12 @@ export default function ItemPanel({ item, onClose }) {
                   <div className="text-[12px] font-semibold">{s.name}</div>
                   <div className="text-[9px] text-[#999999]">{s.role}</div>
                 </div>
-                {item.employee?.id===s.id && <span className="ml-auto text-[#006AFF]">✓</span>}
+                {item.employee?.id===s.id && <span className="ml-auto text-[#5E6AD2]">✓</span>}
               </button>
             ))}
             {item.employee && (
               <button onClick={() => setItemEmployee(item.id, null)}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-2 text-[11px] text-[#CF1322] cursor-pointer mt-1">
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] py-2 text-[11px] text-[#dc2626] cursor-pointer mt-1">
                 Remove Staff
               </button>
             )}
@@ -346,9 +346,9 @@ export default function ItemPanel({ item, onClose }) {
             <textarea
               value={note} onChange={e => setNote(e.target.value)}
               rows={4} autoFocus placeholder="Add note for this item..."
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5 text-[12px] outline-none focus:border-[#006AFF] resize-none placeholder-[#999999]"/>
+              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-[9px] px-3 py-2.5 text-[12px] outline-none focus:border-[#5E6AD2] resize-none placeholder-[#999999]"/>
             <button onClick={saveNote}
-              className="w-full bg-[#006AFF] border-none rounded-[9px] py-2.5 text-[12px] font-bold text-white cursor-pointer">
+              className="w-full bg-[#5E6AD2] border-none rounded-[9px] py-2.5 text-[12px] font-bold text-white cursor-pointer">
               ✓ Save Note
             </button>
             {note && (

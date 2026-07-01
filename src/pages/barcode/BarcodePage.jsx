@@ -50,7 +50,7 @@ export default function BarcodePage() {
             <button key={t.id} onClick={()=>setTab(t.id)}
               className="px-5 py-2.5 text-[13px] font-bold cursor-pointer border-none transition-all"
               style={tab===t.id
-                ? { background:'transparent', color:'#006AFF', borderBottom:'2px solid #006AFF', marginBottom:'-2px' }
+                ? { background:'transparent', color:'#5E6AD2', borderBottom:'2px solid #5E6AD2', marginBottom:'-2px' }
                 : { background:'transparent', color:'#666' }}>
               <span className="mr-1.5">{t.icon}</span>{t.label}
             </button>
@@ -138,7 +138,7 @@ function TemplatesTab({ tenant, store, user }) {
         {!editing && (
           <button onClick={startNew}
             className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer border-none"
-            style={{background:'#006AFF', color:'#fff'}}>
+            style={{background:'#5E6AD2', color:'#fff'}}>
             + Add Template
           </button>
         )}
@@ -160,13 +160,13 @@ function TemplatesTab({ tenant, store, user }) {
             </div>
           ) : templates.map(t => (
             <div key={t.id} className="bg-[#FFFFFF] rounded-2xl p-4"
-              style={{border: t.is_default ? '2px solid #006AFF' : '1px solid #E5E5E5'}}>
+              style={{border: t.is_default ? '2px solid #5E6AD2' : '1px solid #E5E5E5'}}>
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="text-[14px] font-bold flex items-center gap-1">
                     {t.name}
                     {t.is_default && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold"
-                      style={{background:'#E6F0FF', color:'#006AFF'}}>DEFAULT</span>}
+                      style={{background:'#eef0fc', color:'#5E6AD2'}}>DEFAULT</span>}
                   </div>
                   <div className="text-[11px] text-[#666] mt-0.5 font-mono">
                     {t.width_mm}×{t.height_mm}mm · {t.barcode_format}
@@ -181,13 +181,13 @@ function TemplatesTab({ tenant, store, user }) {
               <div className="flex gap-1.5">
                 <button onClick={()=>useTemplate(t)}
                   className="flex-1 rounded-lg px-2 py-2 text-[11px] font-bold cursor-pointer border-none"
-                  style={{background:'#006AFF', color:'#fff'}}>🖨 Test Print</button>
+                  style={{background:'#5E6AD2', color:'#fff'}}>🖨 Test Print</button>
                 <button onClick={()=>startEdit(t)}
                   className="rounded-lg px-3 py-2 text-[11px] font-bold cursor-pointer"
-                  style={{background:'#fff', color:'#006AFF', border:'1px solid #80B2FF'}}>Edit</button>
+                  style={{background:'#fff', color:'#5E6AD2', border:'1px solid #dee2f8'}}>Edit</button>
                 <button onClick={()=>remove(t)}
                   className="rounded-lg px-2 py-2 text-[12px] cursor-pointer"
-                  style={{background:'#FEE2E2', color:'#CF1322', border:'1px solid #FCA5A5'}}>✕</button>
+                  style={{background:'#FEE2E2', color:'#dc2626', border:'1px solid #FCA5A5'}}>✕</button>
               </div>
             </div>
           ))}
@@ -208,9 +208,9 @@ function TemplateEditor({ editing, setEditing, onSave, onCancel, storeName, crea
   }))
 
   return (
-    <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-5" style={{border:'2px solid #006AFF'}}>
+    <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-5" style={{border:'2px solid #5E6AD2'}}>
       <div className="flex justify-between items-center mb-4">
-        <div className="text-[15px] font-bold text-[#006AFF]">
+        <div className="text-[15px] font-bold text-[#5E6AD2]">
           {creating ? '➕ New Template' : `✏️ Editing: ${editing.name}`}
         </div>
         <button onClick={onCancel}
@@ -234,7 +234,7 @@ function TemplateEditor({ editing, setEditing, onSave, onCancel, storeName, crea
                 <button key={p.label} onClick={()=>applyPreset(p)}
                   className="rounded-lg px-2 py-1.5 text-[10px] cursor-pointer border text-left"
                   style={editing.width_mm===p.w && editing.height_mm===p.h
-                    ? {background:'#E6F0FF', borderColor:'#80B2FF', color:'#006AFF', fontWeight:'bold'}
+                    ? {background:'#eef0fc', borderColor:'#dee2f8', color:'#5E6AD2', fontWeight:'bold'}
                     : {background:'#fff', borderColor:'#E5E5E5', color:'#666'}}>
                   {p.label}<br/><span className="text-[9px] opacity-70">{p.w}×{p.h}mm</span>
                 </button>
@@ -291,9 +291,9 @@ function TemplateEditor({ editing, setEditing, onSave, onCancel, storeName, crea
                 ['show_date','📅 Print date'],
               ].map(([k,lbl]) => (
                 <label key={k} className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5"
-                  style={editing[k]?{background:'#E6F0FF', border:'1px solid #80B2FF'}:{background:'#F8FAFC', border:'1px solid #E5E5E5'}}>
+                  style={editing[k]?{background:'#eef0fc', border:'1px solid #dee2f8'}:{background:'#F8FAFC', border:'1px solid #E5E5E5'}}>
                   <input type="checkbox" checked={!!editing[k]} onChange={e=>set(k, e.target.checked)}/>
-                  <span className="text-[11px] font-semibold" style={{color: editing[k]?'#006AFF':'#666'}}>{lbl}</span>
+                  <span className="text-[11px] font-semibold" style={{color: editing[k]?'#5E6AD2':'#666'}}>{lbl}</span>
                 </label>
               ))}
             </div>
@@ -340,7 +340,7 @@ function TemplateEditor({ editing, setEditing, onSave, onCancel, storeName, crea
             </button>
             <button onClick={onSave}
               className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer border-none"
-              style={{background:'#006AFF', color:'#fff'}}>
+              style={{background:'#5E6AD2', color:'#fff'}}>
               {creating ? '+ Create' : '✓ Save Changes'}
             </button>
           </div>
@@ -442,7 +442,7 @@ function PrintNowTab({ tenant, store }) {
               <button key={t.id} onClick={()=>setPicked(t)}
                 className="rounded-lg px-3 py-2 text-left cursor-pointer border-2"
                 style={picked?.id===t.id
-                  ? {background:'#E6F0FF', borderColor:'#006AFF'}
+                  ? {background:'#eef0fc', borderColor:'#5E6AD2'}
                   : {background:'#fff', borderColor:'#E5E5E5'}}>
                 <div className="text-[12px] font-bold">{t.name}</div>
                 <div className="text-[10px] text-[#666] font-mono">{t.width_mm}×{t.height_mm}mm · {t.barcode_format}</div>
@@ -509,9 +509,9 @@ function PrintNowTab({ tenant, store }) {
                 style={{border:'1.5px solid #E5E5E5', background:'#fff'}}/>
               {pickedProduct ? (
                 <div className="rounded-lg px-3 py-2.5 flex items-center justify-between"
-                  style={{background:'#E6F0FF', border:'1px solid #80B2FF'}}>
+                  style={{background:'#eef0fc', border:'1px solid #dee2f8'}}>
                   <div>
-                    <div className="text-[13px] font-bold text-[#006AFF]">{pickedProduct.name}</div>
+                    <div className="text-[13px] font-bold text-[#5E6AD2]">{pickedProduct.name}</div>
                     <div className="text-[10px] text-[#666] font-mono">{pickedProduct.sku} · ${Number(pickedProduct.price||0).toFixed(2)}</div>
                   </div>
                   <button onClick={()=>{ setPickedProduct(null); setSearch('') }}
@@ -521,7 +521,7 @@ function PrintNowTab({ tenant, store }) {
                 <div className="rounded-lg max-h-[200px] overflow-y-auto" style={{border:'1px solid #E5E5E5', background:'#fff'}}>
                   {products.map(p => (
                     <div key={p.id} onClick={()=>{ setPickedProduct(p); setSearch(p.name) }}
-                      className="px-3 py-2 cursor-pointer hover:bg-[#E6F0FF] border-b border-[#F1F5F9] last:border-0">
+                      className="px-3 py-2 cursor-pointer hover:bg-[#eef0fc] border-b border-[#F1F5F9] last:border-0">
                       <div className="text-[12px] font-semibold">{p.name}</div>
                       <div className="text-[10px] text-[#666] font-mono">{p.sku} · ${Number(p.price||0).toFixed(2)}</div>
                     </div>
@@ -543,7 +543,7 @@ function PrintNowTab({ tenant, store }) {
               <button key={n} onClick={()=>setQty(n)}
                 className="flex-1 rounded-md py-1 text-[10px] font-bold cursor-pointer border"
                 style={qty===n
-                  ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                  ? {background:'#5E6AD2', color:'#fff', borderColor:'#5E6AD2'}
                   : {background:'#fff', color:'#666', borderColor:'#E5E5E5'}}>{n}</button>
             ))}
           </div>
@@ -551,7 +551,7 @@ function PrintNowTab({ tenant, store }) {
 
         <button onClick={doPrint}
           className="w-full rounded-lg py-3 text-[14px] font-bold cursor-pointer border-none"
-          style={{background:'#006AFF', color:'#fff'}}>
+          style={{background:'#5E6AD2', color:'#fff'}}>
           🖨 Print {qty} label{qty>1?'s':''}
         </button>
       </div>
@@ -613,7 +613,7 @@ function SettingsTab({ tenant }) {
         <div className="flex gap-2 mt-3">
           <button onClick={save} disabled={saving}
             className="rounded-lg px-5 py-2 text-[12px] font-bold cursor-pointer border-none disabled:opacity-50"
-            style={{background:'#006AFF', color:'#fff'}}>
+            style={{background:'#5E6AD2', color:'#fff'}}>
             {saving ? 'Saving...' : '✓ Save'}
           </button>
         </div>

@@ -104,7 +104,7 @@ export default function POSReportsPage() {
             <button key={k} onClick={() => setRange(k)}
               className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border-2 transition-all"
               style={range===k
-                ? {background:'#006AFF', color:'#fff', borderColor:'#006AFF'}
+                ? {background:'#5E6AD2', color:'#fff', borderColor:'#5E6AD2'}
                 : {background:'#fff', color:'#666', borderColor:'#e5e5e5'}}>
               {label}
             </button>
@@ -118,7 +118,7 @@ export default function POSReportsPage() {
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 text-[12px] font-bold cursor-pointer border-none transition-all flex items-center gap-1.5 flex-shrink-0"
             style={tab === t.id
-              ? {background:'transparent', color:'#006AFF', borderBottom:'2px solid #006AFF', marginBottom:'-1px'}
+              ? {background:'transparent', color:'#5E6AD2', borderBottom:'2px solid #5E6AD2', marginBottom:'-1px'}
               : {background:'transparent', color:'#666'}}>
             <span>{t.icon}</span> {t.label}
           </button>
@@ -166,7 +166,7 @@ function SalesSummary({ orders, exportCSV }) {
         <div className="text-[13px] font-bold">Daily Sales Summary</div>
         <button onClick={() => exportCSV(rows, `pos-sales-${format(new Date(),'yyyyMMdd')}.csv`)}
           className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           📥 Export CSV
         </button>
       </div>
@@ -204,7 +204,7 @@ function SalesSummary({ orders, exportCSV }) {
               <td className="px-4 py-2 text-right font-mono font-bold">{totals.orders}</td>
               <td className="px-4 py-2 text-right font-mono font-bold">${totals.gross.toFixed(2)}</td>
               <td className="px-4 py-2 text-right font-mono font-bold text-red-600">-${totals.refunds.toFixed(2)}</td>
-              <td className="px-4 py-2 text-right font-mono font-bold" style={{color:'#006AFF'}}>${totals.net.toFixed(2)}</td>
+              <td className="px-4 py-2 text-right font-mono font-bold" style={{color:'#5E6AD2'}}>${totals.net.toFixed(2)}</td>
               <td className="px-4 py-2 text-right font-mono font-bold">${totals.tax.toFixed(2)}</td>
               <td className="px-4 py-2 text-right font-mono font-bold">${totals.tips.toFixed(2)}</td>
             </tr>
@@ -236,7 +236,7 @@ function ByProduct({ orders, exportCSV }) {
         <div className="text-[13px] font-bold">Sales by Product</div>
         <button onClick={() => exportCSV(rows, `pos-products-${format(new Date(),'yyyyMMdd')}.csv`)}
           className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           📥 Export CSV
         </button>
       </div>
@@ -294,7 +294,7 @@ function ByCashier({ orders, cashiers, exportCSV }) {
         <div className="text-[13px] font-bold">Cashier Performance</div>
         <button onClick={() => exportCSV(rows.map(({id,...r}) => r), `pos-cashiers-${format(new Date(),'yyyyMMdd')}.csv`)}
           className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           📥 Export CSV
         </button>
       </div>
@@ -342,7 +342,7 @@ function TaxReport({ orders, exportCSV }) {
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
           <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Taxable Subtotal</div>
-          <div className="text-[24px] font-black font-mono mt-1" style={{color:'#006AFF'}}>${totals.subtotal.toFixed(2)}</div>
+          <div className="text-[24px] font-black font-mono mt-1" style={{color:'#5E6AD2'}}>${totals.subtotal.toFixed(2)}</div>
         </div>
         <div className="rounded-2xl p-4" style={{background:'#fff', border:'1px solid #e5e5e5'}}>
           <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Tax Collected</div>
@@ -353,7 +353,7 @@ function TaxReport({ orders, exportCSV }) {
           <div className="text-[24px] font-black font-mono mt-1" style={{color:'#dc2626'}}>${totals.refunded.toFixed(2)}</div>
         </div>
       </div>
-      <div className="rounded-2xl p-4 text-[12px]" style={{background:'#eff6ff', border:'1px solid #80B2FF', color:'#1e3a8a'}}>
+      <div className="rounded-2xl p-4 text-[12px]" style={{background:'#eff6ff', border:'1px solid #dee2f8', color:'#1e3a8a'}}>
         💡 <b>For sales tax filing:</b> Tax Collected = ${totals.tax.toFixed(2)} on Taxable Subtotal of ${totals.subtotal.toFixed(2)}.
         Adjust for refunds when filing.
       </div>
@@ -380,7 +380,7 @@ function Refunds({ orders, exportCSV }) {
             total: o.total, refunded: o.refunded_amount, status: o.refund_status,
           })), `pos-refunds-${format(new Date(),'yyyyMMdd')}.csv`)}
           className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-          style={{background:'#006AFF'}}>
+          style={{background:'#5E6AD2'}}>
           📥 Export CSV
         </button>
       </div>
@@ -456,7 +456,7 @@ function Tips({ orders, cashiers, exportCSV }) {
           <div className="text-[13px] font-bold">Tips by Cashier</div>
           <button onClick={() => exportCSV(rows.map(({id,...r})=>r), `pos-tips-${format(new Date(),'yyyyMMdd')}.csv`)}
             className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer border-none text-white"
-            style={{background:'#006AFF'}}>
+            style={{background:'#5E6AD2'}}>
             📥 Export CSV
           </button>
         </div>

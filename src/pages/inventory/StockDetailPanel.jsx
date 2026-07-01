@@ -147,10 +147,10 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
   const threshold = p.low_stock_qty || 5
   const stockState = qty < 0 ? 'negative' : qty === 0 ? 'oos' : qty <= threshold ? 'low' : 'normal'
   const stockColor = {
-    negative: { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: `${qty}` },
-    oos:      { bg:'#FEE2E2', color:'#CF1322', dot:'#CF1322', label: 'Out of stock' },
+    negative: { bg:'#FEE2E2', color:'#dc2626', dot:'#dc2626', label: `${qty}` },
+    oos:      { bg:'#FEE2E2', color:'#dc2626', dot:'#dc2626', label: 'Out of stock' },
     low:      { bg:'#FEF3C7', color:'#B45309', dot:'#F59E0B', label: `${qty}  (low)` },
-    normal:   { bg:'#DCFCE7', color:'#15803D', dot:'#15803D', label: `${qty}` },
+    normal:   { bg:'#d1fae5', color:'#059669', dot:'#059669', label: `${qty}` },
   }[stockState]
 
   // ── Inline field save ──
@@ -198,7 +198,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
             ) : (
               <div className="flex items-start gap-2">
                 <div className="text-[16px] font-bold text-[#1F1F1F] truncate flex-1">{p.name}</div>
-                <button onClick={() => setEditing('name')} className="text-[11px] text-[#006AFF] cursor-pointer flex-shrink-0" style={{background:'none', border:'none'}}>edit</button>
+                <button onClick={() => setEditing('name')} className="text-[11px] text-[#5E6AD2] cursor-pointer flex-shrink-0" style={{background:'none', border:'none'}}>edit</button>
               </div>
             )}
             <div className="flex items-center gap-2 mt-0.5">
@@ -207,7 +207,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
               ) : (
                 <>
                   <span className="text-[11px] text-[#666] font-mono">{p.sku || '— no SKU'}</span>
-                  <button onClick={() => setEditing('sku')} className="text-[10px] text-[#006AFF] cursor-pointer" style={{background:'none', border:'none'}}>edit</button>
+                  <button onClick={() => setEditing('sku')} className="text-[10px] text-[#5E6AD2] cursor-pointer" style={{background:'none', border:'none'}}>edit</button>
                 </>
               )}
             </div>
@@ -236,7 +236,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
                   ) : (
                     <div className="flex items-center gap-2 justify-end">
                       <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">{p.low_stock_qty || 5}</span>
-                      <button onClick={() => setEditing('low_stock_qty')} className="text-[11px] text-[#006AFF] cursor-pointer" style={{background:'none', border:'none'}}>edit</button>
+                      <button onClick={() => setEditing('low_stock_qty')} className="text-[11px] text-[#5E6AD2] cursor-pointer" style={{background:'none', border:'none'}}>edit</button>
                     </div>
                   )}
                 </div>
@@ -245,17 +245,17 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setShowReceive(true)}
                 className="rounded-lg py-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
-                style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                 📥 Receive
               </button>
               <button onClick={() => setShowCount(true)}
                 className="rounded-lg py-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
-                style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                 🔢 Count
               </button>
               <button onClick={() => setShowWriteOff(true)}
                 className="rounded-lg py-3 text-[13px] font-bold cursor-pointer active:scale-[0.96] flex items-center justify-center gap-1.5"
-                style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                 💔 Write off
               </button>
               <button onClick={() => setShowHistory(true)}
@@ -281,7 +281,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
                       <div className="w-full rounded-sm transition-all"
                         style={{
                           height: `${Math.max(4, (d.units / maxUnits) * 100)}%`,
-                          background: d.units > 0 ? '#006AFF' : '#E5E5E5',
+                          background: d.units > 0 ? '#5E6AD2' : '#E5E5E5',
                         }}
                         title={`${d.label}: ${d.units} sold`}/>
                     </div>
@@ -302,7 +302,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
             </div>
             <button onClick={() => openFullEdit(p.id)} disabled={loadingFullEdit}
               className="mt-3 w-full rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.98] disabled:opacity-50"
-              style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+              style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
               {loadingFullEdit ? 'Loading...' : 'Edit full details →'}
             </button>
           </Section>
@@ -329,7 +329,7 @@ export default function StockDetailPanel({ product, onClose, onChanged }) {
                           {vp.suppliers?.name || '—'}
                           {isCheapest && (
                             <span className="text-[8px] font-bold px-1 py-0.5 rounded"
-                              style={{background:'#DCFCE7', color:'#15803D'}}>
+                              style={{background:'#d1fae5', color:'#059669'}}>
                               CHEAPEST
                             </span>
                           )}
@@ -476,7 +476,7 @@ function PriceField({ label, value, editing, onEdit, onSave, onCancel }) {
       ) : (
         <div className="flex items-center justify-between">
           <span className="text-[18px] font-bold font-mono text-[#1F1F1F]">${(value || 0).toFixed(2)}</span>
-          <button onClick={onEdit} className="text-[11px] text-[#006AFF] cursor-pointer" style={{background:'none', border:'none'}}>edit</button>
+          <button onClick={onEdit} className="text-[11px] text-[#5E6AD2] cursor-pointer" style={{background:'none', border:'none'}}>edit</button>
         </div>
       )}
     </div>
@@ -487,7 +487,7 @@ function EditableText({ value: initial, onSave, onCancel, setShowKB, small }) {
   const [v, setV] = useState(initial)
   return (
     <div className="flex items-center gap-1">
-      <div className={`flex-1 flex items-stretch bg-[#FFFFFF] border border-[#006AFF] rounded overflow-hidden`}>
+      <div className={`flex-1 flex items-stretch bg-[#FFFFFF] border border-[#5E6AD2] rounded overflow-hidden`}>
         <input value={v} onChange={e => setV(e.target.value)} autoFocus
           className={`flex-1 bg-transparent border-none outline-none px-2 py-1 ${small ? 'text-[11px]' : 'text-[14px] font-bold'}`}
           onKeyDown={e => {
@@ -501,7 +501,7 @@ function EditableText({ value: initial, onSave, onCancel, setShowKB, small }) {
           title="Open on-screen keyboard">⌨️</button>
       </div>
       <button onClick={() => onSave(v)} className="px-2 py-1 rounded text-[11px] font-bold cursor-pointer"
-        style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>✓</button>
+        style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>✓</button>
       <button onClick={onCancel} className="px-2 py-1 rounded text-[11px] cursor-pointer"
         style={{background:'#F5F5F5', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
     </div>
@@ -512,7 +512,7 @@ function EditableNum({ value: initial, onSave, onCancel, prefix }) {
   const [v, setV] = useState(String(initial))
   return (
     <div className="flex items-center gap-1">
-      <div className="flex-1 flex items-stretch bg-[#FFFFFF] border border-[#006AFF] rounded overflow-hidden">
+      <div className="flex-1 flex items-stretch bg-[#FFFFFF] border border-[#5E6AD2] rounded overflow-hidden">
         {prefix && <span className="flex items-center text-[14px] font-bold text-[#666] pl-2">{prefix}</span>}
         <input type="text" inputMode="decimal" value={v} onChange={e => setV(e.target.value)} autoFocus
           className="flex-1 bg-transparent border-none outline-none px-2 py-1 text-[14px] font-bold font-mono"
@@ -522,7 +522,7 @@ function EditableNum({ value: initial, onSave, onCancel, prefix }) {
           }}/>
       </div>
       <button onClick={() => onSave(v)} className="px-2 py-1 rounded text-[11px] font-bold cursor-pointer"
-        style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>✓</button>
+        style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>✓</button>
       <button onClick={onCancel} className="px-2 py-1 rounded text-[11px] cursor-pointer"
         style={{background:'#F5F5F5', color:'#666', border:'1px solid #E5E5E5'}}>✕</button>
     </div>
@@ -536,7 +536,7 @@ function ActivityRow({ item }) {
     return (
       <div className="flex items-center gap-2 px-2 py-1.5 rounded text-[12px]" style={{background:'#FAFAFA'}}>
         <span className="text-[12px]">🛒</span>
-        <span className="font-bold font-mono text-[#CF1322]">{item.delta}</span>
+        <span className="font-bold font-mono text-[#dc2626]">{item.delta}</span>
         <span className="flex-1 text-[#1F1F1F] truncate">Sold · {item.order_number}</span>
         <span className="text-[10px] text-[#999]">{ago}</span>
       </div>
@@ -548,12 +548,12 @@ function ActivityRow({ item }) {
     const total = item.unit_cost && item.delta ? (item.unit_cost * item.delta).toFixed(2) : null
     return (
       <div className="flex items-start gap-2 px-2 py-1.5 rounded text-[12px]"
-        style={{background:'#E6F0FF', border:'1px solid #BFDBFE'}}>
+        style={{background:'#eef0fc', border:'1px solid #BFDBFE'}}>
         <span className="text-[12px]">📥</span>
-        <span className="font-bold font-mono text-[#15803D]">+{item.delta}</span>
+        <span className="font-bold font-mono text-[#059669]">+{item.delta}</span>
         <div className="flex-1 min-w-0">
           <div className="text-[#1F1F1F] truncate font-bold">
-            Received <span className="font-mono text-[#006AFF]">{item.po_number}</span>
+            Received <span className="font-mono text-[#5E6AD2]">{item.po_number}</span>
             {item.user && <span className="font-normal text-[#666]"> · {item.user}</span>}
           </div>
           {item.unit_cost != null && (
@@ -573,7 +573,7 @@ function ActivityRow({ item }) {
   return (
     <div className="flex items-start gap-2 px-2 py-1.5 rounded text-[12px]" style={{background:'#FAFAFA'}}>
       <span className="text-[12px]">{isPositive ? '➕' : '➖'}</span>
-      <span className="font-bold font-mono" style={{color: isPositive ? '#15803D' : '#CF1322'}}>
+      <span className="font-bold font-mono" style={{color: isPositive ? '#059669' : '#dc2626'}}>
         {isPositive ? '+' : ''}{item.delta}
       </span>
       <div className="flex-1 min-w-0">

@@ -60,14 +60,14 @@ export default function DualInput({
     mode === 'numeric' || mode === 'decimal' || mode === 'phone' ? 'font-mono' : ''
   }`
 
-  const containerCls = `flex items-stretch w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg overflow-hidden focus-within:border-[#006AFF] transition-colors ${className}`
+  const containerCls = `flex items-stretch w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg overflow-hidden focus-within:border-[#5E6AD2] transition-colors ${className}`
 
   return (
     <>
       <div>
         {label && (
           <div className="text-[11px] font-bold text-[#1F1F1F] mb-1.5">
-            {label}{required && <span className="text-[#CF1322]"> *</span>}
+            {label}{required && <span className="text-[#dc2626]"> *</span>}
           </div>
         )}
         <div className={containerCls} style={{ minHeight: multiline ? '70px' : 'auto' }}>

@@ -65,8 +65,8 @@ export default function PricePanel() {
             </div>
             <span className="text-[#999999] mx-1">→</span>
             <div className="flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-[#006AFF] flex items-center justify-center text-[10px] font-bold text-white">2</span>
-              <span className="text-[11px] text-[#006AFF]">Enter Price</span>
+              <span className="w-5 h-5 rounded-full bg-[#5E6AD2] flex items-center justify-center text-[10px] font-bold text-white">2</span>
+              <span className="text-[11px] text-[#5E6AD2]">Enter Price</span>
             </div>
           </div>
         )}
@@ -74,7 +74,7 @@ export default function PricePanel() {
         {/* Price display */}
         <div className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-[10px] p-4 mb-4 text-center">
           <div className="text-[11px] font-mono text-[#999999] mb-1">PRICE PER {pendingProduct?.unit?.toUpperCase() || 'EA'}</div>
-          <div className="text-[36px] font-bold font-mono text-[#006AFF] min-h-[44px]">
+          <div className="text-[36px] font-bold font-mono text-[#5E6AD2] min-h-[44px]">
             {input ? `$${input}` : <span className="text-[#999999]">$0.00</span>}
           </div>
           {pendingWeight && price > 0 && (
@@ -93,7 +93,7 @@ export default function PricePanel() {
               className={`py-3.5 rounded-[10px] text-[16px] font-bold font-mono
                 border transition-all cursor-pointer active:scale-95 ${
                 k === '⌫'
-                  ? 'bg-red-500/10 border-red-500/20 text-[#CF1322] hover:bg-red-500/15'
+                  ? 'bg-red-500/10 border-red-500/20 text-[#dc2626] hover:bg-red-500/15'
                   : k === '-'
                   ? 'bg-yellow-500/10 border-yellow-500/20 text-[#FA8C16] hover:bg-yellow-500/15'
                   : 'bg-[#F5F5F5] border-[#E5E5E5] text-[#1F1F1F] hover:bg-[#F5F5F5] hover:border-[#E5E5E5]'
@@ -113,7 +113,7 @@ export default function PricePanel() {
           <button
             onClick={confirm}
             disabled={price <= 0}
-            className="flex-[2] bg-[#006AFF] border-none
+            className="flex-[2] bg-[#5E6AD2] border-none
               rounded-[10px] py-3 text-[13px] font-bold text-white cursor-pointer
               disabled:opacity-40 disabled:cursor-not-allowed
               hover:from-blue-500 hover:to-blue-600 transition-all">

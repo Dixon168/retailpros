@@ -108,21 +108,21 @@ export default function ProductPicker({ title = 'Add Product', onPick, onClose, 
         <div className="px-5 py-3 flex-shrink-0 space-y-2" style={{borderBottom:'1px solid #E5E5E5'}}>
           <input value={search} onChange={e => setSearch(e.target.value)} autoFocus
             placeholder="🔍 Search by name or SKU (2+ chars)..."
-            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#006AFF]"/>
+            className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5E6AD2]"/>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-[#666] font-bold">Or pick a category:</span>
             <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
               className="flex-1 bg-[#FFFFFF] border rounded-lg px-3 py-2 text-[12px] font-bold outline-none cursor-pointer"
               style={{
-                color: categoryId ? '#006AFF' : '#1F1F1F',
-                borderColor: categoryId ? '#006AFF' : '#E5E5E5',
+                color: categoryId ? '#5E6AD2' : '#1F1F1F',
+                borderColor: categoryId ? '#5E6AD2' : '#E5E5E5',
               }}>
               <option value="">📁 All categories</option>
               {categories.map(c => <option key={c.id} value={c.id}>📁 {c.name}</option>)}
             </select>
             {(search || categoryId) && (
               <button onClick={() => { setSearch(''); setCategoryId('') }}
-                className="text-[11px] text-[#CF1322] font-bold cursor-pointer"
+                className="text-[11px] text-[#dc2626] font-bold cursor-pointer"
                 style={{background:'none', border:'none'}}>
                 Clear
               </button>
@@ -143,7 +143,7 @@ export default function ProductPicker({ title = 'Add Product', onPick, onClose, 
           ) : error ? (
             <div className="p-8 text-center">
               <div className="text-[36px] mb-2 opacity-30">⚠️</div>
-              <div className="text-[12px] text-[#CF1322] font-bold">Search error</div>
+              <div className="text-[12px] text-[#dc2626] font-bold">Search error</div>
               <div className="text-[11px] text-[#999] mt-1">{error.message || 'Could not load products'}</div>
             </div>
           ) : visible.length === 0 ? (
@@ -175,7 +175,7 @@ export default function ProductPicker({ title = 'Add Product', onPick, onClose, 
                     {p.vendor_last_cost ? (
                       <>
                         <div className="text-[10px] text-[#666]">Last from vendor</div>
-                        <div className="text-[13px] font-bold font-mono text-[#006AFF]">${p.vendor_last_cost.toFixed(2)}</div>
+                        <div className="text-[13px] font-bold font-mono text-[#5E6AD2]">${p.vendor_last_cost.toFixed(2)}</div>
                       </>
                     ) : p.cost > 0 ? (
                       <>

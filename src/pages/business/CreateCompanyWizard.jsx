@@ -242,16 +242,16 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer"
                     style={current
-                      ? { background: '#006AFF', color: '#FFFFFF', border: 'none' }
+                      ? { background: '#5E6AD2', color: '#FFFFFF', border: 'none' }
                       : done
-                        ? { background: '#DCFCE7', color: '#15803D', border: '1px solid #15803D' }
+                        ? { background: '#d1fae5', color: '#059669', border: '1px solid #059669' }
                         : { background: '#FFFFFF', color: '#999', border: '1px solid #E5E5E5' }
                     }>
                     <span>{done ? '✓' : s.icon}</span>
                     <span>{s.label}</span>
                   </button>
                   {idx < STEPS.length - 1 && (
-                    <div className="flex-1 h-px" style={{ background: idx < step ? '#15803D' : '#E5E5E5' }}/>
+                    <div className="flex-1 h-px" style={{ background: idx < step ? '#059669' : '#E5E5E5' }}/>
                   )}
                 </div>
               )
@@ -320,18 +320,18 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
                 hint="Where you ship products. Often the same as billing.">
                 <label className="flex items-center gap-2.5 p-3 rounded-lg cursor-pointer"
                   style={{
-                    background: form.delivery_same_as_billing ? '#DCFCE7' : '#FAFAFA',
-                    border: `1.5px solid ${form.delivery_same_as_billing ? '#15803D' : '#E5E5E5'}`
+                    background: form.delivery_same_as_billing ? '#d1fae5' : '#FAFAFA',
+                    border: `1.5px solid ${form.delivery_same_as_billing ? '#059669' : '#E5E5E5'}`
                   }}>
                   <input type="checkbox" checked={form.delivery_same_as_billing}
                     onChange={e => set('delivery_same_as_billing', e.target.checked)}
-                    className="w-4 h-4 accent-[#15803D]"/>
+                    className="w-4 h-4 accent-[#059669]"/>
                   <div>
                     <div className="text-[13px] font-bold"
-                      style={{ color: form.delivery_same_as_billing ? '#15803D' : '#1F1F1F' }}>
+                      style={{ color: form.delivery_same_as_billing ? '#059669' : '#1F1F1F' }}>
                       Same as billing address
                     </div>
-                    <div className="text-[11px]" style={{ color: form.delivery_same_as_billing ? '#15803D' : '#666' }}>
+                    <div className="text-[11px]" style={{ color: form.delivery_same_as_billing ? '#059669' : '#666' }}>
                       Uncheck to enter a different delivery address.
                     </div>
                   </div>
@@ -405,7 +405,7 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
                   {[
                     ['standard', 'Standard',  '#1F1F1F', '#FFFFFF'],
                     ['vip',      'VIP',       '#B45309', '#FEF3C7'],
-                    ['wholesale','Wholesale', '#006AFF', '#E6F0FF'],
+                    ['wholesale','Wholesale', '#5E6AD2', '#eef0fc'],
                   ].map(([val, label, color, bg]) => (
                     <button key={val} onClick={() => set('tier', val)}
                       className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.97]"
@@ -428,16 +428,16 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
                                  gridTemplateColumns: '1fr 1fr 1fr 1fr 110px 32px' }}>
                         <input value={c.name} onChange={e => updateContact(idx, 'name', e.target.value)}
                           placeholder="Name *"
-                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#006AFF]"/>
+                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#5E6AD2]"/>
                         <input value={c.title} onChange={e => updateContact(idx, 'title', e.target.value)}
                           placeholder="Title"
-                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#006AFF]"/>
+                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#5E6AD2]"/>
                         <input value={c.phone} onChange={e => updateContact(idx, 'phone', e.target.value)}
                           placeholder="Phone"
-                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#006AFF]"/>
+                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#5E6AD2]"/>
                         <input value={c.email} onChange={e => updateContact(idx, 'email', e.target.value)}
                           placeholder="Email"
-                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#006AFF]"/>
+                          className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[12px] outline-none focus:border-[#5E6AD2]"/>
                         <select value={c.role} onChange={e => updateContact(idx, 'role', e.target.value)}
                           className="bg-[#FFFFFF] border border-[#E5E5E5] rounded px-2 py-1.5 text-[11px] outline-none cursor-pointer">
                           <option value="contact">Contact</option>
@@ -449,7 +449,7 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
                         </select>
                         <button onClick={() => removeContact(idx)}
                           className="rounded text-[12px] cursor-pointer"
-                          style={{ background: '#FEE2E2', color: '#CF1322', border: 'none' }}>✕</button>
+                          style={{ background: '#FEE2E2', color: '#dc2626', border: 'none' }}>✕</button>
                       </div>
                     ))}
                   </div>
@@ -474,8 +474,8 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
           {/* Step 4: Review */}
           {step === 3 && (
             <div className="space-y-4">
-              <div className="rounded-lg p-3" style={{ background: '#DCFCE7', border: '1px solid #15803D' }}>
-                <div className="text-[12px] font-bold text-[#15803D]">
+              <div className="rounded-lg p-3" style={{ background: '#d1fae5', border: '1px solid #059669' }}>
+                <div className="text-[12px] font-bold text-[#059669]">
                   ✓ Almost done! Review the info below and click <strong>Create Company</strong> to save.
                 </div>
               </div>
@@ -532,13 +532,13 @@ export default function CreateCompanyWizard({ onClose, onCreated }) {
           {step < STEPS.length - 1 ? (
             <button onClick={() => setStep(step + 1)} disabled={!canAdvance}
               className="ml-auto rounded-lg px-5 py-3 text-[13px] font-bold cursor-pointer text-white disabled:opacity-40"
-              style={{ background: '#006AFF', border: 'none' }}>
+              style={{ background: '#5E6AD2', border: 'none' }}>
               Next: {STEPS[step + 1]?.label} →
             </button>
           ) : (
             <button onClick={create} disabled={saving || !form.company_name.trim()}
               className="ml-auto rounded-lg px-5 py-3 text-[13px] font-bold cursor-pointer text-white disabled:opacity-40"
-              style={{ background: '#15803D', border: 'none' }}>
+              style={{ background: '#059669', border: 'none' }}>
               {saving ? 'Creating...' : '✓ Create Company'}
             </button>
           )}
@@ -565,7 +565,7 @@ function ReviewBlock({ title, onEdit, children }) {
         <div className="text-[12px] font-bold text-[#1F1F1F]">{title}</div>
         <button onClick={onEdit}
           className="rounded px-2 py-0.5 text-[10px] font-bold cursor-pointer"
-          style={{ background: '#FFFFFF', color: '#006AFF', border: '1px solid #006AFF' }}>
+          style={{ background: '#FFFFFF', color: '#5E6AD2', border: '1px solid #5E6AD2' }}>
           Edit
         </button>
       </div>

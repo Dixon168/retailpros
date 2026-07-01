@@ -138,7 +138,7 @@ export default function CartPanel({ onRefund, onHold }) {
           {hasSelection ? (
             <div>
               <div className="w-8 h-8 rounded-lg mx-auto overflow-hidden flex items-center justify-center mb-0.5"
-                style={{background:'#E6F0FF'}}>
+                style={{background:'#eef0fc'}}>
                 {selectedItem.imageUrl
                   ? <img src={selectedItem.imageUrl} className="w-full h-full object-cover" alt=""/>
                   : <span className="text-[9px] font-bold text-indigo-600">{selectedItem.name?.substring(0,2).toUpperCase()}</span>
@@ -164,8 +164,8 @@ export default function CartPanel({ onRefund, onHold }) {
               disabled={isDisabled}
               className="flex flex-col items-center justify-center py-2 px-1 cursor-pointer border-none transition-all text-center"
               style={{
-                background: isActive ? '#006AFF' : isDisabled ? 'transparent' : 'transparent',
-                borderLeft: isActive ? '3px solid #006AFF' : '3px solid transparent',
+                background: isActive ? '#5E6AD2' : isDisabled ? 'transparent' : 'transparent',
+                borderLeft: isActive ? '3px solid #5E6AD2' : '3px solid transparent',
                 opacity: isDisabled ? 0.25 : 1,
               }}
               onMouseEnter={e => { if (!isDisabled && !isActive) e.currentTarget.style.background = '#f1f5f9' }}
@@ -229,7 +229,7 @@ export default function CartPanel({ onRefund, onHold }) {
                 <span className="text-[12px] font-bold text-slate-700 truncate">{customer?.name || t('walkIn')}</span>
                 {customer?.tier && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0"
-                    style={{background:'#E6F0FF', color:'#006AFF'}}>{customer.tier.toUpperCase()}</span>
+                    style={{background:'#eef0fc', color:'#5E6AD2'}}>{customer.tier.toUpperCase()}</span>
                 )}
                 {customer?.member_level && !customer?.tier && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0"
@@ -260,12 +260,12 @@ export default function CartPanel({ onRefund, onHold }) {
         {/* Discount type selector — shows when disc action active */}
         {activeAction === 'disc' && (
           <div className="px-3 py-2 flex-shrink-0 flex items-center gap-2 animate-fadeIn"
-            style={{background:'#E6F0FF', borderBottom:'1px solid #B3D1FF'}}>
+            style={{background:'#eef0fc', borderBottom:'1px solid #B3D1FF'}}>
             <span className="text-[10px] font-semibold text-indigo-600">Type:</span>
             {[['pct','% Off'],['amt','$ Off']].map(([t,l]) => (
               <button key={t} onClick={() => { setDiscType(t); setShowNumPad(true) }}
                 className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border-2 transition-all"
-                style={discType===t ? {background:'#006AFF',borderColor:'#006AFF',color:'#fff'} : {background:'#fff',borderColor:'#B3D1FF',color:'#006AFF'}}>
+                style={discType===t ? {background:'#5E6AD2',borderColor:'#5E6AD2',color:'#fff'} : {background:'#fff',borderColor:'#B3D1FF',color:'#5E6AD2'}}>
                 {l}
               </button>
             ))}
@@ -281,7 +281,7 @@ export default function CartPanel({ onRefund, onHold }) {
             <div className="w-full shadow-md" style={{maxWidth:'480px', background:'#fff', borderRadius:'24px 24px 0 0'}}>
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="text-[14px] font-bold text-slate-800">
-                  📝 <span style={{color:'#006AFF'}}>{(selectedItem)?.name}</span>
+                  📝 <span style={{color:'#5E6AD2'}}>{(selectedItem)?.name}</span>
                 </div>
                 <button onClick={() => { setActiveAction(null); setInputVal('') }}
                   className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 border-none cursor-pointer text-slate-500">✕</button>
@@ -292,7 +292,7 @@ export default function CartPanel({ onRefund, onHold }) {
                   placeholder="Type here using any keyboard..."
                   rows={3}
                   className="w-full rounded-2xl px-4 py-3 text-[15px] outline-none resize-none"
-                  style={{border:'2px solid #80B2FF', background:'#f8f9ff', color:'#1F1F1F'}}/>
+                  style={{border:'2px solid #dee2f8', background:'#f8f9ff', color:'#1F1F1F'}}/>
               </div>
               <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
                 {['No','Less','Extra','Hot','Cold','Medium','Well done','No ice','Spicy','Mild'].map(w => (
@@ -302,7 +302,7 @@ export default function CartPanel({ onRefund, onHold }) {
                     document.getElementById('remark-input')?.focus()
                   }}
                     className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer border"
-                    style={{background:'#E6F0FF', borderColor:'#B3D1FF', color:'#006AFF'}}>{w}</button>
+                    style={{background:'#eef0fc', borderColor:'#B3D1FF', color:'#5E6AD2'}}>{w}</button>
                 ))}
               </div>
               <div className="px-2 pb-1 pt-1" style={{background:'#f8fafc'}}>
@@ -350,7 +350,7 @@ export default function CartPanel({ onRefund, onHold }) {
         {/* Staff picker */}
         {activeAction === 'staff' && selectedItem && (
           <div className="px-3 py-2.5 flex-shrink-0 animate-fadeIn"
-            style={{background:'#E6F0FF', borderBottom:'1.5px solid #006AFF'}}>
+            style={{background:'#eef0fc', borderBottom:'1.5px solid #5E6AD2'}}>
             <div className="text-[10px] font-bold text-indigo-700 mb-2">👤 Select Staff — {selectedItem.name}</div>
             <div className="flex flex-col gap-1 max-h-[130px] overflow-y-auto">
               {staffList.map(s => (
@@ -362,10 +362,10 @@ export default function CartPanel({ onRefund, onHold }) {
                   }}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-left border transition-all"
                   style={selectedItem.employee?.id===s.id
-                    ? {background:'#006AFF', borderColor:'#006AFF', color:'#fff'}
+                    ? {background:'#5E6AD2', borderColor:'#5E6AD2', color:'#fff'}
                     : {background:'#fff', borderColor:'#e2e8f0', color:'#1F1F1F'}}>
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                    style={{background:'#E6F0FF', color:'#006AFF'}}>
+                    style={{background:'#eef0fc', color:'#5E6AD2'}}>
                     {s.name.charAt(0)}
                   </div>
                   <span className="text-[12px] font-medium">{s.name}</span>
@@ -412,17 +412,17 @@ export default function CartPanel({ onRefund, onHold }) {
                   className="px-3 py-2.5 cursor-pointer transition-all"
                   style={{
                     borderBottom: '1px solid #f8fafc',
-                    background: isSelected ? '#E6F0FF' : hasBulk ? '#f0fdf4' : 'transparent',
-                    borderLeft: `3px solid ${isSelected ? '#006AFF' : hasBulk ? '#16a34a' : 'transparent'}`,
+                    background: isSelected ? '#eef0fc' : hasBulk ? '#f0fdf4' : 'transparent',
+                    borderLeft: `3px solid ${isSelected ? '#5E6AD2' : hasBulk ? '#16a34a' : 'transparent'}`,
                   }}
-                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = hasBulk ? '#dcfce7' : '#fafbff' }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = hasBulk ? '#d1fae5' : '#fafbff' }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = hasBulk ? '#f0fdf4' : 'transparent' }}>
 
                   <div className="flex items-start gap-2.5">
                     {/* Photo */}
                     <div onClick={e => { e.stopPropagation(); setPhotoViewer(item) }}
                       className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer"
-                      style={{background:'#f1f5f9', border:`2px solid ${isSelected?'#80B2FF':'#e2e8f0'}`}}>
+                      style={{background:'#f1f5f9', border:`2px solid ${isSelected?'#dee2f8':'#e2e8f0'}`}}>
                       {item.imageUrl
                         ? <img src={item.imageUrl} alt="" className="w-full h-full object-cover"/>
                         : <span className="text-[9px] font-bold text-slate-400">{item.name?.substring(0,2).toUpperCase()}</span>
@@ -479,19 +479,19 @@ export default function CartPanel({ onRefund, onHold }) {
                           // Determine color state
                           let bg, color, dot, label
                           if (stock < 0) {
-                            bg = '#FEE2E2'; color = '#CF1322'; dot = '#CF1322'
+                            bg = '#FEE2E2'; color = '#dc2626'; dot = '#dc2626'
                             label = `Stock: ${stock} (oversold)`
                           } else if (item.qty > stock) {
-                            bg = '#FEE2E2'; color = '#CF1322'; dot = '#CF1322'
+                            bg = '#FEE2E2'; color = '#dc2626'; dot = '#dc2626'
                             label = `Over stock (${stock} left)`
                           } else if (stock === 0) {
-                            bg = '#FEE2E2'; color = '#CF1322'; dot = '#CF1322'
+                            bg = '#FEE2E2'; color = '#dc2626'; dot = '#dc2626'
                             label = 'Out of stock'
                           } else if (stock <= 5) {
                             bg = '#FEF3C7'; color = '#B45309'; dot = '#F59E0B'
                             label = `Stock: ${stock}`
                           } else {
-                            bg = '#DCFCE7'; color = '#15803D'; dot = '#15803D'
+                            bg = '#d1fae5'; color = '#059669'; dot = '#059669'
                             label = `Stock: ${stock}`
                           }
                           return (
@@ -510,7 +510,7 @@ export default function CartPanel({ onRefund, onHold }) {
                         )}
                         {bulkInfo && bulkInfo.savings > 0 && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
-                            style={{background:'#dcfce7', color:'#166534'}}
+                            style={{background:'#d1fae5', color:'#166534'}}
                             title={bulkInfo.breakdown.map(b =>
                               b.bundleCount
                                 ? `${b.bundleCount}× ${b.label}`
@@ -578,7 +578,7 @@ export default function CartPanel({ onRefund, onHold }) {
 
                   {/* Selected hint */}
                   {isSelected && (
-                    <div className="mt-1.5 text-[9px] font-semibold" style={{color:'#006AFF'}}>
+                    <div className="mt-1.5 text-[9px] font-semibold" style={{color:'#5E6AD2'}}>
                       ← Use side buttons to modify
                     </div>
                   )}
@@ -606,7 +606,7 @@ export default function CartPanel({ onRefund, onHold }) {
             {/* You saved today badge */}
             {bulkSavings > 0 && (
               <div className="rounded-lg px-2 py-1 mt-1.5 text-center"
-                style={{background:'#dcfce7', border:'1px solid #86efac'}}>
+                style={{background:'#d1fae5', border:'1px solid #86efac'}}>
                 <span className="text-[11px] font-bold" style={{color:'#166534'}}>
                   🎉 You saved ${bulkSavings.toFixed(2)} today!
                 </span>

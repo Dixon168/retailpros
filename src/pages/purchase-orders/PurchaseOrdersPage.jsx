@@ -11,10 +11,10 @@ import { ProductDetailInline } from '@/pages/products/ProductDetailInline'
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666', label:'Draft' },
-  ordered:   { bg:'#E6F0FF', color:'#006AFF', label:'Ordered' },
+  ordered:   { bg:'#eef0fc', color:'#5E6AD2', label:'Ordered' },
   partial:   { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
-  received:  { bg:'#DCFCE7', color:'#15803D', label:'Received' },
-  cancelled: { bg:'#FEE2E2', color:'#CF1322', label:'Cancelled' },
+  received:  { bg:'#d1fae5', color:'#059669', label:'Received' },
+  cancelled: { bg:'#FEE2E2', color:'#dc2626', label:'Cancelled' },
 }
 
 export default function PurchaseOrdersPage() {
@@ -84,12 +84,12 @@ export default function PurchaseOrdersPage() {
         <div>
           <div className="text-[22px] font-bold text-[#1F1F1F]">📋 Purchase Center</div>
           <div className="text-[12px] text-[#666] mt-1">
-            Open <span className="text-[#006AFF] font-bold">{counts.open}</span> · History <span className="text-[#15803D] font-bold">{counts.history}</span>
+            Open <span className="text-[#5E6AD2] font-bold">{counts.open}</span> · History <span className="text-[#059669] font-bold">{counts.history}</span>
           </div>
         </div>
         <button onClick={() => { setPresetItems(null); setShowCreate(true) }}
           className="rounded-lg px-4 py-2.5 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           + New Purchase Order
         </button>
       </div>
@@ -112,7 +112,7 @@ export default function PurchaseOrdersPage() {
       <div className="mb-4 space-y-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search by PO number or vendor name..."
-          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#006AFF]"/>
+          className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#5E6AD2]"/>
 
         <div className="flex gap-2">
           <FilterTab active={statusFilter==='open'} onClick={() => setStatusFilter('open')} count={counts.open} highlight>
@@ -141,7 +141,7 @@ export default function PurchaseOrdersPage() {
           {pos.length === 0 && (
             <button onClick={() => { setPresetItems(null); setShowCreate(true) }}
               className="mt-3 rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               Create your first PO
             </button>
           )}
@@ -161,7 +161,7 @@ export default function PurchaseOrdersPage() {
               <div key={po.id}
                 className="grid border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]"
                 style={{gridTemplateColumns:'1.3fr 1.3fr 1fr 1fr 1fr 1fr 1.5fr'}}>
-                <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#006AFF]">
+                <div className="px-3.5 py-3 font-mono text-[13px] font-bold text-[#5E6AD2]">
                   {po.po_number}
                 </div>
                 <div className="px-3.5 py-3 text-[13px] text-[#1F1F1F] truncate">
@@ -190,7 +190,7 @@ export default function PurchaseOrdersPage() {
                   </span>
                   <button onClick={() => setReceivingPo(po)}
                     className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer active:scale-[0.96]"
-                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                    style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                     Details ›
                   </button>
                 </div>
@@ -295,9 +295,9 @@ function ViewTab({ active, onClick, children }) {
   return (
     <button onClick={onClick}
       className="px-4 py-2.5 text-[13px] font-bold cursor-pointer border-none bg-transparent relative"
-      style={{ color: active ? '#006AFF' : '#666' }}>
+      style={{ color: active ? '#5E6AD2' : '#666' }}>
       {children}
-      {active && <div className="absolute left-0 right-0 -bottom-px h-0.5" style={{background:'#006AFF'}}/>}
+      {active && <div className="absolute left-0 right-0 -bottom-px h-0.5" style={{background:'#5E6AD2'}}/>}
     </button>
   )
 }
@@ -307,8 +307,8 @@ function FilterTab({ active, onClick, count, highlight, children }) {
     <button onClick={onClick}
       className="px-3 py-2 rounded-lg text-[13px] font-bold cursor-pointer active:scale-[0.96]"
       style={active
-        ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
-        : { background:'#FFFFFF', color: highlight ? '#006AFF' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
+        ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
+        : { background:'#FFFFFF', color: highlight ? '#5E6AD2' : '#1F1F1F', border:'1px solid #E5E5E5' }}>
       {children} <span className="ml-1 opacity-75">({count})</span>
     </button>
   )

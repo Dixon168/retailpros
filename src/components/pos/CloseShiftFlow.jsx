@@ -179,7 +179,7 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                     {summary.byCashier.map(c => (
                       <div key={c.id} className="flex items-center gap-2 px-4 py-2 border-b border-slate-100 last:border-0">
                         <div className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-                          style={{background:'#006AFF'}}>{c.name.charAt(0).toUpperCase()}</div>
+                          style={{background:'#5E6AD2'}}>{c.name.charAt(0).toUpperCase()}</div>
                         <div className="flex-1 text-[12px] font-semibold">{c.name}</div>
                         <div className="text-right">
                           <div className="text-[12px] font-bold font-mono">{fmt(c.gross)}</div>
@@ -213,7 +213,7 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
 
               <button onClick={proceedToCount}
                 className="w-full rounded-lg py-3 text-[14px] font-bold text-white cursor-pointer border-none"
-                style={{background:'#006AFF'}}>
+                style={{background:'#5E6AD2'}}>
                 Next: Count Cash Drawer →
               </button>
             </>
@@ -238,7 +238,7 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Count drawer <span className="text-slate-400 normal-case font-normal">(optional)</span></div>
                 <button onClick={() => setCountMode(m => m === 'denom' ? 'manual' : 'denom')}
                   className="text-[10px] font-bold cursor-pointer rounded px-2 py-0.5"
-                  style={{background:'#eff6ff', color:'#006AFF', border:'1px solid #bfdbfe'}}>
+                  style={{background:'#eff6ff', color:'#5E6AD2', border:'1px solid #bfdbfe'}}>
                   {countMode === 'denom' ? '⌨ Enter total instead' : '🪙 Count by denomination'}
                 </button>
               </div>
@@ -254,7 +254,7 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                         <span className="text-[11px] text-slate-400">×</span>
                         <input value={qty} onChange={e => setDenomCounts(c => ({...c, [d.value]: e.target.value.replace(/[^\d]/g,'')}))}
                           inputMode="numeric" placeholder="0"
-                          className="w-16 rounded-lg px-2 py-1.5 text-[13px] font-mono text-center outline-none focus:border-[#006AFF]"
+                          className="w-16 rounded-lg px-2 py-1.5 text-[13px] font-mono text-center outline-none focus:border-[#5E6AD2]"
                           style={{border:'1.5px solid #e2e8f0'}}/>
                         <span className="flex-1 text-right font-mono text-[12px] text-slate-700">{sub>0?fmt(sub):''}</span>
                       </div>
@@ -286,11 +286,11 @@ export default function CloseShiftFlow({ shift, tenantId, storeInfo, cashier, te
                     border:`1px solid ${varianceOk?'#bbf7d0':variance>0?'#fcd34d':'#fca5a5'}`,
                   }}>
                   <div className="text-[10px] font-bold uppercase tracking-wider mb-1"
-                    style={{color: varianceOk?'#15803d':variance>0?'#92400e':'#991b1b'}}>
+                    style={{color: varianceOk?'#059669':variance>0?'#92400e':'#991b1b'}}>
                     {varianceOk ? '✓ Balanced' : variance > 0 ? '⚠ Over' : '⚠ Short'}
                   </div>
                   <div className="text-[20px] font-bold font-mono"
-                    style={{color: varianceOk?'#15803d':variance>0?'#92400e':'#991b1b'}}>
+                    style={{color: varianceOk?'#059669':variance>0?'#92400e':'#991b1b'}}>
                     {variance>=0?'+':''}{fmt(variance)}
                   </div>
                 </div>

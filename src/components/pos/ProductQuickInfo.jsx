@@ -68,7 +68,7 @@ export function ProductQuickInfo({ product: p, storeId, canEdit = true, canSeeCo
                     {p.description}
                   </div>
                 )}
-                <div className="text-[28px] font-bold font-mono leading-none mb-1" style={{color:'#006AFF'}}>
+                <div className="text-[28px] font-bold font-mono leading-none mb-1" style={{color:'#5E6AD2'}}>
                   ${Number(p.price || 0).toFixed(2)}
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">
@@ -150,7 +150,7 @@ export function ProductQuickInfo({ product: p, storeId, canEdit = true, canSeeCo
                     <div className="text-[9px] uppercase text-slate-400 font-bold tracking-wider mr-1">Category</div>
                     {categoryName && (
                       <span className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
-                        style={{background:'#e6f0ff', color:'#006AFF'}}>
+                        style={{background:'#eef0fc', color:'#5E6AD2'}}>
                         {categoryEmoji} {categoryName}
                       </span>
                     )}
@@ -204,7 +204,7 @@ export function ProductQuickInfo({ product: p, storeId, canEdit = true, canSeeCo
           {canEdit && (
             <button onClick={() => onEdit?.(p)}
               className="flex-1 rounded-xl py-3 text-[13px] font-bold cursor-pointer border-none text-white transition-all"
-              style={{background:'#006AFF'}}>
+              style={{background:'#5E6AD2'}}>
               ✏️ Edit Product
             </button>
           )}

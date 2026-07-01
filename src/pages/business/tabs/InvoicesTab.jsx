@@ -6,10 +6,10 @@ import InvoiceDetailModal from '@/pages/invoices/InvoiceDetailModal'
 
 const STATUS_BADGE = {
   draft:    { bg:'#F5F5F5', color:'#666',    label:'Draft' },
-  sent:     { bg:'#E6F0FF', color:'#006AFF', label:'Sent' },
-  viewed:   { bg:'#E6F0FF', color:'#006AFF', label:'Viewed' },
+  sent:     { bg:'#eef0fc', color:'#5E6AD2', label:'Sent' },
+  viewed:   { bg:'#eef0fc', color:'#5E6AD2', label:'Viewed' },
   partial:  { bg:'#FEF3C7', color:'#B45309', label:'Partial' },
-  paid:     { bg:'#DCFCE7', color:'#15803D', label:'Paid' },
+  paid:     { bg:'#d1fae5', color:'#059669', label:'Paid' },
   voided:   { bg:'#F5F5F5', color:'#999',    label:'Voided' },
   void:     { bg:'#F5F5F5', color:'#999',    label:'Void' },    // legacy
   closed:   { bg:'#E5E7EB', color:'#374151', label:'🔒 Closed' },

@@ -49,7 +49,7 @@ export default function NotesTab({ customerId, tenantId, onChanged }) {
         </div>
         <button onClick={() => setEditing('new')}
           className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-          style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+          style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
           + Add Note
         </button>
       </div>
@@ -72,7 +72,7 @@ export default function NotesTab({ customerId, tenantId, onChanged }) {
           {notes.map(n => (
             <div key={n.id} className="rounded-lg p-3"
               style={n.is_alert
-                ? { background:'#FEE2E2', border:'1px solid #CF1322' }
+                ? { background:'#FEE2E2', border:'1px solid #dc2626' }
                 : n.is_pinned
                   ? { background:'#FEF3C7', border:'1px solid #F59E0B' }
                   : { background:'#FFFFFF', border:'1px solid #E5E5E5' }
@@ -82,7 +82,7 @@ export default function NotesTab({ customerId, tenantId, onChanged }) {
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     {n.is_alert && (
                       <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
-                        style={{background:'#CF1322', color:'#FFFFFF'}}>
+                        style={{background:'#dc2626', color:'#FFFFFF'}}>
                         ⚠️ Alert
                       </span>
                     )}
@@ -101,12 +101,12 @@ export default function NotesTab({ customerId, tenantId, onChanged }) {
                 <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => setEditing(n)}
                     className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                    style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                    style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                     Edit
                   </button>
                   <button onClick={() => deleteNote(n)}
                     className="rounded px-2 py-1 text-[10px] font-bold cursor-pointer"
-                    style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                    style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                     ✕
                   </button>
                 </div>
@@ -197,16 +197,16 @@ function NoteFormModal({ initial, customerId, tenantId, onClose, onSaved }) {
           </label>
           <label className="flex items-center gap-2 cursor-pointer rounded-lg p-2.5"
             style={{ background: form.is_alert ? '#FEE2E2' : '#FAFAFA',
-                     border: `1px solid ${form.is_alert ? '#CF1322' : '#E5E5E5'}` }}>
+                     border: `1px solid ${form.is_alert ? '#dc2626' : '#E5E5E5'}` }}>
             <input type="checkbox" checked={form.is_alert}
               onChange={e => set('is_alert', e.target.checked)}
-              className="accent-[#CF1322]"/>
+              className="accent-[#dc2626]"/>
             <div>
               <div className="text-[12px] font-bold"
-                style={{color: form.is_alert ? '#CF1322' : '#1F1F1F'}}>
+                style={{color: form.is_alert ? '#dc2626' : '#1F1F1F'}}>
                 ⚠️ Mark as alert
               </div>
-              <div className="text-[10px]" style={{color: form.is_alert ? '#CF1322' : '#666'}}>
+              <div className="text-[10px]" style={{color: form.is_alert ? '#dc2626' : '#666'}}>
                 Alert notes show at the top of the company page in red
               </div>
             </div>
@@ -220,7 +220,7 @@ function NoteFormModal({ initial, customerId, tenantId, onClose, onSaved }) {
           </button>
           <button onClick={save} disabled={saving || !form.note.trim()}
             className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-            style={{background:'#006AFF', border:'none'}}>
+            style={{background:'#5E6AD2', border:'none'}}>
             {saving ? 'Saving...' : initial?.id ? '✓ Save' : '+ Add Note'}
           </button>
         </div>

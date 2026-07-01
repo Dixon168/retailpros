@@ -12,7 +12,7 @@ const TIER_STYLE = {
   vip:       { bg:'#fef9c3', color:'#ca8a04', label:'VIP' },
   silver:    { bg:'#f1f5f9', color:'#64748b', label:'Silver' },
   gold:      { bg:'#fffbeb', color:'#d97706', label:'Gold' },
-  platinum:  { bg:'#E6F0FF', color:'#006AFF', label:'Platinum' },
+  platinum:  { bg:'#eef0fc', color:'#5E6AD2', label:'Platinum' },
   wholesale: { bg:'#eff6ff', color:'#2563eb', label:'Wholesale' },
   staff:     { bg:'#f0fdf4', color:'#16a34a', label:'Staff' },
 }
@@ -121,7 +121,7 @@ export default function CustomersPage() {
             {[['all','All'],['vip','VIP'],['balance','Has Balance'],['owes','Owes'],['expiring','Expiring']].map(([id,label])=>(
               <button key={id} onClick={()=>setFilter(id)}
                 className="px-2.5 py-1 rounded-lg text-[10px] font-semibold cursor-pointer border transition-all"
-                style={filter===id ? {background:'#006AFF',borderColor:'#006AFF',color:'#fff'} : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
+                style={filter===id ? {background:'#5E6AD2',borderColor:'#5E6AD2',color:'#fff'} : {background:'#f8fafc',borderColor:'#e2e8f0',color:'#64748b'}}>
                 {label}
               </button>
             ))}
@@ -131,7 +131,7 @@ export default function CustomersPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-px flex-shrink-0" style={{background:'#f1f5f9'}}>
           {[
-            ['Members', customers.length, '#006AFF'],
+            ['Members', customers.length, '#5E6AD2'],
             ['Total Balance', `$${totalBalance.toFixed(0)}`, '#16a34a'],
             ['Total Points', totalPoints.toLocaleString(), '#f59e0b'],
           ].map(([l,v,c])=>(
@@ -161,8 +161,8 @@ export default function CustomersPage() {
                 className="flex items-center gap-3 px-3 py-3 cursor-pointer border-b transition-all"
                 style={{
                   borderColor:'#f8fafc',
-                  background: isSelected ? '#E6F0FF' : '#fff',
-                  borderLeft: isSelected ? '3px solid #006AFF' : '3px solid transparent',
+                  background: isSelected ? '#eef0fc' : '#fff',
+                  borderLeft: isSelected ? '3px solid #5E6AD2' : '3px solid transparent',
                 }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
                   style={{background:'#000000'}}>
@@ -186,7 +186,7 @@ export default function CustomersPage() {
                       </span>
                     )}
                     {(c.loyalty_points||0) > 0 && (
-                      <span className="text-[10px] font-bold" style={{color:'#006AFF'}}>
+                      <span className="text-[10px] font-bold" style={{color:'#5E6AD2'}}>
                         💎 {c.loyalty_points}pts
                       </span>
                     )}
@@ -329,12 +329,12 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
           <div className="flex gap-2 flex-shrink-0">
             <button onClick={onTopup}
               className="rounded-xl px-3 py-2 text-[12px] font-bold cursor-pointer border-none"
-              style={{background:'#dcfce7', color:'#16a34a'}}>
+              style={{background:'#d1fae5', color:'#16a34a'}}>
               💳 Top Up
             </button>
             <button onClick={onEdit}
               className="rounded-xl px-3 py-2 text-[12px] font-bold cursor-pointer border-none"
-              style={{background:'#E6F0FF', color:'#006AFF'}}>
+              style={{background:'#eef0fc', color:'#5E6AD2'}}>
               ✏️ Edit
             </button>
           </div>
@@ -344,8 +344,8 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
         <div className="grid grid-cols-4 gap-3 mt-4">
           {[
             ['💳 Card Balance', `$${(c.card_balance||0).toFixed(2)}`, c.card_balance>0?'#16a34a':'#94a3b8', '#f0fdf4','#86efac'],
-            ['💎 Points', `${(c.loyalty_points||0).toLocaleString()}`, c.loyalty_points>0?'#006AFF':'#94a3b8', '#fdf4ff','#e9d5ff'],
-            ['🏷️ Member Since', c.member_since ? new Date(c.member_since).toLocaleDateString() : '—', '#006AFF','#E6F0FF','#B3D1FF'],
+            ['💎 Points', `${(c.loyalty_points||0).toLocaleString()}`, c.loyalty_points>0?'#5E6AD2':'#94a3b8', '#fdf4ff','#e9d5ff'],
+            ['🏷️ Member Since', c.member_since ? new Date(c.member_since).toLocaleDateString() : '—', '#5E6AD2','#eef0fc','#B3D1FF'],
             ['📅 Expires', c.card_expire_date ? new Date(c.card_expire_date).toLocaleDateString() : '—',
               isExpired?'#dc2626':isExpiring?'#f59e0b':'#64748b',
               isExpired?'#fef2f2':isExpiring?'#fffbeb':'#f8fafc',
@@ -367,8 +367,8 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
             className="px-4 py-2.5 text-[12px] font-semibold cursor-pointer border-none border-b-2 transition-all"
             style={{
               background:'transparent',
-              borderBottomColor: activeTab===tab ? '#006AFF' : 'transparent',
-              color: activeTab===tab ? '#006AFF' : '#64748b',
+              borderBottomColor: activeTab===tab ? '#5E6AD2' : 'transparent',
+              color: activeTab===tab ? '#5E6AD2' : '#64748b',
             }}>
             {tab}
           </button>
@@ -423,7 +423,7 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
                 ['Total Spent', `$${orders.reduce((s,o)=>s+(o.total||0),0).toFixed(2)}`, '#16a34a'],
-                ['Transactions', orders.length, '#006AFF'],
+                ['Transactions', orders.length, '#5E6AD2'],
                 ['Avg Order', orders.length>0?`$${(orders.reduce((s,o)=>s+(o.total||0),0)/orders.length).toFixed(2)}`:'—', '#f59e0b'],
               ].map(([l,v,c2])=>(
                 <div key={l} className="rounded-xl p-3 text-center" style={{background:'#f8fafc',border:'1px solid #e2e8f0'}}>
@@ -442,11 +442,11 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
                 </tr></thead>
                 <tbody>{orders.map((o,i)=>{
                   const status = o.refund_status==='full'?'Refunded':o.refund_status==='partial'?'Part.Refund':o.status==='voided'?'Voided':'Completed'
-                  const sc = {Refunded:'#006AFF','Part.Refund':'#2563eb',Voided:'#64748b',Completed:'#16a34a'}
+                  const sc = {Refunded:'#5E6AD2','Part.Refund':'#2563eb',Voided:'#64748b',Completed:'#16a34a'}
                   return (
                     <tr key={i} className="hover:bg-blue-50/30" style={{borderBottom:'1px solid #f1f5f9'}}>
                       <td className="px-3 py-2.5 text-[12px] text-slate-600">{new Date(o.created_at).toLocaleDateString()} {new Date(o.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                      <td className="px-3 py-2.5 text-[12px] font-mono font-bold" style={{color:'#006AFF'}}>{o.order_number}</td>
+                      <td className="px-3 py-2.5 text-[12px] font-mono font-bold" style={{color:'#5E6AD2'}}>{o.order_number}</td>
                       <td className="px-3 py-2.5 text-[13px] font-bold font-mono">${(o.total||0).toFixed(2)}</td>
                       <td className="px-3 py-2.5"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:`${sc[status]}20`,color:sc[status]}}>{status}</span></td>
                     </tr>
@@ -462,7 +462,7 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
           <div>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                ['Current Balance', `${(c.loyalty_points||0).toLocaleString()} pts`, '#006AFF'],
+                ['Current Balance', `${(c.loyalty_points||0).toLocaleString()} pts`, '#5E6AD2'],
                 ['Total Earned', `${pointsLog.filter(p=>p.type==='earn').reduce((s,p)=>s+(p.points||0),0).toLocaleString()} pts`, '#16a34a'],
                 ['Total Redeemed', `${pointsLog.filter(p=>p.type==='redeem').reduce((s,p)=>s+Math.abs(p.points||0),0).toLocaleString()} pts`, '#f59e0b'],
               ].map(([l,v,c2])=>(
@@ -485,7 +485,7 @@ export function CustomerDetail({ customer: c, tenantId, userId, userName, active
                     <td className="px-3 py-2.5 text-[11px] text-slate-500">{new Date(p.created_at).toLocaleDateString()}</td>
                     <td className="px-3 py-2.5">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{background:p.type==='earn'?'#dcfce7':p.type==='redeem'?'#fdf4ff':'#f1f5f9', color:p.type==='earn'?'#16a34a':p.type==='redeem'?'#006AFF':'#64748b'}}>
+                        style={{background:p.type==='earn'?'#d1fae5':p.type==='redeem'?'#fdf4ff':'#f1f5f9', color:p.type==='earn'?'#16a34a':p.type==='redeem'?'#5E6AD2':'#64748b'}}>
                         {(p.type||'earn').toUpperCase()}
                       </span>
                     </td>
@@ -655,7 +655,7 @@ export function TopupModal({ customer, tenantId, userId, userName, onSave, onClo
           {/* Bonus indicator */}
           {bonus > 0 && (
             <div className="rounded-xl px-3 py-2 text-center text-[12px] font-bold"
-              style={{background:'#dcfce7', color:'#166534', border:'1px solid #86efac'}}>
+              style={{background:'#d1fae5', color:'#166534', border:'1px solid #86efac'}}>
               🎁 Promo bonus: member gets ${bonus.toFixed(2)} free
             </div>
           )}
@@ -668,7 +668,7 @@ export function TopupModal({ customer, tenantId, userId, userName, onSave, onClo
                 <button key={m} onClick={()=>setMethod(m)}
                   className="flex-1 rounded-xl py-2 text-[11px] font-bold cursor-pointer border-2 transition-all"
                   style={method===m
-                    ? {background:'#E6F0FF', borderColor:'#006AFF', color:'#006AFF'}
+                    ? {background:'#eef0fc', borderColor:'#5E6AD2', color:'#5E6AD2'}
                     : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                   {l}
                 </button>
@@ -832,7 +832,7 @@ export function AddCustomerModal({ tenantId, onSave, onClose, prefillCard }) {
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name *</div>
                 <input value={form.name} onChange={e=>setF('name',e.target.value)} placeholder="Customer name" autoFocus
                   className="w-full rounded-xl px-3 py-2.5 text-[14px] font-semibold outline-none"
-                  style={{border:'1.5px solid #80B2FF',background:'#fff'}}/>
+                  style={{border:'1.5px solid #dee2f8',background:'#fff'}}/>
               </div>
               {[['phone','Phone','tel'],['email','Email','email'],['birthday','Birthday','date']].map(([k,l,t])=>(
                 <div key={k}>
@@ -1050,7 +1050,7 @@ export function EditCustomerModal({ customer, tenantId, onSave, onClose }) {
                 <div className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Full Name *</div>
                 <input value={form.name} onChange={e=>setF('name',e.target.value)} autoFocus
                   className="w-full rounded-xl px-3 py-2.5 text-[14px] font-semibold outline-none"
-                  style={{border:'1.5px solid #80B2FF',background:'#fff'}}/>
+                  style={{border:'1.5px solid #dee2f8',background:'#fff'}}/>
               </div>
               {[['phone','Phone','tel'],['email','Email','email'],['birthday','Birthday','date'],['referrer','Referrer','text']].map(([k,l,t])=>(
                 <div key={k}>

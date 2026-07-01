@@ -22,9 +22,9 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
 
   const Key = ({ label, onClick, wide, danger, accent }) => {
     const styles = danger
-      ? { background:'#FFFFFF', color:'#CF1322', border:'1px solid #E5E5E5' }
+      ? { background:'#FFFFFF', color:'#dc2626', border:'1px solid #E5E5E5' }
       : accent
-      ? { background:'#FFFFFF', color:'#006AFF', border:'1px solid #E5E5E5', fontWeight:700 }
+      ? { background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #E5E5E5', fontWeight:700 }
       : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }
     return (
       <button onClick={onClick}
@@ -47,7 +47,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
             <div className="text-[11px] font-semibold uppercase tracking-wider" style={{color:'#666666'}}>{title}</div>
             <div className="text-[22px] font-mono truncate min-h-[30px]" style={{color:'#1F1F1F'}}>
               {value || <span style={{color:'#999999'}}>{placeholder}</span>}
-              <span style={{color:'#006AFF'}} className="animate-pulse">|</span>
+              <span style={{color:'#5E6AD2'}} className="animate-pulse">|</span>
             </div>
           </div>
           <button onClick={onClose}
@@ -62,7 +62,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
             {['@gmail.com','@yahoo.com','@outlook.com','@icloud.com','@hotmail.com'].map(d => (
               <button key={d} onClick={() => onChange((value || '') + d)}
                 className="px-3 py-2 rounded-lg text-[12px] font-semibold cursor-pointer active:scale-[0.96]"
-                style={{background:'#E6F0FF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                style={{background:'#eef0fc', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                 {d}
               </button>
             ))}
@@ -80,7 +80,7 @@ export function QWERTYKeyboard({ value, onChange, onClose, title='Enter Text', m
                 <button onClick={() => setShift(s => !s)}
                   className="px-3 h-14 rounded-lg text-[16px] font-semibold cursor-pointer active:scale-[0.96]"
                   style={shift
-                    ? { background:'#006AFF', color:'#FFFFFF', border:'none' }
+                    ? { background:'#5E6AD2', color:'#FFFFFF', border:'none' }
                     : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                   ⇧
                 </button>
@@ -164,7 +164,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
 
   const Key = ({ label, onClick, danger }) => {
     const styles = danger
-      ? { background:'#FFFFFF', color:'#CF1322', border:'1px solid #E5E5E5' }
+      ? { background:'#FFFFFF', color:'#dc2626', border:'1px solid #E5E5E5' }
       : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }
     return (
       <button onClick={onClick}
@@ -187,7 +187,7 @@ export function NumericKeypad({ value, onChange, onClose, title='Enter Number', 
             <div className="text-[11px] font-semibold uppercase tracking-wider" style={{color:'#666666'}}>{title}</div>
             <div className="text-[26px] font-mono font-semibold min-h-[34px]" style={{color:'#1F1F1F'}}>
               {value ? display(value) : <span style={{color:'#999999', fontWeight:'normal'}}>{placeholder}</span>}
-              <span style={{color:'#006AFF'}} className="animate-pulse">|</span>
+              <span style={{color:'#5E6AD2'}} className="animate-pulse">|</span>
             </div>
           </div>
           <button onClick={onClose}

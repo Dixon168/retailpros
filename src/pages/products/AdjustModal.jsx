@@ -146,7 +146,7 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
                 <button key={r} onClick={()=>setReason(r)}
                   className="px-2.5 py-1.5 rounded-xl text-[11px] font-medium border cursor-pointer transition-all"
                   style={reason===r
-                    ? {background:'#E6F0FF', borderColor:'#80B2FF', color:'#006AFF'}
+                    ? {background:'#eef0fc', borderColor:'#dee2f8', color:'#5E6AD2'}
                     : {background:'#f8fafc', borderColor:'#e2e8f0', color:'#64748b'}}>
                   {r}
                 </button>
@@ -201,7 +201,7 @@ export function AdjustModal({ product: p, tenantId, storeId, onSave, onClose }) 
           <button onClick={handleSave} disabled={saving||!qty||!reason}
             className="flex-[2] rounded-xl py-3 text-[13px] font-bold text-white cursor-pointer border-none disabled:opacity-40"
             style={{background: adjustQty < 0
-              ? '#CF1322'
+              ? '#dc2626'
               : '#000000'}}>
             {saving ? '⏳ Saving...' : `${adjustQty>=0?'+':''}${adjustQty} ${p.unit||'units'}`}
           </button>

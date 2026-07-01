@@ -9,10 +9,10 @@ import DualInput from '@/components/ui/DualInput'
 
 const PO_STATUS = {
   draft:     { bg:'#F5F5F5',  color:'#666666' },
-  ordered:   { bg:'#E6F0FF',  color:'#006AFF' },
+  ordered:   { bg:'#eef0fc',  color:'#5E6AD2' },
   partial:   { bg:'#FEF3C7',  color:'#B45309' },
-  received:  { bg:'#DCFCE7',  color:'#15803D' },
-  cancelled: { bg:'#FEE2E2',  color:'#CF1322' },
+  received:  { bg:'#d1fae5',  color:'#059669' },
+  cancelled: { bg:'#FEE2E2',  color:'#dc2626' },
 }
 
 export default function VendorsPage() {
@@ -139,7 +139,7 @@ export default function VendorsPage() {
               {!search && (
                 <button onClick={() => setEditing('new')}
                   className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer"
-                  style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                  style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                   + Add your first vendor
                 </button>
               )}
@@ -149,11 +149,11 @@ export default function VendorsPage() {
               <div key={s.id} onClick={() => setSelectedVendor(s)}
                 className="p-3 rounded-lg cursor-pointer mb-1 transition-all active:scale-[0.99]"
                 style={selectedVendor?.id === s.id
-                  ? { background:'#E6F0FF', border:'1px solid #006AFF' }
+                  ? { background:'#eef0fc', border:'1px solid #5E6AD2' }
                   : { background:'#FFFFFF', border:'1px solid transparent' }}>
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0"
-                    style={{background:'#006AFF', opacity: s.is_active ? 1 : 0.4}}>
+                    style={{background:'#5E6AD2', opacity: s.is_active ? 1 : 0.4}}>
                     {s.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -166,7 +166,7 @@ export default function VendorsPage() {
                   </div>
                   {!s.is_active && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                      style={{background:'#FEE2E2', color:'#CF1322'}}>OFF</span>
+                      style={{background:'#FEE2E2', color:'#dc2626'}}>OFF</span>
                   )}
                 </div>
               </div>
@@ -177,7 +177,7 @@ export default function VendorsPage() {
         <div className="p-3 border-t border-[#E5E5E5]">
           <button onClick={() => setEditing('new')}
             className="w-full rounded-lg py-2.5 text-[12px] font-bold cursor-pointer active:scale-[0.98]"
-            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
             + Add Vendor
           </button>
         </div>
@@ -187,7 +187,7 @@ export default function VendorsPage() {
         <div className="flex-1 overflow-y-auto p-6 bg-[#FAFAFA]">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-[58px] h-[58px] rounded-xl flex items-center justify-center text-[22px] font-bold text-white flex-shrink-0"
-              style={{background: selectedVendor.is_active ? '#006AFF' : '#999'}}>
+              style={{background: selectedVendor.is_active ? '#5E6AD2' : '#999'}}>
               {selectedVendor.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1">
@@ -204,8 +204,8 @@ export default function VendorsPage() {
                 )}
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded"
                   style={selectedVendor.is_active
-                    ? {background:'#DCFCE7', color:'#15803D'}
-                    : {background:'#FEE2E2', color:'#CF1322'}}>
+                    ? {background:'#d1fae5', color:'#059669'}
+                    : {background:'#FEE2E2', color:'#dc2626'}}>
                   {selectedVendor.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
@@ -225,23 +225,23 @@ export default function VendorsPage() {
               ) : (
                 <button onClick={() => handleReactivate(selectedVendor)}
                   className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                  style={{background:'#DCFCE7', color:'#15803D', border:'1px solid #BBF7D0'}}>
+                  style={{background:'#d1fae5', color:'#059669', border:'1px solid #BBF7D0'}}>
                   ↻ Reactivate
                 </button>
               )}
               <button onClick={() => setConfirmDelete(selectedVendor)}
                 className="rounded-lg px-3 py-1.5 text-[12px] font-bold cursor-pointer active:scale-[0.96]"
-                style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                 🗑 Delete
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-4 gap-3 mb-6">
-            <Stat label="Balance Owed" value={`$${owedBalance.toFixed(2)}`} color={owedBalance > 0 ? '#CF1322' : '#15803D'}/>
+            <Stat label="Balance Owed" value={`$${owedBalance.toFixed(2)}`} color={owedBalance > 0 ? '#dc2626' : '#059669'}/>
             <Stat label="Open POs" value={openPOs.length} color={openPOs.length > 0 ? '#F59E0B' : undefined}/>
-            <Stat label="Completed POs" value={completedPOs.length} color="#15803D"/>
-            <Stat label="Total Spent" value={`$${totalSpend.toFixed(0)}`} color="#006AFF"/>
+            <Stat label="Completed POs" value={completedPOs.length} color="#059669"/>
+            <Stat label="Total Spent" value={`$${totalSpend.toFixed(0)}`} color="#5E6AD2"/>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
@@ -298,7 +298,7 @@ export default function VendorsPage() {
             <div className="text-[12px] text-[#999]">or</div>
             <button onClick={() => setEditing('new')}
               className="mt-2 rounded-lg px-4 py-2 text-[13px] font-bold cursor-pointer active:scale-[0.96]"
-              style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+              style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
               + Add Your First Vendor
             </button>
           </div>
@@ -366,18 +366,18 @@ function POGroup({ title, pos, empty, onPay, onDetail }) {
           return (
             <div key={po.id} className="flex items-center gap-3 px-3.5 py-3 border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]">
               <div className="flex-1 min-w-0">
-                <div className="font-mono text-[12px] font-bold text-[#006AFF]">{po.po_number}</div>
+                <div className="font-mono text-[12px] font-bold text-[#5E6AD2]">{po.po_number}</div>
                 <div className="text-[10px] text-[#999]">
                   {po.created_at ? new Date(po.created_at).toLocaleDateString() : ''}
                 </div>
               </div>
               <div className="text-right">
                 <div className="font-mono text-[12px] text-[#1F1F1F]">Total ${total.toFixed(2)}</div>
-                <div className="text-[10px] text-[#15803D]">Paid ${paid.toFixed(2)}</div>
+                <div className="text-[10px] text-[#059669]">Paid ${paid.toFixed(2)}</div>
               </div>
               <div className="text-right w-[90px]">
                 <div className="text-[9px] text-[#999] uppercase">Balance</div>
-                <div className="font-mono text-[13px] font-bold" style={{color: bal > 0.005 ? '#CF1322' : '#15803D'}}>
+                <div className="font-mono text-[13px] font-bold" style={{color: bal > 0.005 ? '#dc2626' : '#059669'}}>
                   ${bal.toFixed(2)}
                 </div>
               </div>
@@ -388,7 +388,7 @@ function POGroup({ title, pos, empty, onPay, onDetail }) {
                 {onPay && bal > 0.005 && (
                   <button onClick={() => onPay(po)}
                     className="rounded px-2.5 py-1.5 text-[10px] font-bold cursor-pointer"
-                    style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>💵 Pay</button>
+                    style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>💵 Pay</button>
                 )}
               </div>
             </div>
@@ -445,7 +445,7 @@ function PayVendorModal({ po, vendor, tenantId, onClose, onPaid }) {
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
       <div className="bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-[420px]" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 flex items-center justify-between" style={{background:'#006AFF'}}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{background:'#5E6AD2'}}>
           <div>
             <div className="text-[12px] text-white/70">Pay {vendor?.name}</div>
             <div className="text-[15px] font-bold text-white font-mono">{po.po_number}</div>
@@ -459,13 +459,13 @@ function PayVendorModal({ po, vendor, tenantId, onClose, onPaid }) {
               <div className="text-[9px] text-[#999] uppercase">Total</div>
               <div className="font-mono text-[13px] font-bold">${total.toFixed(2)}</div>
             </div>
-            <div className="rounded-lg py-2" style={{background:'#DCFCE7'}}>
-              <div className="text-[9px] text-[#15803D] uppercase">Paid</div>
-              <div className="font-mono text-[13px] font-bold text-[#15803D]">${paid.toFixed(2)}</div>
+            <div className="rounded-lg py-2" style={{background:'#d1fae5'}}>
+              <div className="text-[9px] text-[#059669] uppercase">Paid</div>
+              <div className="font-mono text-[13px] font-bold text-[#059669]">${paid.toFixed(2)}</div>
             </div>
             <div className="rounded-lg py-2" style={{background:'#FEE2E2'}}>
-              <div className="text-[9px] text-[#CF1322] uppercase">Balance</div>
-              <div className="font-mono text-[13px] font-bold text-[#CF1322]">${bal.toFixed(2)}</div>
+              <div className="text-[9px] text-[#dc2626] uppercase">Balance</div>
+              <div className="font-mono text-[13px] font-bold text-[#dc2626]">${bal.toFixed(2)}</div>
             </div>
           </div>
 
@@ -488,7 +488,7 @@ function PayVendorModal({ po, vendor, tenantId, onClose, onPaid }) {
                 <button key={m.id} onClick={() => setMethod(m.id)}
                   className="rounded-lg py-2 text-[12px] font-bold cursor-pointer border-2"
                   style={method===m.id
-                    ? {background:'#E6F0FF', borderColor:'#006AFF', color:'#006AFF'}
+                    ? {background:'#eef0fc', borderColor:'#5E6AD2', color:'#5E6AD2'}
                     : {background:'#fff', borderColor:'#E5E5E5', color:'#666'}}>
                   {m.label}
                 </button>
@@ -512,7 +512,7 @@ function PayVendorModal({ po, vendor, tenantId, onClose, onPaid }) {
             style={{background:'#fff', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
           <button onClick={submit} disabled={saving}
             className="flex-1 rounded-lg py-3 text-[13px] font-bold text-white cursor-pointer disabled:opacity-40"
-            style={{background:'#15803D', border:'none'}}>
+            style={{background:'#059669', border:'none'}}>
             {saving ? 'Saving...' : `✓ Record Payment`}
           </button>
         </div>
@@ -546,7 +546,7 @@ function PODetailPopup({ po, tenantId, onClose }) {
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
       <div className="bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-[560px]" style={{maxHeight:'85vh'}} onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 flex items-center justify-between border-b border-[#E5E5E5]">
-          <div className="font-mono text-[15px] font-bold text-[#006AFF]">{po.po_number}</div>
+          <div className="font-mono text-[15px] font-bold text-[#5E6AD2]">{po.po_number}</div>
           <button onClick={onClose} className="w-8 h-8 rounded-full border-none cursor-pointer text-[16px]" style={{background:'#F5F5F5', color:'#666'}}>✕</button>
         </div>
         <div className="overflow-y-auto p-5 space-y-5" style={{maxHeight:'calc(85vh - 60px)'}}>
@@ -573,8 +573,8 @@ function PODetailPopup({ po, tenantId, onClose }) {
               ) : payments.map(p => (
                 <div key={p.id} className="flex justify-between items-center px-3 py-2 border-b border-[#E5E5E5] last:border-0 text-[12px]">
                   <div>
-                    <span className="font-mono font-bold text-[#15803D]">${(p.amount||0).toFixed(2)}</span>
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold" style={{background:'#E6F0FF', color:'#006AFF'}}>{p.method}</span>
+                    <span className="font-mono font-bold text-[#059669]">${(p.amount||0).toFixed(2)}</span>
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold" style={{background:'#eef0fc', color:'#5E6AD2'}}>{p.method}</span>
                     {p.remark && <span className="ml-2 text-[#999]">{p.remark}</span>}
                   </div>
                   <span className="text-[10px] text-[#999]">{new Date(p.paid_at).toLocaleString()}</span>
@@ -714,7 +714,7 @@ function VendorFormModal({ vendor, tenantId, onClose, onSaved }) {
                 <button key={t} type="button" onClick={() => set('payment_terms', form.payment_terms === t ? '' : t)}
                   className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
                   style={form.payment_terms === t
-                    ? { background:'#E6F0FF', color:'#006AFF', border:'1px solid #006AFF' }
+                    ? { background:'#eef0fc', color:'#5E6AD2', border:'1px solid #5E6AD2' }
                     : { background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5' }}>
                   {t}
                 </button>
@@ -740,7 +740,7 @@ function VendorFormModal({ vendor, tenantId, onClose, onSaved }) {
           </button>
           <button onClick={save} disabled={saving || !form.name.trim()}
             className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
             {saving ? 'Saving...' : (isNew ? 'Add Vendor' : 'Save Changes')}
           </button>
         </div>
@@ -775,7 +775,7 @@ function ConfirmDeleteModal({ vendor, onCancel, onConfirm }) {
           </button>
           <button onClick={onConfirm}
             className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer text-white"
-            style={{background:'#CF1322', border:'none'}}>
+            style={{background:'#dc2626', border:'none'}}>
             🗑 Delete Forever
           </button>
         </div>

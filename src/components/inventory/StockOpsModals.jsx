@@ -78,7 +78,7 @@ export function CountModal({ product, currentQty, onClose, onSaved }) {
               kbTitle="Actual Stock Count" placeholder="0"/>
             {change !== 0 && (
               <div className="mt-1.5 text-[12px] font-bold font-mono"
-                style={{color: change > 0 ? '#15803D' : '#CF1322'}}>
+                style={{color: change > 0 ? '#059669' : '#dc2626'}}>
                 Difference: {change > 0 ? '+' : ''}{change}
               </div>
             )}
@@ -91,7 +91,7 @@ export function CountModal({ product, currentQty, onClose, onSaved }) {
                 <button key={r} type="button" onClick={() => setReason(r)}
                   className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
                   style={reason === r
-                    ? {background:'#E6F0FF', border:'1px solid #006AFF', color:'#006AFF'}
+                    ? {background:'#eef0fc', border:'1px solid #5E6AD2', color:'#5E6AD2'}
                     : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
                   {r}
                 </button>
@@ -112,7 +112,7 @@ export function CountModal({ product, currentQty, onClose, onSaved }) {
             style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
           <button onClick={save} disabled={saving || newQty === String(currentQty)}
             className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-            style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+            style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
             {saving ? 'Saving...' : 'Save Count'}
           </button>
         </div>
@@ -165,7 +165,7 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
       }}>
         <div className="px-5 py-4 flex items-center justify-between" style={{borderBottom:'1px solid #E5E5E5'}}>
           <div>
-            <div className="text-[11px] font-bold text-[#CF1322] uppercase tracking-wider">💔 Write Off</div>
+            <div className="text-[11px] font-bold text-[#dc2626] uppercase tracking-wider">💔 Write Off</div>
             <div className="text-[15px] font-bold text-[#1F1F1F] truncate" style={{maxWidth:'320px'}}>{product.name}</div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg cursor-pointer text-[16px]" style={{background:'#F5F5F5', border:'none'}}>✕</button>
@@ -186,7 +186,7 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
               value={qty} onChange={setQty}
               kbTitle="Quantity to Write Off" placeholder="1"/>
             <div className="mt-1.5 text-[12px] font-mono text-[#666]">
-              → New stock will be: <span className="font-bold text-[#CF1322]">{newStock}</span>
+              → New stock will be: <span className="font-bold text-[#dc2626]">{newStock}</span>
             </div>
           </div>
 
@@ -197,7 +197,7 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
                 <button key={r} type="button" onClick={() => setReason(r)}
                   className="px-2 py-2 rounded-lg text-[11px] font-bold cursor-pointer active:scale-[0.96]"
                   style={reason === r
-                    ? {background:'#FEE2E2', border:'1px solid #CF1322', color:'#CF1322'}
+                    ? {background:'#FEE2E2', border:'1px solid #dc2626', color:'#dc2626'}
                     : {background:'#FFFFFF', border:'1px solid #E5E5E5', color:'#1F1F1F'}}>
                   {r}
                 </button>
@@ -218,7 +218,7 @@ export function WriteOffModal({ product, currentQty, onClose, onSaved }) {
             style={{background:'#FFFFFF', color:'#1F1F1F', border:'1px solid #E5E5E5'}}>Cancel</button>
           <button onClick={save} disabled={saving || writeOffQty <= 0}
             className="flex-1 rounded-lg py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-            style={{background:'#CF1322', color:'#FFFFFF', border:'none'}}>
+            style={{background:'#dc2626', color:'#FFFFFF', border:'none'}}>
             {saving ? 'Saving...' : 'Confirm Write Off'}
           </button>
         </div>
@@ -295,7 +295,7 @@ export function HistoryModal({ product, onClose }) {
                   return (
                     <div key={i} className="flex items-center gap-2 px-3 py-2 rounded text-[12px]" style={{background:'#FAFAFA'}}>
                       <span className="text-[14px]">🛒</span>
-                      <span className="font-bold font-mono text-[#CF1322]">{h.delta}</span>
+                      <span className="font-bold font-mono text-[#dc2626]">{h.delta}</span>
                       <span className="flex-1 text-[#1F1F1F] truncate">Sold · {h.order_number}</span>
                       <span className="text-[10px] text-[#999]">{ago}</span>
                     </div>
@@ -304,7 +304,7 @@ export function HistoryModal({ product, onClose }) {
                 return (
                   <div key={i} className="flex items-start gap-2 px-3 py-2 rounded text-[12px]" style={{background:'#FAFAFA'}}>
                     <span className="text-[14px]">{isPositive ? '➕' : '➖'}</span>
-                    <span className="font-bold font-mono" style={{color: isPositive ? '#15803D' : '#CF1322'}}>
+                    <span className="font-bold font-mono" style={{color: isPositive ? '#059669' : '#dc2626'}}>
                       {isPositive ? '+' : ''}{h.delta}
                     </span>
                     <div className="flex-1 min-w-0">

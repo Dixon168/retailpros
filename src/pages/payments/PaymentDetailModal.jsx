@@ -75,7 +75,7 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
           <div className="px-5 py-4 flex items-start justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[15px] font-bold text-[#15803D]">{detail.payment_number}</span>
+                <span className="font-mono text-[15px] font-bold text-[#059669]">{detail.payment_number}</span>
               </div>
               <div className="text-[14px] font-bold text-[#1F1F1F]">{customer?.company_name || 'Unknown'}</div>
               <div className="text-[11px] text-[#666] mt-0.5">
@@ -91,10 +91,10 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
             {/* Big amount + method */}
             <div className="rounded-lg p-4 text-center"
-              style={{background:'#DCFCE7', border:'1px solid #15803D'}}>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[#15803D] mb-1">Amount Received</div>
-              <div className="font-mono text-[32px] font-bold text-[#15803D]">${(detail.amount || 0).toFixed(2)}</div>
-              <div className="text-[12px] text-[#15803D] mt-1 font-bold">{methodLabel}</div>
+              style={{background:'#d1fae5', border:'1px solid #059669'}}>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[#059669] mb-1">Amount Received</div>
+              <div className="font-mono text-[32px] font-bold text-[#059669]">${(detail.amount || 0).toFixed(2)}</div>
+              <div className="text-[12px] text-[#059669] mt-1 font-bold">{methodLabel}</div>
               {detail.reference_number && (
                 <div className="text-[11px] text-[#666] mt-2 font-mono">
                   Reference: {detail.reference_number}
@@ -125,19 +125,19 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
                     return (
                       <div key={i} className="grid border-b border-[#E5E5E5] last:border-0"
                         style={{gridTemplateColumns:'1.3fr 1fr 100px 100px'}}>
-                        <div className="px-3 py-2.5 font-mono text-[12px] font-bold text-[#006AFF]">
+                        <div className="px-3 py-2.5 font-mono text-[12px] font-bold text-[#5E6AD2]">
                           {inv?.invoice_number || '—'}
                         </div>
                         <div className="px-3 py-2.5 text-[11px]">
                           <span className="font-bold uppercase"
-                            style={{ color: inv?.status === 'paid' ? '#15803D' : inv?.status === 'partial' ? '#B45309' : '#666' }}>
+                            style={{ color: inv?.status === 'paid' ? '#059669' : inv?.status === 'partial' ? '#B45309' : '#666' }}>
                             {inv?.status || '—'}
                           </span>
                         </div>
                         <div className="px-3 py-2.5 text-right font-mono text-[12px] text-[#666]">
                           ${(inv?.total || 0).toFixed(2)}
                         </div>
-                        <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#15803D]">
+                        <div className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-[#059669]">
                           ${(a.amount || 0).toFixed(2)}
                         </div>
                       </div>
@@ -158,8 +158,8 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
             {/* Void warning area */}
             {confirmVoid && (
               <div className="rounded-lg p-4"
-                style={{background:'#FEE2E2', border:'1px solid #CF1322'}}>
-                <div className="text-[13px] font-bold text-[#CF1322] mb-2">⚠️ Void this payment?</div>
+                style={{background:'#FEE2E2', border:'1px solid #dc2626'}}>
+                <div className="text-[13px] font-bold text-[#dc2626] mb-2">⚠️ Void this payment?</div>
                 <div className="text-[12px] text-[#1F1F1F] mb-3">
                   This will:
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
@@ -167,7 +167,7 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
                     <li>Restore the customer's outstanding balance</li>
                     <li><strong>Permanently delete</strong> this payment record</li>
                   </ul>
-                  <div className="mt-2 text-[#CF1322]">This cannot be undone.</div>
+                  <div className="mt-2 text-[#dc2626]">This cannot be undone.</div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setConfirmVoid(false)} disabled={voiding}
@@ -177,7 +177,7 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
                   </button>
                   <button onClick={voidPayment} disabled={voiding}
                     className="flex-1 rounded-lg py-2.5 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-                    style={{background:'#CF1322', border:'none'}}>
+                    style={{background:'#dc2626', border:'none'}}>
                     {voiding ? 'Voiding...' : '🗑 Yes, Void Payment'}
                   </button>
                 </div>
@@ -195,7 +195,7 @@ export default function PaymentDetailModal({ payment, onClose, onChanged }) {
             {!confirmVoid && (
               <button onClick={() => setConfirmVoid(true)}
                 className="rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer"
-                style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                 🗑 Void
               </button>
             )}

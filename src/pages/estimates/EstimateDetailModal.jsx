@@ -8,11 +8,11 @@ import { buildEstimateHtml, openPrintWindow, downloadHtml } from '@/lib/pdfTempl
 
 const STATUS_BADGE = {
   draft:     { bg:'#F5F5F5', color:'#666',    label:'Draft' },
-  sent:      { bg:'#E6F0FF', color:'#006AFF', label:'Sent' },
-  accepted:  { bg:'#DCFCE7', color:'#15803D', label:'Accepted' },
-  declined:  { bg:'#FEE2E2', color:'#CF1322', label:'Declined' },
+  sent:      { bg:'#eef0fc', color:'#5E6AD2', label:'Sent' },
+  accepted:  { bg:'#d1fae5', color:'#059669', label:'Accepted' },
+  declined:  { bg:'#FEE2E2', color:'#dc2626', label:'Declined' },
   expired:   { bg:'#FEF3C7', color:'#B45309', label:'Expired' },
-  converted: { bg:'#E6F0FF', color:'#006AFF', label:'→ Invoice' },
+  converted: { bg:'#eef0fc', color:'#5E6AD2', label:'→ Invoice' },
 }
 
 export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
@@ -106,7 +106,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
         <div className="px-5 py-4 flex items-start justify-between flex-shrink-0" style={{borderBottom:'1px solid #E5E5E5'}}>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-[15px] font-bold text-[#006AFF]">{detail.estimate_number}</span>
+              <span className="font-mono text-[15px] font-bold text-[#5E6AD2]">{detail.estimate_number}</span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded"
                 style={{background:status.bg, color:status.color}}>
                 {status.label}
@@ -186,7 +186,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
                 {detail.discount_amount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-[#666]">Discount</span>
-                    <span className="font-mono text-[#CF1322]">−${(detail.discount_amount || 0).toFixed(2)}</span>
+                    <span className="font-mono text-[#dc2626]">−${(detail.discount_amount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-1.5 border-t border-[#E5E5E5]">
@@ -208,13 +208,13 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
           {/* Converted invoice link */}
           {detail.status === 'converted' && detail.converted_invoice_id && (
             <div className="rounded-lg p-3 flex items-center justify-between"
-              style={{background:'#E6F0FF', border:'1px solid #006AFF'}}>
-              <div className="text-[12px] text-[#006AFF] font-bold">
+              style={{background:'#eef0fc', border:'1px solid #5E6AD2'}}>
+              <div className="text-[12px] text-[#5E6AD2] font-bold">
                 ✅ This estimate has been converted to an invoice
               </div>
               <button onClick={() => { onClose(); window.location.href = '/invoices' }}
                 className="rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer"
-                style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                 View invoice →
               </button>
             </div>
@@ -222,10 +222,10 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
 
           {/* INLINE: Convert flow */}
           {showConvertInline && !isLocked && (
-            <div className="rounded-lg p-4" style={{background:'#E6F0FF', border:'1px solid #006AFF'}}>
-              <div className="text-[13px] font-bold text-[#006AFF] mb-2">Convert to Invoice</div>
+            <div className="rounded-lg p-4" style={{background:'#eef0fc', border:'1px solid #5E6AD2'}}>
+              <div className="text-[13px] font-bold text-[#5E6AD2] mb-2">Convert to Invoice</div>
               <div className="text-[11px] text-[#1F1F1F] mb-3">
-                Creates invoice from this estimate and <strong className="text-[#CF1322]">deducts inventory</strong>.
+                Creates invoice from this estimate and <strong className="text-[#dc2626]">deducts inventory</strong>.
               </div>
               <div className="flex items-end gap-2">
                 <div className="flex-1">
@@ -240,7 +240,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
                 </button>
                 <button onClick={convertNow} disabled={updating}
                   className="rounded-lg px-4 py-2 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-                  style={{background:'#006AFF', border:'none'}}>
+                  style={{background:'#5E6AD2', border:'none'}}>
                   {updating ? 'Converting...' : '→ Create Invoice'}
                 </button>
               </div>
@@ -249,8 +249,8 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
 
           {/* INLINE: Decline confirm */}
           {showDeclineInline && !isLocked && (
-            <div className="rounded-lg p-4" style={{background:'#FEE2E2', border:'1px solid #CF1322'}}>
-              <div className="text-[13px] font-bold text-[#CF1322] mb-2">Mark as Declined?</div>
+            <div className="rounded-lg p-4" style={{background:'#FEE2E2', border:'1px solid #dc2626'}}>
+              <div className="text-[13px] font-bold text-[#dc2626] mb-2">Mark as Declined?</div>
               <div className="text-[11px] text-[#1F1F1F] mb-3">
                 This will close the estimate. You can still view it but no further actions.
               </div>
@@ -262,7 +262,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
                 </button>
                 <button onClick={() => updateStatus('declined')} disabled={updating}
                   className="flex-1 rounded-lg py-2 text-[12px] font-bold cursor-pointer text-white disabled:opacity-40"
-                  style={{background:'#CF1322', border:'none'}}>
+                  style={{background:'#dc2626', border:'none'}}>
                   ❌ Yes, Mark Declined
                 </button>
               </div>
@@ -297,7 +297,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
               {/* Decline button */}
               <button onClick={() => setShowDeclineInline(true)} disabled={updating}
                 className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#FFFFFF', color:'#CF1322', border:'1px solid #FECACA'}}>
+                style={{background:'#FFFFFF', color:'#dc2626', border:'1px solid #FECACA'}}>
                 ❌ Decline
               </button>
 
@@ -305,7 +305,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
               {detail.status === 'draft' && (
                 <button onClick={() => updateStatus('sent')} disabled={updating}
                   className="rounded-lg px-3 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                  style={{background:'#FFFFFF', color:'#006AFF', border:'1px solid #006AFF'}}>
+                  style={{background:'#FFFFFF', color:'#5E6AD2', border:'1px solid #5E6AD2'}}>
                   📤 Mark Sent
                 </button>
               )}
@@ -313,7 +313,7 @@ export default function EstimateDetailModal({ estimate, onClose, onChanged }) {
               {/* Primary action: Convert to Invoice (always available) */}
               <button onClick={() => setShowConvertInline(true)} disabled={updating}
                 className="ml-auto rounded-lg px-4 py-3 text-[13px] font-bold cursor-pointer disabled:opacity-40"
-                style={{background:'#006AFF', color:'#FFFFFF', border:'none'}}>
+                style={{background:'#5E6AD2', color:'#FFFFFF', border:'none'}}>
                 ✓ Accept &amp; Convert to Invoice →
               </button>
             </>
